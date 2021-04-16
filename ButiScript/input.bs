@@ -1,0 +1,11 @@
+int main()
+{
+	float f;
+	func(f);
+	print(ToStringF(f+10.5)+"\n");
+	return 0;
+}
+float func(float& i){
+	i =10.0;
+	return 10.0222+i;
+}
