@@ -137,7 +137,7 @@ public:
 		const_iter it = variables_.find(name);
 		if (it != variables_.end())
 			return &it->second;
-		return NULL;
+		return nullptr;
 	}
 
 	bool add_arg( const int type, const std::string& name,  const int addr)
@@ -318,7 +318,7 @@ public:
 		std::pair<iter, bool> result = functions_.insert(make_pair(name, tag));
 		if (result.second)
 			return &result.first->second;
-		return NULL;
+		return nullptr;
 	}
 
 	const FunctionTag* find(const std::string& name) const
@@ -326,7 +326,7 @@ public:
 		const_iter it = functions_.find(name);
 		if (it != functions_.end())
 			return &it->second;
-		return NULL;
+		return nullptr;
 	}
 
 	FunctionTag* find(const std::string& name)
@@ -334,7 +334,7 @@ public:
 		iter it = functions_.find(name);
 		if (it != functions_.end())
 			return &it->second;
-		return NULL;
+		return nullptr;
 	}
 
 	void Clear()
@@ -383,7 +383,7 @@ public:
 			if (tag)
 				return tag;
 		}
-		return NULL;
+		return nullptr;
 	}
 
 	// ŠÖ”‚ÌŒŸõ

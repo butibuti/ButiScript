@@ -1,6 +1,6 @@
 int main()
 {
-	float f;
+	var f :float;
 	func(f);
 	print(ToStringF(f+10.5)+"\n");
 	return 0;

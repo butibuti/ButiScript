@@ -270,9 +270,10 @@ struct script_grammer : public grammar<script_grammer> {
 	};
 
 	// 変数定義のクロージャ
-	struct decl_val : closure<decl_val, Declaration_t, int> {
+	struct decl_val : closure<decl_val, Declaration_t, int, Node_t> {
 		member1 node;
 		member2 type;
+		member3 value;
 	};
 
 	// 関数定義のクロージャ
@@ -434,8 +435,8 @@ struct script_grammer : public grammar<script_grammer> {
 				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
 
 			// 変数宣言
-			decl_value = type[decl_value.node = make_decl(arg1)]
-				>> Value[decl_value.node = push_back(decl_value.node, arg1)] % ',' >> ';';
+			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
+
 			// 型宣言
 			type = keyword_p("int")[type.type = TYPE_INTEGER] >> !ch_p('&')[type.type |= TYPE_REF]
 				| keyword_p("float")[type.type = TYPE_FLOAT] >> !ch_p('&')[type.type |= TYPE_REF]
@@ -455,7 +456,7 @@ struct script_grammer : public grammar<script_grammer> {
 
 			// 関数定義の引数
 			argdef = type[argdef.node = construct_<ArgDefine>(arg1)]
-				>> !identifier[argdef.node = arg_name(argdef.node, arg1)]
+				>> identifier[argdef.node = arg_name(argdef.node, arg1)]
 				>> !str_p("[]")[argdef.node = arg_ref(argdef.node)];
 
 			// 文ブロック

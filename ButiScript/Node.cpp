@@ -465,7 +465,7 @@ int Node::Push(Compiler* c) const
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return Call(c, string_, NULL);
+		return Call(c, string_, nullptr);
 	}
 
 	int left_type = left_->Push(c);
@@ -956,7 +956,7 @@ struct set_arg {
 int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const
 {
 	const FunctionTag* tag = c->GetFunctionTag(name);
-	if (tag == NULL) {
+	if (tag == nullptr) {
 		return -1;
 	}
 
