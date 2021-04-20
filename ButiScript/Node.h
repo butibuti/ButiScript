@@ -64,8 +64,8 @@ enum OPCODE {
 
 class Node;
 class NodeList;
-using Node_t=boost::shared_ptr<Node> ;
-using NodeList_t=boost::shared_ptr<NodeList> ;
+using Node_t=std::shared_ptr<Node> ;
+using NodeList_t=std::shared_ptr<NodeList> ;
 
 class Node {
 public:
@@ -454,7 +454,7 @@ private:
 	std::vector<int> arg_;		// ä÷êîÇÃà¯êî
 };
 
-using Declaration_t=	boost::shared_ptr<Declaration> ;
+using Declaration_t=	std::shared_ptr<Declaration> ;
 
 // ÉuÉçÉbÉN
 
@@ -489,15 +489,19 @@ public:
 		: type_(type)
 	{
 	}
+	ArgDefine(const int type, const std::string& arg_name)
+		: type_(type),name_(arg_name)
+	{
+	}
 
 	void set_ref()
 	{
 		type_ |= TYPE_REF;
 	}
 
-	void set_name(const std::string& name)
+	void set_name(const std::string& arg_name)
 	{
-		name_ = name;
+		name_ = arg_name;
 	}
 
 	int type() const { return type_; }
@@ -512,8 +516,8 @@ private:
 
 class Function {
 public:
-	Function(const int type, const std::string& name)
-		:type_(type), name_(name)
+	Function( const std::string& name)
+		: name_(name)
 	{
 	}
 
@@ -529,6 +533,10 @@ public:
 
 	int Analyze(Compiler* c) ;
 
+	void set_type(const int arg_type) {
+		type_ = arg_type;
+	}
+
 private:
 	int type_;
 	std::string name_;
@@ -536,6 +544,6 @@ private:
 	Block_t block_;
 };
 
-using Function_t=boost::shared_ptr<Function> ;
+using Function_t=std::shared_ptr<Function> ;
 
 #endif

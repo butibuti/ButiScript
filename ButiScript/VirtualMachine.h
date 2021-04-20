@@ -582,10 +582,14 @@ namespace ButiVM {
 		float Value_Float() { float v = *(float*)command_ptr_; command_ptr_ += 4; return v; }
 		int addr() const { return (int)(command_ptr_ - command_); }
 		void jmp(int addr) { command_ptr_ = command_ + addr; }
-		void push(int v) { Stack.push(ButiVM::Value(v)); }
+		void push(int v) { 
+			Stack.push(ButiVM::Value(v));
+		}
 		void push(float v) { Stack.push(ButiVM::Value(v)); }
 		void push(const std::string& v) { Stack.push(ButiVM::Value(v)); }
-		void push(const ButiVM::Value& v) { Stack.push(v); }
+		void push(const ButiVM::Value& v) { 
+			Stack.push(v); 
+		}
 		void pop() { Stack.pop(); }
 		const ButiVM::Value& top() const { return Stack.top(); }
 		ButiVM::Value& top() { return Stack.top(); }

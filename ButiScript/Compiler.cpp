@@ -193,7 +193,7 @@ void Compiler::AddFunction(int type, const std::string& name, const std::vector<
 
 
 			BlockOut();		// 変数スタックを減らす
-
+			statement.pop_back();
 			current_function_name.clear();		// 処理中の関数名を消去
 			AddCallingNonDeclaredFunction(type, name, args, block);
 			return;

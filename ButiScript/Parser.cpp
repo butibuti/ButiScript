@@ -33,10 +33,6 @@ struct error_parser {
 		cout << fpos.file << ": " << fpos.line << "." << fpos.column << ": "
 			<< msg_ << " : " << string(b, scan.first) << endl;
 
-		// spiritのバックトラックの影響を受けるので、エラー処理は
-		// 細かく入れる必要が生じる
-		// そうしないと、大量のエラーに埋没する
-		// ここでは、エラー１つで中断している。
 //		return (int)length + 1;
 		return -1;
 	}
@@ -189,13 +185,25 @@ struct arg_name_impl {
 
 // 関数の生成
 struct make_function_impl {
+	template < typename Ty2>
+	struct result { typedef Function_t type; };
+
+	template <typename Ty2>
+	Function_t operator()(const Ty2& name) const
+	{
+		return Function_t(new Function(name));
+	}
+};
+// 関数の返り値設定
+struct setFunctionType_impl {
 	template <typename Ty1, typename Ty2>
 	struct result { typedef Function_t type; };
 
 	template <typename Ty1, typename Ty2>
-	Function_t operator()(Ty1 type, const Ty2& name) const
+	Function_t operator()(Ty1& decl, Ty2 type) const
 	{
-		return Function_t(new Function(type, name));
+		decl->set_type(type);
+		return decl;
 	}
 };
 
@@ -224,6 +232,7 @@ phoenix::function<make_decl1_impl> const make_decl1 = make_decl1_impl();
 phoenix::function<arg_ref_impl> const arg_ref = arg_ref_impl();
 phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
+phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 
 real_parser<double, ureal_parser_policies<double> > const
@@ -277,14 +286,16 @@ struct script_grammer : public grammar<script_grammer> {
 	};
 
 	// 関数定義のクロージャ
-	struct func_val : closure<func_val, Function_t, int> {
+	struct func_val : closure<func_val, Function_t, int,std::string> {
 		member1 node;
 		member2 type;
+		member3 name;
 	};
 
 	// 引数定義のクロージャ
-	struct argdef_val : closure<argdef_val, ArgDefine> {
+	struct argdef_val : closure<argdef_val, ArgDefine,std::string> {
 		member1 node;
+		member2 name;
 	};
 
 	// 文ブロックのクロージャ
@@ -445,8 +456,8 @@ struct script_grammer : public grammar<script_grammer> {
 				;
 
 			// 関数宣言の引数
-			arg = type[arg.type = arg1]
-				>> !identifier
+			arg = identifier>>':'
+				>>type[arg.type = arg1]
 				>> !str_p("[]")[arg.type |= TYPE_REF];
 
 			// 関数宣言
@@ -455,21 +466,21 @@ struct script_grammer : public grammar<script_grammer> {
 				>> '(' >> !(arg[decl_func.node = push_back(decl_func.node, arg1)] % ',') >> ')' >> ';';
 
 			// 関数定義の引数
-			argdef = type[argdef.node = construct_<ArgDefine>(arg1)]
-				>> identifier[argdef.node = arg_name(argdef.node, arg1)]
+			argdef = identifier[argdef.name = arg1]>>':'
+				>>type[argdef.node = construct_<ArgDefine>(arg1, argdef.name)]
 				>> !str_p("[]")[argdef.node = arg_ref(argdef.node)];
+
+			// 関数定義
+			function =  identifier[function.node = make_function(arg1)]
+				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')'>>
+				':' >> type[function.node = set_functionType(function.node, arg1)]
+				>> block[function.node = push_back(function.node, arg1)];
 
 			// 文ブロック
 			block = ch_p('{')[block.node = construct_<Block_t>(new_<Block>())]
-				>> *( statement[block.node = push_back(block.node, arg1)]
-				| decl_value[block.node = push_back(block.node, arg1)] )
+				>> *(statement[block.node = push_back(block.node, arg1)]
+					| decl_value[block.node = push_back(block.node, arg1)])
 				>> '}';
-			// 関数定義
-			function = type[function.type = arg1]
-				>> identifier[function.node = make_function(function.type, arg1)]
-				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')'
-				>> block[function.node = push_back(function.node, arg1)];
-
 
 			// 文
 			statement = ch_p(';')[statement.statement = make_statement(NOP_STATE)]

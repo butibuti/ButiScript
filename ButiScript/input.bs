@@ -1,11 +1,15 @@
-int main()
+main():int
 {
-	var f :float;
+	var f :int;
 	func(f);
-	print(ToStringF(f+10.5)+"\n");
+	print(ToString(f+10)+"\n");
 	return 0;
 }
-float func(float& i){
-	i =10.0;
-	return 10.0222+i;
+func2():void{
+}
+func(i :int&):int
+{
+	func2();
+	i=0;
+	return 10+i;
 }
