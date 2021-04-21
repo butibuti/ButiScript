@@ -1320,3 +1320,20 @@ int Function::Analyze(Compiler* c)
 
 	return 0;
 }
+
+int Function::Regist(Compiler* c)
+{
+	c->RegistFunction(type_, name_, args_, block_);
+	return 0;
+}
+
+int Declaration::Regist(Compiler* c)
+{
+	if (is_func_) {		// ŠÖ”
+		c->FunctionDefine(type_, name_, arg_);
+	}
+	else {
+		c->ValueDefine(type_, node_);
+	}
+	return 0;
+}

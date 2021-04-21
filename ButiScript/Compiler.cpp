@@ -48,6 +48,11 @@ void Compiler::error(const std::string& m)
 	error_count++;
 }
 
+void Compiler::ClearStatement()
+{
+	statement.clear();
+}
+
 // 内部関数の定義
 bool Compiler::DefineSystemFunction(int index, int type, const char* name, const char* args)
 {
@@ -184,20 +189,6 @@ void Compiler::AddFunction(int type, const std::string& name, const std::vector<
 	// 文があれば、文を登録
 	if (block) {
 		int ret=block->Analyze(this);
-
-		if (ret != 0) {
-			if (isReRegist) {
-				error("定義されていない関数を参照しています");
-				return;
-			}
-
-
-			BlockOut();		// 変数スタックを減らす
-			statement.pop_back();
-			current_function_name.clear();		// 処理中の関数名を消去
-			AddCallingNonDeclaredFunction(type, name, args, block);
-			return;
-		}
 	}
 
 	const VMCode& code = statement.back();
@@ -214,6 +205,26 @@ void Compiler::AddFunction(int type, const std::string& name, const std::vector<
 	BlockOut();		// 変数スタックを減らす
 
 	current_function_name.clear();		// 処理中の関数名を消去
+}
+
+void Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist)
+{
+	const FunctionTag* tag = functions.find(name);
+	if (tag) {			// 既に宣言済み
+		if (!tag->ChkArgList(args)) {
+			error("関数 " + name + " に異なる型の引数が指定されています");
+			return;
+		}
+	}
+	else {
+		FunctionTag func(type);
+		func.SetArgs(args);				// 引数を設定
+		func.SetDeclaration();			// 宣言済み
+		func.SetIndex(MakeLabel());		// ラベル登録
+		if (functions.Add(name, func) == 0) {
+			error("内部エラー：関数テーブルに登録できません");
+		}
+	}
 }
 
 // 変数の登録

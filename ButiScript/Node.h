@@ -228,7 +228,8 @@ public:
 		std::cerr << "“à•”ƒGƒ‰[FAdd(index, node)‚ªŒÄ‚Î‚ê‚Ü‚µ‚½" << std::endl;
 	}
 
-	virtual int Analyze(Compiler* c)  = 0;
+	virtual int Analyze(Compiler* c) = 0;
+	virtual int Regist(Compiler* c) { return 0; };
 
 	virtual int Case_Analyze(Compiler* c, int* default_label)
 	{
@@ -445,7 +446,7 @@ public:
 	}
 
 	int Analyze(Compiler* c) ;
-
+	int Regist(Compiler* c);
 private:
 	int type_;					// Œ^
 	bool is_func_;				// ŠÖ”‚©•Ï”‚©
@@ -532,7 +533,7 @@ public:
 	}
 
 	int Analyze(Compiler* c) ;
-
+	int Regist(Compiler* c);
 	void set_type(const int arg_type) {
 		type_ = arg_type;
 	}

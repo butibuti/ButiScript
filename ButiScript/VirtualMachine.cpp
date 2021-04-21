@@ -26,7 +26,7 @@ int ButiVM::VirtualCPU::Run()
 		std::cerr << "例外発生（" << e.what() << "）" << std::endl;
 		return -1;
 	}
-	return top().v_->ToInt();								// main関数戻り値
+	return top().v_->ToInt();// main関数戻り値
 }
 
 void ButiVM::VirtualCPU::Initialize()

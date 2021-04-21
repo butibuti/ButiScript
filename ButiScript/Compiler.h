@@ -372,7 +372,8 @@ public:
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
-	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const bool isReRegist=false);
+	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist = false);
+	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const bool isReRegist=false);
 
 	// 変数の検索、内側のブロックから検索する。
 	const ValueTag* GetValueTag(const std::string& name) const
@@ -429,6 +430,7 @@ public:
 	// Error handling.
 	void error(const std::string& m);
 
+	void ClearStatement();
 private:
 	FunctionTable functions;
 	std::vector<AddFunctionInfo> vec_callingNonDeclaredFunctions;
