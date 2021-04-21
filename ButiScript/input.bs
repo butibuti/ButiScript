@@ -1,15 +1,17 @@
 main():int
 {
+	print("mainCalled\n");
 	var f :int;
 	func(f);
-	print(ToString(f+10)+"\n");
-	return 0;
+	return f;
 }
 
 func2():void{
+	print("Func2Called\n");
 }
 func(i :int&):int
 {
+	print("FuncCalled\n");
 	func2();
 	i=5;
 	return 20+i;

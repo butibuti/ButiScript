@@ -57,6 +57,18 @@ public:
 		}
 		return p;
 	}
+	template<typename T>
+	T  GetConstValue()const {
+		assert(p_constValue);
+		return *((T*)p_constValue);
+	}
+	template<typename T>
+	void  SetConstValue(const T arg_v){
+		if (p_constValue) {
+			delete p_constValue;
+		}
+		p_constValue = new T(arg_v);
+	}
 
 public:
 	unsigned char size_;

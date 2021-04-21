@@ -320,7 +320,7 @@ struct calc_addr {
 	void operator()(const VMCode& code)
 	{
 		if (code.op_ == VM_MAXCOMMAND) {			// ラベルのダミーコマンド
-			labels_[code.codeValue].pos_ = pos_;
+			labels_[code.GetConstValue<int>()].pos_ = pos_;
 		}
 		else {
 			pos_ += code.size_;
@@ -342,7 +342,7 @@ struct set_addr {
 		case VM_JMPNC:
 		case VM_TEST:
 		case VM_CALL:
-			code.codeValue = labels_[code.codeValue].pos_;
+			code.SetConstValue( labels_[code.GetConstValue<int>()].pos_);
 			break;
 		}
 	}
