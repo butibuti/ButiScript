@@ -75,8 +75,6 @@ public:
 	unsigned char op_;
 	int constType;
 	
-	//
-	int codeValue =0;
 	
 	//íËêîÇÃÉ|ÉCÉìÉ^
 	void* p_constValue =nullptr;
@@ -104,16 +102,16 @@ public:
 
 class ValueTag {
 public:
-	ValueTag() : addr_(-1), type_(TYPE_INTEGER), size_(1), global_(false)
+	ValueTag() : address(-1), type_(TYPE_INTEGER), size_(1), global_(false)
 	{
 	}
 	ValueTag(const int addr,const int type,const int size,const bool global)
-		: addr_(addr), type_(type), size_(size), global_(global)
+		: address(addr), type_(type), size_(size), global_(global)
 	{
 	}
 
 public:
-	int		addr_;
+	int		address;
 	int		type_;
 	int		size_;
 	bool	global_;
@@ -169,7 +167,7 @@ public:
 	struct DumpAction {
 		void operator()(const std::pair<std::string, ValueTag>& it)
 		{
-			std::cout << it.first << ", addr = " << it.second.addr_ << ", type = " << it.second.type_ << ", size = " << it.second.size_ << ", global = " << it.second.global_ << std::endl;
+			std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.type_ << ", size = " << it.second.size_ << ", global = " << it.second.global_ << std::endl;
 		}
 	};
 

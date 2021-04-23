@@ -284,7 +284,7 @@ bool Compiler::JmpBreakLabel()
 void Compiler::BlockIn()
 {
 	int start_addr = 0;					// 変数アドレスの開始位置
-	if (variables.size() > 1) {			// ブロックの入れ子は、開始アドレスを続きからにする。
+	if (variables.size() >= 1) {			// ブロックの入れ子は、開始アドレスを続きからにする。
 		start_addr = variables.back().size();
 	}
 	variables.push_back(ValueTable(start_addr));
@@ -437,7 +437,7 @@ void Compiler::debug_dump()
 	for (size_t i = 0; i < size; i++) {
 		std::cout << std::setw(6) << pos << ": " << op_name[statement[i].op_];
 		if (statement[i].size_ > 1) {
-			std::cout << ", " << statement[i].codeValue;
+			std::cout << ", " << statement[i].GetConstValue<int>();
 		}
 		std::cout << std::endl;
 

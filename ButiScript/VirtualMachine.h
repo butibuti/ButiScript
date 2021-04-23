@@ -565,10 +565,8 @@ namespace ButiVM {
 		// 組み込み関数(数値を文字列に変換)
 		void sys_tostr()
 		{
-			int v = top().v_->ToInt(); pop();
-			char str[16];
-			sprintf_s(str, "%d", v);
-			push(std::string(str));			// 戻り値はスタックに入れる
+			auto v = top().v_->ToText(); pop();
+			push(v);			// 戻り値はスタックに入れる
 		}
 		// 組み込み関数(数値を文字列に変換)
 		void sys_tostrf()
@@ -585,14 +583,24 @@ namespace ButiVM {
 		void push(int v) { 
 			Stack.push(ButiVM::Value(v));
 		}
-		void push(float v) { Stack.push(ButiVM::Value(v)); }
-		void push(const std::string& v) { Stack.push(ButiVM::Value(v)); }
+		void push(float v) { 
+			Stack.push(ButiVM::Value(v)); 
+		}
+		void push(const std::string& v) { 
+			Stack.push(ButiVM::Value(v)); 
+		}
 		void push(const ButiVM::Value& v) { 
 			Stack.push(v); 
 		}
-		void pop() { Stack.pop(); }
-		const ButiVM::Value& top() const { return Stack.top(); }
-		ButiVM::Value& top() { return Stack.top(); }
+		void pop() { 
+			Stack.pop(); 
+		}
+		const ButiVM::Value& top() const { 
+			return Stack.top();
+		}
+		ButiVM::Value& top() { 
+			return Stack.top(); 
+		}
 		std::string text(const ButiVM::Value& v) { return v.v_->ToText(); }
 		const ButiVM::Value& ref_to_value(int addr) const
 		{

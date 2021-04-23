@@ -2,6 +2,15 @@
 #include "Node.h"
 #include "compiler.h"
 
+bool CanTypeCast(const int arg_left, const int arg_right) {
+	if (arg_left == TYPE_STRING || arg_right == TYPE_STRING) {
+		if (arg_left != arg_right) {
+			return false;
+		}
+	}
+	return true;
+}
+
 // 変数ノードを生成
 Node_t Node::make_node(const int Op, const std::string& str)
 {
@@ -729,7 +738,7 @@ int Node::Assign(Compiler* c) const
 			c->OpRightShift();
 			break;
 		}
-		if (left_->Pop(c) != TYPE_INTEGER)
+		if (left_->Pop(c) == TYPE_STRING)
 			c->error("文字列型に整数を代入しています。");
 		return 0;
 	}
@@ -771,7 +780,7 @@ int Node::Assign(Compiler* c) const
 			c->OpRightShift();
 			break;
 		}
-		if (left_->Pop(c) != TYPE_FLOAT)
+		if (left_->Pop(c) == TYPE_STRING)
 			c->error("文字列型に浮動小数を代入しています。");
 		return 0;
 	}
@@ -788,10 +797,10 @@ int Node::Assign(Compiler* c) const
 		c->error("文字列では許されない計算です。");
 		break;
 	}
-	return 0;
 	if (left_->Pop(c) != TYPE_STRING)
 		c->error("整数型に文字列を代入しています。");
 
+	return 0;
 	return -1;
 }
 
@@ -803,7 +812,7 @@ int Node_value::Push(Compiler* c) const
 	}
 	else {
 		const ValueTag* tag = c->GetValueTag(string_);
-		if (tag == 0) {
+		if (!tag ) {
 			c->error("変数 " + string_ + " は定義されていません。");
 		}
 		else {
@@ -811,29 +820,29 @@ int Node_value::Push(Compiler* c) const
 			if ((tag->type_ & TYPE_REF) != 0) {
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushLocalArrayRef(tag->addr_);
+					c->PushLocalArrayRef(tag->address);
 				}
 				else {
-					c->PushLocalRef(tag->addr_);
+					c->PushLocalRef(tag->address);
 				}
 				return tag->type_ & ~TYPE_REF;
 			}
 			if (tag->global_) {		// 外部変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushArray(tag->addr_);
+					c->PushArray(tag->address);
 				}
 				else {
-					c->PushValue(tag->addr_);
+					c->PushValue(tag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushLocalArray(tag->addr_);
+					c->PushLocalArray(tag->address);
 				}
 				else {
-					c->PushLocal(tag->addr_);
+					c->PushLocal(tag->address );
 				}
 			}
 			return tag->type_;
@@ -858,29 +867,29 @@ int Node_value::Pop(Compiler* c) const
 			if ((tag->type_ & TYPE_REF) != 0) {
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PopLocalArrayRef(tag->addr_);
+					c->PopLocalArrayRef(tag->address);
 				}
 				else {
-					c->PopLocalRef(tag->addr_);
+					c->PopLocalRef(tag->address);
 				}
 				return tag->type_ & ~TYPE_REF;
 			}
 			if (tag->global_) {		// 外部変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PopArray(tag->addr_);
+					c->PopArray(tag->address);
 				}
 				else {
-					c->PopValue(tag->addr_);
+					c->PopValue(tag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PopLocalArray(tag->addr_);
+					c->PopLocalArray(tag->address);
 				}
 				else {
-					c->PopLocal(tag->addr_);
+					c->PopLocal(tag->address);
 				}
 			}
 			return tag->type_;
@@ -914,18 +923,18 @@ struct set_arg {
 					// 参照型変数は、ローカルしかない
 					if (node->GetLeft()) {
 						node->GetLeft()->Push(comp_);
-						comp_->PushLocal(tag->addr_);
+						comp_->PushLocal(tag->address);
 						comp_->OpAdd();
 					}
 					else {
-						comp_->PushLocal(tag->addr_);
+						comp_->PushLocal(tag->address);
 					}
 				}
 				else {
 					if ((tag->type_ | TYPE_REF) != type) {
 						comp_->error("引数の型が合いません。");
 					}
-					int addr = tag->addr_;
+					int addr = tag->address;
 					if (tag->global_)			// 外部変数
 						addr |= ButiVM::VirtualCPU::global_flag;
 					// アドレスをpush
@@ -1147,6 +1156,7 @@ int Statement_break::Analyze(Compiler* c)
 	return 0;
 }
 
+
 // return文
 int Statement_return::Analyze(Compiler* c) 
 {
@@ -1163,11 +1173,7 @@ int Statement_return::Analyze(Compiler* c)
 		else {
 			int node_type = node_->Push(c);		// 戻り値をpush
 
-			if (node_type == -1) {//宣言されていない関数参照してたらスキップ
-				return -1;
-			}
-
-			if (node_type != c->GetFunctionType()) {
+			if (!CanTypeCast( node_type ,c->GetFunctionType())) {
 				c->error("戻り値の型が合いません");
 			}
 		}
