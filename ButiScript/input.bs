@@ -1,7 +1,25 @@
 main():int
 {
 	var s :string;
-	s="call\n";
+	s="mainCall!"+EndL();
 	print(s);
+	var i :int;
+	for(i=0;i<10;i+=Increase()){
+		if(i<5){
+			s=ToString(i)+ EndL();
+		}else{
+		
+			s="Over 5"+EndL();
+		}
+		print(s);
+	}
 	return 2;
+}
+
+Increase():float{
+	return 1.5;
+}
+
+EndL():string{
+	return "\n";
 }

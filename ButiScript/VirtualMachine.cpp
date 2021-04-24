@@ -15,18 +15,15 @@ int ButiVM::VirtualCPU::Run()
 	try {
 		int Op;
 		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
-			switch (Op) {
-#define	VM_SWITCHTABLE
-#include "VM_switch.h"
-#undef	VM_SWITCHTABLE
-			}
+
+			(this->*p_op[Op])();
 		}
 	}
 	catch (const std::exception& e) {
 		std::cerr << "例外発生（" << e.what() << "）" << std::endl;
 		return -1;
 	}
-	return top().v_->ToInt();// main関数戻り値
+	return top().v_->ToInt();
 }
 
 void ButiVM::VirtualCPU::Initialize()
@@ -38,4 +35,7 @@ void ButiVM::VirtualCPU::Initialize()
 
 	global_value.resize(data_.value_size_);			// 外部変数テーブル確保
 	command_ptr_ = command_ + data_.entry_point_;	// プログラムカウンター初期化
+
+	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
+#include "VM_table.h"
 }

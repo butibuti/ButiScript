@@ -463,7 +463,7 @@ int Node::Push(Compiler* c) const
 		return TYPE_INTEGER;
 
 	case OP_INT:
-		c->PushConst(number_);
+		c->PushConstInt(number_);
 		return TYPE_INTEGER;
 	case OP_FLOAT:
 		c->PushConstFloat(num_float);
@@ -980,7 +980,7 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	}
 
 	// ˆø”‚Ì”‚ğpush
-	c->PushConst(arg_size);
+	c->PushConstInt(arg_size);
 
 	if (tag->IsSystem()) {
 		c->OpSysCall(tag->GetIndex());		// ‘g‚İ‚İŠÖ”

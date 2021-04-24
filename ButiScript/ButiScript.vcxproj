@@ -172,7 +172,7 @@
     <ClInclude Include="VM_create.h" />
     <ClInclude Include="VM_enum.h" />
     <ClInclude Include="VM_nametable.h" />
-    <ClInclude Include="VM_switch.h" />
+    <ClInclude Include="VM_table.h" />
     <ClInclude Include="VM_value.h" />
   </ItemGroup>
   <ItemGroup>

@@ -272,7 +272,7 @@ namespace ButiVM {
 				return *this;
 
 			clear();
-			Copy(a);
+			Assign(a);
 
 			return *this;
 		}
@@ -293,6 +293,18 @@ namespace ButiVM {
 			}
 			else {
 				v_ = a.v_->Clone();
+			}
+		}
+		void Assign(const Value& a) {
+
+			if (a.type_ == type_string) {
+
+				type_ = a.type_;
+				v_ = a.v_;
+				v_->addref();
+			}
+			else {
+				a.v_->Set(v_);
 			}
 		}
 

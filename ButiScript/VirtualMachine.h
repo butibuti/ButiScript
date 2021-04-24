@@ -51,6 +51,8 @@ namespace ButiVM {
 			return "devide by zero";
 		}
 	};
+	class VirtualCPU;
+	using OperationFunction = void (VirtualCPU::*)();
 
 	// 仮想マシン
 	class VirtualCPU {
@@ -75,14 +77,26 @@ namespace ButiVM {
 
 	private:
 		// 定数Push
-		void PushConst(const int arg_val)
+		void PushConstInt(const int arg_val)
 		{
 			push(arg_val);
 		}
+
+		void PushConstInt()
+		{
+			PushConstInt(Value_Int());
+		}
+
 		// 定数Push
 		void PushConstFloat(const float arg_val)
 		{
 			push(arg_val);
+		}
+
+
+		void PushConstFloat()
+		{
+			PushConstFloat(Value_Float());
 		}
 
 		// 文字定数Push
@@ -91,16 +105,30 @@ namespace ButiVM {
 			push(std::string(text_buffer_ + arg_val));
 		}
 
+		void PushString()
+		{
+			PushString(Value_Int());
+		}
+
 		// 変数Push
 		void PushValue(const int arg_val)
 		{
 			push(global_value[arg_val]);
+		}
+		void PushValue()
+		{
+			PushValue(Value_Int());
 		}
 
 		// ローカル変数Push
 		void PushLocal(const int arg_val)
 		{
 			push(Stack[arg_val + stack_base]);
+		}
+
+		void PushLocal()
+		{
+			PushLocal(Value_Int());
 		}
 
 		// 配列からPush
@@ -110,6 +138,11 @@ namespace ButiVM {
 			push(global_value[arg_val + index]);
 		}
 
+		void PushArray()
+		{
+			PushArray(Value_Int());
+		}
+
 		// ローカルの配列からPush
 		void PushLocalArray(const int arg_val)
 		{
@@ -117,11 +150,20 @@ namespace ButiVM {
 			push(Stack[arg_val + stack_base + index]);
 		}
 
+		void PushLocalArray()
+		{
+			PushLocalArray(Value_Int());
+		}
+
 		// ローカル変数(参照)Push
 		void PushLocalRef(const int arg_val)
 		{
-			int addr =* Stack[arg_val + stack_base].v_->GetIntPtr();
+			int addr = *Stack[arg_val + stack_base].v_->GetIntPtr();
 			push(ref_to_value(addr));
+		}
+		void PushLocalRef()
+		{
+			PushLocalRef(Value_Int());
 		}
 
 		// ローカルの配列(参照)からPush
@@ -130,6 +172,9 @@ namespace ButiVM {
 			int addr =* Stack[arg_val + stack_base].v_->GetIntPtr();
 			int index = *top().v_->GetIntPtr(); pop();
 			push(ref_to_value(addr + index));
+		}
+		void PushLocalArrayRef(){
+			PushLocalArrayRef(Value_Int());
 		}
 
 		// アドレスをPush
@@ -141,6 +186,10 @@ namespace ButiVM {
 			push(base);
 		}
 
+		void PushAddr() {
+			PushAddr(Value_Int());
+		}
+
 		// 配列のアドレスをPush
 		void PushArrayAddr(const int arg_val)
 		{
@@ -150,17 +199,24 @@ namespace ButiVM {
 			int index = *top().v_->GetIntPtr(); pop();
 			push(base + index);
 		}
-
+		void PushArrayAddr() {
+			PushArrayAddr(Value_Int());
+		}
 		// 変数にPop
 		void PopValue(const int arg_val)
 		{
 			global_value[arg_val] = top(); pop();
 		}
-
+		void PopValue() {
+			PopValue(Value_Int());
+		}
 		// ローカル変数にPop
 		void PopLocal(const int arg_val)
 		{
 			Stack[arg_val + stack_base] = top(); pop();
+		}
+		void PopLocal() {
+			PopLocal(Value_Int());
 		}
 
 		// 配列変数にPop
@@ -168,6 +224,9 @@ namespace ButiVM {
 		{
 			int index = *top().v_->GetIntPtr(); pop();
 			global_value[arg_val + index] = top(); pop();
+		}
+		void PopArray() {
+			PopArray(Value_Int());
 		}
 
 		// ローカルの配列変数にPop
@@ -177,25 +236,39 @@ namespace ButiVM {
 			Stack[arg_val + stack_base + index] = top(); pop();
 		}
 
+		void PopLocalArray() {
+			PopLocalArray(Value_Int());
+		}
+
 		// ローカル変数(参照)にPop
 		void PopLocalRef(const int arg_val)
 		{
 			int addr =* Stack[arg_val + stack_base].v_->GetIntPtr();
 			set_ref(addr, top()); pop();
 		}
-
+		void PopLocalRef() {
+			PopLocalRef(Value_Int());
+		}
 		// ローカルの配列変数(参照)にPop
 		void PopLocalArrayRef(const int arg_val)
 		{
-			int addr =* Stack[arg_val + stack_base].v_->GetIntPtr();
+			int addr = *Stack[arg_val + stack_base].v_->GetIntPtr();
 			int index = *top().v_->GetIntPtr(); pop();
 			set_ref(addr + index, top()); pop();
+		}
+		void PopLocalArrayRef()
+		{
+			PopLocalArrayRef(Value_Int());
 		}
 
 		// ローカル変数を確保
 		void OpAllocStack(const int arg_val)
 		{
 			Stack.resize(stack_base + arg_val);
+		}
+		void OpAllocStack()
+		{
+			OpAllocStack(Value_Int());
 		}
 
 		// 空Pop（スタックトップを捨てる）
@@ -463,6 +536,9 @@ namespace ButiVM {
 		{
 			jmp(arg_val);
 		}
+		void OpJmp() {
+			OpJmp(Value_Int());
+		}
 
 		// 真の時ジャンプ
 		void OpJmpC(const int arg_val)
@@ -472,12 +548,20 @@ namespace ButiVM {
 				jmp(arg_val);
 		}
 
+		void OpJmpC() {
+			OpJmpC(Value_Int());
+		}
+
 		// 偽の時ジャンプ
 		void OpJmpNC(const int arg_val)
 		{
 			int cond = *top().v_->GetIntPtr(); pop();
 			if (!cond)
 				jmp(arg_val);
+		}
+
+		void OpJmpNC() {
+			OpJmpNC(Value_Int());
 		}
 
 		// switch文用特殊判定
@@ -490,6 +574,10 @@ namespace ButiVM {
 			}
 		}
 
+		void OpTest() {
+			OpTest(Value_Int());
+		}
+
 		// 関数コール
 		void OpCall(const int arg_val)
 		{
@@ -497,6 +585,10 @@ namespace ButiVM {
 			push(addr());					// リターンアドレスをPush
 			stack_base = Stack.size();		// スタックベース更新
 			jmp(arg_val);
+		}
+
+		void OpCall() {
+			OpCall(Value_Int());
 		}
 
 		// 引数なしリターン
@@ -550,6 +642,10 @@ namespace ButiVM {
 			}
 		}
 
+		void OpSysCall() {
+			OpSysCall(Value_Int());
+		}
+
 		// 組み込み関数（print）
 		void sys_print()
 		{
@@ -576,7 +672,7 @@ namespace ButiVM {
 		}
 
 	private:
-		int Value() { int v = *(int*)command_ptr_; command_ptr_ += 4; return v; }
+		int Value_Int() { int v = *(int*)command_ptr_; command_ptr_ += 4; return v; }
 		float Value_Float() { float v = *(float*)command_ptr_; command_ptr_ += 4; return v; }
 		int addr() const { return (int)(command_ptr_ - command_); }
 		void jmp(int addr) { command_ptr_ = command_ + addr; }
@@ -618,14 +714,25 @@ namespace ButiVM {
 
 	private:
 		Data& data_;
+
+		//コマンド羅列
 		unsigned char* command_;
+		//現在参照してるコマンドの位置
 		unsigned char* command_ptr_;
+		//プログラム全体のサイズ
 		int command_size_;
+		//文字列データ
 		char* text_buffer_;
+		//文字列データのサイズ
 		int text_size_;
+		
+		//命令テーブル
+		OperationFunction* p_op;
 
 		ButiVM::Stack<ButiVM::Value, STACK_SIZE> Stack;
+		//グローバル変数
 		std::vector<ButiVM::Value> global_value;
+		//スタックの参照位置
 		int stack_base;
 	};
 
