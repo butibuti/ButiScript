@@ -4,7 +4,8 @@ main():int
 	s="mainCall!"+EndL();
 	print(s);
 	var i :int;
-	for(i=0;i<10;i+=Increase()){
+	i=1;
+	for(;i<10;Add(i)){
 		if(i<5){
 			s=ToString(i)+ EndL();
 		}else{
@@ -13,11 +14,17 @@ main():int
 		}
 		print(s);
 	}
+
+
 	return 2;
 }
 
 Increase():float{
 	return 1.5;
+}
+
+Add(v :int&):void{
+	v+=1;
 }
 
 EndL():string{

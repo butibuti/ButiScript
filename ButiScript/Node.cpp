@@ -455,6 +455,10 @@ Node_t Node::make_node(const int Op, Node_t left, NodeList_t right)
 // ƒm[ƒh‚Ìpushˆ—
 int Node::Push(Compiler* c) const
 {
+	if (op_ >= OP_ASSIGN && op_ <= OP_RSHIFT_ASSIGN) {
+		return Assign(c);
+	}
+
 	switch (op_) {
 	case OP_NEG:
 		if (left_->Push(c) == TYPE_STRING)
@@ -1210,13 +1214,14 @@ int Statement_for::Analyze(Compiler* c)
 	int label2 = c->MakeLabel();
 
 	int break_label = c->SetBreakLabel(label2);
-
-	node_[0]->Assign(c);
+	if(node_[0])
+		node_[0]->Push(c);
 	c->SetLabel(label1);
 	node_[1]->Push(c);
 	c->OpJmpNC(label2);
 	statement_->Analyze(c);
-	node_[2]->Assign(c);
+	if (node_[2])
+		node_[2]->Push(c);
 	c->OpJmp(label1);
 	c->SetLabel(label2);
 

@@ -251,15 +251,7 @@ phoenix::function<regist_impl> const regist = regist_impl();
 real_parser<double, ureal_parser_policies<double> > const
 ureal_parser = real_parser<double, ureal_parser_policies<double> >();
 
-
-// 関数登録
-struct Regist_grammer : public grammar<Regist_grammer> {
-	Regist_grammer(Compiler* driver)
-		:driver_(driver)
-	{
-	}
-
-	Compiler* driver_;	// コンパイラ
+namespace ButiClosure {
 
 	// 文字列のクロージャ
 	struct string_val : closure<string_val, std::string> {
@@ -316,37 +308,28 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 	struct block_val : closure<block_val, Block_t> {
 		member1 node;
 	};
+}
+
+// 関数登録
+struct Regist_grammer : public grammar<Regist_grammer> {
+	Regist_grammer(Compiler* driver)
+		:driver_(driver)
+	{
+	}
+
+	Compiler* driver_;	// コンパイラ
+
+
 
 
 	template <typename ScannerT>
 	struct definition {
-		rule<ScannerT, string_val::context_t>	identifier;
-		rule<ScannerT, string_val::context_t>	string_node;
-		rule<ScannerT, number_val::context_t>	number;
-		rule<ScannerT, float_val::context_t>	floatNumber;
-		rule<ScannerT, type_val::context_t>		type;
-		rule<ScannerT, node_val::context_t>		func_node;
-		rule<ScannerT, node_val::context_t>		Value;
-		rule<ScannerT, node_val::context_t>		prime;
-		rule<ScannerT, node_val::context_t>		unary;
-		rule<ScannerT, node_val::context_t>		mul_expr;
-		rule<ScannerT, node_val::context_t>		add_expr;
-		rule<ScannerT, node_val::context_t>		shift_expr;
-		rule<ScannerT, node_val::context_t>		bit_expr;
-		rule<ScannerT, node_val::context_t>		equ_expr;
-		rule<ScannerT, node_val::context_t>		and_expr;
-		rule<ScannerT, node_val::context_t>		expr;
-		rule<ScannerT, node_val::context_t>		assign;
-		rule<ScannerT, nodelist_val::context_t>	argument;
-		rule<ScannerT, state_val::context_t>	statement;
-		rule<ScannerT, func_val::context_t>		function;
-		rule<ScannerT, type_val::context_t>		arg;
-		rule<ScannerT, decl_val::context_t>		decl_value;
-		rule<ScannerT, decl_val::context_t>		decl_func;
-		rule<ScannerT, argdef_val::context_t>	argdef;
-		rule<ScannerT, block_val::context_t>	block;
-		rule<ScannerT>							input;
-		rule<ScannerT>							ident;
+		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
+		rule<ScannerT, ButiClosure::type_val::context_t>		type;
+		rule<ScannerT, ButiClosure::func_val::context_t>		function;
+		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
+		rule<ScannerT>	string_node,number,floatNumber,	func_node,Value,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
+			and_expr,expr,assign,argument,statement,arg,decl_value,decl_func,block,input,ident;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -370,78 +353,78 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
 
 			//整数
-			number = uint_p[number.number = arg1];
+			number = uint_p;
 
 			//浮動小数
-			floatNumber = strict_real_p[floatNumber.number = arg1];
+			floatNumber = strict_real_p;
 
 			// 文字列
 			string_node = lexeme_d[
-				confix_p(ch_p('"')[string_node.str = ""], *c_escape_ch_p[string_node.str += arg1], '"')
+				confix_p(ch_p('"'), *c_escape_ch_p, '"')
 			];
 
 			// 変数
-			Value = identifier[Value.node = unary_node(OP_IDENTIFIER, arg1)]
-				>> !('[' >> expr[Value.node = binary_node(OP_ARRAY, Value.node, arg1)] >> ']');
+			Value = identifier
+				>> !('[' >> expr>> ']');
 
 			// 関数の引数
-			argument = expr[argument.node = make_argument(arg1)]
-				>> *(',' >> expr[argument.node = push_back(argument.node, arg1)]);
+			argument = expr
+				>> *(',' >> expr);
 
 			// 関数呼び出し
-			func_node = identifier[func_node.node = unary_node(OP_FUNCTION, arg1)] >>
-				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
+			func_node = identifier>>
+				'(' >> !argument >> ')';
 
 			// 計算のprimeノード
-			prime = func_node[prime.node = arg1]
-				| Value[prime.node = arg1]
-				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
-				| number[prime.node = unary_node(OP_INT, arg1)]
-				| string_node[prime.node = unary_node(OP_STRING, arg1)]
-				| '(' >> expr[prime.node = arg1] >> ')'
+			prime = func_node
+				| Value
+				| floatNumber
+				| number
+				| string_node
+				| '(' >> expr >> ')'
 				;
 
 			// 単項演算子
-			unary = prime[unary.node = arg1]
-				| '-' >> prime[unary.node = unary_node(OP_NEG, arg1)];
+			unary = prime
+				| '-' >> prime;
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
-			mul_expr = unary[mul_expr.node = arg1]
-				>> *(mul_op[mul_expr.Op = arg1]
-					>> unary[mul_expr.node = binary_node(mul_expr.Op, mul_expr.node, arg1)]);
+			mul_expr = unary
+				>> *(mul_op
+					>> unary);
 
 			// 二項演算子（+, -）
 			add_op.add("+", OP_ADD)("-", OP_SUB);
-			add_expr = mul_expr[add_expr.node = arg1]
-				>> *(add_op[add_expr.Op = arg1]
-					>> mul_expr[add_expr.node = binary_node(add_expr.Op, add_expr.node, arg1)]);
+			add_expr = mul_expr
+				>> *(add_op
+					>> mul_expr);
 
 			// 二項演算子（<<, >>）
 			shift_op.add("<<", OP_LSHIFT)(">>", OP_RSHIFT);
-			shift_expr = add_expr[shift_expr.node = arg1]
-				>> *(shift_op[shift_expr.Op = arg1]
-					>> add_expr[shift_expr.node = binary_node(shift_expr.Op, shift_expr.node, arg1)]);
+			shift_expr = add_expr
+				>> *(shift_op
+					>> add_expr);
 
 			// 二項演算子（&, |）
 			bit_op.add("&", OP_AND)("|", OP_OR);
-			bit_expr = shift_expr[bit_expr.node = arg1]
-				>> *(bit_op[bit_expr.Op = arg1]
-					>> shift_expr[bit_expr.node = binary_node(bit_expr.Op, bit_expr.node, arg1)]);
+			bit_expr = shift_expr
+				>> *(bit_op
+					>> shift_expr);
 
 			// 二項演算子（比較）
 			equ_op.add("==", OP_EQ)("!=", OP_NE)(">=", OP_GE)(">", OP_GT)("<=", OP_LE)("<", OP_LT);
-			equ_expr = bit_expr[equ_expr.node = arg1]
-				>> !(equ_op[equ_expr.Op = arg1]
-					>> bit_expr[equ_expr.node = binary_node(equ_expr.Op, equ_expr.node, arg1)]);
+			equ_expr = bit_expr
+				>> !(equ_op
+					>> bit_expr);
 
 			// 二項演算子（&&）
-			and_expr = equ_expr[and_expr.node = arg1]
-				>> *("&&" >> equ_expr[and_expr.node = binary_node(OP_LOGAND, and_expr.node, arg1)]);
+			and_expr = equ_expr
+				>> *("&&" >> equ_expr);
 
 			// 二項演算子（||）
-			expr = and_expr[expr.node = arg1]
-				>> *("||" >> and_expr[expr.node = binary_node(OP_LOGOR, expr.node, arg1)]);
+			expr = and_expr
+				>> *("||" >> and_expr);
 
 			// 代入
 			assign_op.add
@@ -455,12 +438,12 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				("|=", OP_OR_ASSIGN)
 				("<<=", OP_LSHIFT_ASSIGN)
 				(">>=", OP_RSHIFT_ASSIGN);
-			assign = Value[assign.node = arg1]
-				>> assign_op[assign.Op = arg1]
-				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
+			assign = Value
+				>> assign_op
+				>> expr;
 
 			// 変数宣言
-			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
+			decl_value = "var" >> Value % ',' >> ':' >> type >> ';';
 
 			// 型宣言
 			type = keyword_p("int")[type.type = TYPE_INTEGER] >> !ch_p('&')[type.type |= TYPE_REF]
@@ -471,13 +454,13 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 
 			// 関数宣言の引数
 			arg = identifier >> ':'
-				>> type[arg.type = arg1]
-				>> !str_p("[]")[arg.type |= TYPE_REF];
+				>> type
+				>> !str_p("[]");
 
 			// 関数宣言
-			decl_func = type[decl_func.type = arg1]
-				>> identifier[decl_func.node = make_decl1(decl_func.type, arg1)]
-				>> '(' >> !(arg[decl_func.node = push_back(decl_func.node, arg1)] % ',') >> ')' >> ';';
+			decl_func = type
+				>> identifier
+				>> '(' >> !(arg % ',') >> ')' >> ';';
 
 			// 関数定義の引数
 			argdef = identifier[argdef.name = arg1] >> ':'
@@ -488,49 +471,51 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			function = identifier[function.node = make_function(arg1)]
 				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
 				':' >> type[function.node = set_functionType(function.node, arg1)]
-				>> block[function.node = push_back(function.node, arg1)];
+				>> block;
 
 			// 文ブロック
-			block = ch_p('{')[block.node = construct_<Block_t>(new_<Block>())]
-				>> *(statement[block.node = push_back(block.node, arg1)]
-					| decl_value[block.node = push_back(block.node, arg1)])
+			block = ch_p('{')
+				>> *(statement
+					| decl_value)
 				>> '}';
 
 			// 文
-			statement = ch_p(';')[statement.statement = make_statement(NOP_STATE)]
-				| assign[statement.statement = make_statement1(ASSIGN_STATE, arg1)] >> ';'
-				| str_p("case") >> expr[statement.statement = make_statement1(CASE_STATE, arg1)] >> ':'
-				| str_p("default")[statement.statement = make_statement(DEFAULT_STATE)] >> ':'
-				| str_p("break")[statement.statement = make_statement(BREAK_STATE)] >> ';'
-				| str_p("return")[statement.statement = make_statement(RETURN_STATE)]
-				>> !expr[statement.statement = push_back(statement.statement, arg1)] >> ';'
-				| str_p("if")[statement.statement = make_statement(IF_STATE)]
-				>> '(' >> expr[statement.statement = push_back(statement.statement, arg1)] >> ')'
-				>> statement[statement.statement = add_statement(statement.statement, 0, arg1)]
+			statement = ch_p(';')
+				| assign >> ';'
+				| str_p("case") >> expr >> ':'
+				| str_p("default")>> ':'
+				| str_p("break") >> ';'
+				| str_p("return")
+				>> !expr>> ';'
+				| str_p("if")
+				>> '(' >> expr>> ')'
+				>> statement
 				>> !("else"
-					>> statement[statement.statement = add_statement(statement.statement, 1, arg1)])
-				| str_p("for")[statement.statement = make_statement(FOR_STATE)] >> '('
-				>> assign[statement.statement = add_statement(statement.statement, 0, arg1)] >> ';'
-				>> expr[statement.statement = add_statement(statement.statement, 1, arg1)] >> ';'
-				>> assign[statement.statement = add_statement(statement.statement, 2, arg1)] >> ')'
-				>> statement[statement.statement = push_back(statement.statement, arg1)]
-				| str_p("while")[statement.statement = make_statement(WHILE_STATE)] >> '('
-				>> expr[statement.statement = push_back(statement.statement, arg1)] >> ')'
-				>> statement[statement.statement = push_back(statement.statement, arg1)]
+					>> statement)
+
+				| str_p("for")>> '('
+				>> !(assign) >> ';'
+				>> expr >> ';'
+				>> !(assign|| func_node) >> ')'
+				>> statement
+
+				| str_p("while") >> '('
+				>> expr >> ')'
+				>> statement
 				| str_p("switch") >> '('
-				>> expr[statement.statement = make_statement1(SWITCH_STATE, arg1)] >> ')'
+				>> expr >> ')'
 				>> '{'
-				>> *statement[statement.statement = push_back(statement.statement, arg1)]
+				>> *statement
 				>> '}'
-				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
-				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
+				| func_node >> ';'
+				| block
 				;
 
 			// 入力された構文
 			input = *(
 				function[regist(arg1, self.driver_)]
-				| decl_func[regist(arg1, self.driver_)]
-				| decl_value[regist(arg1, self.driver_)]
+				| decl_func
+				| decl_value
 				| syntax_error_p
 				);
 		}
@@ -551,90 +536,35 @@ struct script_grammer : public grammar<script_grammer> {
 
 	Compiler* driver_;	// コンパイラ
 
-	// 文字列のクロージャ
-	struct string_val : closure<string_val, std::string> {
-		member1 str;
-	};
-	// 整数のクロージャ
-	struct number_val : closure<number_val, unsigned int> {
-		member1 number;
-	};
-	// 浮動小数クロージャ
-	struct float_val : closure<float_val, float> {
-		member1 number;
-	};
-	// ノードのクロージャ
-	struct node_val : closure<node_val, Node_t, int> {
-		member1 node;
-		member2 Op;
-	};
-	// ノードのクロージャ
-	struct nodelist_val : closure<nodelist_val, NodeList_t, int> {
-		member1 node;
-		member2 Op;
-	};
-	// 文のクロージャ
-	struct state_val : closure<state_val, Statement_t> {
-		member1 statement;
-	};
-	// 型のクロージャ
-	struct type_val : closure<type_val, int> {
-		member1 type;
-	};
-
-	// 変数定義のクロージャ
-	struct decl_val : closure<decl_val, Declaration_t, int, Node_t> {
-		member1 node;
-		member2 type;
-		member3 value;
-	};
-
-	// 関数定義のクロージャ
-	struct func_val : closure<func_val, Function_t, int, std::string> {
-		member1 node;
-		member2 type;
-		member3 name;
-	};
-
-	// 引数定義のクロージャ
-	struct argdef_val : closure<argdef_val, ArgDefine, std::string> {
-		member1 node;
-		member2 name;
-	};
-
-	// 文ブロックのクロージャ
-	struct block_val : closure<block_val, Block_t> {
-		member1 node;
-	};
 
 
 	template <typename ScannerT>
 	struct definition {
-		rule<ScannerT, string_val::context_t>	identifier;
-		rule<ScannerT, string_val::context_t>	string_node;
-		rule<ScannerT, number_val::context_t>	number;
-		rule<ScannerT, float_val::context_t>	floatNumber;
-		rule<ScannerT, type_val::context_t>		type;
-		rule<ScannerT, node_val::context_t>		func_node;
-		rule<ScannerT, node_val::context_t>		Value;
-		rule<ScannerT, node_val::context_t>		prime;
-		rule<ScannerT, node_val::context_t>		unary;
-		rule<ScannerT, node_val::context_t>		mul_expr;
-		rule<ScannerT, node_val::context_t>		add_expr;
-		rule<ScannerT, node_val::context_t>		shift_expr;
-		rule<ScannerT, node_val::context_t>		bit_expr;
-		rule<ScannerT, node_val::context_t>		equ_expr;
-		rule<ScannerT, node_val::context_t>		and_expr;
-		rule<ScannerT, node_val::context_t>		expr;
-		rule<ScannerT, node_val::context_t>		assign;
-		rule<ScannerT, nodelist_val::context_t>	argument;
-		rule<ScannerT, state_val::context_t>	statement;
-		rule<ScannerT, func_val::context_t>		function;
-		rule<ScannerT, type_val::context_t>		arg;
-		rule<ScannerT, decl_val::context_t>		decl_value;
-		rule<ScannerT, decl_val::context_t>		decl_func;
-		rule<ScannerT, argdef_val::context_t>	argdef;
-		rule<ScannerT, block_val::context_t>	block;
+		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
+		rule<ScannerT, ButiClosure::string_val::context_t>	string_node;
+		rule<ScannerT, ButiClosure::number_val::context_t>	number;
+		rule<ScannerT, ButiClosure::float_val::context_t>	floatNumber;
+		rule<ScannerT, ButiClosure::type_val::context_t>		type;
+		rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
+		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
+		rule<ScannerT, ButiClosure::node_val::context_t>		prime;
+		rule<ScannerT, ButiClosure::node_val::context_t>		unary;
+		rule<ScannerT, ButiClosure::node_val::context_t>		mul_expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		add_expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		shift_expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		bit_expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		equ_expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		and_expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		expr;
+		rule<ScannerT, ButiClosure::node_val::context_t>		assign;
+		rule<ScannerT, ButiClosure::nodelist_val::context_t>	argument;
+		rule<ScannerT, ButiClosure::state_val::context_t>	statement;
+		rule<ScannerT, ButiClosure::func_val::context_t>		function;
+		rule<ScannerT, ButiClosure::type_val::context_t>		arg;
+		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
+		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_func;
+		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
+		rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		rule<ScannerT>							input;
 		rule<ScannerT>							ident;
 
@@ -794,16 +724,20 @@ struct script_grammer : public grammar<script_grammer> {
 				| str_p("break")[statement.statement = make_statement(BREAK_STATE)] >> ';'
 				| str_p("return")[statement.statement = make_statement(RETURN_STATE)]
 				>> !expr[statement.statement = push_back(statement.statement, arg1)] >> ';'
+
 				| str_p("if")[statement.statement = make_statement(IF_STATE)]
 				>> '(' >> expr[statement.statement = push_back(statement.statement, arg1)] >> ')'
 				>> statement[statement.statement = add_statement(statement.statement, 0, arg1)]
 				>> !("else"
 					>> statement[statement.statement = add_statement(statement.statement, 1, arg1)])
+
 				| str_p("for")[statement.statement = make_statement(FOR_STATE)] >> '('
-				>> assign[statement.statement = add_statement(statement.statement, 0, arg1)] >> ';'
+				>> !(assign[statement.statement = add_statement(statement.statement, 0, arg1)] ) >> ';'
 				>> expr[statement.statement = add_statement(statement.statement, 1, arg1)] >> ';'
-				>> assign[statement.statement = add_statement(statement.statement, 2, arg1)] >> ')'
+				>> !(assign[statement.statement = add_statement(statement.statement, 2, arg1)] || func_node[statement.statement = add_statement(statement.statement, 2, arg1)]) >> ')'
 				>> statement[statement.statement = push_back(statement.statement, arg1)]
+
+
 				| str_p("while")[statement.statement = make_statement(WHILE_STATE)] >> '('
 				>> expr[statement.statement = push_back(statement.statement, arg1)] >> ')'
 				>> statement[statement.statement = push_back(statement.statement, arg1)]
@@ -853,7 +787,7 @@ struct skip_parser : public grammar<skip_parser> {
 	};
 };
 
-// 全部スキップしてみて、EOFまで来たか？
+// EOFまで進んだのかの判定
 template <typename IteratorT, typename DerivedT>
 bool skip_all(IteratorT first, IteratorT last, parser<DerivedT> const& p)
 {
