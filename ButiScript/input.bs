@@ -3,6 +3,7 @@ main():int
 	var s :string;
 	s="mainCall!"+EndL();
 	print(s);
+	print(ToString(1.5)+EndL());
 	var i :int;
 	i=1;
 	for(;i<10;Add(i)){
@@ -10,7 +11,7 @@ main():int
 			s=ToString(i)+ EndL();
 		}else{
 		
-			s="Over 5"+EndL();
+			s="Over 5"+Add()+EndL();
 		}
 		print(s);
 	}
@@ -25,6 +26,10 @@ Increase():float{
 
 Add(v :int&):void{
 	v+=1;
+}
+
+Add():string{
+	return "!";
 }
 
 EndL():string{

@@ -219,13 +219,14 @@ namespace ButiVM {
 			type_integer,
 			type_float,
 			type_string,
+			type_none
 		};
 
 	public:
 		Value()
 		{
-			v_ = new VirtualInteger(0);
-			type_ = type_integer;
+			type_ = type_none;
+			v_ = nullptr;
 		}
 
 		//int‚Æ‚µ‚Ä‰Šú‰»
@@ -272,6 +273,9 @@ namespace ButiVM {
 				return *this;
 
 			clear();
+			if (type_ = type_none) {
+				type_ = a.type_;
+			}
 			Assign(a);
 
 			return *this;
@@ -304,7 +308,12 @@ namespace ButiVM {
 				v_->addref();
 			}
 			else {
-				a.v_->Set(v_);
+				if (!v_) {
+					v_ = a.v_->Clone();
+				}
+				else {
+					a.v_->Set(v_);
+				}
 			}
 		}
 

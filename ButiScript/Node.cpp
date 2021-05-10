@@ -692,6 +692,90 @@ int Node::Pop(Compiler* c) const
 	return TYPE_INTEGER;
 }
 
+//ノードの型チェック
+int Node::GetType(Compiler* c)const {
+	if (op_ >= OP_ASSIGN && op_ <= OP_RSHIFT_ASSIGN) {
+		return -1;
+	}
+
+	switch (op_) {
+	case OP_NEG:
+		if (left_->GetType(c) == TYPE_STRING)
+			c->error("文字列には許されない計算です。");
+		return TYPE_INTEGER;
+
+	case OP_INT:
+		return TYPE_INTEGER;
+	case OP_FLOAT:
+		return TYPE_FLOAT;
+
+	case OP_STRING:
+		return TYPE_STRING;
+
+	case OP_FUNCTION:
+		return GetCallType(c, string_, nullptr);
+	}
+	if (op_ == OP_IDENTIFIER) {
+		const ValueTag* tag = c->GetValueTag(string_);
+		if (tag == nullptr) {
+			c->error("変数 " + string_ + " は定義されていません。");
+		}
+		else {
+			return tag->type_;
+		}
+	}
+	int left_type = left_->GetType(c);
+	int right_type = right_->GetType(c);
+
+	//右辺若しくは左辺が未定義関数
+	if (left_type <= -1 || right_type <= -1) {
+		return -1;
+	}
+
+	// float計算ノードの処理
+	if (left_type == TYPE_FLOAT || right_type == TYPE_FLOAT) {
+		return TYPE_FLOAT;
+	}
+
+	// 整数計算ノードの処理
+	if (left_type == TYPE_INTEGER && right_type == TYPE_INTEGER) {
+		return TYPE_INTEGER;
+	}
+
+
+	// 文字列計算ノードの処理
+	switch (op_) {
+	case OP_EQ:case OP_NE:case OP_GT:case OP_GE:case OP_LT:case OP_LE:
+		return TYPE_INTEGER;
+
+	case OP_ADD:
+		break;
+
+	default:
+		c->error("文字列では計算できない式です。");
+		break;
+	}
+	return TYPE_STRING;
+}
+int  Node_function::GetType(Compiler* c)const {
+	return GetCallType(c, left_->GetString(), &node_list_->args_);
+}
+//ノードの関数呼び出し型チェック
+int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const {
+	std::vector<int> argTypes;
+	if (args) {
+		auto end = args->end();
+		for (auto itr = args->begin(); itr != end; itr++) {
+			argTypes.push_back((*itr)->GetType(c));
+		}
+	}
+	const FunctionTag* tag = c->GetFunctionTag(name,argTypes);
+	if (tag == nullptr) {
+		return -1;
+	}
+	return tag->type_;
+}
+
 // 代入文
 int Node::Assign(Compiler* c) const
 {
@@ -968,23 +1052,36 @@ struct set_arg {
 // 関数呼び出し
 int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const
 {
-	const FunctionTag* tag = c->GetFunctionTag(name);
+	std::vector<int> argTypes;
+	if (args) {
+		auto end = args->end();
+		for (auto itr = args->begin(); itr != end; itr++) {
+			argTypes.push_back((*itr)->GetType(c));
+		}
+	}
+
+	int argSize = argTypes.size();
+	const FunctionTag* tag = c->GetFunctionTag(name,argTypes);
 	if (tag == nullptr) {
+		std::string message = "";
+		if (argSize) {
+			for (int i = 0; i < argSize; i++) {
+				message += c->GetTypeName(argTypes[i]) + " ";
+			}
+			message += "を引数にとる";
+		}
+		message += "関数" + name + "は未宣言です";
+		c->error(message);
 		return -1;
 	}
 
-	int arg_size = (args) ? (int)args->size() : 0;
-	if (tag->ArgSize() != arg_size) {
-		c->error("引数の数が合いません。");
-	}
-
 	// 引数をpush
-	if (args && tag->ArgSize() == arg_size) {
+	if (args && tag->ArgSize() == argSize) {
 		std::for_each(args->begin(), args->end(), set_arg(c, tag));
 	}
 
 	// 引数の数をpush
-	c->PushConstInt(arg_size);
+	c->PushConstInt(argSize);
 
 	if (tag->IsSystem()) {
 		c->OpSysCall(tag->GetIndex());		// 組み込み関数

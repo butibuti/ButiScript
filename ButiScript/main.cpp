@@ -6,6 +6,8 @@ int main()
 {
 	ButiVM::Data data;
 
+
+
 	bool compile_result;
 	{
 		Compiler driver;

@@ -316,12 +316,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		:driver_(driver)
 	{
 	}
-
-	Compiler* driver_;	// コンパイラ
-
-
-
-
+	Compiler* driver_;	
 	template <typename ScannerT>
 	struct definition {
 		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
@@ -533,11 +528,7 @@ struct script_grammer : public grammar<script_grammer> {
 		:driver_(driver)
 	{
 	}
-
-	Compiler* driver_;	// コンパイラ
-
-
-
+	Compiler* driver_;
 	template <typename ScannerT>
 	struct definition {
 		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
@@ -766,8 +757,7 @@ struct script_grammer : public grammar<script_grammer> {
 	};
 };
 
-// スキップイテレーター
-// コメントのスキップを加える
+// スキップ
 struct skip_parser : public grammar<skip_parser> {
 	template <typename ScannerT>
 	struct definition {
@@ -811,7 +801,7 @@ bool ScriptParser(const string& path, Compiler* driver)
 		return false;
 	}
 
-	// ファイルを一度メモリーに読み込む
+	// ファイルを読み込む
 	istreambuf_iterator<char> fbegin(fin);
 	istreambuf_iterator<char> fend;
 	string input(fbegin, fend);
@@ -829,7 +819,6 @@ bool ScriptParser(const string& path, Compiler* driver)
 		return false;
 	}
 	info = parse(begin, end, gr, skip_p);
-	//driver->ReRegistFunctions();
 	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
 		return true;
 	}

@@ -184,6 +184,34 @@ private:
 	bool	global_;
 };
 
+
+static bool TypeCheck(const int arg_left, const int arg_right) {
+	int left = arg_left & ~TYPE_REF;
+	int right = arg_right & ~TYPE_REF;
+	//同じ型のチェック
+	if (left == right) {
+		return true;
+	}
+
+	//暗黙キャスト可能か
+	if ((left == TYPE_INTEGER && right == TYPE_FLOAT) || (left == TYPE_FLOAT && right == TYPE_INTEGER)) {
+		return true;
+	}
+
+	return false;
+}
+static bool TypeCheck_strict(const int arg_left, const int arg_right) {
+	int left = arg_left & ~TYPE_REF;
+	int right = arg_right & ~TYPE_REF;
+	//同じ型のチェック
+	if (left == right) {
+		return true;
+	}
+
+	return false;
+}
+
+
 // 関数定義用
 
 class FunctionTag {
@@ -249,7 +277,8 @@ public:
 		return true;
 	}
 
-	bool ChkArgList(const std::vector<ArgDefine>& args) const
+
+	bool CheckArgList(const std::vector<ArgDefine>& args) const
 	{
 		// 引数が無い場合
 		if (args.empty())
@@ -262,13 +291,13 @@ public:
 		// 全引数の型をチェック
 		size_t size = args_.size();
 		for (size_t i = 0; i < size; i++) {
-			if (args[i].type() != (int)args_[i])
+			if (!TypeCheck_strict( args[i].type() , (int)args_[i]))
 				return false;
 		}
 		return true;
 	}
 
-	bool ChkArgList(const std::vector<int>& args) const
+	bool CheckArgList(const std::vector<int>& args) const
 	{
 		// 引数が無い場合
 		if (args.empty())
@@ -281,7 +310,7 @@ public:
 		// 全引数の型をチェック
 		size_t size = args_.size();
 		for (size_t i = 0; i < size; i++) {
-			if (args[i] != (int)args_[i])
+			if (!TypeCheck_strict(args[i] , (int)args_[i]))
 				return false;
 		}
 		return true;
@@ -325,35 +354,53 @@ public:
 
 	FunctionTag* Add(const std::string& name, const FunctionTag& tag)
 	{
-		std::pair<iter, bool> result = functions_.insert(make_pair(name, tag));
-		if (result.second)
-			return &result.first->second;
+		auto key = name;
+		auto result = map_functions.emplace(key, tag);
+		
+		return &result->second;
+	}
+
+	const FunctionTag* find(const std::string& name, const std::vector<int>& args) const
+	{
+		const_iter itr = map_functions.find(name);
+		if (itr == map_functions.end()) {
+			return nullptr;
+		}
+		auto end = map_functions.upper_bound(name);
+		for (; itr !=end; itr++) {
+			if (itr->second.CheckArgList(args)) {
+
+				return &itr->second;
+			}
+		}
 		return nullptr;
 	}
 
-	const FunctionTag* find(const std::string& name) const
+	FunctionTag* find(const std::string& name,const std::vector<ArgDefine>& vec_args)
 	{
-		const_iter it = functions_.find(name);
-		if (it != functions_.end())
-			return &it->second;
-		return nullptr;
-	}
+		iter itr = map_functions.find(name);
 
-	FunctionTag* find(const std::string& name)
-	{
-		iter it = functions_.find(name);
-		if (it != functions_.end())
-			return &it->second;
+		if (itr == map_functions.end()) {
+			return nullptr;
+		}
+
+		auto end = map_functions.upper_bound(name);
+		for (; itr != end; itr++) {
+			if (itr->second.CheckArgList(vec_args)) {
+
+				return &itr->second;
+			}
+		}
 		return nullptr;
 	}
 
 	void Clear()
 	{
-		functions_.clear();
+		map_functions.clear();
 	}
 
 private:
-	std::map<std::string, FunctionTag> functions_;
+	std::multimap<std::string, FunctionTag> map_functions;
 };
 
 // コンパイラ
@@ -398,9 +445,9 @@ public:
 	}
 
 	// 関数の検索
-	const FunctionTag* GetFunctionTag(const std::string& name) const
+	const FunctionTag* GetFunctionTag(const std::string& name,const std::vector<int>& args) const
 	{
-		return functions.find(name);
+		return functions.find(name,args);
 	}
 
 	// for code generator.
@@ -441,6 +488,7 @@ public:
 	void error(const std::string& m);
 
 	void ClearStatement();
+	std::string GetTypeName(const int type) const;
 private:
 	FunctionTable functions;
 	std::vector<AddFunctionInfo> vec_callingNonDeclaredFunctions;

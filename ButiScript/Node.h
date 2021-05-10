@@ -106,6 +106,10 @@ public:
 	virtual int Push(Compiler* c) const;
 	virtual int Pop(Compiler* c) const;
 
+	virtual int GetType(Compiler* c)const;
+
+	int GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const;
+
 	int Assign(Compiler* c) const;
 	int Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const;
 
@@ -177,6 +181,7 @@ public:
 
 	virtual int Push(Compiler* c) const;
 	virtual int Pop(Compiler* c) const;
+	int GetType(Compiler* c)const override;
 
 private:
 	NodeList_t node_list_;
