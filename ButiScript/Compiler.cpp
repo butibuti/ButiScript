@@ -18,17 +18,17 @@ Compiler::~Compiler()
 // コンパイル
 bool Compiler::Compile(const std::string& file, ButiVM::Data& Data)
 {
-	// 組み込み関数の設定
+	//組み込み関数の設定
 	DefineSystemFunction(ButiVM::SYS_PRINT, TYPE_VOID, "print", "s");
 	DefineSystemFunction(ButiVM::SYS_PAUSE, TYPE_VOID, "pause", nullptr);
 	DefineSystemFunction(ButiVM::SYS_TOSTR, TYPE_STRING, "ToString", "i");
 	DefineSystemFunction(ButiVM::SYS_TOSTRF, TYPE_STRING, "ToString", "f");
 
-	// グローバル変数用、変数テーブルをセット
+	//変数テーブルをセット
 	variables.push_back(ValueTable());
 	variables[0].set_global();
 
-	// 先頭はHALT命令にしておく
+	//先頭はHALT命令
 	OpHalt();
 
 	bool result = ScriptParser(file, this);	// 構文解析
@@ -115,9 +115,9 @@ void Compiler::ValueDefine(int type, const std::vector<Node_t>& node)
 // 関数宣言
 void Compiler::FunctionDefine(int type, const std::string& name, const std::vector<int>& args)
 {
-	const FunctionTag* tag = functions.find(name,args);
+	const FunctionTag* tag = functions.Find_strict(name,args);
 	if (tag) {			// 既に宣言済み
-		if (!tag->CheckArgList(args)) {
+		if (!tag->CheckArgList_strict(args)) {
 			error("関数 " + name + " に異なる型の引数が指定されています");
 			return;
 		}
@@ -171,13 +171,13 @@ struct add_value {
 
 void Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, bool isReRegist)
 {
-	FunctionTag* tag = functions.find(name,args);
+	FunctionTag* tag = functions.Find_strict(name,args);
 	if (tag) {
 		if (tag->IsDefinition()&&!isReRegist) {
 			error("関数 " + name + " は既に定義されています");
 			return;
 		}
-		if (tag->IsDeclaration() && !tag->CheckArgList(args)) {
+		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
 			error("関数 " + name + " に異なる型の引数が指定されています");
 			return;
 		}
@@ -193,10 +193,8 @@ void Compiler::AddFunction(int type, const std::string& name, const std::vector<
 			error("内部エラー：関数テーブルに登録できません");
 	}
 
-	current_function_name = name;		// 処理中の関数名を登録しておく
-	current_function_type = type;		// 処理中の関数型を登録しておく
-										// 関数内関数（入れ子構造）は無いので、
-										// グローバル変数１つでよい
+	current_function_name = name;		// 処理中の関数名を登録
+	current_function_type = type;		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
 
@@ -233,9 +231,9 @@ void Compiler::AddFunction(int type, const std::string& name, const std::vector<
 
 void Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist)
 {
-	const FunctionTag* tag = functions.find(name,args);
+	const FunctionTag* tag = functions.Find_strict(name,args);
 	if (tag) {			// 既に宣言済み
-		if (!tag->CheckArgList(args)) {
+		if (!tag->CheckArgList_strict(args)) {
 			error("関数 " + name + " に異なる型の引数が指定されています");
 			return;
 		}
@@ -398,7 +396,7 @@ struct copy_code {
 
 bool Compiler::CraeteData(ButiVM::Data& Data, int code_size)
 {
-	const FunctionTag* tag = GetFunctionTag("main",std::vector<int>());	// 開始位置
+	const FunctionTag* tag = GetFunctionTag("main",std::vector<int>(),false);	// 開始位置
 	if (tag == 0) {
 		error("関数 \"main\" が見つかりません。");
 		return false;

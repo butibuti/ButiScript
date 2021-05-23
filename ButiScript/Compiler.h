@@ -289,11 +289,14 @@ public:
 			return false;
 
 		// 全引数の型をチェック
+
+		//厳密チェック
 		size_t size = args_.size();
 		for (size_t i = 0; i < size; i++) {
-			if (!TypeCheck_strict( args[i].type() , (int)args_[i]))
+			if (!TypeCheck(args[i].type(), (int)args_[i]))
 				return false;
 		}
+
 		return true;
 	}
 
@@ -308,9 +311,53 @@ public:
 			return false;
 
 		// 全引数の型をチェック
+		//厳密チェック
 		size_t size = args_.size();
 		for (size_t i = 0; i < size; i++) {
-			if (!TypeCheck_strict(args[i] , (int)args_[i]))
+			if (!TypeCheck(args[i], (int)args_[i]))
+				return false;
+		}
+		return true;
+	}
+
+
+	bool CheckArgList_strict(const std::vector<ArgDefine>& args) const
+	{
+		// 引数が無い場合
+		if (args.empty())
+			return args_.empty();
+
+		// 引数の個数が異なる
+		if (args.size() != args_.size())
+			return false;
+
+		// 全引数の型をチェック
+
+		//厳密チェック
+		size_t size = args_.size();
+		for (size_t i = 0; i < size; i++) {
+			if (!TypeCheck_strict(args[i].type(), (int)args_[i]))
+				return false;
+		}
+
+		return true;
+	}
+
+	bool CheckArgList_strict(const std::vector<int>& args) const
+	{
+		// 引数が無い場合
+		if (args.empty())
+			return args_.empty();
+
+		// 引数の個数が異なる
+		if (args.size() != args_.size())
+			return false;
+
+		// 全引数の型をチェック
+		//厳密チェック
+		size_t size = args_.size();
+		for (size_t i = 0; i < size; i++) {
+			if (!TypeCheck_strict(args[i], (int)args_[i]))
 				return false;
 		}
 		return true;
@@ -360,14 +407,48 @@ public:
 		return &result->second;
 	}
 
-	const FunctionTag* find(const std::string& name, const std::vector<int>& args) const
+	const FunctionTag* Find_strict(const std::string& name, const std::vector<int>& args) const
 	{
 		const_iter itr = map_functions.find(name);
 		if (itr == map_functions.end()) {
 			return nullptr;
 		}
 		auto end = map_functions.upper_bound(name);
-		for (; itr !=end; itr++) {
+		for (; itr != end; itr++) {
+			if (itr->second.CheckArgList_strict(args)) {
+
+				return &itr->second;
+			}
+		}
+		return nullptr;
+	}
+
+	FunctionTag* Find_strict(const std::string& name, const std::vector<ArgDefine>& vec_args)
+	{
+		iter itr = map_functions.find(name);
+
+		if (itr == map_functions.end()) {
+			return nullptr;
+		}
+
+		auto end = map_functions.upper_bound(name);
+		for (; itr != end; itr++) {
+			if (itr->second.CheckArgList_strict(vec_args)) {
+
+				return &itr->second;
+			}
+		}
+		return nullptr;
+	}
+
+	const FunctionTag* Find(const std::string& name, const std::vector<int>& args) const
+	{
+		const_iter itr = map_functions.find(name);
+		if (itr == map_functions.end()) {
+			return nullptr;
+		}
+		auto end = map_functions.upper_bound(name);
+		for (; itr != end; itr++) {
 			if (itr->second.CheckArgList(args)) {
 
 				return &itr->second;
@@ -376,7 +457,7 @@ public:
 		return nullptr;
 	}
 
-	FunctionTag* find(const std::string& name,const std::vector<ArgDefine>& vec_args)
+	FunctionTag* Find(const std::string& name, const std::vector<ArgDefine>& vec_args)
 	{
 		iter itr = map_functions.find(name);
 
@@ -445,9 +526,13 @@ public:
 	}
 
 	// 関数の検索
-	const FunctionTag* GetFunctionTag(const std::string& name,const std::vector<int>& args) const
+	const FunctionTag* GetFunctionTag(const std::string& name,const std::vector<int>& args,const bool isStrict) const
 	{
-		return functions.find(name,args);
+		if(isStrict)
+		return functions.Find_strict(name,args);
+		else {
+			return functions.Find(name, args);
+		}
 	}
 
 	// for code generator.

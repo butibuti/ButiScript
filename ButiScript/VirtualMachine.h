@@ -43,7 +43,7 @@ namespace ButiVM {
 	};
 
 
-	// 0除算例外
+	// 0除算
 	class DevideByZero : public std::exception {
 	public:
 		const char* what() const throw()
@@ -615,13 +615,13 @@ namespace ButiVM {
 			jmp(addr);
 		}
 
-		// 仮想CPUプログラム停止
+		// 仮想CPU停止
 		void OpHalt()
 		{
 		}
 
 		// 組み込み関数
-		void OpSysCall(int val)
+		void OpSysCall(const int val)
 		{
 			pop();	// arg_count
 			switch (val) {

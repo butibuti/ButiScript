@@ -3,16 +3,13 @@ main():int
 	var s :string;
 	s="mainCall!"+EndL();
 	print(s);
-	print(ToString(1.5)+EndL());
+
 	var i :int;
 	i=1;
+	var f:float;
+	f=3.1;
 	for(;i<10;Add(i)){
-		if(i<5){
-			s=ToString(i)+ EndL();
-		}else{
-		
-			s="Over 5"+Add()+EndL();
-		}
+		s=ToString(Pow (f))+ EndL();
 		print(s);
 	}
 
@@ -30,6 +27,11 @@ Add(v :int&):void{
 
 Add():string{
 	return "!";
+}
+
+Pow(i:int& ):int{
+	print("Pow(i:int&) call!\n");
+	return i*i;
 }
 
 EndL():string{

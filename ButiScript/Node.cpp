@@ -769,9 +769,12 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 			argTypes.push_back((*itr)->GetType(c));
 		}
 	}
-	const FunctionTag* tag = c->GetFunctionTag(name,argTypes);
+	const FunctionTag* tag = c->GetFunctionTag(name,argTypes,true);
 	if (tag == nullptr) {
-		return -1;
+		tag = c->GetFunctionTag(name, argTypes, false);
+		if (tag == nullptr) {
+			return -1;
+		}
 	}
 	return tag->type_;
 }
@@ -1019,7 +1022,7 @@ struct set_arg {
 					}
 				}
 				else {
-					if ((tag->type_ | TYPE_REF) != type) {
+					if (!TypeCheck(tag->type_ ,type) ){
 						comp_->error("ˆø”‚ÌŒ^‚ª‡‚¢‚Ü‚¹‚ñB");
 					}
 					int addr = tag->address;
@@ -1042,7 +1045,7 @@ struct set_arg {
 			}
 		}
 		else {
-			if (node->Push(comp_) != type) {
+			if (!TypeCheck( node->Push(comp_), type)) {
 				comp_->error("ˆø”‚ÌŒ^‚ª‡‚¢‚Ü‚¹‚ñB");
 			}
 		}
@@ -1061,7 +1064,11 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	}
 
 	int argSize = argTypes.size();
-	const FunctionTag* tag = c->GetFunctionTag(name,argTypes);
+	const FunctionTag* tag = c->GetFunctionTag(name,argTypes,true);
+	if (!tag) {
+		tag= c->GetFunctionTag(name, argTypes, false);
+	}
+
 	if (tag == nullptr) {
 		std::string message = "";
 		if (argSize) {
