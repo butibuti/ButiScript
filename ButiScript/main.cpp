@@ -4,17 +4,17 @@
 
 int main()
 {
-	ButiVM::Data data;
+	ButiScript::Data data;
 
 
 
 	bool compile_result;
 	{
-		Compiler driver;
+		ButiScript::Compiler driver;
 		compile_result = driver.Compile("input.bs", data);
 	}
 	if (compile_result) {
-		ButiVM::VirtualCPU machine(data);
+		ButiScript::VirtualCPU machine(data);
 		machine.Initialize();
 		int result = machine.Run();
 		std::cout << "result = " << result << std::endl;

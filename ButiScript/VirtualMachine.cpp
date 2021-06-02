@@ -3,7 +3,7 @@
 #include "VirtualMachine.h"
 
 // 実行
-int ButiVM::VirtualCPU::Run()
+int ButiScript::VirtualCPU::Run()
 {
 
 	// mainをcall
@@ -26,16 +26,21 @@ int ButiVM::VirtualCPU::Run()
 	return top().v_->ToInt();
 }
 
-void ButiVM::VirtualCPU::Initialize()
+void ButiScript::VirtualCPU::Initialize()
 {
-	command_ = data_.command_;						// プログラム格納位置
-	text_buffer_ = data_.text_buffer_;				// テキストデータ格納位置
-	command_size_ = data_.command_size_;			// プログラムの大きさ
-	text_size_ = data_.text_size_;					// データの大きさ
+	commandTable = data_.commandTable;						// プログラム格納位置
+	textBuffer = data_.textBuffer;				// テキストデータ格納位置
+	commandSize = data_.commandSize;			// プログラムの大きさ
+	textSize = data_.textSize;					// データの大きさ
 
-	global_value.resize(data_.value_size_);			// 外部変数テーブル確保
-	command_ptr_ = command_ + data_.entry_point_;	// プログラムカウンター初期化
+	global_value.resize(data_.valueSize);			// 外部変数テーブル確保
+	command_ptr_ = commandTable + data_.entryPoint;	// プログラムカウンター初期化
 
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
+
+	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * data_.vec_sysCalls.size());
+	for (int i = 0; i < data_.vec_sysCalls.size(); i++) {
+		p_syscall[i] = data_.vec_sysCalls[i];
+	}
 }

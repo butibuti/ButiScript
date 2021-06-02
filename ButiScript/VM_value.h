@@ -6,7 +6,7 @@
 #include <exception>
 #include <string>
 
-namespace ButiVM {
+namespace ButiScript {
 	class VirtualString;
 	class VirtualInteger;
 	class VirtualFloat;
@@ -16,7 +16,7 @@ namespace ButiVM {
 		RefValue() : ref_(0)
 		{
 		}
-		RefValue(int arg_ref) : ref_(arg_ref)
+		RefValue(const int arg_ref) : ref_(arg_ref)
 		{
 		}
 
@@ -230,14 +230,14 @@ namespace ButiVM {
 		}
 
 		//int‚Æ‚µ‚Ä‰Šú‰»
-		Value(int ival)
+		Value(const int ival)
 		{
 			v_ = new VirtualInteger(ival);
 			type_ = type_integer;
 		}
 
 		//float‚Æ‚µ‚Ä‰Šú‰»
-		Value(float ival)
+		Value(const float ival)
 		{
 			v_ = new VirtualFloat(ival);
 			type_ = type_float;

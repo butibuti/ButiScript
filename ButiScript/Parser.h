@@ -3,8 +3,11 @@
 #define	__PARSER_H__
 
 #include <string>
+namespace ButiScript {
 
-class Compiler;
-bool ScriptParser(const std::string& path, Compiler* driver);
+	class Compiler;
+	bool ScriptParser(const std::string& path, Compiler* driver);
+}
+
 
 #endif

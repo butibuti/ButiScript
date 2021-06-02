@@ -3,43 +3,40 @@
 #define	__VM_H__
 
 #include <vector>
+
 #include "vm_value.h"
+namespace ButiScript {
+
 
 
 #define	VM_ENUMDEF
-enum {
+	enum {
 #include "VM_enum.h"
-	VM_MAXCOMMAND,
-};
+		VM_MAXCOMMAND,
+	};
 #undef	VM_ENUMDEF
 
-namespace ButiVM {
-
-	enum {
-		SYS_PRINT,
-		SYS_PAUSE,
-		SYS_TOSTR,
-		SYS_TOSTRF,
-	};
-
+	class VirtualCPU;
+	using OperationFunction = void (VirtualCPU::*)();
 	class Data {
 	public:
-		Data() : command_(0), text_buffer_(0)
+		Data() : commandTable(0), textBuffer(0)
 		{
 		}
 		~Data()
 		{
-			delete[] command_;
-			delete[] text_buffer_;
+			delete[] commandTable;
+			delete[] textBuffer;
 		}
 
 	public:
-		unsigned char* command_;	// コマンドテーブル
-		char* text_buffer_;			// テキストデータ
-		int command_size_;			// コマンドサイズ
-		int text_size_;				// テキストサイズ
-		int value_size_;			// グローバル変数サイズ
-		int entry_point_;			// エントリーポイント
+		unsigned char* commandTable;	// コマンドテーブル
+		char* textBuffer;			// テキストデータ
+		int commandSize;			// コマンドサイズ
+		int textSize;				// テキストサイズ
+		int valueSize;			// グローバル変数サイズ
+		int entryPoint;			// エントリーポイント
+		std::vector<OperationFunction> vec_sysCalls;
 	};
 
 
@@ -51,8 +48,6 @@ namespace ButiVM {
 			return "devide by zero";
 		}
 	};
-	class VirtualCPU;
-	using OperationFunction = void (VirtualCPU::*)();
 
 	// 仮想マシン
 	class VirtualCPU {
@@ -102,7 +97,7 @@ namespace ButiVM {
 		// 文字定数Push
 		void PushString(const int arg_val)
 		{
-			push(std::string(text_buffer_ + arg_val));
+			push(std::string(textBuffer + arg_val));
 		}
 
 		void PushString()
@@ -135,7 +130,7 @@ namespace ButiVM {
 		void PushArray(const int arg_val)
 		{
 			int index = *top().v_->GetIntPtr(); pop();
-			push(global_value[arg_val + index]);
+			push(global_value[(int)(arg_val + index)]);
 		}
 
 		void PushArray()
@@ -223,7 +218,7 @@ namespace ButiVM {
 		void PopArray(const int arg_val)
 		{
 			int index = *top().v_->GetIntPtr(); pop();
-			global_value[arg_val + index] = top(); pop();
+			global_value[(int)(arg_val + index)] = top(); pop();
 		}
 		void PopArray() {
 			PopArray(Value_Int());
@@ -605,7 +600,7 @@ namespace ButiVM {
 		// 引数付きリターン
 		void OpReturnV()
 		{
-			ButiVM::Value result = top(); pop();
+			ButiScript::Value result = top(); pop();
 			Stack.resize(stack_base);		// ローカル変数排除
 			int addr = *top().v_->GetIntPtr(); pop();
 			stack_base = *top().v_->GetIntPtr(); pop();
@@ -624,28 +619,15 @@ namespace ButiVM {
 		void OpSysCall(const int val)
 		{
 			pop();	// arg_count
-			switch (val) {
-			case SYS_PRINT:
-				sys_print();
-				break;
 
-			case SYS_TOSTR:
-				sys_tostr();
-				break;
+			(this->*p_syscall[val])();
 
-			case SYS_TOSTRF:
-				sys_tostrf();
-				break;
-			case SYS_PAUSE:
-				Sys_pause();
-				break;
-			}
 		}
 
 		void OpSysCall() {
 			OpSysCall(Value_Int());
 		}
-
+	public:
 		// 組み込み関数（print）
 		void sys_print()
 		{
@@ -674,37 +656,37 @@ namespace ButiVM {
 	private:
 		int Value_Int() { int v = *(int*)command_ptr_; command_ptr_ += 4; return v; }
 		float Value_Float() { float v = *(float*)command_ptr_; command_ptr_ += 4; return v; }
-		int addr() const { return (int)(command_ptr_ - command_); }
-		void jmp(int addr) { command_ptr_ = command_ + addr; }
+		int addr() const { return (int)(command_ptr_ - commandTable); }
+		void jmp(int addr) { command_ptr_ = commandTable + addr; }
 		void push(int v) { 
-			Stack.push(ButiVM::Value(v));
+			Stack.push(ButiScript::Value(v));
 		}
 		void push(float v) { 
-			Stack.push(ButiVM::Value(v)); 
+			Stack.push(ButiScript::Value(v)); 
 		}
 		void push(const std::string& v) { 
-			Stack.push(ButiVM::Value(v)); 
+			Stack.push(ButiScript::Value(v)); 
 		}
-		void push(const ButiVM::Value& v) { 
+		void push(const ButiScript::Value& v) { 
 			Stack.push(v); 
 		}
 		void pop() { 
 			Stack.pop(); 
 		}
-		const ButiVM::Value& top() const { 
+		const ButiScript::Value& top() const { 
 			return Stack.top();
 		}
-		ButiVM::Value& top() { 
+		ButiScript::Value& top() { 
 			return Stack.top(); 
 		}
-		std::string text(const ButiVM::Value& v) { return v.v_->ToText(); }
-		const ButiVM::Value& ref_to_value(int addr) const
+		std::string text(const ButiScript::Value& v) { return v.v_->ToText(); }
+		const ButiScript::Value& ref_to_value(int addr) const
 		{
 			if (addr & global_flag)
 				return global_value[addr & global_mask];
 			return Stack[addr];
 		}
-		void set_ref(int addr, const ButiVM::Value& v)
+		void set_ref(int addr, const ButiScript::Value& v)
 		{
 			if (addr & global_flag)
 				PopLocal(addr-1);
@@ -716,24 +698,28 @@ namespace ButiVM {
 		Data& data_;
 
 		//コマンド羅列
-		unsigned char* command_;
+		unsigned char* commandTable;
 		//現在参照してるコマンドの位置
 		unsigned char* command_ptr_;
 		//プログラム全体のサイズ
-		int command_size_;
+		int commandSize;
 		//文字列データ
-		char* text_buffer_;
+		char* textBuffer;
 		//文字列データのサイズ
-		int text_size_;
-		
-		//命令テーブル
-		OperationFunction* p_op;
+		int textSize;
 
-		ButiVM::Stack<ButiVM::Value, STACK_SIZE> Stack;
+		//命令テーブル
+		OperationFunction* p_op=nullptr;
+		//組み込み関数テーブル
+		OperationFunction* p_syscall=nullptr;
+
+		ButiScript::Stack<ButiScript::Value, STACK_SIZE> Stack;
 		//グローバル変数
-		std::vector<ButiVM::Value> global_value;
+		std::vector<ButiScript::Value> global_value;
 		//スタックの参照位置
 		int stack_base;
+
+		
 	};
 
 }

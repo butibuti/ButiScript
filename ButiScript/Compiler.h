@@ -4,6 +4,10 @@
 #include "VirtualMachine.h"
 #include "Node.h"
 
+namespace ButiScript {
+
+
+
 // 仮想マシンコード生成
 
 class VMCode {
@@ -80,6 +84,26 @@ public:
 	void* p_constValue =nullptr;
 
 };
+
+
+
+//名前空間の定義
+class NameSpace:std::enable_shared_from_this<NameSpace> {
+public:
+	NameSpace(const std::string& arg_name) :name(arg_name) {	}
+
+	const std::string& GetNameString()const;
+	std::string GetGlobalNameString()const;
+	void Regist(Compiler* arg_compiler);
+	void SetParent(std::shared_ptr<NameSpace>arg_parent);
+	std::shared_ptr<NameSpace> GetParent()const;
+private:
+	std::string name;
+	std::shared_ptr<NameSpace> shp_parentNamespace;
+};
+
+using NameSpace_t = std::shared_ptr<NameSpace>;
+
 
 // ラベル
 
@@ -383,9 +407,9 @@ public:
 	bool IsSystem() const { return (flags_ & flag_system) != 0; }
 
 public:
-	int		type_;
-	int		flags_;
-	int		index_;
+	int		type_=0;
+	int		flags_=0;
+	int		index_=0;
 	std::vector<unsigned char>	args_;
 };
 
@@ -486,6 +510,8 @@ private:
 
 // コンパイラ
 
+class VirtualCPU;
+using SysFunction = void (VirtualCPU::*)();
 class Compiler {
 public:
 
@@ -500,13 +526,13 @@ public:
 	Compiler();
 	virtual ~Compiler();
 
-	bool Compile(const std::string& file, ButiVM::Data& Data);
+	bool Compile(const std::string& file, ButiScript::Data& Data);
 
 #ifdef	_DEBUG
 	void debug_dump();
 #endif
 
-	bool DefineSystemFunction(const int index,const int type, const char* name, const char* args);
+	bool DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args);
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
@@ -561,14 +587,10 @@ public:
 
 	void PushString(const std::string& name);
 	int GetFunctionType() const { return current_function_type; }
-	bool CraeteData(ButiVM::Data& Data,const int code_size);
+	bool CraeteData(ButiScript::Data& Data,const int code_size);
 
-	//まだ定義されていない関数を呼び出している関数の登録
-	void AddCallingNonDeclaredFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block);
-
-	//関数マッチングの二週目
-	void ReRegistFunctions();
-
+	void PushNameSpace(NameSpace_t arg_namespace);
+	void PopNameSpace();
 	// Error handling.
 	void error(const std::string& m);
 
@@ -576,17 +598,18 @@ public:
 	std::string GetTypeName(const int type) const;
 private:
 	FunctionTable functions;
-	std::vector<AddFunctionInfo> vec_callingNonDeclaredFunctions;
 	std::vector<ValueTable> variables;
 	std::vector<VMCode> statement;
 	std::vector<Label> labels;
 	std::vector<char> text_table;
+	std::vector<SysFunction> vec_sysCalls;
 
+	NameSpace_t currentNameSpace = nullptr;
 	int break_index;
 	int error_count;
 
 	std::string current_function_name;
 	int current_function_type;
 };
-
+}
 #endif

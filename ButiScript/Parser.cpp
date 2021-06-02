@@ -4,7 +4,7 @@
 #include"Compiler.h"
 using namespace std;
 using namespace boost::spirit;
-
+namespace ButiScript{
 // 入力用のイテレータを定義
 typedef position_iterator<string::const_iterator>	iterator_t;
 
@@ -194,6 +194,19 @@ struct make_function_impl {
 		return Function_t(new Function(name));
 	}
 };
+
+// 名前空間の生成
+struct make_namespace_impl {
+	template < typename Ty2>
+	struct result { typedef NameSpace_t type; };
+
+	template <typename Ty2>
+	NameSpace_t operator()(const Ty2& name) const
+	{
+		return NameSpace_t(new NameSpace(name));
+	}
+};
+
 // 関数の返り値設定
 struct setFunctionType_impl {
 	template <typename Ty1, typename Ty2>
@@ -207,7 +220,7 @@ struct setFunctionType_impl {
 	}
 };
 
-// 関数、クラス登録
+// 関数、名前空間、クラス登録
 struct regist_impl {
 	template <typename Ty1, typename Ty2>
 	struct result { typedef void type; };
@@ -216,6 +229,18 @@ struct regist_impl {
 	void operator()(const Ty1& decl, Ty2 driver) const
 	{
 		decl->Regist(driver);
+	}
+};
+
+//名前空間からの離脱
+struct pop_nameSpace_impl {
+	template < typename Ty2>
+	struct result { typedef void type; };
+
+	template < typename Ty2>
+	void operator()(Ty2 driver) const
+	{
+		driver->PopNameSpace();
 	}
 };
 
@@ -231,7 +256,7 @@ struct analyze_impl {
 	}
 };
 
-// phoenixが使用する「無名関数」用の関数
+// phoenixが使用する無名関数用の関数
 phoenix::function<binary_node_impl> const binary_node = binary_node_impl();
 phoenix::function<unary_node_impl> const unary_node = unary_node_impl();
 phoenix::function<push_back_impl> const push_back = push_back_impl();
@@ -244,9 +269,11 @@ phoenix::function<make_decl1_impl> const make_decl1 = make_decl1_impl();
 phoenix::function<arg_ref_impl> const arg_ref = arg_ref_impl();
 phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
+phoenix::function<make_namespace_impl> const make_namespace = make_namespace_impl();
 phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
+phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
 
 real_parser<double, ureal_parser_policies<double> > const
 ureal_parser = real_parser<double, ureal_parser_policies<double> >();
@@ -269,6 +296,11 @@ namespace ButiClosure {
 	struct node_val : closure<node_val, Node_t, int> {
 		member1 node;
 		member2 Op;
+	};
+	// 名前空間のクロージャ
+	struct namespace_val : closure<namespace_val,  NameSpace_t,std::string> {
+		member1 nameSpace;
+		member2 name;
 	};
 	// ノードのクロージャ
 	struct nodelist_val : closure<nodelist_val, NodeList_t, int> {
@@ -323,6 +355,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::type_val::context_t>		type;
 		rule<ScannerT, ButiClosure::func_val::context_t>		function;
 		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
+		rule<ScannerT, ButiClosure::namespace_val ::context_t>	nameSpace;
 		rule<ScannerT>	string_node,number,floatNumber,	func_node,Value,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
 			and_expr,expr,assign,argument,statement,arg,decl_value,decl_func,block,input,ident;
 
@@ -339,7 +372,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			using phoenix::new_;
 			using phoenix::construct_;
 
-			keywords = "if", "for", "while", "switch", "case", "default", "break", "return";
+			keywords = "if", "for", "while", "switch", "case", "default", "break", "return","namespace";
 			// 識別子
 			ident = lexeme_d[
 				((alpha_p | '_') >> *(alnum_p | '_')) - (keywords >> anychar_p - (alnum_p | '_'))
@@ -473,7 +506,6 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *(statement
 					| decl_value)
 				>> '}';
-
 			// 文
 			statement = ch_p(';')
 				| assign >> ';'
@@ -506,11 +538,18 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				| block
 				;
 
+			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
+				>> *(function[regist(arg1, self.driver_)]
+					| decl_func
+					| decl_value
+					| nameSpace[popNameSpace(self.driver_)]) >> "}";
+
 			// 入力された構文
 			input = *(
 				function[regist(arg1, self.driver_)]
 				| decl_func
 				| decl_value
+				| nameSpace[popNameSpace(self.driver_)]
 				| syntax_error_p
 				);
 		}
@@ -556,6 +595,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_func;
 		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
 		rule<ScannerT, ButiClosure::block_val::context_t>	block;
+		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		rule<ScannerT>							input;
 		rule<ScannerT>							ident;
 
@@ -572,7 +612,7 @@ struct script_grammer : public grammar<script_grammer> {
 			using phoenix::new_;
 			using phoenix::construct_;
 
-			keywords = "if", "for", "while", "switch", "case", "default", "break", "return";
+			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace";
 			// 識別子
 			ident = lexeme_d[
 				((alpha_p | '_') >> *(alnum_p | '_')) - (keywords >> anychar_p - (alnum_p | '_'))
@@ -741,11 +781,19 @@ struct script_grammer : public grammar<script_grammer> {
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 
+
+			nameSpace = str_p("namespace") >> identifier >> "{"
+				>> *(function[analyze(arg1, self.driver_)]
+					| decl_func[analyze(arg1, self.driver_)]
+					| decl_value[analyze(arg1, self.driver_)]
+					| nameSpace) >> "}";
+
 			// 入力された構文
 			input = *(
 				function[analyze(arg1, self.driver_)]
 				| decl_func[analyze(arg1, self.driver_)]
 				| decl_value[analyze(arg1, self.driver_)]
+				| nameSpace
 				| syntax_error_p
 				);
 		}
@@ -790,9 +838,9 @@ bool skip_all(IteratorT first, IteratorT last, parser<DerivedT> const& p)
 		first = info.stop;
 	}
 }
-
+}
 // 構文解析
-bool ScriptParser(const string& path, Compiler* driver)
+bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 {
 	ifstream fin(path.c_str());
 

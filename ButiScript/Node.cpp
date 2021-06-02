@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "Node.h"
 #include "compiler.h"
+namespace ButiScript {
+
+
 
 bool CanTypeCast(const int arg_left, const int arg_right) {
 	if (arg_left == TYPE_STRING || arg_right == TYPE_STRING) {
@@ -1027,7 +1030,7 @@ struct set_arg {
 					}
 					int addr = tag->address;
 					if (tag->global_)			// 外部変数
-						addr |= ButiVM::VirtualCPU::global_flag;
+						addr |= ButiScript::VirtualCPU::global_flag;
 					// アドレスをpush
 					if (node->GetLeft()) {			// 配列
 						if (node->GetLeft()->Op() == OP_INT) {
@@ -1451,4 +1454,5 @@ int Declaration::Regist(Compiler* c)
 		c->ValueDefine(type_, node_);
 	}
 	return 0;
+}
 }
