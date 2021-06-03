@@ -765,6 +765,10 @@ int  Node_function::GetType(Compiler* c)const {
 }
 //ノードの関数呼び出し型チェック
 int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const {
+
+
+
+
 	std::vector<int> argTypes;
 	if (args) {
 		auto end = args->end();
@@ -772,12 +776,34 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 			argTypes.push_back((*itr)->GetType(c));
 		}
 	}
-	const FunctionTag* tag = c->GetFunctionTag(name,argTypes,true);
-	if (tag == nullptr) {
-		tag = c->GetFunctionTag(name, argTypes, false);
-		if (tag == nullptr) {
-			return -1;
+	std::string  functionName;
+	NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+	const FunctionTag* tag=nullptr;
+
+	while (!tag)
+	{
+		if (currentSerchNameSpace) {
+			functionName = currentSerchNameSpace->GetGlobalNameString() + name;
 		}
+		else {
+			functionName = name;
+		}
+
+		tag = c->GetFunctionTag(functionName, argTypes, true);
+		if (!tag) {
+			tag = c->GetFunctionTag(functionName, argTypes, false);
+		}
+		if (currentSerchNameSpace) {
+			currentSerchNameSpace = currentSerchNameSpace->GetParent();
+		}
+		else {
+			break;
+		}
+
+	}
+
+	if (tag == nullptr) {
+		return -1;
 	}
 	return tag->type_;
 }
@@ -1058,6 +1084,9 @@ struct set_arg {
 // 関数呼び出し
 int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const
 {
+	std::string  functionName;
+	NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+
 	std::vector<int> argTypes;
 	if (args) {
 		auto end = args->end();
@@ -1067,10 +1096,30 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	}
 
 	int argSize = argTypes.size();
-	const FunctionTag* tag = c->GetFunctionTag(name,argTypes,true);
-	if (!tag) {
-		tag= c->GetFunctionTag(name, argTypes, false);
+	const FunctionTag* tag=nullptr;
+	
+	while (!tag)
+	{
+		if (currentSerchNameSpace) {
+			functionName = currentSerchNameSpace->GetGlobalNameString() + name;
+		}
+		else {
+			functionName = name;
+		}
+		
+		tag = c->GetFunctionTag(functionName, argTypes, true);
+		if (!tag) {
+			tag = c->GetFunctionTag(functionName, argTypes, false);
+		}
+		if (currentSerchNameSpace) {
+			currentSerchNameSpace = currentSerchNameSpace->GetParent();
+		}
+		else {
+			break;
+		}
+
 	}
+
 
 	if (tag == nullptr) {
 		std::string message = "";
@@ -1080,7 +1129,7 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 			}
 			message += "を引数にとる";
 		}
-		message += "関数" + name + "は未宣言です";
+		message += "関数" + functionName + "は未宣言です";
 		c->error(message);
 		return -1;
 	}

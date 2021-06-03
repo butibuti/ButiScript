@@ -175,14 +175,15 @@ struct add_value {
 
 void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, bool isReRegist)
 {
-	FunctionTag* tag = functions.Find_strict(name,args);
+	std::string functionName = currentNameSpace->GetGlobalNameString()+ name;
+	FunctionTag* tag = functions.Find_strict(functionName,args);
 	if (tag) {
 		if (tag->IsDefinition()&&!isReRegist) {
-			error("関数 " + name + " は既に定義されています");
+			error("関数 " + functionName + " は既に定義されています");
 			return;
 		}
 		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
-			error("関数 " + name + " に異なる型の引数が指定されています");
+			error("関数 " + functionName + " に異なる型の引数が指定されています");
 			return;
 		}
 		tag->SetDefinition();	// 定義済みに設定
@@ -192,12 +193,12 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		tag = functions.Add(name, func);
+		tag = functions.Add(functionName, func);
 		if (tag == nullptr)
 			error("内部エラー：関数テーブルに登録できません");
 	}
 
-	current_function_name = name;		// 処理中の関数名を登録
+	current_function_name = functionName;		// 処理中の関数名を登録
 	current_function_type = type;		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
@@ -224,7 +225,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 	}
 	else {
 		if (code.op_ != VM_RETURNV) {	// returnが無いならば
-			error("関数 " + name + " の最後にreturn文が有りません。");
+			error("関数 " + functionName + " の最後にreturn文が有りません。");
 		}
 	}
 
@@ -235,10 +236,11 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 
 void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist)
 {
-	const FunctionTag* tag = functions.Find_strict(name,args);
+	std::string functionName = currentNameSpace->GetGlobalNameString() + name;
+	const FunctionTag* tag = functions.Find_strict(functionName,args);
 	if (tag) {			// 既に宣言済み
 		if (!tag->CheckArgList_strict(args)) {
-			error("関数 " + name + " に異なる型の引数が指定されています");
+			error("関数 " + functionName + " に異なる型の引数が指定されています");
 			return;
 		}
 	}
@@ -247,7 +249,7 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 		func.SetArgs(args);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		if (functions.Add(name, func) == 0) {
+		if (functions.Add(functionName, func) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
@@ -480,7 +482,12 @@ const std::string& ButiScript::NameSpace::GetNameString() const
 std::string ButiScript::NameSpace::GetGlobalNameString() const
 {
 	if (shp_parentNamespace) {
+		
 		return shp_parentNamespace->GetGlobalNameString() + name+ "::";
+	}
+
+	if (name.size()==0) {
+		return "";
 	}
 
 	return name+"::";

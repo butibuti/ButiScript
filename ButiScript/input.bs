@@ -9,7 +9,7 @@ main():int
 	var f:float;
 	f=3.1;
 	for(;i<10;Add(i)){
-		s=ToString(Pow (f))+ EndL();
+		s=ToString(Functions::Functions_inner::Functions_inner2::Pow3 (f))+ EndL();
 		f+=0.5;
 		print(s);
 	}
@@ -19,15 +19,21 @@ main():int
 }
 
 namespace Functions{
-	
-	namespace Functions_inner{
-		namespace Functions_inner2{}
-		namespace Functions_inner3{}
-		namespace Functions_inner4{}
-			Pow(i:float ):int{
-
+	Pow(i:float ):int{
+	var s :string;
+	s="Pow() is Call!"+EndL();
+	print(s);
 			return i*i;
 		}
+	namespace Functions_inner{
+		
+		namespace Functions_inner2{
+			Pow3(i:float ):int{
+				return Pow(i) *i;
+			}
+		}
+			
+			
 	}
 }
 

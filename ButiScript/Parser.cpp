@@ -183,6 +183,18 @@ struct arg_name_impl {
 	}
 };
 
+//関数呼び出し時に名前空間を保持する
+struct functionCall_namespace_impl {
+	template < typename Ty2>
+	struct result { typedef std::string type; };
+
+	template <typename Ty2>
+	std::string operator()(const Ty2& name) const
+	{
+		return name+"::";
+	}
+};
+
 // 関数の生成
 struct make_function_impl {
 	template < typename Ty2>
@@ -274,9 +286,9 @@ phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
+phoenix::function<functionCall_namespace_impl> const functionCall_namespace = functionCall_namespace_impl();
 
-real_parser<double, ureal_parser_policies<double> > const
-ureal_parser = real_parser<double, ureal_parser_policies<double> >();
+real_parser<double, ureal_parser_policies<double> > const ureal_parser = real_parser<double, ureal_parser_policies<double> >();
 
 namespace ButiClosure {
 
@@ -293,14 +305,14 @@ namespace ButiClosure {
 		member1 number;
 	};
 	// ノードのクロージャ
-	struct node_val : closure<node_val, Node_t, int> {
+	struct node_val : closure<node_val, Node_t, int,std::string> {
 		member1 node;
 		member2 Op;
+		member3 name;
 	};
 	// 名前空間のクロージャ
-	struct namespace_val : closure<namespace_val,  NameSpace_t,std::string> {
-		member1 nameSpace;
-		member2 name;
+	struct namespace_val : closure<namespace_val,  std::string> {
+		member1 name;
 	};
 	// ノードのクロージャ
 	struct nodelist_val : closure<nodelist_val, NodeList_t, int> {
@@ -400,7 +412,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *(',' >> expr);
 
 			// 関数呼び出し
-			func_node = identifier>>
+			func_node = *(identifier >> "::") >> identifier>>
 				'(' >> !argument >> ')';
 
 			// 計算のprimeノード
@@ -596,6 +608,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
 		rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
+		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		rule<ScannerT>							input;
 		rule<ScannerT>							ident;
 
@@ -620,6 +633,10 @@ struct script_grammer : public grammar<script_grammer> {
 			// 識別子（クロージャに登録）
 			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
 
+			//名前空間からの呼び出し
+
+			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
+
 			//整数
 			number = uint_p[number.number = arg1];
 
@@ -640,7 +657,8 @@ struct script_grammer : public grammar<script_grammer> {
 				>> *(',' >> expr[argument.node = push_back(argument.node, arg1)]);
 
 			// 関数呼び出し
-			func_node = identifier[func_node.node = unary_node(OP_FUNCTION, arg1)] >>
+			func_node = (*(nameSpace_call[func_node.name += functionCall_namespace(arg1) ]))>>
+				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
 			// 計算のprimeノード
@@ -782,18 +800,18 @@ struct script_grammer : public grammar<script_grammer> {
 				;
 
 
-			nameSpace = str_p("namespace") >> identifier >> "{"
+			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
 				>> *(function[analyze(arg1, self.driver_)]
 					| decl_func[analyze(arg1, self.driver_)]
 					| decl_value[analyze(arg1, self.driver_)]
-					| nameSpace) >> "}";
+					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
 			input = *(
 				function[analyze(arg1, self.driver_)]
 				| decl_func[analyze(arg1, self.driver_)]
 				| decl_value[analyze(arg1, self.driver_)]
-				| nameSpace
+				| nameSpace[popNameSpace(self.driver_)]
 				| syntax_error_p
 				);
 		}

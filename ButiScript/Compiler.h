@@ -560,7 +560,9 @@ public:
 			return functions.Find(name, args);
 		}
 	}
-
+	NameSpace_t GetCurrentNameSpace()const {
+		return currentNameSpace;
+	}
 	// for code generator.
 #define	VM_CREATE
 #include "VM_create.h"
