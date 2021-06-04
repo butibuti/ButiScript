@@ -2,9 +2,6 @@
 #include "Node.h"
 #include "compiler.h"
 namespace ButiScript {
-
-
-
 bool CanTypeCast(const int arg_left, const int arg_right) {
 	if (arg_left == TYPE_STRING || arg_right == TYPE_STRING) {
 		if (arg_left != arg_right) {
@@ -931,9 +928,31 @@ int Node_value::Push(Compiler* c) const
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* tag = c->GetValueTag(string_);
+
+		std::string  functionName;
+		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+		const ValueTag* tag = nullptr;
+
+		while (!tag)
+		{
+			if (currentSerchNameSpace) {
+				functionName = currentSerchNameSpace->GetGlobalNameString() + string_;
+			}
+			else {
+				functionName = string_;
+			}
+
+			tag = c->GetValueTag(functionName);
+			if (currentSerchNameSpace) {
+				currentSerchNameSpace = currentSerchNameSpace->GetParent();
+			}
+			else {
+				break;
+			}
+
+		}
 		if (!tag ) {
-			c->error("変数 " + string_ + " は定義されていません。");
+			c->error("変数 " + functionName + " は定義されていません。");
 		}
 		else {
 			// 参照型変数は、引数にしか存在しない

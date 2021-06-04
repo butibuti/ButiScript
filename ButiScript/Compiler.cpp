@@ -258,6 +258,7 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 // •Ï”‚Ì“o˜^
 void ButiScript::Compiler::AddValue(int type, const std::string& name, Node_t node)
 {
+	std::string valueName = GetCurrentNameSpace()->GetGlobalNameString() + name;
 	int size = 1;
 	if (node) {
 		if (node->Op() != OP_INT) {
@@ -270,8 +271,8 @@ void ButiScript::Compiler::AddValue(int type, const std::string& name, Node_t no
 	}
 
 	ValueTable& values = variables.back();
-	if (!values.Add(type, name, size)) {
-		error("•Ï” " + name + " ‚ÍŠù‚É“o˜^‚³‚ê‚Ä‚¢‚Ü‚·B");
+	if (!values.Add(type, valueName, size)) {
+		error("•Ï” " + valueName + " ‚ÍŠù‚É“o˜^‚³‚ê‚Ä‚¢‚Ü‚·B");
 	}
 }
 

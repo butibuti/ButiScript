@@ -183,8 +183,8 @@ struct arg_name_impl {
 	}
 };
 
-//関数呼び出し時に名前空間を保持する
-struct functionCall_namespace_impl {
+//関数、変数呼び出し時に名前空間を保持する
+struct call_namespace_impl {
 	template < typename Ty2>
 	struct result { typedef std::string type; };
 
@@ -286,7 +286,7 @@ phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
-phoenix::function<functionCall_namespace_impl> const functionCall_namespace = functionCall_namespace_impl();
+phoenix::function<call_namespace_impl> const functionCall_namespace = call_namespace_impl();
 
 real_parser<double, ureal_parser_policies<double> > const ureal_parser = real_parser<double, ureal_parser_policies<double> >();
 
@@ -354,7 +354,7 @@ namespace ButiClosure {
 	};
 }
 
-// 関数登録
+// 関数、グローバル変数、クラス登録
 struct Regist_grammer : public grammar<Regist_grammer> {
 	Regist_grammer(Compiler* driver)
 		:driver_(driver)
@@ -368,8 +368,11 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::func_val::context_t>		function;
 		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
 		rule<ScannerT, ButiClosure::namespace_val ::context_t>	nameSpace;
-		rule<ScannerT>	string_node,number,floatNumber,	func_node,Value,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,arg,decl_value,decl_func,block,input,ident;
+		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
+		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
+		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
+		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
+			and_expr,expr,assign,argument,statement,arg,decl_func,block,input,ident;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -403,9 +406,13 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				confix_p(ch_p('"'), *c_escape_ch_p, '"')
 			];
 
+
+			//名前空間からの呼び出し
+			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
+
 			// 変数
-			Value = identifier
-				>> !('[' >> expr>> ']');
+			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
+				identifier[Value.node = unary_node(OP_IDENTIFIER,  arg1)];
 
 			// 関数の引数
 			argument = expr
@@ -483,7 +490,8 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> expr;
 
 			// 変数宣言
-			decl_value = "var" >> Value % ',' >> ':' >> type >> ';';
+			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
+
 
 			// 型宣言
 			type = keyword_p("int")[type.type = TYPE_INTEGER] >> !ch_p('&')[type.type |= TYPE_REF]
@@ -553,14 +561,14 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
 				>> *(function[regist(arg1, self.driver_)]
 					| decl_func
-					| decl_value
+					| decl_value[analyze(arg1, self.driver_)]
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
 			input = *(
 				function[regist(arg1, self.driver_)]
 				| decl_func
-				| decl_value
+				| decl_value[analyze(arg1, self.driver_)]
 				| nameSpace[popNameSpace(self.driver_)]
 				| syntax_error_p
 				);
@@ -634,7 +642,6 @@ struct script_grammer : public grammar<script_grammer> {
 			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
 
 			//名前空間からの呼び出し
-
 			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
 
 			//整数
@@ -649,7 +656,8 @@ struct script_grammer : public grammar<script_grammer> {
 			];
 
 			// 変数
-			Value = identifier[Value.node = unary_node(OP_IDENTIFIER, arg1)]
+			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
+				identifier[Value.node = unary_node(OP_IDENTIFIER, Value.name+ arg1)]
 				>> !('[' >> expr[Value.node = binary_node(OP_ARRAY, Value.node, arg1)] >> ']');
 
 			// 関数の引数
@@ -803,14 +811,14 @@ struct script_grammer : public grammar<script_grammer> {
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
 				>> *(function[analyze(arg1, self.driver_)]
 					| decl_func[analyze(arg1, self.driver_)]
-					| decl_value[analyze(arg1, self.driver_)]
+					| decl_value
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
 			input = *(
 				function[analyze(arg1, self.driver_)]
 				| decl_func[analyze(arg1, self.driver_)]
-				| decl_value[analyze(arg1, self.driver_)]
+				| decl_value
 				| nameSpace[popNameSpace(self.driver_)]
 				| syntax_error_p
 				);
@@ -882,6 +890,7 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 	skip_parser skip_p;
 	parse_info<iterator_t> info = parse(begin, end, gr_regist, skip_p);
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
+		driver->error("構文解析失敗");
 		return false;
 	}
 	info = parse(begin, end, gr, skip_p);
