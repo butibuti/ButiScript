@@ -6,211 +6,409 @@
 #include <exception>
 #include <string>
 
+#define RegistGet(T) \
+virtual T operator()(const IValue* b, const T * p_dummy) const {\
+return static_cast<const Class*>(b)->get_value_stub< T >();\
+}\
+
+#define RegistSet(T) \
+virtual void operator()(IValue* b,const T v) const {\
+static_cast<Class*>(b)->set_value_stub<T>(v);\
+}\
+
+#define RegistSetRef(T) \
+virtual void operator()(IValue* b,const T & v) const {\
+static_cast<Class*>(b)->set_value_stub<T>(v);\
+}\
+
+#define RegistEq(T) \
+virtual bool operator()(const IValue* b,const T & v) const {\
+return static_cast<const Class*>(b)->eq_stub<T>(v);\
+}\
+
+#define RegistGt(T) \
+virtual bool operator()(const IValue* b,const T & v) const {\
+ return static_cast<const Class*>(b)->gt_stub<T>(v);\
+}\
+
+#define RegistGe(T) \
+virtual bool operator()(const IValue* b,const T & v) const {\
+return static_cast<const Class*>(b)->ge_stub<T>(v);\
+}\
+
 namespace ButiScript {
-	class VirtualString;
-	class VirtualInteger;
-	class VirtualFloat;
-	// 参照カウンタ付き変数の基底クラス
-	class RefValue {
-	public:
-		RefValue() : ref_(0)
-		{
+	
+	namespace StrConvert {
+		template <typename T>
+		static T ConvertString(const std::string& arg_str) {
+
+			const char* _Ptr = arg_str.c_str();
+			char* _Eptr;
+
+			const long _Ans = _CSTD strtol(_Ptr, &_Eptr, 10);
+
+			if (_Ptr == _Eptr) {
+				//無効な変換
+				return 0;
+			}
+
+
+			return static_cast<T>(_Ans);
 		}
-		RefValue(const int arg_ref) : ref_(arg_ref)
-		{
+		template <>
+		static float ConvertString(const std::string& arg_str) {
+
+			const char* _Ptr = arg_str.c_str();
+			char* _Eptr;
+			const float _Ans = _CSTD strtof(_Ptr, &_Eptr);
+
+			if (_Ptr == _Eptr) {
+				//無効な変換
+				return 0.00f;
+			}
+			return _Ans;
+		}
+		template <>
+		static double ConvertString(const std::string& arg_str) {
+			int& _Errno_ref = errno;
+			const char* _Ptr = arg_str.c_str();
+			char* _Eptr;
+			_Errno_ref = 0;
+			const double _Ans = _CSTD strtod(_Ptr, &_Eptr);
+
+			if (_Ptr == _Eptr) {
+				//無効な変換
+				return 0.00;
+			}
+			return _Ans;
 		}
 
+
+	}
+
+	class IValue {
+	public:
+		IValue(const int arg_ref) {
+			ref_ = arg_ref;
+		}
+
+		virtual ~IValue() {
+			delete p_instance;
+		}
+
+
+		template <typename T> T Get()const {
+			static T* p_dummy = nullptr;
+			return get_value()(this, p_dummy);
+		}
+		template <typename T> void Set(const T& arg_v) {
+			return set_value()(this, arg_v);
+		}
+		template <> void Set(const IValue& arg_v) {
+			arg_v.ValueCopy(this);
+		}
+
+		template <typename T> bool Equal(const T& arg_v)const {
+			return eq()(this, arg_v);
+		}
+		template <typename T> bool GreaterThan(const T& arg_v)const {
+			return gt()(this, arg_v);
+		}
+		template <typename T> bool GreaterEq(const T& arg_v)const {
+			return ge()(this, arg_v);
+		}
+
+		//比較
+		virtual bool Eq(IValue* p_other)const = 0;
+		virtual bool Gt(IValue* p_other)const = 0;
+		virtual bool Ge(IValue* p_other)const = 0;
+
+		//値のコピー
+		virtual void ValueCopy(IValue* p_other) const = 0;
+
+		//変数そのもののコピー
+		virtual IValue* Clone()const = 0;
+
+		//単項マイナス
+		virtual void Nagative() = 0;
+
+		//
 		void addref()
 		{
 			ref_++;
 		}
-
+		//
 		void release()
 		{
 			if (--ref_ == 0)
 				delete this;
 		}
 
+	protected:
+		template <typename Class, typename Super = IValue>
+		struct get_value_t : public Super::get_value_base_t {
+			virtual ~get_value_t() {}
+			RegistGet(int);
+			RegistGet(char);
+			RegistGet(short);
+			RegistGet(long long);
+			RegistGet(float);
+			RegistGet(double);
+			RegistGet(std::string);
+		};
+		template <typename Class, typename Super = IValue>
+		struct set_value_t : public Super::set_value_base_t {
+			virtual ~set_value_t() {}
+			RegistSet(int);
+			RegistSet(char);
+			RegistSet(short);
+			RegistSet(long long);
+			RegistSet(float);
+			RegistSet(double);
+			RegistSetRef(std::string);
 
-		virtual int* GetIntPtr() {
-			return nullptr;
+		};
+		template <typename Class, typename Super = IValue>
+		struct eq_t : public Super::eq_base_t {
+			virtual ~eq_t() {}
+			RegistEq(int);
+			RegistEq(char);
+			RegistEq(short);
+			RegistEq(long long);
+			RegistEq(float);
+			RegistEq(double);
+			RegistEq(std::string);
+
+		};
+		template <typename Class, typename Super = IValue>
+		struct gt_t : public Super::gt_base_t {
+			virtual ~gt_t() {}
+			RegistGt(int);
+			RegistGt(char);
+			RegistGt(short);
+			RegistGt(long long);
+			RegistGt(float);
+			RegistGt(double);
+			RegistGt(std::string);
+
+		};
+		template <typename Class, typename Super = IValue>
+		struct ge_t : public Super::ge_base_t {
+			virtual ~ge_t() {}
+			RegistGe(int);
+			RegistGe(char);
+			RegistGe(short);
+			RegistGe(long long);
+			RegistGe(float);
+			RegistGe(double);
+			RegistGe(std::string);
+
+		};
+
+
+		struct empty_class { struct get_value_base_t {}; struct set_value_base_t {}; struct eq_base_t {}; struct gt_base_t {}; struct ge_base_t {}; };
+		typedef get_value_t<const IValue, empty_class> get_value_base_t;
+		typedef set_value_t<IValue, empty_class> set_value_base_t;
+		typedef eq_t<const IValue, empty_class> eq_base_t;
+		typedef gt_t<const IValue, empty_class> gt_base_t;
+		typedef ge_t<const IValue, empty_class> ge_base_t;
+		virtual const get_value_base_t& get_value() const = 0;
+		virtual const set_value_base_t& set_value() const = 0;
+		virtual const eq_base_t& eq() const = 0;
+		virtual const gt_base_t& gt() const = 0;
+		virtual const ge_base_t& ge() const = 0;
+
+
+		template <typename T> T get_value_stub()const {
+			assert(0);
+			return T();
 		}
-		virtual float* GetFloatPtr() {
-			return nullptr;
+		template <typename T> void set_value_stub(const T& arg_v) {
+			assert(0);
 		}
-
-		//変数の計算処理
-
-
-		//変数の比較処理
-		virtual bool Eq(RefValue* arg_other) = 0;
-		virtual bool EqByInt(VirtualInteger* arg_other) { return false; }
-		virtual bool EqByFloat(VirtualFloat* arg_other) { return false; }
-		virtual bool EqByString(VirtualString* arg_other) { return false; }
-		virtual bool Gt(RefValue* arg_other) = 0;
-		virtual bool GtByInt(VirtualInteger* arg_other) { return false; }
-		virtual bool GtByFloat(VirtualFloat* arg_other) { return false; }
-		virtual bool GtByString(VirtualString* arg_other) { return false; }
-		virtual bool Ge(RefValue* arg_other) = 0;
-		virtual bool GeByInt(VirtualInteger* arg_other) { return false; }
-		virtual bool GeByFloat(VirtualFloat* arg_other) { return false; }
-		virtual bool GeByString(VirtualString* arg_other) { return false; }
-
-
-		//変数の代入処理
-		virtual void Set(RefValue* arg_v) = 0;
-		virtual void SetByInt(VirtualInteger*) {}
-		virtual void SetByFloat(VirtualFloat*) {}
-		virtual void SetByString(VirtualString*) {}
-
-		//単項マイナス
-		virtual void ToNegative()=0;
-
-		/// 特定の型に変換
-		virtual std::string ToText()=0;
-		virtual int ToInt()const { return 0; }
-		virtual float ToFloat()const { 
-			return 0.0f;
+		template <typename T> bool eq_stub(const T& arg_v)const {
+			return false;
 		}
-
-		//クローン
-		virtual RefValue* Clone() = 0;
-	public:
-		int ref_;
+		template <typename T> bool gt_stub(const T& arg_v)const {
+			return false;
+		}
+		template <typename T> bool ge_stub(const T& arg_v)const {
+			return false;
+		}
+		void* p_instance;
+	private:
+		int ref_ = 0;
 	};
 
-	// string
-	class VirtualString :public RefValue {
+	template <typename T>
+	class Value_wrap : public IValue {
 	public:
-		VirtualString() : RefValue(0)
-		{
+		Value_wrap(const T v, const int ref) :IValue(ref) {
+			p_instance = new T(v);
 		}
-		VirtualString(const std::string& str) : RefValue(1), str_(str)
-		{
+		Value_wrap(const int ref) :IValue(ref) {
+			p_instance = new T();
 		}
-		std::string ToText() override {
-			return str_;
-		}
-
-		bool Eq(RefValue* arg_other) { return arg_other->EqByString(this); }
-		bool Gt(RefValue* arg_other) { return arg_other->GtByString(this); }
-		bool Ge(RefValue* arg_other) { return arg_other->GeByString(this);}
-
-		bool EqByString(VirtualString* arg_other) override;
-		bool GtByString(VirtualString* arg_other) override;
-		bool GeByString(VirtualString* arg_other) override;
-
-		void Set(RefValue* arg_v)override {arg_v->SetByString(this);}
-		void SetByInt(VirtualInteger* arg_v)override;
-		void SetByFloat(VirtualFloat* arg_v)override;
-		void SetByString(VirtualString* arg_v)override;
-
-		void ToNegative()override{}
-
-		RefValue* Clone() override{
-			return new VirtualString(str_);
+		IValue* Clone()const override {
+			return new Value_wrap<T>(*(T*)p_instance, 1);
 		}
 
-	public:
-		std::string str_;
+		void Nagative() override {
+			*(T*)p_instance = -1 * (*(T*)p_instance);
+		}
+
+		bool Eq(IValue* p_other)const override {
+			return p_other->Equal(*(T*)p_instance);
+		}
+		bool Gt(IValue* p_other)const override {
+			return !p_other->GreaterEq(*(T*)p_instance);
+		}
+		bool Ge(IValue* p_other)const override {
+			return !p_other->GreaterThan(*(T*)p_instance);
+		}
+		void ValueCopy(IValue* p_other) const override {
+			p_other->Set<T>(*(T*)p_instance);
+		}
+
+		virtual const IValue::get_value_base_t& get_value() const {
+			static const IValue::get_value_t<Value_wrap<T>> s;
+			return s;
+		}
+		virtual const IValue::set_value_base_t& set_value() const {
+			static const IValue::set_value_t<Value_wrap<T>> s;
+			return s;
+		}
+		virtual const IValue::eq_base_t& eq() const {
+			static const IValue::eq_t<Value_wrap<T>> s;
+			return s;
+		}
+		virtual const IValue::gt_base_t& gt() const {
+			static const IValue::gt_t<Value_wrap<T>> s;
+			return s;
+		}
+		virtual const IValue::ge_base_t& ge() const {
+			static const IValue::ge_t<Value_wrap<T>> s;
+			return s;
+		}
+
+		template <typename U> U get_value_stub()const {
+			return (U) * (T*)p_instance;
+		}
+		template <> std::string get_value_stub()const {
+			return std::to_string(*(T*)p_instance);
+		}
+
+		template <typename U> void set_value_stub(const U& arg_v) {
+			*(T*)p_instance = (T)arg_v;
+		}
+		template <>void set_value_stub(const std::string& arg_v) {
+			*(T*)p_instance = StrConvert::ConvertString<T>(arg_v);
+		}
+
+		template <typename U> bool eq_stub(const U& arg_v)const {
+			return  *(T*)p_instance == arg_v;
+		}
+		template <typename U> bool gt_stub(const U& arg_v)const {
+			return *(T*)p_instance > arg_v;
+		}
+		template <typename U> bool ge_stub(const U& arg_v)const {
+			return *(T*)p_instance >= arg_v;
+		}
+
+
+		template <>bool eq_stub(const std::string& arg_v)const {
+			return false;
+		}
+		template <>bool gt_stub(const std::string& arg_v)const {
+			return false;
+		}
+		template <>bool ge_stub(const std::string& arg_v)const {
+			return false;
+		}
+
+	private:
 	};
-	// int
-	class VirtualInteger :public RefValue {
+
+	template<>
+	class Value_wrap<std::string> : public IValue {
 	public:
-		VirtualInteger() : RefValue(0)
-		{
+		Value_wrap(const std::string& v, const int ref) :IValue(ref) {
+			p_instance = new std::string(v);
 		}
-		VirtualInteger(const int arg_v) : RefValue(1), v(arg_v)
-		{
-		}
-		std::string ToText() override {
-			return std::to_string(v);
+		Value_wrap(const int ref) :IValue(ref) {
+			p_instance = new std::string();
 		}
 
-		int ToInt()const {return v;}
-		float ToFloat()const { 
-			return (float)v; 
+		bool Eq(IValue* p_other)const override {
+			return p_other->Equal(*(std::string*)p_instance);
+		}
+		bool Gt(IValue* p_other)const override {
+			return !p_other->GreaterThan(*(std::string*)p_instance);
+		}
+		bool Ge(IValue* p_other)const override {
+			return !p_other->GreaterEq(*(std::string*)p_instance);
 		}
 
-		int* GetIntPtr() override {
-			return &v;
+		void ValueCopy(IValue* p_other) const override {
+			p_other->Set<std::string>(*(std::string*)p_instance);
 		}
 
-		bool Eq(RefValue* arg_other) { return arg_other->EqByInt(this); }
-		bool Gt(RefValue* arg_other) { return arg_other->GtByInt(this); }
-		bool Ge(RefValue* arg_other) { return arg_other->GeByInt(this); }
-
-		bool EqByInt(VirtualInteger* arg_other) override;
-		bool GtByInt(VirtualInteger* arg_other) override;
-		bool GeByInt(VirtualInteger* arg_other) override;
-
-		bool EqByFloat(VirtualFloat* arg_other) override;
-		bool GtByFloat(VirtualFloat* arg_other) override;
-		bool GeByFloat(VirtualFloat* arg_other) override;
-
-
-		void Set(RefValue* arg_v)override { arg_v->SetByInt(this); }
-		void SetByInt(VirtualInteger* arg_v)override;
-		void SetByFloat(VirtualFloat* arg_v)override;
-
-
-		void ToNegative()override {v = -v;}
-		RefValue* Clone() override {
-			return new VirtualInteger(v);
-		}
-	public:
-		int v;
-	};
-
-	// float
-	class VirtualFloat :public RefValue {
-	public:
-		VirtualFloat() : RefValue(0)
-		{
-		}
-		VirtualFloat(const float arg_v) : RefValue(1), v(arg_v)
-		{
-		}
-		std::string ToText() override {
-			return std::to_string(v);
+		IValue* Clone()const {
+			return new Value_wrap<std::string>(*(std::string*)p_instance, 1);
 		}
 
-		int ToInt()const { return (int)v; }
-		float ToFloat()const { 
-			return v; 
-		}
-		float* GetFloatPtr() override {
-			return &v;
-		}
+		void Nagative()override {
+			//文字列に単項マイナスはない
+			assert(0);
 
-		bool Eq(RefValue* arg_other) { return  arg_other->EqByFloat(this); }
-		bool Gt(RefValue* arg_other) { return  arg_other->GtByFloat(this); }
-		bool Ge(RefValue* arg_other) { return  arg_other->GeByFloat(this); }
-
-		bool EqByInt(VirtualInteger* arg_other) override;
-		bool GtByInt(VirtualInteger* arg_other) override;
-		bool GeByInt(VirtualInteger* arg_other) override;
-
-		bool EqByFloat(VirtualFloat* arg_other) override;
-		bool GtByFloat(VirtualFloat* arg_other) override;
-		bool GeByFloat(VirtualFloat* arg_other) override;
-
-		void SetByInt(VirtualInteger* arg_v)override;
-		void SetByFloat(VirtualFloat* arg_v)override;
-		void Set(RefValue* arg_v)override {
-			arg_v->SetByFloat(this);
 		}
 
 
-		void ToNegative()override {
-			v = -v;
+		virtual const IValue::get_value_base_t& get_value() const {
+			static const IValue::get_value_t<Value_wrap<std::string>> s;
+			return s;
+		}
+		virtual const IValue::set_value_base_t& set_value() const {
+			static const IValue::set_value_t<Value_wrap<std::string>> s;
+			return s;
 		}
 
-		RefValue* Clone() override {
-			return new VirtualFloat(v);
+		virtual const IValue::eq_base_t& eq() const {
+			static const IValue::eq_t<Value_wrap<std::string>> s;
+			return s;
 		}
-	public:
-		float v;
+		virtual const IValue::gt_base_t& gt() const {
+			static const IValue::gt_t<Value_wrap<std::string>> s;
+			return s;
+		}
+		virtual const IValue::ge_base_t& ge() const {
+			static const IValue::ge_t<Value_wrap<std::string>> s;
+			return s;
+		}
+
+		template <typename U> U get_value_stub()const {
+			return (U)StrConvert::ConvertString<U>(*(std::string*)p_instance);
+		}
+		template <> std::string get_value_stub()const {
+			return (*(std::string*)p_instance);
+		}
+
+		template <typename U> void set_value_stub(const U& arg_v) {
+			*(std::string*)p_instance = std::to_string(arg_v);
+		}
+		template <>void set_value_stub(const std::string& arg_v) {
+			*(std::string*)p_instance = (arg_v);
+		}
+
+
+		template <typename U> bool eq_stub(const U& arg_v)const {
+			return  false;
+		}
+
+		template <>bool eq_stub(const std::string& arg_v)const {
+			return *(std::string*)p_instance == arg_v;
+		}
+
 	};
 
 	// 変数
@@ -232,29 +430,29 @@ namespace ButiScript {
 		//intとして初期化
 		Value(const int ival)
 		{
-			v_ = new VirtualInteger(ival);
+			v_ = new Value_wrap<int>(ival,1);
 			type_ = type_integer;
 		}
 
 		//floatとして初期化
 		Value(const float ival)
 		{
-			v_ = new VirtualFloat(ival);
+			v_ = new Value_wrap<float>(ival,1);
 			type_ = type_float;
 		}
 
 		//stringとして初期化
 		Value(const std::string& str)
 		{
-			v_ = new VirtualString(str);
+			v_ = new Value_wrap<std::string>(str,1);
 			type_ = type_string;
 		}
 
-		//stringとして初期化
-		Value(VirtualString* p)
+		//変数を指定して初期化
+		Value(IValue* p,const char type)
 		{
 			v_ = p;
-			type_ = type_string;
+			type_ = type;
 		}
 
 		~Value()
@@ -312,13 +510,13 @@ namespace ButiScript {
 					v_ = a.v_->Clone();
 				}
 				else {
-					a.v_->Set(v_);
+					v_->Set(*a.v_);
 				}
 			}
 		}
 
 		union {
-			RefValue* v_;
+			IValue* v_;
 		};
 		char type_;
 	};

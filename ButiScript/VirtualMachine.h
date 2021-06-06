@@ -129,7 +129,7 @@ namespace ButiScript {
 		// 配列からPush
 		void PushArray(const int arg_val)
 		{
-			int index = *top().v_->GetIntPtr(); pop();
+			int index = top().v_->Get<int>(); pop();
 			push(global_value[(int)(arg_val + index)]);
 		}
 
@@ -141,7 +141,7 @@ namespace ButiScript {
 		// ローカルの配列からPush
 		void PushLocalArray(const int arg_val)
 		{
-			int index = *top().v_->GetIntPtr(); pop();
+			int index = top().v_->Get<int>(); pop();
 			push(Stack[arg_val + stack_base + index]);
 		}
 
@@ -153,7 +153,7 @@ namespace ButiScript {
 		// ローカル変数(参照)Push
 		void PushLocalRef(const int arg_val)
 		{
-			int addr = *Stack[arg_val + stack_base].v_->GetIntPtr();
+			int addr = Stack[arg_val + stack_base].v_->Get<int>();
 			push(ref_to_value(addr));
 		}
 		void PushLocalRef()
@@ -164,8 +164,8 @@ namespace ButiScript {
 		// ローカルの配列(参照)からPush
 		void PushLocalArrayRef(const int arg_val)
 		{
-			int addr =* Stack[arg_val + stack_base].v_->GetIntPtr();
-			int index = *top().v_->GetIntPtr(); pop();
+			int addr = Stack[arg_val + stack_base].v_->Get<int>();
+			int index = top().v_->Get<int>(); pop();
 			push(ref_to_value(addr + index));
 		}
 		void PushLocalArrayRef(){
@@ -191,7 +191,7 @@ namespace ButiScript {
 			int base = arg_val;
 			if ((arg_val & global_flag) == 0)	// local
 				base += +stack_base;
-			int index = *top().v_->GetIntPtr(); pop();
+			int index = top().v_->Get<int>(); pop();
 			push(base + index);
 		}
 		void PushArrayAddr() {
@@ -217,7 +217,7 @@ namespace ButiScript {
 		// 配列変数にPop
 		void PopArray(const int arg_val)
 		{
-			int index = *top().v_->GetIntPtr(); pop();
+			int index = top().v_->Get<int>(); pop();
 			global_value[(int)(arg_val + index)] = top(); pop();
 		}
 		void PopArray() {
@@ -227,7 +227,7 @@ namespace ButiScript {
 		// ローカルの配列変数にPop
 		void PopLocalArray(const int arg_val)
 		{
-			int index = *top().v_->GetIntPtr(); pop();
+			int index = top().v_->Get<int>(); pop();
 			Stack[arg_val + stack_base + index] = top(); pop();
 		}
 
@@ -238,7 +238,7 @@ namespace ButiScript {
 		// ローカル変数(参照)にPop
 		void PopLocalRef(const int arg_val)
 		{
-			int addr =* Stack[arg_val + stack_base].v_->GetIntPtr();
+			int addr = Stack[arg_val + stack_base].v_->Get<int>();
 			set_ref(addr, top()); pop();
 		}
 		void PopLocalRef() {
@@ -247,8 +247,8 @@ namespace ButiScript {
 		// ローカルの配列変数(参照)にPop
 		void PopLocalArrayRef(const int arg_val)
 		{
-			int addr = *Stack[arg_val + stack_base].v_->GetIntPtr();
-			int index = *top().v_->GetIntPtr(); pop();
+			int addr = Stack[arg_val + stack_base].v_->Get<int>();
+			int index = top().v_->Get<int>(); pop();
 			set_ref(addr + index, top()); pop();
 		}
 		void PopLocalArrayRef()
@@ -275,7 +275,7 @@ namespace ButiScript {
 		// 単項マイナス
 		void OpNeg()
 		{
-			top().v_->ToNegative();
+			top().v_->Nagative();
 		}
 
 		// ==
@@ -329,92 +329,92 @@ namespace ButiScript {
 		// &&
 		void OpLogAnd()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs && rhs);
 		}
 
 		// ||
 		void OpLogOr()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs || rhs);
 		}
 
 		// &
 		void OpAnd()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs & rhs);
 		}
 
 		// |
 		void OpOr()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs | rhs);
 		}
 
 		// <<
 		void OpLeftShift()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs << rhs);
 		}
 
 		// >>
 		void OpRightShift()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs >> rhs);
 		}
 
 		// +
 		void OpAdd()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs + rhs);
 		}
 
 		// -
 		void OpSub()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs - rhs);
 		}
 
 		// *
 		void OpMul()
 		{
-			auto rhs = top().v_->ToInt(); pop();
-			auto lhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs * rhs);
 		}
 
 		// /
 		void OpDiv()
 		{
-			auto rhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
 			if (rhs == 0)
 				throw DevideByZero();
-			auto lhs = top().v_->ToInt(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs / rhs);
 		}
 
 		// %
 		void OpMod()
 		{
-			auto rhs = top().v_->ToInt(); pop();
+			auto rhs = top().v_->Get<int>(); pop();
 			if (rhs == 0)
 				throw DevideByZero();
-			auto lhs = top().v_->ToInt(); pop();
+			auto lhs = top().v_->Get<int>(); pop();
 			push(lhs % rhs);
 		}
 
@@ -422,44 +422,44 @@ namespace ButiScript {
 		// +
 		void OpFloatAdd()
 		{
-			auto rhs = top().v_->ToFloat(); pop();
-			auto lhs = top().v_->ToFloat(); pop();
+			auto rhs = top().v_->Get<float>(); pop();
+			auto lhs = top().v_->Get<float>(); pop();
 			push(lhs + rhs);
 		}
 
 		// -
 		void OpFloatSub()
 		{
-			auto rhs = top().v_->ToFloat(); pop();
-			auto lhs = top().v_->ToFloat(); pop();
+			auto rhs = top().v_->Get<float>(); pop();
+			auto lhs = top().v_->Get<float>(); pop();
 			push(lhs - rhs);
 		}
 
 		// *
 		void OpFloatMul()
 		{
-			auto rhs = top().v_->ToFloat(); pop();
-			auto lhs = top().v_->ToFloat(); pop();
+			auto rhs = top().v_->Get<float>(); pop();
+			auto lhs = top().v_->Get<float>(); pop();
 			push(lhs * rhs);
 		}
 
 		// /
 		void OpFloatDiv()
 		{
-			auto rhs = top().v_->ToFloat(); pop();
+			auto rhs = top().v_->Get<float>(); pop();
 			if (rhs == 0)
 				throw DevideByZero();
-			auto lhs = top().v_->ToFloat(); pop();
+			auto lhs = top().v_->Get<float>(); pop();
 			push(lhs / rhs);
 		}
 
 		// %
 		void OpFloatMod()
 		{
-			auto rhs = top().v_->ToFloat(); pop();
+			auto rhs = top().v_->Get<float>(); pop();
 			if (rhs == 0)
 				throw DevideByZero();
-			auto lhs = top().v_->ToFloat(); pop();
+			auto lhs = top().v_->Get<float>(); pop();
 			push((int)lhs %(int) rhs);
 		}
 
@@ -538,7 +538,7 @@ namespace ButiScript {
 		// 真の時ジャンプ
 		void OpJmpC(const int arg_val)
 		{
-			int cond = *top().v_->GetIntPtr(); pop();
+			int cond = top().v_->Get<int>(); pop();
 			if (cond)
 				jmp(arg_val);
 		}
@@ -550,7 +550,7 @@ namespace ButiScript {
 		// 偽の時ジャンプ
 		void OpJmpNC(const int arg_val)
 		{
-			int cond = *top().v_->GetIntPtr(); pop();
+			int cond = top().v_->Get<int>(); pop();
 			if (!cond)
 				jmp(arg_val);
 		}
@@ -562,8 +562,8 @@ namespace ButiScript {
 		// switch文用特殊判定
 		void OpTest(const int arg_val)
 		{
-			int Value = *top().v_->GetIntPtr(); pop();
-			if (Value == *top().v_->GetIntPtr()) {
+			int Value = top().v_->Get<int>(); pop();
+			if (Value == top().v_->Get<int>()) {
 				pop();
 				jmp(arg_val);
 			}
@@ -590,9 +590,9 @@ namespace ButiScript {
 		void OpReturn()
 		{
 			Stack.resize(stack_base);		// ローカル変数排除
-			int addr = *top().v_->GetIntPtr(); pop();
-			stack_base = *top().v_->GetIntPtr(); pop();
-			int arg_count = *top().v_->GetIntPtr(); pop();
+			int addr = top().v_->Get<int>(); pop();
+			stack_base = top().v_->Get<int>(); pop();
+			int arg_count = top().v_->Get<int>(); pop();
 			Stack.pop(arg_count);
 			jmp(addr);
 		}
@@ -602,9 +602,9 @@ namespace ButiScript {
 		{
 			ButiScript::Value result = top(); pop();
 			Stack.resize(stack_base);		// ローカル変数排除
-			int addr = *top().v_->GetIntPtr(); pop();
-			stack_base = *top().v_->GetIntPtr(); pop();
-			int arg_count = *top().v_->GetIntPtr(); pop();
+			int addr = top().v_->Get<int>(); pop();
+			stack_base = top().v_->Get<int>(); pop();
+			int arg_count = top().v_->Get<int>(); pop();
 			Stack.pop(arg_count);
 			push(result);
 			jmp(addr);
@@ -643,13 +643,13 @@ namespace ButiScript {
 		// 組み込み関数(数値を文字列に変換)
 		void sys_tostr()
 		{
-			auto v = top().v_->ToText(); pop();
+			auto v = top().v_->Get<std::string>(); pop();
 			push(v);			// 戻り値はスタックに入れる
 		}
 		// 組み込み関数(数値を文字列に変換)
 		void sys_tostrf()
 		{
-			auto v = top().v_->ToText(); pop();
+			auto v = top().v_->Get<std::string>(); pop();
 			push(v);			// 戻り値はスタックに入れる
 		}
 
@@ -679,7 +679,7 @@ namespace ButiScript {
 		ButiScript::Value& top() { 
 			return Stack.top(); 
 		}
-		std::string text(const ButiScript::Value& v) { return v.v_->ToText(); }
+		std::string text(const ButiScript::Value& v) { return v.v_->Get<std::string>(); }
 		const ButiScript::Value& ref_to_value(int addr) const
 		{
 			if (addr & global_flag)

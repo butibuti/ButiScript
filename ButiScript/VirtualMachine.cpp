@@ -23,7 +23,7 @@ int ButiScript::VirtualCPU::Run()
 		std::cerr << "—áŠO”­¶i" << e.what() << "j" << std::endl;
 		return -1;
 	}
-	return top().v_->ToInt();
+	return top().v_->Get<int>();
 }
 
 void ButiScript::VirtualCPU::Initialize()
