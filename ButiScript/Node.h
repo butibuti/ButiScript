@@ -15,16 +15,8 @@ namespace ButiScript {
 	// ノード
 
 	// 変数、関数の型
-	enum VALUE_TYPE {
-		TYPE_INTEGER,
-		TYPE_FLOAT,
-		TYPE_STRING,
-		TYPE_VOID,
-		TYPE_REF = 0x80,
-		TYPE_INTEGER_REF = TYPE_INTEGER | TYPE_REF,
-		TYPE_FLOAT_REF = TYPE_FLOAT | TYPE_REF,
-		TYPE_STRING_REF = TYPE_STRING | TYPE_REF,
-	};
+
+#include"value_type.h"
 
 	// ノードの命令
 	enum OPCODE {
@@ -456,6 +448,10 @@ namespace ButiScript {
 
 		int Analyze(Compiler* c);
 		int Regist(Compiler* c);
+		void Define(Compiler* c);
+		bool IsFunction()const {
+			return is_func_;
+		}
 	private:
 		int type_;					// 型
 		bool is_func_;				// 関数か変数か

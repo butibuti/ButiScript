@@ -187,6 +187,8 @@ public:
 		addr_ = 0;
 	}
 
+	void Alloc(Compiler* arg_comp)const;
+
 #ifdef	_DEBUG
 	struct DumpAction {
 		void operator()(const std::pair<std::string, ValueTag>& it)
@@ -598,6 +600,8 @@ public:
 
 	void ClearStatement();
 	std::string GetTypeName(const int type) const;
+
+
 private:
 	FunctionTable functions;
 	std::vector<ValueTable> variables;
@@ -612,6 +616,7 @@ private:
 
 	std::string current_function_name;
 	int current_function_type;
+
 };
 }
 #endif

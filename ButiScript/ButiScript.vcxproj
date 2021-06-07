@@ -167,6 +167,7 @@
     <ClInclude Include="Node.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="value_type.h" />
     <ClInclude Include="VirtualMachine.h" />
     <ClInclude Include="VM_code.h" />
     <ClInclude Include="VM_create.h" />

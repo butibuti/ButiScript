@@ -8,12 +8,10 @@ main():int
 	print(s);
 
 	var i :int;
-	i=0;
 	var f:float;
-	f=3.1;
-	Functions::Functions_inner::Functions_inner2::m=5.0;
+
 	for(;i<10;Add(i)){
-		s=ToString(Functions::Functions_inner::Functions_inner2::Multi (f))+ EndL();
+		s=ToString(Functions::Functions_inner::Functions_inner2::Pow3(f))+ EndL();
 		f+=0.5;
 		print(s);
 	}
@@ -29,14 +27,14 @@ namespace Functions{
 		
 		namespace Functions_inner2{
 			var m:float;
-			
+			var m1:float;
+			var m2:float;
 			Pow3(i:float ):float{
+				var x:int;
+				x=0;
 				return Pow(i) *i;
 			}
 
-			Multi(i:float):float{
-				return i*m;
-			}
 
 		}
 			

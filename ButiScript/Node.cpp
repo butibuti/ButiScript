@@ -929,20 +929,20 @@ int Node_value::Push(Compiler* c) const
 	}
 	else {
 
-		std::string  functionName;
+		std::string  valueName;
 		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
 		const ValueTag* tag = nullptr;
 
 		while (!tag)
 		{
 			if (currentSerchNameSpace) {
-				functionName = currentSerchNameSpace->GetGlobalNameString() + string_;
+				valueName = currentSerchNameSpace->GetGlobalNameString() + string_;
 			}
 			else {
-				functionName = string_;
+				valueName = string_;
 			}
 
-			tag = c->GetValueTag(functionName);
+			tag = c->GetValueTag(valueName);
 			if (currentSerchNameSpace) {
 				currentSerchNameSpace = currentSerchNameSpace->GetParent();
 			}
@@ -952,7 +952,7 @@ int Node_value::Push(Compiler* c) const
 
 		}
 		if (!tag ) {
-			c->error("変数 " + functionName + " は定義されていません。");
+			c->error("変数 " + valueName + " は定義されていません。");
 		}
 		else {
 			// 参照型変数は、引数にしか存在しない
@@ -981,7 +981,7 @@ int Node_value::Push(Compiler* c) const
 					c->PushLocalArray(tag->address);
 				}
 				else {
-					c->PushLocal(tag->address );
+					c->PushLocal(tag->address);
 				}
 			}
 			return tag->type_;
@@ -997,9 +997,30 @@ int Node_value::Pop(Compiler* c) const
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* tag = c->GetValueTag(string_);
-		if (tag == 0) {
-			c->error("変数 " + string_ + " は定義されていません。");
+		std::string  valueName;
+		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+		const ValueTag* tag = nullptr;
+
+		while (!tag)
+		{
+			if (currentSerchNameSpace) {
+				valueName = currentSerchNameSpace->GetGlobalNameString() + string_;
+			}
+			else {
+				valueName = string_;
+			}
+
+			tag = c->GetValueTag(valueName);
+			if (currentSerchNameSpace) {
+				currentSerchNameSpace = currentSerchNameSpace->GetParent();
+			}
+			else {
+				break;
+			}
+
+		}
+		if (tag == nullptr) {
+			c->error("変数 " + valueName + " は定義されていません。");
 		}
 		else {
 			// 参照型変数は、引数にしか存在しない
@@ -1054,8 +1075,29 @@ struct set_arg {
 				comp_->error("参照型引数に、変数以外は指定できません。");
 			}
 			else {
-				const ValueTag* tag = comp_->GetValueTag(node->GetString());
-				if (tag == 0) {
+				std::string  valueName;
+				NameSpace_t currentSerchNameSpace = comp_->GetCurrentNameSpace();
+				const ValueTag* tag = nullptr;
+
+				while (!tag)
+				{
+					if (currentSerchNameSpace) {
+						valueName = currentSerchNameSpace->GetGlobalNameString() + node->GetString();
+					}
+					else {
+						valueName = node->GetString();
+					}
+
+					tag = comp_->GetValueTag(valueName);
+					if (currentSerchNameSpace) {
+						currentSerchNameSpace = currentSerchNameSpace->GetParent();
+					}
+					else {
+						break;
+					}
+
+				}
+				if (tag == nullptr) {
 					comp_->error("変数 " + node->GetString() + " は定義されていません。");
 				}
 				else if (tag->type_ >= TYPE_INTEGER_REF) {		// 参照
@@ -1465,9 +1507,7 @@ int Block::Analyze(Compiler* c)
 		auto endItr = decl_.end();
 
 		for (auto itr = decl_.begin(); itr != endItr; itr++) {
-			if ((ret=(*itr)->Analyze(c))!=0) {
-				return ret;
-			}
+			(*itr)->Define(c);
 		}
 	}
 	if (!decl_.empty())
@@ -1495,6 +1535,7 @@ int Declaration::Analyze(Compiler* c)
 	}
 	else {
 		c->ValueDefine(type_, node_);
+		c->OpAllocStack(type_);
 	}
 	return 0;
 }
@@ -1522,5 +1563,14 @@ int Declaration::Regist(Compiler* c)
 		c->ValueDefine(type_, node_);
 	}
 	return 0;
+}
+void Declaration::Define(Compiler* c)
+{
+	if (is_func_) {		// 関数
+		c->FunctionDefine(type_, name_, arg_);
+	}
+	else {
+		c->ValueDefine(type_, node_);
+	}
 }
 }

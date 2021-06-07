@@ -30,8 +30,6 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
 	variables[0].set_global();
-
-	//先頭はHALT命令
 	OpHalt();
 
 	bool result = ScriptParser(file, this);	// 構文解析
@@ -79,6 +77,7 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 
 	return output;
 }
+
 
 // 内部関数の定義
 bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args)
@@ -330,7 +329,7 @@ void ButiScript::Compiler::BlockOut()
 
 void ButiScript::Compiler::AllocStack()
 {
-	OpAllocStack(variables.back().size());
+	variables.back().Alloc(this);
 }
 
 // ラベル解決
@@ -483,7 +482,6 @@ const std::string& ButiScript::NameSpace::GetNameString() const
 std::string ButiScript::NameSpace::GetGlobalNameString() const
 {
 	if (shp_parentNamespace) {
-		
 		return shp_parentNamespace->GetGlobalNameString() + name+ "::";
 	}
 
@@ -507,4 +505,13 @@ void ButiScript::NameSpace::SetParent(std::shared_ptr<NameSpace> arg_parent)
 std::shared_ptr<ButiScript::NameSpace> ButiScript::NameSpace::GetParent() const
 {
 	return shp_parentNamespace;
+}
+
+void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
+{
+	auto end = variables_.rend();
+	for (auto itr = variables_.rbegin(); itr != end; itr++)
+	{
+		arg_comp->OpAllocStack(itr->second.type_);
+	}
 }

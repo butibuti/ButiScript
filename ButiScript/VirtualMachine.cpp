@@ -12,6 +12,20 @@ int ButiScript::VirtualCPU::Run()
 	push(0);										// プログラム終了位置をpush
 	stack_base = Stack.size();						// スタック参照位置初期化
 
+	//グローバル変数の確保
+	{
+
+		auto buff = command_ptr_;
+		command_ptr_ = allocCommand_ptr_;
+		int Op;
+		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
+
+			(this->*p_op[Op])();
+		}
+		command_ptr_ = buff;
+	}
+
+	//mainから開始
 	try {
 		int Op;
 		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
@@ -35,7 +49,7 @@ void ButiScript::VirtualCPU::Initialize()
 
 	global_value.resize(data_.valueSize);			// 外部変数テーブル確保
 	command_ptr_ = commandTable + data_.entryPoint;	// プログラムカウンター初期化
-
+	allocCommand_ptr_ = commandTable +1;
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
 

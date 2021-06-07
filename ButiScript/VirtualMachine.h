@@ -7,7 +7,7 @@
 #include "vm_value.h"
 namespace ButiScript {
 
-
+#include"value_type.h"
 
 #define	VM_ENUMDEF
 	enum {
@@ -36,6 +36,7 @@ namespace ButiScript {
 		int textSize;				// テキストサイズ
 		int valueSize;			// グローバル変数サイズ
 		int entryPoint;			// エントリーポイント
+
 		std::vector<OperationFunction> vec_sysCalls;
 	};
 
@@ -259,7 +260,21 @@ namespace ButiScript {
 		// ローカル変数を確保
 		void OpAllocStack(const int arg_val)
 		{
-			Stack.resize(stack_base + arg_val);
+			switch (arg_val)
+			{
+			case TYPE_INTEGER:
+				Stack.push_local (Value( 0));
+				break;
+			case TYPE_FLOAT:
+				Stack.push_local(Value(0.0f));
+				break;
+			case TYPE_STRING:
+				Stack.push_local(Value(""));
+				break;
+			default:
+				Stack.push_local(Value());
+				break;
+			}
 		}
 		void OpAllocStack()
 		{
@@ -680,13 +695,13 @@ namespace ButiScript {
 			return Stack.top(); 
 		}
 		std::string text(const ButiScript::Value& v) { return v.v_->Get<std::string>(); }
-		const ButiScript::Value& ref_to_value(int addr) const
+		const ButiScript::Value& ref_to_value(const int addr) const
 		{
 			if (addr & global_flag)
 				return global_value[addr & global_mask];
 			return Stack[addr];
 		}
-		void set_ref(int addr, const ButiScript::Value& v)
+		void set_ref(const int addr, const ButiScript::Value& v)
 		{
 			if (addr & global_flag)
 				PopLocal(addr-1);
@@ -701,6 +716,8 @@ namespace ButiScript {
 		unsigned char* commandTable;
 		//現在参照してるコマンドの位置
 		unsigned char* command_ptr_;
+		//グローバル変数の確保コマンド
+		unsigned char* allocCommand_ptr_;
 		//プログラム全体のサイズ
 		int commandSize;
 		//文字列データ

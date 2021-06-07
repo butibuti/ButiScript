@@ -544,8 +544,16 @@ namespace ButiScript {
 
 		void push(const Ty& arg_value)
 		{
-			if (Size <= size_)
+			if (Size <= size_) {
 				throw StackOverflow();
+			}
+			*(::new(data_[size_++]) Ty) = arg_value;
+		}
+		void push_local(const Ty& arg_value)
+		{
+			if (Size <= size_) {
+				throw StackOverflow();
+			}
 			*(::new(data_[size_++]) Ty) = arg_value;
 		}
 
@@ -554,12 +562,12 @@ namespace ButiScript {
 			((Ty*)data_[--size_])->~Ty();
 		}
 
-		void pop(int count)
+		void pop(const int count)
 		{
 			resize(size_ - count);
 		}
 
-		void resize(int newsize)
+		void resize(const int newsize)
 		{
 			int oldsize = size_;
 
@@ -583,8 +591,12 @@ namespace ButiScript {
 		bool empty() const { return size_ == 0; }
 		int size() const { return size_; }
 
-		const Ty& operator[](int index) const { return *(const Ty*)data_[index]; }
-		Ty& operator[](int index) { return *(Ty*)data_[index]; }
+		const Ty& operator[](const int index) const { 
+			return *(const Ty*)data_[index]; 
+		}
+		Ty& operator[](const int index) { 
+			return *(Ty*)data_[index]; 
+		}
 
 	protected:
 		char data_[Size][sizeof(Ty)];

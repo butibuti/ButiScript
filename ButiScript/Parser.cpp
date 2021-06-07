@@ -492,7 +492,6 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			// •Ï”éŒ¾
 			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
 
-
 			// Œ^éŒ¾
 			type = keyword_p("int")[type.type = TYPE_INTEGER] >> !ch_p('&')[type.type |= TYPE_REF]
 				| keyword_p("float")[type.type = TYPE_FLOAT] >> !ch_p('&')[type.type |= TYPE_REF]
@@ -893,6 +892,7 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 		driver->error("\•¶‰ðÍŽ¸”s");
 		return false;
 	}
+	driver-> OpHalt();
 	info = parse(begin, end, gr, skip_p);
 	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
 		return true;
