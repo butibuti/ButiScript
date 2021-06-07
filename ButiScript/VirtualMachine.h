@@ -18,6 +18,14 @@ namespace ButiScript {
 
 	class VirtualCPU;
 	using OperationFunction = void (VirtualCPU::*)();
+
+	struct SystemTypeDefine {
+		SystemTypeDefine(){}
+		OperationFunction typeFunc;
+		int typeIndex;
+		std::string typeName;
+	};
+
 	class Data {
 	public:
 		Data() : commandTable(0), textBuffer(0)
@@ -38,6 +46,8 @@ namespace ButiScript {
 		int entryPoint;			// エントリーポイント
 
 		std::vector<OperationFunction> vec_sysCalls;
+		std::vector<SystemTypeDefine> vec_types;
+		int definedTypeCount = 0;
 	};
 
 
@@ -260,21 +270,8 @@ namespace ButiScript {
 		// ローカル変数を確保
 		void OpAllocStack(const int arg_val)
 		{
-			switch (arg_val)
-			{
-			case TYPE_INTEGER:
-				Stack.push_local (Value( 0));
-				break;
-			case TYPE_FLOAT:
-				Stack.push_local(Value(0.0f));
-				break;
-			case TYPE_STRING:
-				Stack.push_local(Value(""));
-				break;
-			default:
-				Stack.push_local(Value());
-				break;
-			}
+			(this->*p_pushValues[arg_val])();
+			
 		}
 		void OpAllocStack()
 		{
@@ -668,6 +665,11 @@ namespace ButiScript {
 			push(v);			// 戻り値はスタックに入れる
 		}
 
+		template<typename T>
+		void pushValue() {
+			Stack.push(Value(T()));
+		}
+
 	private:
 		int Value_Int() { int v = *(int*)command_ptr_; command_ptr_ += 4; return v; }
 		float Value_Float() { float v = *(float*)command_ptr_; command_ptr_ += 4; return v; }
@@ -729,6 +731,9 @@ namespace ButiScript {
 		OperationFunction* p_op=nullptr;
 		//組み込み関数テーブル
 		OperationFunction* p_syscall=nullptr;
+		//変数の確保関数テーブル
+		OperationFunction* p_pushValues = nullptr;
+
 
 		ButiScript::Stack<ButiScript::Value, STACK_SIZE> Stack;
 		//グローバル変数

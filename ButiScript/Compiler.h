@@ -517,13 +517,6 @@ using SysFunction = void (VirtualCPU::*)();
 class Compiler {
 public:
 
-	class AddFunctionInfo {
-	public:
-		int type; 
-		std::string name; 
-		std::vector<ArgDefine> args; 
-		Block_t block;
-	};
 
 	Compiler();
 	virtual ~Compiler();
@@ -534,7 +527,26 @@ public:
 	void debug_dump();
 #endif
 
+
 	bool DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args);
+
+	template <typename T>
+	void RegistSystemType(const int arg_typeIndex, const std::string& arg_name) {
+		SystemTypeDefine type;
+		type.typeFunc = &VirtualCPU::pushValue<T>;
+		type.typeName = arg_name;
+		type.typeIndex = arg_typeIndex;
+
+		if (vec_systemTypes.size() <= arg_typeIndex) {
+			vec_systemTypes.resize(arg_typeIndex + 1);
+		}
+
+		vec_systemTypes[arg_typeIndex]=(type);
+	}
+
+	std::vector<SystemTypeDefine >& GetSystemTypes() {
+		return vec_systemTypes;
+	}
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
@@ -609,7 +621,7 @@ private:
 	std::vector<Label> labels;
 	std::vector<char> text_table;
 	std::vector<SysFunction> vec_sysCalls;
-
+	std::vector<SystemTypeDefine > vec_systemTypes;
 	NameSpace_t currentNameSpace = nullptr;
 	int break_index;
 	int error_count;

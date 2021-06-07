@@ -549,13 +549,6 @@ namespace ButiScript {
 			}
 			*(::new(data_[size_++]) Ty) = arg_value;
 		}
-		void push_local(const Ty& arg_value)
-		{
-			if (Size <= size_) {
-				throw StackOverflow();
-			}
-			*(::new(data_[size_++]) Ty) = arg_value;
-		}
 
 		void pop()
 		{

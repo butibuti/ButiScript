@@ -27,6 +27,10 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "i");
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostrf, TYPE_STRING, "ToString", "f");
 
+	RegistSystemType<int>(TYPE_INTEGER,"int");
+	RegistSystemType<float>(TYPE_FLOAT,"float");
+	RegistSystemType<std::string>(TYPE_STRING,"string");
+
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
 	variables[0].set_global();
@@ -58,18 +62,8 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 {
 	int type = arg_type & ~TYPE_REF;
 	std::string output = "";
-	switch (type)
-	{
-	case TYPE_INTEGER:
-		output = "int";
-		break;
-	case TYPE_FLOAT:
-		output = "float";
-		break;
-	case TYPE_STRING:
-		output = "string";
-		break;
-	}
+	
+	output = vec_systemTypes[type].typeName;
 
 	if (arg_type&TYPE_REF) {
 		output += "&";
@@ -415,6 +409,8 @@ bool ButiScript::Compiler::CraeteData(ButiScript::Data& Data, int code_size)
 	Data.valueSize = (int)variables[0].size();
 	Data.entryPoint = labels[tag->index_].pos_;
 	Data.vec_sysCalls = vec_sysCalls;
+	Data.vec_types = vec_systemTypes;
+
 
 	if (Data.textSize != 0)
 		memcpy(Data.textBuffer, &text_table[0], Data.textSize);
