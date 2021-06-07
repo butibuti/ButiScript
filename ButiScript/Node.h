@@ -252,7 +252,7 @@ namespace ButiScript {
 	class Statement_assign : public Statement {
 	public:
 		Statement_assign(Node_t node)
-			: node_(node)
+			: vec_node(node)
 		{
 		}
 
@@ -261,28 +261,28 @@ namespace ButiScript {
 		int ReAnalyze(Compiler* c);
 
 	private:
-		Node_t node_;
+		Node_t vec_node;
 	};
 
 	// ä÷êîåƒÇ—èoÇµ
 	class ccall_statement : public Statement, public  std::enable_shared_from_this<ccall_statement> {
 	public:
 		ccall_statement(Node_t node)
-			: node_(node)
+			: vec_node(node)
 		{
 		}
 
 		int Analyze(Compiler* c);
 		void ReAnalyze(Compiler* c);
 	private:
-		Node_t node_;
+		Node_t vec_node;
 	};
 
 	// case
 	class Statement_case : public Statement {
 	public:
 		Statement_case(Node_t node)
-			: node_(node)
+			: vec_node(node)
 		{
 		}
 
@@ -290,7 +290,7 @@ namespace ButiScript {
 		int case_Analyze(Compiler* c, int* default_label);
 
 	private:
-		Node_t node_;
+		Node_t vec_node;
 		int label_;
 	};
 
@@ -315,13 +315,13 @@ namespace ButiScript {
 	public:
 		void Add(Node_t node)
 		{
-			node_ = node;
+			vec_node = node;
 		}
 
 		int Analyze(Compiler* c);
 
 	private:
-		Node_t node_;
+		Node_t vec_node;
 	};
 
 	// if
@@ -333,7 +333,7 @@ namespace ButiScript {
 
 		void Add(Node_t node)
 		{
-			node_ = node;
+			vec_node = node;
 		}
 
 		void Add(const int index, Statement_t statement)
@@ -344,7 +344,7 @@ namespace ButiScript {
 		int Analyze(Compiler* c);
 
 	private:
-		Node_t node_;
+		Node_t vec_node;
 		Statement_t statement_[2];
 	};
 
@@ -358,14 +358,14 @@ namespace ButiScript {
 
 		void Add(const int index, Node_t node)
 		{
-			node_[index] = node;
+			vec_node[index] = node;
 		}
 
 		int Analyze(Compiler* c);
 
 	private:
 		Statement_t statement_;
-		Node_t node_[3];
+		Node_t vec_node[3];
 	};
 
 	// while
@@ -378,13 +378,13 @@ namespace ButiScript {
 
 		void Add(Node_t node)
 		{
-			node_ = node;
+			vec_node = node;
 		}
 
 		int Analyze(Compiler* c);
 
 	private:
-		Node_t node_;
+		Node_t vec_node;
 		Statement_t statement_;
 	};
 
@@ -392,7 +392,7 @@ namespace ButiScript {
 	class Statement_switch : public Statement {
 	public:
 		Statement_switch(Node_t node)
-			: node_(node)
+			: vec_node(node)
 		{
 		}
 
@@ -404,7 +404,7 @@ namespace ButiScript {
 		int Analyze(Compiler* c);
 
 	private:
-		Node_t node_;
+		Node_t vec_node;
 		std::vector<Statement_t> statement_;
 	};
 
@@ -426,38 +426,38 @@ namespace ButiScript {
 
 	class Declaration : public Statement {
 	public:
-		Declaration(const int type)
-			:type_(type), is_func_(false)
+		Declaration(const int arg_type)
+			:valueType(arg_type), isFunction(false)
 		{
 		}
 
-		Declaration(const int type, const std::string& name)
-			:type_(type), name_(name), is_func_(true)
+		Declaration(const int arg_type, const std::string& arg_name)
+			:valueType(arg_type), name_(arg_name), isFunction(true)
 		{
 		}
 
 		void Add(Node_t node)
 		{
-			node_.push_back(node);
+			vec_node.push_back(node);
 		}
 
-		void Add(const int type)
+		void Add(const int arg_type)
 		{
-			arg_.push_back(type);
+			args.push_back(arg_type);
 		}
 
 		int Analyze(Compiler* c);
-		int Regist(Compiler* c);
+
 		void Define(Compiler* c);
 		bool IsFunction()const {
-			return is_func_;
+			return isFunction;
 		}
 	private:
-		int type_;					// å^
-		bool is_func_;				// ä÷êîÇ©ïœêîÇ©
-		std::vector<Node_t> node_;	// ïœêî
+		int valueType;					// å^
+		bool isFunction;				// ä÷êîÇ©ïœêîÇ©
+		std::vector<Node_t> vec_node;	// ïœêî
 		std::string name_;			// ä÷êîñº
-		std::vector<int> arg_;		// ä÷êîÇÃà¯êî
+		std::vector<int> args;		// ä÷êîÇÃà¯êî
 	};
 
 	using Declaration_t = std::shared_ptr<Declaration>;
@@ -487,22 +487,22 @@ namespace ButiScript {
 	class ArgDefine {
 	public:
 		ArgDefine()
-			: type_(0)
+			: valueType(0)
 		{
 		}
 
-		ArgDefine(const int type)
-			: type_(type)
+		ArgDefine(const int arg_type)
+			: valueType(arg_type)
 		{
 		}
-		ArgDefine(const int type, const std::string& arg_name)
-			: type_(type), name_(arg_name)
+		ArgDefine(const int arg_type, const std::string& arg_name)
+			: valueType(arg_type), name_(arg_name)
 		{
 		}
 
 		void set_ref()
 		{
-			type_ |= TYPE_REF;
+			valueType |= TYPE_REF;
 		}
 
 		void set_name(const std::string& arg_name)
@@ -510,11 +510,11 @@ namespace ButiScript {
 			name_ = arg_name;
 		}
 
-		int type() const { return type_; }
+		int type() const { return valueType; }
 		const std::string& name() const { return name_; }
 
 	private:
-		int type_;
+		int valueType;
 		std::string name_;
 	};
 
@@ -522,8 +522,8 @@ namespace ButiScript {
 
 	class Function {
 	public:
-		Function(const std::string& name)
-			: name_(name)
+		Function(const std::string& arg_name)
+			: name_(arg_name)
 		{
 		}
 
@@ -540,11 +540,11 @@ namespace ButiScript {
 		int Analyze(Compiler* c);
 		int Regist(Compiler* c);
 		void set_type(const int arg_type) {
-			type_ = arg_type;
+			valueType = arg_type;
 		}
 
 	private:
-		int type_;
+		int valueType;
 		std::string name_;
 		std::vector<ArgDefine> args_;
 		Block_t block_;

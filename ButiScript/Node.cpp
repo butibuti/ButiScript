@@ -721,7 +721,7 @@ int Node::GetType(Compiler* c)const {
 			c->error("変数 " + string_ + " は定義されていません。");
 		}
 		else {
-			return tag->type_;
+			return tag->valueType;
 		}
 	}
 	int left_type = left_->GetType(c);
@@ -802,7 +802,7 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 	if (tag == nullptr) {
 		return -1;
 	}
-	return tag->type_;
+	return tag->valueType;
 }
 
 // 代入文
@@ -956,7 +956,7 @@ int Node_value::Push(Compiler* c) const
 		}
 		else {
 			// 参照型変数は、引数にしか存在しない
-			if ((tag->type_ & TYPE_REF) != 0) {
+			if ((tag->valueType & TYPE_REF) != 0) {
 				if (left_) {		// 配列
 					left_->Push(c);
 					c->PushLocalArrayRef(tag->address);
@@ -964,7 +964,7 @@ int Node_value::Push(Compiler* c) const
 				else {
 					c->PushLocalRef(tag->address);
 				}
-				return tag->type_ & ~TYPE_REF;
+				return tag->valueType & ~TYPE_REF;
 			}
 			if (tag->global_) {		// 外部変数
 				if (left_) {		// 配列
@@ -984,7 +984,7 @@ int Node_value::Push(Compiler* c) const
 					c->PushLocal(tag->address);
 				}
 			}
-			return tag->type_;
+			return tag->valueType;
 		}
 	}
 	return TYPE_INTEGER;
@@ -1024,7 +1024,7 @@ int Node_value::Pop(Compiler* c) const
 		}
 		else {
 			// 参照型変数は、引数にしか存在しない
-			if ((tag->type_ & TYPE_REF) != 0) {
+			if ((tag->valueType & TYPE_REF) != 0) {
 				if (left_) {		// 配列
 					left_->Push(c);
 					c->PopLocalArrayRef(tag->address);
@@ -1032,7 +1032,7 @@ int Node_value::Pop(Compiler* c) const
 				else {
 					c->PopLocalRef(tag->address);
 				}
-				return tag->type_ & ~TYPE_REF;
+				return tag->valueType & ~TYPE_REF;
 			}
 			if (tag->global_) {		// 外部変数
 				if (left_) {		// 配列
@@ -1052,7 +1052,7 @@ int Node_value::Pop(Compiler* c) const
 					c->PopLocal(tag->address);
 				}
 			}
-			return tag->type_;
+			return tag->valueType;
 		}
 	}
 	return TYPE_INTEGER;
@@ -1100,7 +1100,7 @@ struct set_arg {
 				if (tag == nullptr) {
 					comp_->error("変数 " + node->GetString() + " は定義されていません。");
 				}
-				else if (tag->type_ >= TYPE_INTEGER_REF) {		// 参照
+				else if (tag->valueType >= TYPE_INTEGER_REF) {		// 参照
 					// 参照型変数は、ローカルしかない
 					if (node->GetLeft()) {
 						node->GetLeft()->Push(comp_);
@@ -1112,7 +1112,7 @@ struct set_arg {
 					}
 				}
 				else {
-					if (!TypeCheck(tag->type_ ,type) ){
+					if (!TypeCheck(tag->valueType ,type) ){
 						comp_->error("引数の型が合いません。");
 					}
 					int addr = tag->address;
@@ -1210,7 +1210,7 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 		c->OpCall(tag->GetIndex());			// スクリプト上の関数
 	}
 
-	return tag->type_;
+	return tag->valueType;
 }
 
 int Node_function::Push(Compiler* c) const
@@ -1295,20 +1295,20 @@ int Statement_nop::Analyze(Compiler* c)
 // 代入文
 int Statement_assign::Analyze(Compiler* c) 
 {
-	return node_->Assign(c);
+	return vec_node->Assign(c);
 	
 }
 
 int Statement_assign::ReAnalyze(Compiler* c)
 {
-	return node_->Assign(c);
+	return vec_node->Assign(c);
 	
 }
 
 // 関数呼び出し文
 int ccall_statement::Analyze(Compiler* c) 
 {
-	int type = node_->Push(c);
+	int type = vec_node->Push(c);
 
 	if (type == -1) {
 
@@ -1323,7 +1323,7 @@ int ccall_statement::Analyze(Compiler* c)
 
 void ccall_statement::ReAnalyze(Compiler* c) 
 {
-	int type = node_->Push(c);
+	int type = vec_node->Push(c);
 
 	if (type == -1) {
 
@@ -1345,9 +1345,9 @@ int Statement_case::Analyze(Compiler* c)
 int Statement_case::case_Analyze(Compiler* c, int* default_label)
 {
 	label_ = c->MakeLabel();
-	if (node_->Op() != OP_INT)
+	if (vec_node->Op() != OP_INT)
 		c->error("case 文には定数のみ指定できます。");
-	node_->Push(c);
+	vec_node->Push(c);
 	c->OpTest(label_);
 	return 0;
 }
@@ -1382,17 +1382,17 @@ int Statement_break::Analyze(Compiler* c)
 int Statement_return::Analyze(Compiler* c) 
 {
 	if (c->GetFunctionType() == TYPE_VOID) {	// 戻り値無し
-		if (node_ != 0) {
+		if (vec_node != 0) {
 			c->error("void関数に戻り値が設定されています");
 		}
 		c->OpReturn();
 	}
 	else {
-		if (node_ == 0) {
+		if (vec_node == 0) {
 			c->error("関数の戻り値がありません");
 		}
 		else {
-			int node_type = node_->Push(c);		// 戻り値をpush
+			int node_type = vec_node->Push(c);		// 戻り値をpush
 
 			if (!CanTypeCast( node_type ,c->GetFunctionType())) {
 				c->error("戻り値の型が合いません");
@@ -1406,7 +1406,7 @@ int Statement_return::Analyze(Compiler* c)
 // if文
 int Statement_if::Analyze(Compiler* c) 
 {
-	node_->Push(c);
+	vec_node->Push(c);
 	int label1 = c->MakeLabel();
 	c->OpJmpNC(label1);
 	statement_[0]->Analyze(c);
@@ -1431,14 +1431,14 @@ int Statement_for::Analyze(Compiler* c)
 	int label2 = c->MakeLabel();
 
 	int break_label = c->SetBreakLabel(label2);
-	if(node_[0])
-		node_[0]->Push(c);
+	if(vec_node[0])
+		vec_node[0]->Push(c);
 	c->SetLabel(label1);
-	node_[1]->Push(c);
+	vec_node[1]->Push(c);
 	c->OpJmpNC(label2);
 	statement_->Analyze(c);
-	if (node_[2])
-		node_[2]->Push(c);
+	if (vec_node[2])
+		vec_node[2]->Push(c);
 	c->OpJmp(label1);
 	c->SetLabel(label2);
 
@@ -1455,7 +1455,7 @@ int Statement_while::Analyze(Compiler* c)
 	int break_label = c->SetBreakLabel(label2);
 
 	c->SetLabel(label1);
-	node_->Push(c);
+	vec_node->Push(c);
 	c->OpJmpNC(label2);
 	statement_->Analyze(c);
 	c->OpJmp(label1);
@@ -1469,7 +1469,7 @@ int Statement_while::Analyze(Compiler* c)
 int Statement_switch::Analyze(Compiler* c) 
 {
 	if (!statement_.empty()) {
-		node_->Push(c);
+		vec_node->Push(c);
 
 		int label = c->MakeLabel();		// L0ラベル作成
 		int break_label = c->SetBreakLabel(label);
@@ -1530,12 +1530,12 @@ int Block::Analyze(Compiler* c)
 // 宣言の解析
 int Declaration::Analyze(Compiler* c) 
 {
-	if (is_func_) {		// 関数
-		c->FunctionDefine(type_, name_, arg_);
+	if (isFunction) {		// 関数
+		c->FunctionDefine(valueType, name_, args);
 	}
 	else {
-		c->ValueDefine(type_, node_);
-		c->OpAllocStack(type_);
+		c->ValueDefine(valueType, vec_node);
+		c->OpAllocStack(valueType);
 	}
 	return 0;
 }
@@ -1543,34 +1543,25 @@ int Declaration::Analyze(Compiler* c)
 // 関数の解析
 int Function::Analyze(Compiler* c) 
 {
-	c->AddFunction(type_, name_, args_, block_);
+	c->AddFunction(valueType, name_, args_, block_);
 
 	return 0;
 }
 
 int Function::Regist(Compiler* c)
 {
-	c->RegistFunction(type_, name_, args_, block_);
+	c->RegistFunction(valueType, name_, args_, block_);
 	return 0;
 }
 
-int Declaration::Regist(Compiler* c)
-{
-	if (is_func_) {		// 関数
-		c->FunctionDefine(type_, name_, arg_);
-	}
-	else {
-		c->ValueDefine(type_, node_);
-	}
-	return 0;
-}
+
 void Declaration::Define(Compiler* c)
 {
-	if (is_func_) {		// 関数
-		c->FunctionDefine(type_, name_, arg_);
+	if (isFunction) {		// 関数
+		c->FunctionDefine(valueType, name_, args);
 	}
 	else {
-		c->ValueDefine(type_, node_);
+		c->ValueDefine(valueType, vec_node);
 	}
 }
 }

@@ -423,7 +423,7 @@ namespace ButiScript {
 	public:
 		Value()
 		{
-			type_ = type_none;
+			valueType = type_none;
 			v_ = nullptr;
 		}
 
@@ -431,28 +431,28 @@ namespace ButiScript {
 		Value(const int ival)
 		{
 			v_ = new Value_wrap<int>(ival,1);
-			type_ = type_integer;
+			valueType = type_integer;
 		}
 
 		//float‚Æ‚µ‚Ä‰Šú‰»
 		Value(const float ival)
 		{
 			v_ = new Value_wrap<float>(ival,1);
-			type_ = type_float;
+			valueType = type_float;
 		}
 
 		//string‚Æ‚µ‚Ä‰Šú‰»
 		Value(const std::string& str)
 		{
 			v_ = new Value_wrap<std::string>(str,1);
-			type_ = type_string;
+			valueType = type_string;
 		}
 
 		//•Ï”‚ğw’è‚µ‚Ä‰Šú‰»
 		Value(IValue* p,const char type)
 		{
 			v_ = p;
-			type_ = type;
+			valueType = type;
 		}
 
 		~Value()
@@ -471,8 +471,8 @@ namespace ButiScript {
 				return *this;
 
 			clear();
-			if (type_ = type_none) {
-				type_ = a.type_;
+			if (valueType = type_none) {
+				valueType = a.valueType;
 			}
 			Assign(a);
 
@@ -481,14 +481,14 @@ namespace ButiScript {
 
 		void clear()
 		{
-			if (type_ == type_string)
+			if (valueType == type_string)
 				v_->release();
 		}
 
 		void Copy(const Value& a)
 		{
-			type_ = a.type_;
-			if (type_ == type_string) {
+			valueType = a.valueType;
+			if (valueType == type_string) {
 
 				v_ = a.v_;
 				v_->addref();
@@ -499,9 +499,9 @@ namespace ButiScript {
 		}
 		void Assign(const Value& a) {
 
-			if (a.type_ == type_string) {
+			if (a.valueType == type_string) {
 
-				type_ = a.type_;
+				valueType = a.valueType;
 				v_ = a.v_;
 				v_->addref();
 			}
@@ -518,7 +518,7 @@ namespace ButiScript {
 		union {
 			IValue* v_;
 		};
-		char type_;
+		char valueType;
 	};
 
 	class StackOverflow : public std::exception {

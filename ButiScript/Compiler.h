@@ -126,17 +126,17 @@ public:
 
 class ValueTag {
 public:
-	ValueTag() : address(-1), type_(TYPE_INTEGER), size_(1), global_(false)
+	ValueTag() : address(-1), valueType(TYPE_INTEGER), size_(1), global_(false)
 	{
 	}
 	ValueTag(const int addr,const int type,const int size,const bool global)
-		: address(addr), type_(type), size_(size), global_(global)
+		: address(addr), valueType(type), size_(size), global_(global)
 	{
 	}
 
 public:
 	int		address;
-	int		type_;
+	int		valueType;
 	int		size_;
 	bool	global_;
 };
@@ -193,7 +193,7 @@ public:
 	struct DumpAction {
 		void operator()(const std::pair<std::string, ValueTag>& it)
 		{
-			std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.type_ << ", size = " << it.second.size_ << ", global = " << it.second.global_ << std::endl;
+			std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.valueType << ", size = " << it.second.size_ << ", global = " << it.second.global_ << std::endl;
 		}
 	};
 
@@ -253,7 +253,7 @@ public:
 	{
 	}
 	FunctionTag(const int type)
-		: type_(type), flags_(0), index_(0)
+		: valueType(type), flags_(0), index_(0)
 	{
 	}
 
@@ -409,7 +409,7 @@ public:
 	bool IsSystem() const { return (flags_ & flag_system) != 0; }
 
 public:
-	int		type_=0;
+	int		valueType=0;
 	int		flags_=0;
 	int		index_=0;
 	std::vector<unsigned char>	args_;

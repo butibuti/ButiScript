@@ -99,14 +99,14 @@ bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int typ
 // ŠO•”•Ï”‚Ì’è‹`
 struct Define_value {
 	ButiScript::Compiler* comp_;
-	int type_;
-	Define_value(ButiScript::Compiler* comp, int type) : comp_(comp), type_(type)
+	int valueType;
+	Define_value(ButiScript::Compiler* comp, int type) : comp_(comp), valueType(type)
 	{
 	}
 
 	void operator()(ButiScript::Node_t node) const
 	{
-		comp_->AddValue(type_, node->GetString(), node->GetLeft());
+		comp_->AddValue(valueType, node->GetString(), node->GetLeft());
 	}
 };
 
@@ -512,6 +512,6 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 	auto end = variables_.rend();
 	for (auto itr = variables_.rbegin(); itr != end; itr++)
 	{
-		arg_comp->OpAllocStack(itr->second.type_);
+		arg_comp->OpAllocStack(itr->second.valueType);
 	}
 }
