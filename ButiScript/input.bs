@@ -4,18 +4,20 @@
 main():int
 {
 	var s :string;
-	s="mainCall!"+EndL();
+	var v:Vector2;
+	s=ToString(v)+EndL();
 	print(s);
-
+	
 	var i :int;
-	var f:float;
 
+	var f:float;
+	f=12.1;
 	for(;i<10;Add(i)){
 		s=ToString(Functions::Functions_inner::Functions_inner2::Pow3(f))+ EndL();
 		f+=0.5;
 		print(s);
 	}
-
+	
 
 	return f;
 }

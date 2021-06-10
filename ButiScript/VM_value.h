@@ -1,11 +1,11 @@
 #pragma once
 #ifndef	__vm_value_h__
 #define	__vm_value_h__
-
+#include"value_type.h"
 #include <iostream>
 #include <exception>
 #include <string>
-
+#include"ButiMath.h"
 #define RegistGet(T) \
 virtual T operator()(const IValue* b, const T * p_dummy) const {\
 return static_cast<const Class*>(b)->get_value_stub< T >();\
@@ -37,54 +37,7 @@ return static_cast<const Class*>(b)->ge_stub<T>(v);\
 }\
 
 namespace ButiScript {
-	
-	namespace StrConvert {
-		template <typename T>
-		static T ConvertString(const std::string& arg_str) {
 
-			const char* _Ptr = arg_str.c_str();
-			char* _Eptr;
-
-			const long _Ans = _CSTD strtol(_Ptr, &_Eptr, 10);
-
-			if (_Ptr == _Eptr) {
-				//ñ≥å¯Ç»ïœä∑
-				return 0;
-			}
-
-
-			return static_cast<T>(_Ans);
-		}
-		template <>
-		static float ConvertString(const std::string& arg_str) {
-
-			const char* _Ptr = arg_str.c_str();
-			char* _Eptr;
-			const float _Ans = _CSTD strtof(_Ptr, &_Eptr);
-
-			if (_Ptr == _Eptr) {
-				//ñ≥å¯Ç»ïœä∑
-				return 0.00f;
-			}
-			return _Ans;
-		}
-		template <>
-		static double ConvertString(const std::string& arg_str) {
-			int& _Errno_ref = errno;
-			const char* _Ptr = arg_str.c_str();
-			char* _Eptr;
-			_Errno_ref = 0;
-			const double _Ans = _CSTD strtod(_Ptr, &_Eptr);
-
-			if (_Ptr == _Eptr) {
-				//ñ≥å¯Ç»ïœä∑
-				return 0.00;
-			}
-			return _Ans;
-		}
-
-
-	}
 
 	class IValue {
 	public:
@@ -96,7 +49,6 @@ namespace ButiScript {
 			delete p_instance;
 		}
 
-
 		template <typename T> T Get()const {
 			static T* p_dummy = nullptr;
 			return get_value()(this, p_dummy);
@@ -106,6 +58,15 @@ namespace ButiScript {
 		}
 		template <> void Set(const IValue& arg_v) {
 			arg_v.ValueCopy(this);
+		}
+
+
+		IValue* GetMember(const int index)const {
+
+			return ary_p_member[index];
+		}
+		void SetMember(IValue* arg_v,const int index) {
+			ary_p_member[index] = arg_v;
 		}
 
 		template <typename T> bool Equal(const T& arg_v)const {
@@ -155,6 +116,7 @@ namespace ButiScript {
 			RegistGet(float);
 			RegistGet(double);
 			RegistGet(std::string);
+			RegistGet(ButiEngine::Vector2);
 		};
 		template <typename Class, typename Super = IValue>
 		struct set_value_t : public Super::set_value_base_t {
@@ -165,6 +127,7 @@ namespace ButiScript {
 			RegistSet(long long);
 			RegistSet(float);
 			RegistSet(double);
+			RegistSet(ButiEngine::Vector2);
 			RegistSetRef(std::string);
 
 		};
@@ -177,6 +140,7 @@ namespace ButiScript {
 			RegistEq(long long);
 			RegistEq(float);
 			RegistEq(double);
+			RegistEq(ButiEngine::Vector2);
 			RegistEq(std::string);
 
 		};
@@ -189,8 +153,8 @@ namespace ButiScript {
 			RegistGt(long long);
 			RegistGt(float);
 			RegistGt(double);
+			RegistGt(ButiEngine::Vector2);
 			RegistGt(std::string);
-
 		};
 		template <typename Class, typename Super = IValue>
 		struct ge_t : public Super::ge_base_t {
@@ -201,6 +165,7 @@ namespace ButiScript {
 			RegistGe(long long);
 			RegistGe(float);
 			RegistGe(double);
+			RegistGe(ButiEngine::Vector2);
 			RegistGe(std::string);
 
 		};
@@ -235,7 +200,10 @@ namespace ButiScript {
 		template <typename T> bool ge_stub(const T& arg_v)const {
 			return false;
 		}
+		//é¿ëÃ
 		void* p_instance;
+		//ÉÅÉìÉoïœêî
+		IValue** ary_p_member;
 	private:
 		int ref_ = 0;
 	};
@@ -245,6 +213,9 @@ namespace ButiScript {
 	public:
 		Value_wrap(const T v, const int ref) :IValue(ref) {
 			p_instance = new T(v);
+		}
+		Value_wrap(T* v, const int ref) :IValue(ref) {
+			p_instance = v;
 		}
 		Value_wrap(const int ref) :IValue(ref) {
 			p_instance = new T();
@@ -294,15 +265,8 @@ namespace ButiScript {
 		template <typename U> U get_value_stub()const {
 			return (U) * (T*)p_instance;
 		}
-		template <> std::string get_value_stub()const {
-			return std::to_string(*(T*)p_instance);
-		}
-
 		template <typename U> void set_value_stub(const U& arg_v) {
 			*(T*)p_instance = (T)arg_v;
-		}
-		template <>void set_value_stub(const std::string& arg_v) {
-			*(T*)p_instance = StrConvert::ConvertString<T>(arg_v);
 		}
 
 		template <typename U> bool eq_stub(const U& arg_v)const {
@@ -316,6 +280,20 @@ namespace ButiScript {
 		}
 
 
+		template <> std::string get_value_stub()const {
+			return std::to_string(*(T*)p_instance);
+		}
+		template <>void set_value_stub(const std::string& arg_v) {
+			*(T*)p_instance = StrConvert::ConvertString<T>(arg_v);
+		}
+
+		template <> ButiEngine::Vector2 get_value_stub()const {
+			return ButiEngine::Vector2();
+		}
+		template <>void set_value_stub(const ButiEngine::Vector2& arg_v) {
+			*(T*)p_instance = arg_v.x;
+		}
+
 		template <>bool eq_stub(const std::string& arg_v)const {
 			return false;
 		}
@@ -323,6 +301,15 @@ namespace ButiScript {
 			return false;
 		}
 		template <>bool ge_stub(const std::string& arg_v)const {
+			return false;
+		}
+		template <>bool eq_stub(const ButiEngine::Vector2& arg_v)const {
+			return false;
+		}
+		template <>bool gt_stub(const ButiEngine::Vector2& arg_v)const {
+			return false;
+		}
+		template <>bool ge_stub(const ButiEngine::Vector2& arg_v)const {
 			return false;
 		}
 
@@ -411,19 +398,104 @@ namespace ButiScript {
 
 	};
 
+	template<>
+	class Value_wrap<ButiEngine::Vector2> : public IValue {
+	public:
+		Value_wrap(const ButiEngine::Vector2& v, const int ref) :IValue(ref) {
+			p_instance = new ButiEngine::Vector2(v);
+			ary_p_member = (IValue**)malloc(sizeof(IValue*)*2);
+			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->x, 1);
+			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->y, 1);
+		}
+		Value_wrap(const int ref) :IValue(ref) {
+			p_instance = new ButiEngine::Vector2();
+		}
+
+
+		bool Eq(IValue* p_other)const override {
+			return p_other->Equal(*(ButiEngine::Vector2 *)p_instance);
+		}
+		bool Gt(IValue* p_other)const override {
+			return false;
+		}
+		bool Ge(IValue* p_other)const override {
+			return false;
+		}
+
+		void ValueCopy(IValue* p_other) const override {
+			p_other->Set<ButiEngine::Vector2>(*(ButiEngine::Vector2*)p_instance);
+		}
+
+		IValue* Clone()const {
+			return new Value_wrap<ButiEngine::Vector2>(*(ButiEngine::Vector2*)p_instance,1);
+		}
+
+		void Nagative()override {
+			*(ButiEngine::Vector2*)p_instance = -1 * (*(ButiEngine::Vector2*)p_instance);
+
+		}
+
+
+		virtual const IValue::get_value_base_t& get_value() const {
+			static const IValue::get_value_t<Value_wrap<ButiEngine::Vector2>> s;
+			return s;
+		}
+		virtual const IValue::set_value_base_t& set_value() const {
+			static const IValue::set_value_t<Value_wrap<ButiEngine::Vector2>> s;
+			return s;
+		}
+
+		virtual const IValue::eq_base_t& eq() const {
+			static const IValue::eq_t<Value_wrap<ButiEngine::Vector2>> s;
+			return s;
+		}
+		virtual const IValue::gt_base_t& gt() const {
+			static const IValue::gt_t<Value_wrap<ButiEngine::Vector2>> s;
+			return s;
+		}
+		virtual const IValue::ge_base_t& ge() const {
+			static const IValue::ge_t<Value_wrap<ButiEngine::Vector2>> s;
+			return s;
+		}
+
+		template <typename U> U get_value_stub()const {
+			return U();
+		}
+		template <> ButiEngine::Vector2 get_value_stub()const {
+			return (*(ButiEngine::Vector2*)p_instance);
+		}
+		template <> std::string get_value_stub()const {
+			return std::to_string(*(ButiEngine::Vector2*)p_instance);
+		}
+
+		template <typename U> void set_value_stub(const U& arg_v) {
+			*(std::string*)p_instance = std::to_string(arg_v);
+		}
+		template <>void set_value_stub(const ButiEngine::Vector2& arg_v) {
+			*(ButiEngine::Vector2*)p_instance = (arg_v);
+		}
+		template <>void set_value_stub(const std::string& arg_v) {
+			*(ButiEngine::Vector2 *)p_instance = StrConvert::ConvertString<ButiEngine::Vector2>(arg_v);
+		}
+
+
+		template <typename U> bool eq_stub(const U& arg_v)const {
+			return  false;
+		}
+
+		template <>bool eq_stub(const ButiEngine::Vector2& arg_v)const {
+			return *(ButiEngine::Vector2*)p_instance == arg_v;
+		}
+
+	};
+
 	// ïœêî
 	class Value {
-		enum {
-			type_integer,
-			type_float,
-			type_string,
-			type_none
-		};
 
 	public:
 		Value()
 		{
-			valueType = type_none;
+			valueType = TYPE_VOID;
 			v_ = nullptr;
 		}
 
@@ -431,25 +503,32 @@ namespace ButiScript {
 		Value(const int ival)
 		{
 			v_ = new Value_wrap<int>(ival,1);
-			valueType = type_integer;
+			valueType = TYPE_INTEGER;
 		}
 
 		//floatÇ∆ÇµÇƒèâä˙âª
 		Value(const float ival)
 		{
 			v_ = new Value_wrap<float>(ival,1);
-			valueType = type_float;
+			valueType = TYPE_FLOAT;
 		}
 
 		//stringÇ∆ÇµÇƒèâä˙âª
 		Value(const std::string& str)
 		{
-			v_ = new Value_wrap<std::string>(str,1);
-			valueType = type_string;
+			v_ = new Value_wrap<std::string>(str, 1);
+			valueType = TYPE_STRING;
+		}
+
+		//Vector2Ç∆ÇµÇƒèâä˙âª
+		Value(const ButiEngine::Vector2 vec2)
+		{
+			v_ = new Value_wrap<ButiEngine::Vector2>(vec2, 1);
+			valueType = TYPE_VOID+1;
 		}
 
 		//ïœêîÇéwíËÇµÇƒèâä˙âª
-		Value(IValue* p,const char type)
+		Value(IValue* p,const int type)
 		{
 			v_ = p;
 			valueType = type;
@@ -471,7 +550,7 @@ namespace ButiScript {
 				return *this;
 
 			clear();
-			if (valueType = type_none) {
+			if (valueType = TYPE_VOID) {
 				valueType = a.valueType;
 			}
 			Assign(a);
@@ -481,14 +560,14 @@ namespace ButiScript {
 
 		void clear()
 		{
-			if (valueType == type_string)
+			if (valueType == TYPE_STRING)
 				v_->release();
 		}
 
 		void Copy(const Value& a)
 		{
 			valueType = a.valueType;
-			if (valueType == type_string) {
+			if (valueType == TYPE_STRING) {
 
 				v_ = a.v_;
 				v_->addref();
@@ -499,7 +578,7 @@ namespace ButiScript {
 		}
 		void Assign(const Value& a) {
 
-			if (a.valueType == type_string) {
+			if (a.valueType == TYPE_STRING) {
 
 				valueType = a.valueType;
 				v_ = a.v_;
@@ -518,7 +597,7 @@ namespace ButiScript {
 		union {
 			IValue* v_;
 		};
-		char valueType;
+		int valueType;
 	};
 
 	class StackOverflow : public std::exception {

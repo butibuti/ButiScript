@@ -51,6 +51,7 @@ namespace ButiScript {
 		OP_INT,
 		OP_FLOAT,
 		OP_IDENTIFIER,
+		OP_MEMBER,
 		OP_STRING,
 		OP_FUNCTION,
 		OP_ARRAY,
@@ -119,6 +120,7 @@ namespace ButiScript {
 
 		static Node_t make_node(const int Op, const std::string& str);
 		static Node_t make_node(const int Op, Node_t left);
+		static Node_t make_node(const int Op, Node_t left,const std::string arg_memberName);
 		static Node_t make_node(const int Op, Node_t left, Node_t right);
 		static Node_t make_node(const int Op, Node_t left, NodeList_t right);
 

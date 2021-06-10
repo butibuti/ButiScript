@@ -5,7 +5,6 @@
 // 実行
 int ButiScript::VirtualCPU::Run()
 {
-
 	// mainをcall
 	push(0);										// mainへの引数カウントをpush
 	push(0);										// stack_baseの初期値をpush

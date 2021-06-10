@@ -19,11 +19,21 @@ namespace ButiScript {
 	class VirtualCPU;
 	using OperationFunction = void (VirtualCPU::*)();
 
-	struct SystemTypeDefine {
-		SystemTypeDefine(){}
+	struct TypeDefine {
+		TypeDefine(){}
+		//生成用アドレス
 		OperationFunction typeFunc;
+		//型情報
 		int typeIndex;
+		//型名
 		std::string typeName;
+		//引数記号
+		std::string argName;
+
+		//メンバ変数へのアクセス名とインデックス
+		std::map<std::string, int> map_memberIndex;
+		//メンバ変数へのアクセス名と型
+		std::map<std::string, int> map_memberType;
 	};
 
 	class Data {
@@ -46,7 +56,7 @@ namespace ButiScript {
 		int entryPoint;			// エントリーポイント
 
 		std::vector<OperationFunction> vec_sysCalls;
-		std::vector<SystemTypeDefine> vec_types;
+		std::vector<TypeDefine> vec_types;
 		int definedTypeCount = 0;
 	};
 
@@ -135,6 +145,15 @@ namespace ButiScript {
 		void PushLocal()
 		{
 			PushLocal(Value_Int());
+		}
+
+		//ローカル変数のメンバ変数をpush
+		void PushLocalMember(const int arg_val,const int arg_valueIndex) {
+			push(Stack[arg_val + stack_base].v_->GetMember(arg_valueIndex));
+		}
+		
+		void PushLocalMember() {
+			PushLocalMember(Value_Int(), Value_Int());
 		}
 
 		// 配列からPush
@@ -658,12 +677,7 @@ namespace ButiScript {
 			auto v = top().v_->Get<std::string>(); pop();
 			push(v);			// 戻り値はスタックに入れる
 		}
-		// 組み込み関数(数値を文字列に変換)
-		void sys_tostrf()
-		{
-			auto v = top().v_->Get<std::string>(); pop();
-			push(v);			// 戻り値はスタックに入れる
-		}
+
 
 		template<typename T>
 		void pushValue() {
@@ -684,9 +698,13 @@ namespace ButiScript {
 		void push(const std::string& v) { 
 			Stack.push(ButiScript::Value(v)); 
 		}
+		void push(IValue* arg_p_ivalue) {
+			Stack.push(ButiScript::Value(arg_p_ivalue,TYPE_FLOAT));
+		}
 		void push(const ButiScript::Value& v) { 
 			Stack.push(v); 
 		}
+
 		void pop() { 
 			Stack.pop(); 
 		}

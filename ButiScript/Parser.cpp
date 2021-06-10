@@ -304,12 +304,21 @@ namespace ButiClosure {
 	struct float_val : closure<float_val, float> {
 		member1 number;
 	};
+
 	// ノードのクロージャ
-	struct node_val : closure<node_val, Node_t, int,std::string> {
+	struct node_val : closure<node_val, Node_t, int, std::string> {
 		member1 node;
 		member2 Op;
 		member3 name;
 	};
+	// 変数呼び出しのクロージャ
+	struct callmember_val : closure<callmember_val, Node_t, int, std::string> {
+		member1 memberNode;
+		member1 valueNode;
+		member2 Op;
+		member3 name;
+	};
+
 	// 名前空間のクロージャ
 	struct namespace_val : closure<namespace_val,  std::string> {
 		member1 name;
@@ -372,7 +381,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
 		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,arg,decl_func,block,input,ident;
+			and_expr,expr,assign,argument,statement,arg,decl_func,callMemberValue ,block,input,ident;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -421,6 +430,9 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			// 関数呼び出し
 			func_node = *(identifier >> "::") >> identifier>>
 				'(' >> !argument >> ')';
+
+			//メンバ変数呼び出し
+			callMemberValue = (Value >> "." >> identifier);
 
 			// 計算のprimeノード
 			prime = func_node
@@ -497,8 +509,8 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				| keyword_p("float")[type.type = TYPE_FLOAT] >> !ch_p('&')[type.type |= TYPE_REF]
 				| keyword_p("string")[type.type = TYPE_STRING] >> !ch_p('&')[type.type |= TYPE_REF]
 				| keyword_p("void")[type.type = TYPE_VOID]
+				| keyword_p("Vector2")[type.type = TYPE_VOID+1] >> !ch_p('&')[type.type |= TYPE_REF]
 				;
-
 			// 関数宣言の引数
 			arg = identifier >> ':'
 				>> type
@@ -596,6 +608,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::type_val::context_t>		type;
 		rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
+		rule<ScannerT, ButiClosure::callmember_val::context_t> callMemberValue;
 		rule<ScannerT, ButiClosure::node_val::context_t>		prime;
 		rule<ScannerT, ButiClosure::node_val::context_t>		unary;
 		rule<ScannerT, ButiClosure::node_val::context_t>		mul_expr;
@@ -668,9 +681,14 @@ struct script_grammer : public grammar<script_grammer> {
 				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
+			//メンバ変数呼び出し
+			callMemberValue =(Value[ callMemberValue.valueNode=arg1])>>"."
+				>> identifier[callMemberValue.memberNode = binary_node(OP_MEMBER, callMemberValue.valueNode,arg1)]
+				;
 			// 計算のprimeノード
 			prime = func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
+				| callMemberValue[prime.node=arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
 				| number[prime.node = unary_node(OP_INT, arg1)]
 				| string_node[prime.node = unary_node(OP_STRING, arg1)]
@@ -743,6 +761,7 @@ struct script_grammer : public grammar<script_grammer> {
 				| keyword_p("float")[type.type = TYPE_FLOAT] >> !ch_p('&')[type.type |= TYPE_REF]
 				| keyword_p("string")[type.type = TYPE_STRING] >> !ch_p('&')[type.type |= TYPE_REF]
 				| keyword_p("void")[type.type = TYPE_VOID]
+				| keyword_p("Vector2")[type.type = TYPE_VOID + 1] >> !ch_p('&')[type.type |= TYPE_REF]
 				;
 
 			// 関数宣言の引数

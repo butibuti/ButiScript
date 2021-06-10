@@ -159,10 +159,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="StringHelper.cpp" />
     <ClCompile Include="VirtualMachine.cpp" />
     <ClCompile Include="VM_value.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\2nd\Engine\ButiEngine\Libs\Library\Header\Common\ButiMath.h" />
     <ClInclude Include="Compiler.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="Parser.h" />

@@ -3,7 +3,8 @@
 
 #include "VirtualMachine.h"
 #include "Node.h"
-
+#include<unordered_map>
+#include"StringHelper.h"
 namespace ButiScript {
 
 
@@ -30,6 +31,10 @@ public:
 	}
 
 	~VMCode() {
+	}
+
+	static VMCode GetCode(const char Op, const int arg1, const int arg2) {
+
 	}
 
 	unsigned char* Get(unsigned char* p) const
@@ -84,8 +89,6 @@ public:
 	void* p_constValue =nullptr;
 
 };
-
-
 
 //名前空間の定義
 class NameSpace:std::enable_shared_from_this<NameSpace> {
@@ -143,8 +146,8 @@ public:
 
 class ValueTable {
 private:
-	using iter= std::map<std::string, ValueTag>::iterator ;
-	using const_iter= std::map<std::string, ValueTag>::const_iterator ;
+	using iter= std::unordered_map<std::string, ValueTag>::iterator ;
+	using const_iter= std::unordered_map<std::string, ValueTag>::const_iterator ;
 
 public:
 	ValueTable(const int start_addr = 0) : addr_(start_addr), global_(false)
@@ -158,8 +161,9 @@ public:
 
 	bool Add( const int type, const std::string& name,  const int size = 1)
 	{
-		std::pair<iter, bool> result = variables_.insert(make_pair(name, ValueTag(addr_, type, size, global_)));
-		if (result.second) {
+		if (!variables_.count(name)) {
+			variables_.emplace(name, ValueTag(addr_, type, size, global_));
+			vec_variableTypes.push_back(type);
 			addr_ += size;
 			return true;
 		}
@@ -205,7 +209,8 @@ public:
 #endif
 
 private:
-	std::map<std::string, ValueTag> variables_;
+	std::unordered_map <std::string, ValueTag> variables_;
+	std::vector < int> vec_variableTypes;
 	int		addr_;
 	bool	global_;
 };
@@ -278,27 +283,41 @@ public:
 		}
 	}
 
-	bool SetArgs(const char* args)
+	bool SetArgs(const std::string& args,const std::map<std::string, int> &arg_map_argmentChars)
 	{
-		if (args) {
-			for (int i = 0; args[i] != 0; i++) {
-				switch (args[i]) {
-				case 'I': case 'i':
-					args_.push_back(TYPE_INTEGER);
-					break;
+		if (args.size() == 0) {
+			return true;
+		}
 
-				case 'S': case 's':
-					args_.push_back(TYPE_STRING);
-					break;
+		auto splited = std::vector<std::string>();
+		int first = 0;
+		int last = args.find_first_of(",");
+		if (last == std::string::npos) {
 
-				case 'F': case 'f':
-					args_.push_back(TYPE_FLOAT);
-					break;
-
-				default:
-					return false;
+			splited.push_back(args);
+		}
+		else {
+			while (first < args.size())
+			{
+				auto subString = args.substr(first, last - first);
+				splited.push_back(subString);
+				first = last + 1;
+				last = args.find_first_of(",", first);
+				if (last == std::string::npos) {
+					last = args.size();
 				}
 			}
+		}
+
+		for (int i = 0; i< splited.size(); i++) {
+			if (!arg_map_argmentChars.count(args)) {
+				return false;
+			}
+			else {
+
+				args_.push_back(arg_map_argmentChars.at(args));
+			}
+
 		}
 		return true;
 	}
@@ -413,6 +432,7 @@ public:
 	int		flags_=0;
 	int		index_=0;
 	std::vector<unsigned char>	args_;
+
 };
 
 class FunctionTable {
@@ -530,21 +550,45 @@ public:
 
 	bool DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args);
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <param name="arg_typeIndex"></param>
+	/// <param name="arg_name"></param>
+	/// <param name="arg_argmentName"></param>
+	/// <param name="memberInfo"></param>
 	template <typename T>
-	void RegistSystemType(const int arg_typeIndex, const std::string& arg_name) {
-		SystemTypeDefine type;
+	void RegistSystemType(const int arg_typeIndex, const std::string& arg_name,  const std::string& arg_argmentName,const std::string& memberInfo="") {
+		TypeDefine type;
 		type.typeFunc = &VirtualCPU::pushValue<T>;
 		type.typeName = arg_name;
 		type.typeIndex = arg_typeIndex;
+		type.argName = arg_argmentName;
+
+		if (memberInfo.size()) {
+			auto identiferSplited = StringHelper::Split(memberInfo, ",");
+
+			for (int i = 0; i < identiferSplited.size(); i++) {
+				auto typeSplited=StringHelper::Split(identiferSplited[i], ":");
+				if (typeSplited.size() != 2) {
+					error("組み込み型のメンバ変数の指定が間違っています");
+				}
+
+				type.map_memberIndex.emplace(typeSplited[0], i);
+				type.map_memberType.emplace(typeSplited[0], map_argmentChars.at(typeSplited[1]));
+
+			}
+		}
 
 		if (vec_systemTypes.size() <= arg_typeIndex) {
 			vec_systemTypes.resize(arg_typeIndex + 1);
 		}
-
+		map_argmentChars.emplace(arg_argmentName, arg_typeIndex);
 		vec_systemTypes[arg_typeIndex]=(type);
 	}
 
-	std::vector<SystemTypeDefine >& GetSystemTypes() {
+	std::vector<TypeDefine >& GetSystemTypes() {
 		return vec_systemTypes;
 	}
 
@@ -621,7 +665,7 @@ private:
 	std::vector<Label> labels;
 	std::vector<char> text_table;
 	std::vector<SysFunction> vec_sysCalls;
-	std::vector<SystemTypeDefine > vec_systemTypes;
+	std::vector<TypeDefine > vec_systemTypes;
 	NameSpace_t currentNameSpace = nullptr;
 	int break_index;
 	int error_count;
@@ -629,6 +673,7 @@ private:
 	std::string current_function_name;
 	int current_function_type;
 
+	std::map<std::string, int> map_argmentChars;
 };
 }
 #endif

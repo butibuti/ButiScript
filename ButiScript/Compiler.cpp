@@ -20,16 +20,20 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 {
 	//グローバル名前空間の設定
 	currentNameSpace = std::make_shared<NameSpace>("");
+
 	//組み込み関数の設定
+	RegistSystemType<int>(TYPE_INTEGER, "int","i");
+	RegistSystemType<float>(TYPE_FLOAT, "float","f");
+	RegistSystemType<std::string>(TYPE_STRING, "string","s");
+	RegistSystemType<int>(TYPE_VOID, "void","v");
+	RegistSystemType<ButiEngine::Vector2>(TYPE_VOID + 1, "Vector2","vec2", "x:f,y:f");
 
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_print, TYPE_VOID, "print", "s");
-	DefineSystemFunction(&ButiScript::VirtualCPU::Sys_pause, TYPE_VOID, "pause", nullptr);
+	DefineSystemFunction(&ButiScript::VirtualCPU::Sys_pause, TYPE_VOID, "pause", "");
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "i");
-	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostrf, TYPE_STRING, "ToString", "f");
+	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "f");
+	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_VOID + 1, "ToString", "vec2");
 
-	RegistSystemType<int>(TYPE_INTEGER,"int");
-	RegistSystemType<float>(TYPE_FLOAT,"float");
-	RegistSystemType<std::string>(TYPE_STRING,"string");
 
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
@@ -77,7 +81,7 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args)
 {
 	FunctionTag func(type);
-	if (!func.SetArgs(args))		// 引数を設定
+	if (!func.SetArgs(args,map_argmentChars))		// 引数を設定
 		return false;
 
 	func.SetDeclaration();			// 宣言済み
@@ -505,9 +509,9 @@ std::shared_ptr<ButiScript::NameSpace> ButiScript::NameSpace::GetParent() const
 
 void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 {
-	auto end = variables_.rend();
-	for (auto itr = variables_.rbegin(); itr != end; itr++)
+	auto end = vec_variableTypes.end();
+	for (auto itr = vec_variableTypes.begin(); itr != end; itr++)
 	{
-		arg_comp->OpAllocStack(itr->second.valueType);
+		arg_comp->OpAllocStack(*itr);
 	}
 }

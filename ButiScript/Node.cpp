@@ -39,6 +39,14 @@ Node_t Node::make_node(const int Op, Node_t left)
 	return Node_t(new Node(Op, left));
 }
 
+Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName)
+{
+	if (Op == OP_MEMBER) {
+		return Node_t();
+	}
+	return Node_t();
+}
+
 // “ñ€‰‰ŽZŽq‚Ìƒm[ƒh‚ð¶¬
 Node_t Node::make_node(const int Op, Node_t left, Node_t right)
 {
@@ -462,7 +470,7 @@ int Node::Push(Compiler* c) const
 	switch (op_) {
 	case OP_NEG:
 		if (left_->Push(c) == TYPE_STRING)
-			c->error("•¶Žš—ñ‚É‚Í‹–‚³‚ê‚È‚¢ŒvŽZ‚Å‚·B");
+			c->error("•¶Žš—ñ‚É‚Í“ž’ê‹–‚³‚ê‚È‚¢ŒvŽZ‚Å‚·B");
 		c->OpNeg();
 		return TYPE_INTEGER;
 
