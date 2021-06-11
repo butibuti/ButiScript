@@ -530,6 +530,34 @@ private:
 	std::multimap<std::string, FunctionTag> map_functions;
 };
 
+//型定義用
+
+class TypeTable {
+public:
+	const TypeDefine* GetType(const int index) const{
+		return &vec_systemTypes[index];
+	}
+	const std::map<std::string, int>& GetArgmentKeyMap()const {
+		return map_argmentChars;
+	}
+	void RegistType(const TypeDefine& arg_type) {
+
+		if (vec_systemTypes.size() <=arg_type.typeIndex) {
+			vec_systemTypes.resize(arg_type.typeIndex + 1);
+		}
+		map_argmentChars.emplace(arg_type.argName, arg_type.typeIndex);
+		vec_systemTypes[arg_type.typeIndex] = (arg_type);
+	}
+
+	const std::vector<TypeDefine >& GetSystemType()const {
+		return vec_systemTypes;
+	}
+private:
+
+	std::vector<TypeDefine > vec_systemTypes;
+	std::map<std::string, int> map_argmentChars;
+};
+
 // コンパイラ
 
 class VirtualCPU;
@@ -574,22 +602,17 @@ public:
 				if (typeSplited.size() != 2) {
 					error("組み込み型のメンバ変数の指定が間違っています");
 				}
-
+				auto memberTypeIndex = types.GetArgmentKeyMap().at(typeSplited[1]);
 				type.map_memberIndex.emplace(typeSplited[0], i);
-				type.map_memberType.emplace(typeSplited[0], map_argmentChars.at(typeSplited[1]));
+				type.map_memberType.emplace(typeSplited[0], memberTypeIndex);
 
 			}
 		}
-
-		if (vec_systemTypes.size() <= arg_typeIndex) {
-			vec_systemTypes.resize(arg_typeIndex + 1);
-		}
-		map_argmentChars.emplace(arg_argmentName, arg_typeIndex);
-		vec_systemTypes[arg_typeIndex]=(type);
+		types.RegistType(type);
 	}
 
-	std::vector<TypeDefine >& GetSystemTypes() {
-		return vec_systemTypes;
+	const std::vector<TypeDefine >& GetSystemTypes()const {
+		return types.GetSystemType();
 	}
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node);
@@ -618,6 +641,11 @@ public:
 			return functions.Find(name, args);
 		}
 	}
+
+	const TypeDefine* GetType(const int index)const {
+		return types.GetType(index);
+	}
+
 	NameSpace_t GetCurrentNameSpace()const {
 		return currentNameSpace;
 	}
@@ -660,12 +688,12 @@ public:
 
 private:
 	FunctionTable functions;
+	TypeTable types;
 	std::vector<ValueTable> variables;
 	std::vector<VMCode> statement;
 	std::vector<Label> labels;
 	std::vector<char> text_table;
 	std::vector<SysFunction> vec_sysCalls;
-	std::vector<TypeDefine > vec_systemTypes;
 	NameSpace_t currentNameSpace = nullptr;
 	int break_index;
 	int error_count;
@@ -673,7 +701,6 @@ private:
 	std::string current_function_name;
 	int current_function_type;
 
-	std::map<std::string, int> map_argmentChars;
 };
 }
 #endif

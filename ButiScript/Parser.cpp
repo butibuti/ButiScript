@@ -435,7 +435,8 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			callMemberValue = (Value >> "." >> identifier);
 
 			// åvéZÇÃprimeÉmÅ[Éh
-			prime = func_node
+			prime = callMemberValue
+				|func_node
 				| Value
 				| floatNumber
 				| number
@@ -686,9 +687,9 @@ struct script_grammer : public grammar<script_grammer> {
 				>> identifier[callMemberValue.memberNode = binary_node(OP_MEMBER, callMemberValue.valueNode,arg1)]
 				;
 			// åvéZÇÃprimeÉmÅ[Éh
-			prime = func_node[prime.node = arg1]
+			prime = callMemberValue[prime.node = arg1]
+				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
-				| callMemberValue[prime.node=arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
 				| number[prime.node = unary_node(OP_INT, arg1)]
 				| string_node[prime.node = unary_node(OP_STRING, arg1)]

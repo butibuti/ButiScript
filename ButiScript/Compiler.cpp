@@ -67,7 +67,7 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 	int type = arg_type & ~TYPE_REF;
 	std::string output = "";
 	
-	output = vec_systemTypes[type].typeName;
+	output = types.GetType(type)->typeName;
 
 	if (arg_type&TYPE_REF) {
 		output += "&";
@@ -81,7 +81,7 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args)
 {
 	FunctionTag func(type);
-	if (!func.SetArgs(args,map_argmentChars))		// ˆø”‚ðÝ’è
+	if (!func.SetArgs(args,types.GetArgmentKeyMap()))		// ˆø”‚ðÝ’è
 		return false;
 
 	func.SetDeclaration();			// éŒ¾Ï‚Ý
@@ -413,7 +413,7 @@ bool ButiScript::Compiler::CraeteData(ButiScript::Data& Data, int code_size)
 	Data.valueSize = (int)variables[0].size();
 	Data.entryPoint = labels[tag->index_].pos_;
 	Data.vec_sysCalls = vec_sysCalls;
-	Data.vec_types = vec_systemTypes;
+	Data.vec_types = types.GetSystemType();
 
 
 	if (Data.textSize != 0)

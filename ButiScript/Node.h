@@ -185,6 +185,20 @@ namespace ButiScript {
 		NodeList_t node_list_;
 	};
 
+	//メンバ変数へのアクセスノード
+	class Node_Member :public Node {
+	public:
+		Node_Member(const int Op, const Node_t& arg_valueNode,const std::string& arg_memberName)
+			:Node(Op, arg_valueNode)
+		{
+			string_ = (arg_memberName);
+		}
+		virtual int Push(Compiler* c) const;
+		virtual int Pop(Compiler* c) const;
+		int GetType(Compiler* c)const override;
+	private:
+	};
+
 	// ステートメント
 
 	enum STATE_TYPE {

@@ -153,7 +153,7 @@ namespace ButiScript {
 		}
 		
 		void PushLocalMember() {
-			PushLocalMember(Value_Int(), Value_Int());
+			PushLocalMember(top().v_->Get<int>(), Value_Int());
 		}
 
 		// ”z—ñ‚©‚çPush

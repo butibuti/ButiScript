@@ -39,10 +39,11 @@ Node_t Node::make_node(const int Op, Node_t left)
 	return Node_t(new Node(Op, left));
 }
 
+//メンバ変数へのアクセスノードを作成
 Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName)
 {
 	if (Op == OP_MEMBER) {
-		return Node_t();
+		return Node_t(new Node_Member(Op,left,arg_memberName) );
 	}
 	return Node_t();
 }
@@ -1570,6 +1571,127 @@ void Declaration::Define(Compiler* c)
 	}
 	else {
 		c->ValueDefine(valueType, vec_node);
+	}
+}
+int Node_Member::Push(Compiler* c) const
+{
+	if (op_ != OP_MEMBER) {
+		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+	}
+	else {
+		//変数のメンバ変数
+		if (left_->Op() == OP_IDENTIFIER|| left_->Op() == OP_MEMBER) {
+			std::string  valueName;
+			NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+			const ValueTag* valueTag = nullptr;
+
+			while (!valueTag)
+			{
+				if (currentSerchNameSpace) {
+					valueName = currentSerchNameSpace->GetGlobalNameString() + left_->GetString();
+				}
+				else {
+					valueName = left_->GetString();
+				}
+
+				valueTag = c->GetValueTag(valueName);
+				if (currentSerchNameSpace) {
+					currentSerchNameSpace = currentSerchNameSpace->GetParent();
+				}
+				else {
+					break;
+				}
+
+			}
+			if (!valueTag) {
+				c->error("変数 " + valueName + " は定義されていません。");
+			}
+			else {
+
+				//型
+				auto typeTag = c->GetType(left_->GetType(c));
+
+				if ((valueTag->valueType & TYPE_REF) != 0) {
+					if (left_->GetLeft()) {		// 配列
+						left_->GetLeft()->Push(c);
+						c->PushLocalArrayRef(valueTag->address);
+					}
+					else {
+						c->PushLocalRef(valueTag->address);
+					}
+					return valueTag->valueType & ~TYPE_REF;
+				}
+				if (valueTag->global_) {		// 外部変数
+					if (left_->GetLeft()) {		// 配列
+						left_->GetLeft()->Push(c);
+						c->PushArray(valueTag->address);
+					}
+					else {
+						c->PushValue(valueTag->address);
+					}
+				}
+				else {					// ローカル変数
+					if (left_->GetLeft()) {		// 配列
+						left_->GetLeft()->Push(c);
+						c->PushLocalArray(valueTag->address);
+					}
+					else {
+						c->PushConstInt(valueTag->address);
+						c->PushLocalMember(typeTag->map_memberIndex.at(string_));
+					}
+				}
+				return   typeTag->map_memberType.at(string_);
+			}
+		}
+
+		
+	}
+}
+int Node_Member::Pop(Compiler* c) const
+{
+	return 0;
+}
+int Node_Member::GetType(Compiler* c) const
+{
+	if (op_ != OP_MEMBER) {
+		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+	}
+	else {
+		//変数のメンバ変数
+		if (left_->Op() == OP_IDENTIFIER || left_->Op() == OP_MEMBER) {
+			std::string  valueName;
+			NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+			const ValueTag* valueTag = nullptr;
+
+			while (!valueTag)
+			{
+				if (currentSerchNameSpace) {
+					valueName = currentSerchNameSpace->GetGlobalNameString() + left_->GetString();
+				}
+				else {
+					valueName = left_->GetString();
+				}
+
+				valueTag = c->GetValueTag(valueName);
+				if (currentSerchNameSpace) {
+					currentSerchNameSpace = currentSerchNameSpace->GetParent();
+				}
+				else {
+					break;
+				}
+
+			}
+			if (!valueTag) {
+				c->error("変数 " + valueName + " は定義されていません。");
+			}
+			else {
+
+				//型
+				auto typeTag = c->GetType(left_->GetType(c));
+
+				return typeTag->map_memberType.at(string_);
+			}
+		}
 	}
 }
 }
