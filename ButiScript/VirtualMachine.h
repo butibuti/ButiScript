@@ -149,7 +149,7 @@ namespace ButiScript {
 
 		//ローカル変数のメンバ変数をpush
 		void PushLocalMember(const int arg_val,const int arg_valueIndex) {
-			push(Stack[arg_val + stack_base].v_->GetMember(arg_valueIndex));
+			pop(); push(Stack[arg_val + stack_base].v_->GetMember(arg_valueIndex));
 		}
 		
 		void PushLocalMember() {
@@ -242,6 +242,15 @@ namespace ButiScript {
 		}
 		void PopLocal() {
 			PopLocal(Value_Int());
+		}
+
+		// ローカル変数のメンバ変数にPop
+		void PopLocalMember(const int arg_val ,const int arg_index)
+		{
+			pop(); Stack[arg_val + stack_base].v_->GetMember(arg_index)->Set(*top().v_); pop();
+		}
+		void PopLocalMember() {
+			PopLocalMember(top().v_->Get<int>(), Value_Int());
 		}
 
 		// 配列変数にPop

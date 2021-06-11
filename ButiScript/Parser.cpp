@@ -498,7 +498,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				("|=", OP_OR_ASSIGN)
 				("<<=", OP_LSHIFT_ASSIGN)
 				(">>=", OP_RSHIFT_ASSIGN);
-			assign = Value
+			assign = (callMemberValue|Value)
 				>> assign_op
 				>> expr;
 
@@ -750,7 +750,7 @@ struct script_grammer : public grammar<script_grammer> {
 				("|=", OP_OR_ASSIGN)
 				("<<=", OP_LSHIFT_ASSIGN)
 				(">>=", OP_RSHIFT_ASSIGN);
-			assign = Value[assign.node = arg1]
+			assign = (callMemberValue[assign.node = arg1]|Value[assign.node = arg1] )
 				>> assign_op[assign.Op = arg1]
 				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
 

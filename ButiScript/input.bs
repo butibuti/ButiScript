@@ -5,6 +5,11 @@ main():int
 {
 	var s :string;
 	var v:Vector2;
+
+	
+	v.x=10.12;
+	v.y=v.x*0.5;
+
 	s=ToString(v.y)+EndL();
 	print(s);
 	
@@ -14,7 +19,7 @@ main():int
 	f=12.1;
 	Functions::Functions_inner::Functions_inner2::m=2.0;
 	for(;i<10;Add(i)){
-		s=ToString(Functions::Functions_inner::Functions_inner2::m*2)+ EndL();
+		s=ToString(Functions::Functions_inner::Functions_inner2::Pow3(f))+ EndL();
 		f+=0.5;
 		print(s);
 	}
