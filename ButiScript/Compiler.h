@@ -534,28 +534,51 @@ private:
 
 class TypeTable {
 public:
-	const TypeDefine* GetType(const int index) const{
-		return &vec_systemTypes[index];
+	const TypeTag* GetType(const int index) const{
+		if (vec_systemTypes.size() <= index) {
+			return nullptr;
+		}
+		return vec_systemTypes[index];
 	}
 	const std::map<std::string, int>& GetArgmentKeyMap()const {
 		return map_argmentChars;
 	}
-	void RegistType(const TypeDefine& arg_type) {
+
+	const TypeTag* GetType(const std::string& arg_typename)const {
+		if (!map_types.count(arg_typename)) {
+			return nullptr;
+		}
+		return &map_types.at(arg_typename);
+	}
+
+	void RegistType(const TypeTag& arg_type) {
+
 
 		if (vec_systemTypes.size() <=arg_type.typeIndex) {
 			vec_systemTypes.resize(arg_type.typeIndex + 1);
 		}
 		map_argmentChars.emplace(arg_type.argName, arg_type.typeIndex);
-		vec_systemTypes[arg_type.typeIndex] = (arg_type);
+		map_types.emplace(arg_type.typeName, arg_type);
+		vec_systemTypes[arg_type.typeIndex] =& map_types.at(arg_type.typeName);
 	}
 
-	const std::vector<TypeDefine >& GetSystemType()const {
+	const std::vector<TypeTag* >& GetSystemType()const {
 		return vec_systemTypes;
+	}
+
+	void CreateTypeVec(std::vector<TypeTag>&arg_ref_types) const{
+		arg_ref_types.reserve(vec_systemTypes.size());
+		auto end = vec_systemTypes.end();
+		for (auto itr = vec_systemTypes.begin(); itr != end; itr++) {
+			arg_ref_types.push_back(*(*itr));
+		}
+
 	}
 private:
 
-	std::vector<TypeDefine > vec_systemTypes;
+	std::vector<TypeTag* > vec_systemTypes;
 	std::map<std::string, int> map_argmentChars;
+	std::map<std::string, TypeTag> map_types;
 };
 
 // ƒRƒ“ƒpƒCƒ‰
@@ -586,10 +609,11 @@ public:
 	/// <param name="arg_name"></param>
 	/// <param name="arg_argmentName"></param>
 	/// <param name="memberInfo"></param>
-	template <typename T>
-	void RegistSystemType(const int arg_typeIndex, const std::string& arg_name,  const std::string& arg_argmentName,const std::string& memberInfo="") {
-		TypeDefine type;
-		type.typeFunc = &VirtualCPU::pushValue<T>;
+	template <typename T,int arg_typeIndex>
+	void RegistSystemType( const std::string& arg_name,  const std::string& arg_argmentName,const std::string& memberInfo="") {
+		TypeTag type;
+		type.typeFunc = &VirtualCPU::pushValue<T, arg_typeIndex>;
+		type.refTypeFunc = &VirtualCPU::pushValue<Type_Null,arg_typeIndex|TYPE_REF>;
 		type.typeName = arg_name;
 		type.typeIndex = arg_typeIndex;
 		type.argName = arg_argmentName;
@@ -611,7 +635,7 @@ public:
 		types.RegistType(type);
 	}
 
-	const std::vector<TypeDefine >& GetSystemTypes()const {
+	const std::vector<TypeTag* >& GetSystemTypes()const {
 		return types.GetSystemType();
 	}
 
@@ -642,7 +666,18 @@ public:
 		}
 	}
 
-	const TypeDefine* GetType(const int index)const {
+	//Œ^‚ÌŒŸõ
+	int GetTypeIndex(const std::string& arg_typeName)const {
+		auto tag = types.GetType(arg_typeName);
+		if (tag) {
+			return tag->typeIndex;
+		}
+		return -1;
+	}
+
+	//
+
+	const TypeTag* GetType(const int index)const {
 		return types.GetType(index);
 	}
 

@@ -489,6 +489,9 @@ namespace ButiScript {
 
 	};
 
+	//参照型など実体を持たない変数の初期化に使用
+	struct Type_Null {};
+
 	// 変数
 	class Value {
 
@@ -497,6 +500,11 @@ namespace ButiScript {
 		{
 			valueType = TYPE_VOID;
 			v_ = nullptr;
+		}
+
+		Value(const Type_Null) {
+			v_ = nullptr;
+			valueType = TYPE_VOID;
 		}
 
 		//intとして初期化
@@ -530,7 +538,7 @@ namespace ButiScript {
 		//変数を指定して初期化
 		Value(IValue* p,const int type)
 		{
-			v_ = p;
+			v_ = p->Clone();
 			valueType = type;
 		}
 
@@ -550,9 +558,7 @@ namespace ButiScript {
 				return *this;
 
 			clear();
-			if (valueType = TYPE_VOID) {
-				valueType = a.valueType;
-			}
+
 			Assign(a);
 
 			return *this;
@@ -560,8 +566,10 @@ namespace ButiScript {
 
 		void clear()
 		{
-			if (valueType == TYPE_STRING)
+			if (v_) {
 				v_->release();
+				v_ = nullptr;
+			}
 		}
 
 		void Copy(const Value& a)
@@ -577,25 +585,37 @@ namespace ButiScript {
 			}
 		}
 		void Assign(const Value& a) {
-
-			if (a.valueType == TYPE_STRING) {
-
-				valueType = a.valueType;
+			//自分が参照型の場合、相手の実体への参照を取得
+			if (valueType & TYPE_REF|| a.valueType == TYPE_STRING) {
 				v_ = a.v_;
 				v_->addref();
-			}
-			else {
-				if (!v_) {
-					v_ = a.v_->Clone();
+
+				if (valueType == TYPE_VOID) {
+					valueType = a.valueType;
 				}
-				else {
+				return;
+			}
+
+			{
+				if (v_) {
 					v_->Set(*a.v_);
 				}
+				else {
+					if (a.v_) {
+						v_ = a.v_->Clone();
+					}
+				}
+			}
+			if (valueType == TYPE_VOID) {
+				valueType = a.valueType;
 			}
 		}
 
+		void SetType(const int arg_type) {
+			valueType = arg_type;
+		}
 		union {
-			IValue* v_;
+			IValue* v_=nullptr;
 		};
 		int valueType;
 	};
@@ -657,7 +677,9 @@ namespace ButiScript {
 		}
 
 		const Ty& top() const { return *(const Ty*)data_[size_ - 1]; }
-		Ty& top() { return *(Ty*)data_[size_ - 1]; }
+		Ty& top() {
+			return *(Ty*)data_[size_ - 1]; 
+		}
 
 		bool overflow() const { return size_ >= Size; }
 		bool empty() const { return size_ == 0; }

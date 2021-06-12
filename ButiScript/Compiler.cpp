@@ -22,11 +22,11 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 	currentNameSpace = std::make_shared<NameSpace>("");
 
 	//ëgÇ›çûÇ›ä÷êîÇÃê›íË
-	RegistSystemType<int>(TYPE_INTEGER, "int","i");
-	RegistSystemType<float>(TYPE_FLOAT, "float","f");
-	RegistSystemType<std::string>(TYPE_STRING, "string","s");
-	RegistSystemType<int>(TYPE_VOID, "void","v");
-	RegistSystemType<ButiEngine::Vector2>(TYPE_VOID + 1, "Vector2","vec2", "x:f,y:f");
+	RegistSystemType<int, TYPE_INTEGER>( "int","i");
+	RegistSystemType<float,TYPE_FLOAT>( "float","f");
+	RegistSystemType<std::string, TYPE_STRING>( "string","s");
+	RegistSystemType<int, TYPE_VOID>( "void","v");
+	RegistSystemType<ButiEngine::Vector2, TYPE_VOID + 1>( "Vector2","vec2", "x:f,y:f");
 
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_print, TYPE_VOID, "print", "s");
 	DefineSystemFunction(&ButiScript::VirtualCPU::Sys_pause, TYPE_VOID, "pause", "");
@@ -156,8 +156,8 @@ void ButiScript::Compiler::FunctionDefine(int type, const std::string& name, con
 struct add_value {
 	ButiScript::Compiler* comp_;
 	ButiScript::ValueTable& values_;
-	mutable int addr_;
-	add_value(ButiScript::Compiler* comp, ButiScript::ValueTable& values) : comp_(comp), values_(values), addr_(-4)
+	int addr_;
+	add_value(ButiScript::Compiler* comp, ButiScript::ValueTable& values,const int arg_addres=-4) : comp_(comp), values_(values), addr_(arg_addres)
 	{
 	}
 
@@ -166,7 +166,6 @@ struct add_value {
 		if (!values_.add_arg(arg.type(), arg.name(), addr_)) {
 			comp_->error("à¯êî " + arg.name() + " ÇÕä˘Ç…ìoò^Ç≥ÇÍÇƒÇ¢Ç‹Ç∑ÅB");
 		}
-		addr_--;
 	}
 };
 
@@ -206,8 +205,10 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 
 	// à¯êîÉäÉXÉgÇìoò^
 	auto endItr = args.rend();
+	int address = -4;
 	for (auto itr = args.rbegin(); itr != endItr; itr++) {
-		add_value(this, variables.back())(*itr);
+		add_value(this, variables.back(),address)(*itr);
+		address--;
 	}
 
 	// ï∂Ç™Ç†ÇÍÇŒÅAï∂Çìoò^
@@ -413,7 +414,7 @@ bool ButiScript::Compiler::CraeteData(ButiScript::Data& Data, int code_size)
 	Data.valueSize = (int)variables[0].size();
 	Data.entryPoint = labels[tag->index_].pos_;
 	Data.vec_sysCalls = vec_sysCalls;
-	Data.vec_types = types.GetSystemType();
+	types.CreateTypeVec(Data.vec_types);
 
 
 	if (Data.textSize != 0)
@@ -512,6 +513,12 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 	auto end = vec_variableTypes.end();
 	for (auto itr = vec_variableTypes.begin(); itr != end; itr++)
 	{
-		arg_comp->OpAllocStack(*itr);
+		if (*itr & TYPE_REF) {
+			arg_comp->OpAllocStack_Ref(*itr);
+		}
+		else {
+			arg_comp->OpAllocStack(*itr);
+		}
+		
 	}
 }

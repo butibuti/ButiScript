@@ -256,6 +256,18 @@ struct pop_nameSpace_impl {
 	}
 };
 
+//å^ÇÃì¡íË
+struct	specificType_impl {
+	template <typename Ty1, typename Ty2>
+	struct result { typedef int type; };
+
+	template <typename Ty1, typename Ty2>
+	int operator()(const Ty1& key, Ty2 driver) const
+	{
+		return  driver->GetTypeIndex(key);
+	}
+};
+
 // ç≈èIìoò^
 struct analyze_impl {
 	template <typename Ty1, typename Ty2>
@@ -283,6 +295,7 @@ phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
 phoenix::function<make_namespace_impl> const make_namespace = make_namespace_impl();
 phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
+phoenix::function<specificType_impl> const specificType = specificType_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
@@ -505,22 +518,17 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			// ïœêîêÈåæ
 			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
 
-			// å^êÈåæ
-			type = keyword_p("int")[type.type = TYPE_INTEGER] >> !ch_p('&')[type.type |= TYPE_REF]
-				| keyword_p("float")[type.type = TYPE_FLOAT] >> !ch_p('&')[type.type |= TYPE_REF]
-				| keyword_p("string")[type.type = TYPE_STRING] >> !ch_p('&')[type.type |= TYPE_REF]
-				| keyword_p("void")[type.type = TYPE_VOID]
-				| keyword_p("Vector2")[type.type = TYPE_VOID+1] >> !ch_p('&')[type.type |= TYPE_REF]
-				;
+			// å^ñº
+			type = identifier[type.type = specificType(arg1,self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF];
+
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
 				>> type
 				>> !str_p("[]");
 
 			// ä÷êîêÈåæ
-			decl_func = type
-				>> identifier
-				>> '(' >> !(arg % ',') >> ')' >> ';';
+			decl_func = identifier
+				>> '(' >> !(arg % ',') >> ')'>>":" >>type >> ';';
 
 			// ä÷êîíËã`ÇÃà¯êî
 			argdef = identifier[argdef.name = arg1] >> ':'
@@ -757,13 +765,9 @@ struct script_grammer : public grammar<script_grammer> {
 			// ïœêîêÈåæ
 			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
 
-			// å^êÈåæ
-			type = keyword_p("int")[type.type = TYPE_INTEGER] >> !ch_p('&')[type.type |= TYPE_REF]
-				| keyword_p("float")[type.type = TYPE_FLOAT] >> !ch_p('&')[type.type |= TYPE_REF]
-				| keyword_p("string")[type.type = TYPE_STRING] >> !ch_p('&')[type.type |= TYPE_REF]
-				| keyword_p("void")[type.type = TYPE_VOID]
-				| keyword_p("Vector2")[type.type = TYPE_VOID + 1] >> !ch_p('&')[type.type |= TYPE_REF]
-				;
+
+			// å^ñº
+			type = identifier[type.type = specificType(arg1, self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF];
 
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
@@ -771,9 +775,8 @@ struct script_grammer : public grammar<script_grammer> {
 				>> !str_p("[]")[arg.type |= TYPE_REF];
 
 			// ä÷êîêÈåæ
-			decl_func = type[decl_func.type = arg1]
-				>> identifier[decl_func.node = make_decl1(decl_func.type, arg1)]
-				>> '(' >> !(arg[decl_func.node = push_back(decl_func.node, arg1)] % ',') >> ')' >> ';';
+			decl_func =  identifier[decl_func.node = make_decl1(decl_func.type, arg1)]
+				>> '(' >> !(arg[decl_func.node = push_back(decl_func.node, arg1)] % ',') >> ')'>>":">>type[decl_func.type = arg1] >> ';';
 
 			// ä÷êîíËã`ÇÃà¯êî
 			argdef = identifier[argdef.name = arg1] >> ':'

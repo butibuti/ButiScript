@@ -58,7 +58,7 @@ namespace ButiScript {
 	};
 
 	// ÉmÅ[Éh
-
+	class ValueTag;
 	class Node;
 	class NodeList;
 	using Node_t = std::shared_ptr<Node>;
@@ -105,6 +105,8 @@ namespace ButiScript {
 
 		virtual int GetType(Compiler* c)const;
 
+		virtual const ValueTag* GetValueTag(Compiler* c)const;
+
 		int GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const;
 
 		int Assign(Compiler* c) const;
@@ -140,8 +142,8 @@ namespace ButiScript {
 		Node_value(const std::string& name)
 			: Node(OP_IDENTIFIER, name)
 		{
-		}
-
+		};
+		const ValueTag* GetValueTag(Compiler* c)const override;
 		int Push(Compiler* c) const;
 		int Pop(Compiler* c) const;
 	};

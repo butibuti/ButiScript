@@ -766,6 +766,11 @@ int Node::GetType(Compiler* c)const {
 	}
 	return TYPE_STRING;
 }
+const ValueTag* Node::GetValueTag(Compiler* c) const
+{
+		c->error("変数ノード以外から変数を受け取ろうとしています");
+		return nullptr;
+}
 int  Node_function::GetType(Compiler* c)const {
 	return GetCallType(c, left_->GetString(), &node_list_->args_);
 }
@@ -930,9 +935,9 @@ int Node::Assign(Compiler* c) const
 	return -1;
 }
 
-// 変数ノードのpush
-int Node_value::Push(Compiler* c) const
+const ValueTag* Node_value::GetValueTag(Compiler* c) const
 {
+
 	if (op_ != OP_IDENTIFIER) {
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
@@ -940,9 +945,9 @@ int Node_value::Push(Compiler* c) const
 
 		std::string  valueName;
 		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
-		const ValueTag* tag = nullptr;
+		const ValueTag* valueTag = nullptr;
 
-		while (!tag)
+		while (!valueTag)
 		{
 			if (currentSerchNameSpace) {
 				valueName = currentSerchNameSpace->GetGlobalNameString() + string_;
@@ -951,7 +956,7 @@ int Node_value::Push(Compiler* c) const
 				valueName = string_;
 			}
 
-			tag = c->GetValueTag(valueName);
+			valueTag = c->GetValueTag(valueName);
 			if (currentSerchNameSpace) {
 				currentSerchNameSpace = currentSerchNameSpace->GetParent();
 			}
@@ -960,11 +965,23 @@ int Node_value::Push(Compiler* c) const
 			}
 
 		}
-		if (!tag ) {
+		if (!valueTag) {
 			c->error("変数 " + valueName + " は定義されていません。");
 		}
-		else {
-			// 参照型変数は、引数にしか存在しない
+		return valueTag;
+	}
+}
+
+// 変数ノードのpush
+int Node_value::Push(Compiler* c) const
+{
+	if (op_ != OP_IDENTIFIER) {
+		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+	}
+	else {
+
+		const ValueTag* tag = GetValueTag(c);
+		{
 			if ((tag->valueType & TYPE_REF) != 0) {
 				if (left_) {		// 配列
 					left_->Push(c);
@@ -1008,30 +1025,8 @@ int Node_value::Pop(Compiler* c) const
 	else {
 		std::string  valueName;
 		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
-		const ValueTag* tag = nullptr;
-
-		while (!tag)
+		const ValueTag* tag = GetValueTag(c);
 		{
-			if (currentSerchNameSpace) {
-				valueName = currentSerchNameSpace->GetGlobalNameString() + string_;
-			}
-			else {
-				valueName = string_;
-			}
-
-			tag = c->GetValueTag(valueName);
-			if (currentSerchNameSpace) {
-				currentSerchNameSpace = currentSerchNameSpace->GetParent();
-			}
-			else {
-				break;
-			}
-
-		}
-		if (tag == nullptr) {
-			c->error("変数 " + valueName + " は定義されていません。");
-		}
-		else {
 			// 参照型変数は、引数にしか存在しない
 			if ((tag->valueType & TYPE_REF) != 0) {
 				if (left_) {		// 配列
@@ -1583,30 +1578,8 @@ int Node_Member::Push(Compiler* c) const
 		if (left_->Op() == OP_IDENTIFIER|| left_->Op() == OP_MEMBER) {
 			std::string  valueName;
 			NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
-			const ValueTag* valueTag = nullptr;
-
-			while (!valueTag)
+			const ValueTag* valueTag = left_->GetValueTag(c);
 			{
-				if (currentSerchNameSpace) {
-					valueName = currentSerchNameSpace->GetGlobalNameString() + left_->GetString();
-				}
-				else {
-					valueName = left_->GetString();
-				}
-
-				valueTag = c->GetValueTag(valueName);
-				if (currentSerchNameSpace) {
-					currentSerchNameSpace = currentSerchNameSpace->GetParent();
-				}
-				else {
-					break;
-				}
-
-			}
-			if (!valueTag) {
-				c->error("変数 " + valueName + " は定義されていません。");
-			}
-			else {
 
 				//型
 				auto typeTag = c->GetType(left_->GetType(c));
@@ -1655,30 +1628,8 @@ int Node_Member::Pop(Compiler* c) const
 	else {
 		std::string  valueName;
 		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
-		const ValueTag* valueTag = nullptr;
-
-		while (!valueTag)
+		const ValueTag* valueTag = left_->GetValueTag(c);
 		{
-			if (currentSerchNameSpace) {
-				valueName = currentSerchNameSpace->GetGlobalNameString() + left_->GetString();
-			}
-			else {
-				valueName = left_->GetString();
-			}
-
-			valueTag = c->GetValueTag(valueName);
-			if (currentSerchNameSpace) {
-				currentSerchNameSpace = currentSerchNameSpace->GetParent();
-			}
-			else {
-				break;
-			}
-
-		}
-		if (valueTag == nullptr) {
-			c->error("変数 " + valueName + " は定義されていません。");
-		}
-		else {
 
 			//型
 			auto typeTag = c->GetType(left_->GetType(c));
@@ -1727,30 +1678,8 @@ int Node_Member::GetType(Compiler* c) const
 		if (left_->Op() == OP_IDENTIFIER || left_->Op() == OP_MEMBER) {
 			std::string  valueName;
 			NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
-			const ValueTag* valueTag = nullptr;
-
-			while (!valueTag)
+			const ValueTag* valueTag=  left_->GetValueTag(c);
 			{
-				if (currentSerchNameSpace) {
-					valueName = currentSerchNameSpace->GetGlobalNameString() + left_->GetString();
-				}
-				else {
-					valueName = left_->GetString();
-				}
-
-				valueTag = c->GetValueTag(valueName);
-				if (currentSerchNameSpace) {
-					currentSerchNameSpace = currentSerchNameSpace->GetParent();
-				}
-				else {
-					break;
-				}
-
-			}
-			if (!valueTag) {
-				c->error("変数 " + valueName + " は定義されていません。");
-			}
-			else {
 
 				//型
 				auto typeTag = c->GetType(left_->GetType(c));

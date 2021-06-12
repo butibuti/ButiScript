@@ -11,6 +11,8 @@ int ButiScript::VirtualCPU::Run()
 	push(0);										// プログラム終了位置をpush
 	stack_base = Stack.size();						// スタック参照位置初期化
 
+	globalValue_base= stack_base;
+
 	//グローバル変数の確保
 	{
 
@@ -46,7 +48,6 @@ void ButiScript::VirtualCPU::Initialize()
 	commandSize = data_.commandSize;			// プログラムの大きさ
 	textSize = data_.textSize;					// データの大きさ
 
-	global_value.resize(data_.valueSize);			// 外部変数テーブル確保
 	command_ptr_ = commandTable + data_.entryPoint;	// プログラムカウンター初期化
 	allocCommand_ptr_ = commandTable +1;
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
@@ -57,15 +58,14 @@ void ButiScript::VirtualCPU::Initialize()
 		p_syscall[i] = data_.vec_sysCalls[i];
 	}
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() +data_.definedTypeCount));
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() + data_.definedTypeCount));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() +data_.definedTypeCount));
 	for (int i = 0; i < data_.vec_types.size(); i++) {
 
 		p_pushValues[data_.vec_types.at(i).typeIndex] = data_.vec_types.at(i).typeFunc;
+		p_pushRefValues[data_.vec_types.at(i).typeIndex] = data_.vec_types.at(i).refTypeFunc;
 	}
 
-	for (int i = TYPE_VOID; i < data_.definedTypeCount; i++) {
-		//
-	}
 
 
 }

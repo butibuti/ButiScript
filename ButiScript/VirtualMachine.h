@@ -19,10 +19,12 @@ namespace ButiScript {
 	class VirtualCPU;
 	using OperationFunction = void (VirtualCPU::*)();
 
-	struct TypeDefine {
-		TypeDefine(){}
+	struct TypeTag {
+		TypeTag(){}
 		//生成用アドレス
 		OperationFunction typeFunc;
+		//参照型生成用アドレス
+		OperationFunction refTypeFunc;
 		//型情報
 		int typeIndex;
 		//型名
@@ -56,7 +58,7 @@ namespace ButiScript {
 		int entryPoint;			// エントリーポイント
 
 		std::vector<OperationFunction> vec_sysCalls;
-		std::vector<TypeDefine> vec_types;
+		std::vector<TypeTag> vec_types;
 		int definedTypeCount = 0;
 	};
 
@@ -129,7 +131,7 @@ namespace ButiScript {
 		// 変数Push
 		void PushValue(const int arg_val)
 		{
-			push(global_value[arg_val]);
+			push(Stack[globalValue_base + arg_val]);
 		}
 		void PushValue()
 		{
@@ -160,7 +162,7 @@ namespace ButiScript {
 		void PushArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
-			push(global_value[(int)(arg_val + index)]);
+			push(Stack[(int)(arg_val + index)]);
 		}
 
 		void PushArray()
@@ -230,7 +232,7 @@ namespace ButiScript {
 		// 変数にPop
 		void PopValue(const int arg_val)
 		{
-			global_value[arg_val] = top(); pop();
+			Stack[globalValue_base+ arg_val] = top(); pop();
 		}
 		void PopValue() {
 			PopValue(Value_Int());
@@ -257,7 +259,7 @@ namespace ButiScript {
 		void PopArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
-			global_value[(int)(arg_val + index)] = top(); pop();
+			Stack[(int)(arg_val + index)] = top(); pop();
 		}
 		void PopArray() {
 			PopArray(Value_Int());
@@ -299,11 +301,22 @@ namespace ButiScript {
 		void OpAllocStack(const int arg_val)
 		{
 			(this->*p_pushValues[arg_val])();
-			
+
 		}
 		void OpAllocStack()
 		{
 			OpAllocStack(Value_Int());
+		}
+
+		// ローカル変数(参照型)を確保
+		void OpAllocStack_Ref(const int arg_val)
+		{
+			(this->*p_pushRefValues[arg_val& ~TYPE_REF])();
+
+		}
+		void OpAllocStack_Ref()
+		{
+			OpAllocStack_Ref(Value_Int());
 		}
 
 		// 空Pop（スタックトップを捨てる）
@@ -321,49 +334,71 @@ namespace ButiScript {
 		// ==
 		void OpEq()
 		{
-			auto rhs = top().v_; pop();
-			auto lhs = top().v_; pop();
-			push(lhs ->Eq( rhs));
+
+			auto rhs = top().v_; rhs->addref(); pop();
+			auto lhs = top().v_; lhs->addref(); pop();
+			push(lhs->Eq(rhs));
+
+			rhs->release();
+			lhs->release();
+
 		}
 
 		// !=
 		void OpNe()
 		{
-			auto rhs = top().v_; pop();
-			auto lhs = top().v_; pop();
+			auto rhs = top().v_; rhs->addref(); pop();
+			auto lhs = top().v_; lhs->addref(); pop();
 			push(!lhs->Eq(rhs));
+
+			rhs->release();
+			lhs->release();
 		}
 
 		// >
 		void OpGt()
 		{
-			auto rhs = top().v_; pop();
-			auto lhs = top().v_; pop();
-			push(lhs ->Gt( rhs));
+			auto rhs = top().v_; rhs->addref(); pop();
+			auto lhs = top().v_; lhs->addref(); pop();
+			push(lhs->Gt(rhs));
+
+			rhs->release();
+			lhs->release();
 		}
 
 		// >=
 		void OpGe()
 		{
-			auto rhs = top().v_; pop();
-			auto lhs = top().v_; pop();
+			auto rhs = top().v_; rhs->addref(); pop();
+			auto lhs = top().v_; lhs->addref(); pop();
 			push(lhs->Ge(rhs));
+
+			rhs->release();
+			lhs->release();
 		}
 
 		// <
 		void OpLt()
 		{
-			auto rhs = top().v_; pop();
-			auto lhs = top().v_; pop();
+			auto rhs = top().v_; rhs->addref(); pop();
+			auto lhs = top().v_; lhs->addref(); pop();
 			push(!lhs->Ge(rhs));
+
+			rhs->release();
+			lhs->release();
 		}
 
 		// <=
 		void OpLe()
 		{
-			auto rhs = top().v_; pop();
-			auto lhs = top().v_; pop();
+
+			auto rhs = top().v_; rhs->addref(); pop();
+			auto lhs = top().v_; lhs->addref(); pop();
 			push(!lhs->Gt(rhs));
+
+			rhs->release();
+			lhs->release();
+
 		}
 
 		// &&
@@ -688,9 +723,11 @@ namespace ButiScript {
 		}
 
 
-		template<typename T>
+		template<typename T,int typeIndex>
 		void pushValue() {
-			Stack.push(Value(T()));
+			auto value = Value(T());
+			value.SetType(typeIndex);
+			Stack.push(value);
 		}
 
 	private:
@@ -726,8 +763,9 @@ namespace ButiScript {
 		std::string text(const ButiScript::Value& v) { return v.v_->Get<std::string>(); }
 		const ButiScript::Value& ref_to_value(const int addr) const
 		{
-			if (addr & global_flag)
-				return global_value[addr & global_mask];
+			if (addr & global_flag) {
+				return Stack[addr & global_mask];
+			}
 			return Stack[addr];
 		}
 		void set_ref(const int addr, const ButiScript::Value& v)
@@ -760,14 +798,15 @@ namespace ButiScript {
 		OperationFunction* p_syscall=nullptr;
 		//変数の確保関数テーブル
 		OperationFunction* p_pushValues = nullptr;
+		//変数(参照型)の確保関数テーブル
+		OperationFunction* p_pushRefValues = nullptr;
 
 
 		ButiScript::Stack<ButiScript::Value, STACK_SIZE> Stack;
-		//グローバル変数
-		std::vector<ButiScript::Value> global_value;
-		//スタックの参照位置
-		int stack_base;
 
+		//スタックの参照位置
+		int stack_base=0;
+		int globalValue_base=0;
 		
 	};
 
