@@ -979,10 +979,18 @@ int Node_value::Push(Compiler* c) const
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-
 		const ValueTag* tag = GetValueTag(c);
 		{
-			if ((tag->valueType & TYPE_REF) != 0) {
+			if (tag->global_) {		// グローバル変数
+				if (left_) {		// 配列
+					left_->Push(c);
+					c->PushGlobalArrayRef(tag->address);
+				}
+				else {
+					c->PushGlobalValueRef(tag->address);
+				}
+			}
+			else {					// ローカル変数
 				if (left_) {		// 配列
 					left_->Push(c);
 					c->PushLocalArrayRef(tag->address);
@@ -990,15 +998,28 @@ int Node_value::Push(Compiler* c) const
 				else {
 					c->PushLocalRef(tag->address);
 				}
-				return tag->valueType & ~TYPE_REF;
 			}
-			if (tag->global_) {		// 外部変数
+			return tag->valueType & ~TYPE_REF;
+		}
+	}
+	return TYPE_INTEGER;
+}
+
+int Node_value::PushClone(Compiler* c) const
+{
+	if (op_ != OP_IDENTIFIER) {
+		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+	}
+	else {
+		const ValueTag* tag = GetValueTag(c);
+		{
+			if (tag->global_) {		// グローバル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushArray(tag->address);
+					c->PushGlobalArray(tag->address);
 				}
 				else {
-					c->PushValue(tag->address);
+					c->PushGlobalValue(tag->address);
 				}
 			}
 			else {					// ローカル変数
@@ -1010,7 +1031,7 @@ int Node_value::Push(Compiler* c) const
 					c->PushLocal(tag->address);
 				}
 			}
-			return tag->valueType;
+			return tag->valueType & ~TYPE_REF;
 		}
 	}
 	return TYPE_INTEGER;
@@ -1023,22 +1044,9 @@ int Node_value::Pop(Compiler* c) const
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		std::string  valueName;
-		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
 		const ValueTag* tag = GetValueTag(c);
 		{
-			// 参照型変数は、引数にしか存在しない
-			if ((tag->valueType & TYPE_REF) != 0) {
-				if (left_) {		// 配列
-					left_->Push(c);
-					c->PopLocalArrayRef(tag->address);
-				}
-				else {
-					c->PopLocalRef(tag->address);
-				}
-				return tag->valueType & ~TYPE_REF;
-			}
-			if (tag->global_) {		// 外部変数
+			if (tag->global_) {		// グローバル変数
 				if (left_) {		// 配列
 					left_->Push(c);
 					c->PopArray(tag->address);
@@ -1056,7 +1064,7 @@ int Node_value::Pop(Compiler* c) const
 					c->PopLocal(tag->address);
 				}
 			}
-			return tag->valueType;
+			return tag->valueType & ~TYPE_REF;
 		}
 	}
 	return TYPE_INTEGER;
@@ -1081,65 +1089,38 @@ struct set_arg {
 			else {
 				std::string  valueName;
 				NameSpace_t currentSerchNameSpace = comp_->GetCurrentNameSpace();
-				const ValueTag* tag = nullptr;
-
-				while (!tag)
-				{
-					if (currentSerchNameSpace) {
-						valueName = currentSerchNameSpace->GetGlobalNameString() + node->GetString();
-					}
-					else {
-						valueName = node->GetString();
-					}
-
-					tag = comp_->GetValueTag(valueName);
-					if (currentSerchNameSpace) {
-						currentSerchNameSpace = currentSerchNameSpace->GetParent();
-					}
-					else {
-						break;
-					}
-
-				}
+				const ValueTag* tag = node->GetValueTag(comp_);
 				if (tag == nullptr) {
 					comp_->error("変数 " + node->GetString() + " は定義されていません。");
-				}
-				else if (tag->valueType >= TYPE_INTEGER_REF) {		// 参照
-					// 参照型変数は、ローカルしかない
-					if (node->GetLeft()) {
-						node->GetLeft()->Push(comp_);
-						comp_->PushLocal(tag->address);
-						comp_->OpAdd();
-					}
-					else {
-						comp_->PushLocal(tag->address);
-					}
 				}
 				else {
 					if (!TypeCheck(tag->valueType ,type) ){
 						comp_->error("引数の型が合いません。");
 					}
-					int addr = tag->address;
-					if (tag->global_)			// 外部変数
-						addr |= ButiScript::VirtualCPU::global_flag;
-					// アドレスをpush
-					if (node->GetLeft()) {			// 配列
-						if (node->GetLeft()->Op() == OP_INT) {
-							comp_->PushAddr(addr + node->GetLeft()->GetNumber());
+
+					if (tag->global_) {
+						if (node->GetLeft()) {
+							node->GetLeft()->Push(comp_);
+							comp_->PushGlobalArrayRef(tag->address);
 						}
 						else {
-							node->GetLeft()->Push(comp_);
-							comp_->PushArrayAddr(addr);
+							comp_->PushGlobalValueRef(tag->address);
 						}
 					}
 					else {
-						comp_->PushAddr(addr);
+						if (node->GetLeft()) {
+							node->GetLeft()->Push(comp_);
+							comp_->PushLocalArrayRef(tag->address);
+						}
+						else {
+							comp_->PushLocalRef(tag->address);
+						}
 					}
 				}
 			}
 		}
 		else {
-			if (!TypeCheck( node->Push(comp_), type)) {
+			if (!TypeCheck( node->PushClone(comp_), type)) {
 				comp_->error("引数の型が合いません。");
 			}
 		}
@@ -1576,36 +1557,66 @@ int Node_Member::Push(Compiler* c) const
 	else {
 		//変数のメンバ変数
 		if (left_->Op() == OP_IDENTIFIER|| left_->Op() == OP_MEMBER) {
-			std::string  valueName;
-			NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
 			const ValueTag* valueTag = left_->GetValueTag(c);
 			{
 
 				//型
 				auto typeTag = c->GetType(left_->GetType(c));
 
-				if ((valueTag->valueType & TYPE_REF) != 0) {
-					if (left_->GetLeft()) {		// 配列
-						left_->GetLeft()->Push(c);
-						c->PushLocalArrayRef(valueTag->address);
-					}
-					else {
-						c->PushLocalRef(valueTag->address);
-					}
-					return valueTag->valueType & ~TYPE_REF;
-				}
+
 				if (valueTag->global_) {		// 外部変数
 					if (left_->GetLeft()) {		// 配列
 						left_->GetLeft()->Push(c);
-						c->PushArray(valueTag->address);
+						c->PushGlobalArrayRef(valueTag->address);
 					}
 					else {
-						c->PushValue(valueTag->address);
+						c->PushGlobalValueRef(valueTag->address);
 					}
 				}
 				else {					// ローカル変数
 					if (left_->GetLeft()) {		// 配列
 						left_->GetLeft()->Push(c);
+						c->PushLocalArrayRef(valueTag->address);
+					}
+					else {
+						c->PushConstInt(valueTag->address);
+						c->PushLocalMemberRef(typeTag->map_memberIndex.at(string_));
+					}
+				}
+				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
+			}
+		}
+
+		
+	}
+}
+int Node_Member::PushClone(Compiler* c) const
+{
+	if (op_ != OP_MEMBER) {
+		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+	}
+	else {
+		//変数のメンバ変数
+		if (left_->Op() == OP_IDENTIFIER || left_->Op() == OP_MEMBER) {
+			const ValueTag* valueTag = left_->GetValueTag(c);
+			{
+
+				//型
+				auto typeTag = c->GetType(left_->GetType(c));
+
+
+				if (valueTag->global_) {		// 外部変数
+					if (left_->GetLeft()) {		// 配列
+						left_->GetLeft()->PushClone(c);
+						c->PushGlobalArray(valueTag->address);
+					}
+					else {
+						c->PushGlobalValue(valueTag->address);
+					}
+				}
+				else {					// ローカル変数
+					if (left_->GetLeft()) {		// 配列
+						left_->GetLeft()->PushClone(c);
 						c->PushLocalArray(valueTag->address);
 					}
 					else {
@@ -1613,11 +1624,11 @@ int Node_Member::Push(Compiler* c) const
 						c->PushLocalMember(typeTag->map_memberIndex.at(string_));
 					}
 				}
-				return   typeTag->map_memberType.at(string_);
+				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
 			}
 		}
 
-		
+
 	}
 }
 int Node_Member::Pop(Compiler* c) const
@@ -1626,24 +1637,13 @@ int Node_Member::Pop(Compiler* c) const
 		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		std::string  valueName;
-		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+
 		const ValueTag* valueTag = left_->GetValueTag(c);
 		{
 
 			//型
 			auto typeTag = c->GetType(left_->GetType(c));
-			// 参照型変数は、引数にしか存在しない
-			if ((valueTag->valueType & TYPE_REF) != 0) {
-				if (left_->GetLeft()) {		// 配列
-					left_->GetLeft()->Push(c);
-					c->PopLocalArrayRef(valueTag->address);
-				}
-				else {
-					c->PopLocalRef(valueTag->address);
-				}
-				return valueTag->valueType & ~TYPE_REF;
-			}
+			
 			if (valueTag->global_) {		// 外部変数
 				if (left_->GetLeft()) {		// 配列
 					left_->GetLeft()->Push(c);
@@ -1663,7 +1663,7 @@ int Node_Member::Pop(Compiler* c) const
 					c->PopLocalMember(typeTag->map_memberIndex.at(string_));
 				}
 			}
-			return   typeTag->map_memberType.at(string_);
+			return   typeTag->map_memberType.at(string_) & ~TYPE_REF;;
 		}
 	}
 	return TYPE_INTEGER;

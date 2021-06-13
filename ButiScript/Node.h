@@ -101,6 +101,9 @@ namespace ButiScript {
 		Node_t GetRight() const { return right_; }
 
 		virtual int Push(Compiler* c) const;
+		virtual int PushClone(Compiler* c) const {
+			return Push(c);
+		}
 		virtual int Pop(Compiler* c) const;
 
 		virtual int GetType(Compiler* c)const;
@@ -145,6 +148,7 @@ namespace ButiScript {
 		};
 		const ValueTag* GetValueTag(Compiler* c)const override;
 		int Push(Compiler* c) const;
+		int PushClone(Compiler* c) const;
 		int Pop(Compiler* c) const;
 	};
 
@@ -196,6 +200,7 @@ namespace ButiScript {
 			string_ = (arg_memberName);
 		}
 		virtual int Push(Compiler* c) const;
+		int PushClone(Compiler* c) const;
 		virtual int Pop(Compiler* c) const;
 		int GetType(Compiler* c)const override;
 	private:

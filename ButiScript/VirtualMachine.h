@@ -94,6 +94,7 @@ namespace ButiScript {
 		void Initialize();
 
 	private:
+		/////////////定数Push定義////////////////
 		// 定数Push
 		void PushConstInt(const int arg_val)
 		{
@@ -128,20 +129,23 @@ namespace ButiScript {
 			PushString(Value_Int());
 		}
 
-		// 変数Push
-		void PushValue(const int arg_val)
+
+
+		/////////////変数Push定義////////////////
+		// グローバル変数のコピーをPush
+		void PushGlobalValue(const int arg_val)
 		{
-			push(Stack[globalValue_base + arg_val]);
+			push(Stack[globalValue_base + arg_val].Clone());
 		}
-		void PushValue()
+		void PushGlobalValue()
 		{
-			PushValue(Value_Int());
+			PushGlobalValue(Value_Int());
 		}
 
-		// ローカル変数Push
+		// ローカル変数のコピーをPush
 		void PushLocal(const int arg_val)
 		{
-			push(Stack[arg_val + stack_base]);
+			push(Stack[arg_val + stack_base].Clone());
 		}
 
 		void PushLocal()
@@ -149,58 +153,93 @@ namespace ButiScript {
 			PushLocal(Value_Int());
 		}
 
-		//ローカル変数のメンバ変数をpush
-		void PushLocalMember(const int arg_val,const int arg_valueIndex) {
-			pop(); push(Stack[arg_val + stack_base].v_->GetMember(arg_valueIndex));
+		//ローカル変数のメンバ変数のコピーをpush
+		void PushLocalMember(const int arg_val, const int arg_valueIndex) {
+			pop(); push(Stack[arg_val + stack_base].v_->GetMember(arg_valueIndex), Stack[arg_val + stack_base].v_->GetMemberType(arg_valueIndex));
 		}
-		
+
 		void PushLocalMember() {
 			PushLocalMember(top().v_->Get<int>(), Value_Int());
 		}
 
-		// 配列からPush
-		void PushArray(const int arg_val)
+		// 配列からコピーをPush
+		void PushGlobalArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
-			push(Stack[(int)(arg_val + index)]);
+			push(Stack[(int)(arg_val + index)].Clone());
 		}
 
-		void PushArray()
+		void PushGlobalArray()
 		{
-			PushArray(Value_Int());
+			PushGlobalArray(Value_Int());
 		}
 
-		// ローカルの配列からPush
+		// ローカルの配列からコピーをPush
 		void PushLocalArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
-			push(Stack[arg_val + stack_base + index]);
+			push(Stack[arg_val + stack_base + index].Clone());
 		}
 
 		void PushLocalArray()
 		{
 			PushLocalArray(Value_Int());
 		}
+		
 
-		// ローカル変数(参照)Push
+		/////////////定数の参照Push定義////////////////
+
+		// グローバル変数の参照をPush
+		void PushGlobalValueRef(const int arg_val)
+		{
+			push(Stack[globalValue_base + arg_val]);
+		}
+		void PushGlobalValueRef()
+		{
+			PushGlobalValueRef(Value_Int());
+		}
+
+		// ローカル変数の参照をPush
 		void PushLocalRef(const int arg_val)
 		{
-			int addr = Stack[arg_val + stack_base].v_->Get<int>();
-			push(ref_to_value(addr));
+			push(Stack[arg_val + stack_base]);
 		}
+
 		void PushLocalRef()
 		{
 			PushLocalRef(Value_Int());
 		}
 
-		// ローカルの配列(参照)からPush
+		//ローカル変数のメンバ変数の参照をpush
+		void PushLocalMemberRef(const int arg_val, const int arg_valueIndex) {
+			pop(); push(Stack[arg_val + stack_base].v_->GetMember(arg_valueIndex), Stack[arg_val + stack_base].v_->GetMemberType(arg_valueIndex));
+		}
+
+		void PushLocalMemberRef() {
+			PushLocalMemberRef(top().v_->Get<int>(), Value_Int());
+		}
+
+		// 配列から参照をPush
+		void PushGlobalArrayRef(const int arg_val)
+		{
+			int index = top().v_->Get<int>(); pop();
+			push(Stack[(int)(arg_val + index)]);
+		}
+
+		void PushGlobalArrayRef()
+		{
+			PushGlobalArrayRef(Value_Int());
+		}
+
+		// ローカルの配列から参照をPush
 		void PushLocalArrayRef(const int arg_val)
 		{
-			int addr = Stack[arg_val + stack_base].v_->Get<int>();
 			int index = top().v_->Get<int>(); pop();
-			push(ref_to_value(addr + index));
+			push(Stack[arg_val + stack_base + index]);
 		}
-		void PushLocalArrayRef(){
+
+		void PushLocalArrayRef()
+		{
 			PushLocalArrayRef(Value_Int());
 		}
 
@@ -229,6 +268,9 @@ namespace ButiScript {
 		void PushArrayAddr() {
 			PushArrayAddr(Value_Int());
 		}
+
+
+		/////////////Pop定義////////////////
 		// 変数にPop
 		void PopValue(const int arg_val)
 		{
@@ -297,6 +339,14 @@ namespace ButiScript {
 			PopLocalArrayRef(Value_Int());
 		}
 
+
+		// 空Pop（スタックトップを捨てる）
+		void OpPop()
+		{
+			pop();
+		}
+
+		/////////////Alloc定義////////////////
 		// ローカル変数を確保
 		void OpAllocStack(const int arg_val)
 		{
@@ -319,16 +369,18 @@ namespace ButiScript {
 			OpAllocStack_Ref(Value_Int());
 		}
 
-		// 空Pop（スタックトップを捨てる）
-		void OpPop()
-		{
-			pop();
-		}
+
+
+		/////////////演算子定義////////////////
 
 		// 単項マイナス
 		void OpNeg()
 		{
-			top().v_->Nagative();
+			auto negV = top().v_->Clone();
+			auto type = top().valueType;
+			negV->Nagative();
+			pop();
+			push(negV,type);
 		}
 
 		// ==
@@ -601,6 +653,10 @@ namespace ButiScript {
 			push(lhs + rhs);
 		}
 
+
+
+
+		/////////////アドレス操作定義////////////////
 		// 無条件ジャンプ
 		void OpJmp(const int arg_val)
 		{
@@ -690,6 +746,8 @@ namespace ButiScript {
 		{
 		}
 
+
+		/////////////関数呼び出し定義////////////////
 		// 組み込み関数
 		void OpSysCall(const int val)
 		{
@@ -744,8 +802,12 @@ namespace ButiScript {
 		void push(const std::string& v) { 
 			Stack.push(ButiScript::Value(v)); 
 		}
-		void push(IValue* arg_p_ivalue) {
-			Stack.push(ButiScript::Value(arg_p_ivalue,TYPE_FLOAT));
+		void push(IValue* arg_p_ivalue,const int arg_type) {
+			Stack.push(ButiScript::Value(arg_p_ivalue, arg_type));
+		}
+		void push_clone(IValue* arg_p_ivalue,const int arg_type) {
+			auto cloneV = arg_p_ivalue->Clone();
+			Stack.push(ButiScript::Value(cloneV, arg_type));
 		}
 		void push(const ButiScript::Value& v) { 
 			Stack.push(v); 

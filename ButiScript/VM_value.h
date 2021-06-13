@@ -47,6 +47,9 @@ namespace ButiScript {
 
 		virtual ~IValue() {
 			delete p_instance;
+			if (ary_memberType) {
+				delete ary_memberType;
+			}
 		}
 
 		template <typename T> T Get()const {
@@ -62,9 +65,12 @@ namespace ButiScript {
 
 
 		IValue* GetMember(const int index)const {
-
 			return ary_p_member[index];
 		}
+		int GetMemberType(const int index)const {
+			return ary_memberType[index];
+		}
+
 		void SetMember(IValue* arg_v,const int index) {
 			ary_p_member[index] = arg_v;
 		}
@@ -203,7 +209,9 @@ namespace ButiScript {
 		//実体
 		void* p_instance;
 		//メンバ変数
-		IValue** ary_p_member;
+		IValue** ary_p_member=nullptr;
+		//メンバ変数の型
+		int* ary_memberType=nullptr;
 	private:
 		int ref_ = 0;
 	};
@@ -404,8 +412,11 @@ namespace ButiScript {
 		Value_wrap(const ButiEngine::Vector2& v, const int ref) :IValue(ref) {
 			p_instance = new ButiEngine::Vector2(v);
 			ary_p_member = (IValue**)malloc(sizeof(IValue*)*2);
+			ary_memberType = (int*)malloc(sizeof(int)*2);
 			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->x, 1);
 			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->y, 1);
+			ary_memberType[0] = TYPE_FLOAT;
+			ary_memberType[1] = TYPE_FLOAT;
 		}
 		Value_wrap(const int ref) :IValue(ref) {
 			p_instance = new ButiEngine::Vector2();
@@ -538,7 +549,8 @@ namespace ButiScript {
 		//変数を指定して初期化
 		Value(IValue* p,const int type)
 		{
-			v_ = p->Clone();
+			v_ = p;
+			v_->addref();
 			valueType = type;
 		}
 
@@ -549,6 +561,7 @@ namespace ButiScript {
 
 		Value(const Value& a)
 		{
+			clear();
 			Copy(a);
 		}
 
@@ -557,7 +570,6 @@ namespace ButiScript {
 			if (this == &a)
 				return *this;
 
-			clear();
 
 			Assign(a);
 
@@ -570,6 +582,12 @@ namespace ButiScript {
 				v_->release();
 				v_ = nullptr;
 			}
+		}
+
+		Value Clone() {
+			auto cloneV = v_->Clone();
+
+			return Value(cloneV,valueType);
 		}
 
 		void Copy(const Value& a)
@@ -585,30 +603,37 @@ namespace ButiScript {
 			}
 		}
 		void Assign(const Value& a) {
-			//自分が参照型の場合、相手の実体への参照を取得
-			if (valueType & TYPE_REF|| a.valueType == TYPE_STRING) {
-				v_ = a.v_;
-				v_->addref();
+			if (!a.v_) {
 
-				if (valueType == TYPE_VOID) {
-					valueType = a.valueType;
-				}
+				valueType = a.valueType;
 				return;
 			}
 
-			{
-				if (v_) {
-					v_->Set(*a.v_);
-				}
-				else {
-					if (a.v_) {
-						v_ = a.v_->Clone();
+			if (v_) {
+				v_->Set(*a.v_);
+			}
+			else {
+				//自分が参照型の場合、相手の実体への参照を取得
+				if (valueType & TYPE_REF || a.valueType == TYPE_STRING || valueType == TYPE_VOID) {
+
+					clear();
+
+					v_ = a.v_;
+
+					v_->addref();
+
+					if (valueType == TYPE_VOID) {
+						valueType = a.valueType;
 					}
 				}
+				else {
+					v_ = a.v_->Clone();
+				}
 			}
-			if (valueType == TYPE_VOID) {
-				valueType = a.valueType;
-			}
+
+			
+
+
 		}
 
 		void SetType(const int arg_type) {

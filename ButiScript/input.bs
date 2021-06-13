@@ -2,29 +2,34 @@ main():int
 {
 	var s :string;
 	var v:Vector2;
+	var f_ref:float&;
 
-	
 	v.x=10.12;
 	v.y=v.x*0.5;
 
-	s=ToString(v.y)+EndL();
+	f_ref=v.x;
+
+	s=ToString(f_ref)+EndL();
 	print(s);
 	
 	var i :int;
 	
 	var i_ref:int&;
-
+	i_ref=i;
 	var f:float;
 	f=12.1;
 	Functions::Functions_inner::Functions_inner2::m=2.0;
-	for(;i<10;Add(i)){
-		s=ToString(Functions::Functions_inner::Functions_inner2::Pow3(f))+ EndL();
+
+	Test(i);
+
+	for(;i_ref<10;Add(i)){
+		s=ToString(Functions::Functions_inner::Functions_inner2::Multi(f,i_ref)) +EndL();
 		f+=0.5;
 		print(s);
 	}
 	
 
-	return f;
+	return Functions::Functions_inner::Functions_inner2::m;
 }
 namespace Functions{
 	Pow(i:float ):float{
@@ -40,6 +45,9 @@ namespace Functions{
 				return Pow(i) *i;
 			}
 
+			Multi(i:float,c:int):float{
+				return i*c;
+			}
 
 		}
 			
@@ -47,12 +55,17 @@ namespace Functions{
 	}
 }
 
-Increase():float{
-	return 1.5;
+Test(v: int):int{
+	v+=1;
+	return v;
+}
+
+Addition(v:int&, a:int):void{
+	v+=a;
 }
 
 Add(v :int&):void{
-	v+=1;
+	Addition(v,1);
 }
 
 Add():string{
