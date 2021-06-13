@@ -461,6 +461,102 @@ Node_t Node::make_node(const int Op, Node_t left, NodeList_t right)
 	return Node_t(new Node_function(Op, left, right));
 }
 
+
+
+template <typename T>
+bool SetDefaultOperator(const int op_, Compiler* c) {
+	switch (op_) {
+	case OP_ADD:
+		c->OpAdd<T>();
+		break;
+
+	case OP_SUB:
+		c->OpSub<T>();
+		break;
+
+	case OP_MUL:
+		c->OpMul<T>();
+		break;
+
+	case OP_DIV:
+		c->OpDiv<T>();
+		break;
+
+
+	default:
+		return false;
+		break;
+	}
+	return true;
+}
+
+template <typename T>
+bool SetModOperator(const int op_, Compiler* c) {
+	if (op_ == OP_MOD) {
+		c->OpMod<T>();
+		return true;
+	}
+	return false;
+}
+bool SetLogicalOperator(const int op_, Compiler* c) {
+	switch (op_) {
+	case OP_LOGAND:
+		c->OpLogAnd();
+		break;
+
+	case OP_LOGOR:
+		c->OpLogOr();
+		break;
+
+	case OP_EQ:
+		c->OpEq();
+		break;
+
+	case OP_NE:
+		c->OpNe();
+		break;
+
+	case OP_GT:
+		c->OpGt();
+		break;
+
+	case OP_GE:
+		c->OpGe();
+		break;
+
+	case OP_LT:
+		c->OpLt();
+		break;
+
+	case OP_LE:
+		c->OpLe();
+		break;
+
+	case OP_AND:
+		c->OpAnd();
+		break;
+
+	case OP_OR:
+		c->OpOr();
+		break;
+
+	case OP_LSHIFT:
+		c->OpLeftShift();
+		break;
+
+	case OP_RSHIFT:
+		c->OpRightShift();
+		break;
+
+	default:
+		return false;
+		break;
+	}
+	return true;
+}
+
+
+
 // ノードのpush処理
 int Node::Push(Compiler* c) const
 {
@@ -500,160 +596,28 @@ int Node::Push(Compiler* c) const
 
 	// float計算ノードの処理
 	if (left_type ==TYPE_FLOAT|| right_type == TYPE_FLOAT ) {
-		switch (op_) {
-		case OP_LOGAND:
-			c->OpLogAnd();
-			break;
-
-		case OP_LOGOR:
-			c->OpLogOr();
-			break;
-
-		case OP_EQ:
-			c->OpEq();
-			break;
-
-		case OP_NE:
-			c->OpNe();
-			break;
-
-		case OP_GT:
-			c->OpGt();
-			break;
-
-		case OP_GE:
-			c->OpGe();
-			break;
-
-		case OP_LT:
-			c->OpLt();
-			break;
-
-		case OP_LE:
-			c->OpLe();
-			break;
-
-		case OP_AND:
-			c->OpAnd();
-			break;
-
-		case OP_OR:
-			c->OpOr();
-			break;
-
-		case OP_LSHIFT:
-			c->OpLeftShift();
-			break;
-
-		case OP_RSHIFT:
-			c->OpRightShift();
-			break;
-
-		case OP_SUB:
-			c->OpFloatSub();
-			break;
-
-		case OP_ADD:
-			c->OpFloatAdd();
-			break;
-
-		case OP_MUL:
-			c->OpFloatMul();
-			break;
-
-		case OP_DIV:
-			c->OpFloatDiv();
-			break;
-
-		case OP_MOD:
-			c->OpFloatMod();
-			break;
-
-		default:
-			c->error("内部エラー：処理できない計算ノードがありました。");
-			break;
+		if (!SetDefaultOperator<float>(op_, c) && (!SetModOperator<float>(op_, c)) && (!SetLogicalOperator(op_, c))) {
+				c->error("内部エラー：処理できない計算ノードがありました。");
 		}
+
 		return TYPE_FLOAT;
 	}
 
 	// 整数計算ノードの処理
 	if (left_type ==  TYPE_INTEGER && right_type==TYPE_INTEGER) {
-		switch (op_) {
-		case OP_LOGAND:
-			c->OpLogAnd();
-			break;
-
-		case OP_LOGOR:
-			c->OpLogOr();
-			break;
-
-		case OP_EQ:
-			c->OpEq();
-			break;
-
-		case OP_NE:
-			c->OpNe();
-			break;
-
-		case OP_GT:
-			c->OpGt();
-			break;
-
-		case OP_GE:
-			c->OpGe();
-			break;
-
-		case OP_LT:
-			c->OpLt();
-			break;
-
-		case OP_LE:
-			c->OpLe();
-			break;
-
-		case OP_AND:
-			c->OpAnd();
-			break;
-
-		case OP_OR:
-			c->OpOr();
-			break;
-
-		case OP_LSHIFT:
-			c->OpLeftShift();
-			break;
-
-		case OP_RSHIFT:
-			c->OpRightShift();
-			break;
-
-		case OP_SUB:
-			c->OpSub();
-			break;
-
-		case OP_ADD:
-			c->OpAdd();
-			break;
-
-		case OP_MUL:
-			c->OpMul();
-			break;
-
-		case OP_DIV:
-			c->OpDiv();
-			break;
-
-		case OP_MOD:
-			c->OpMod();
-			break;
-
-		default:
-			c->error("内部エラー：処理できない計算ノードがありました。");
-			break;
+		if (!SetDefaultOperator<int>(op_, c)&&  (!SetModOperator<int>(op_, c))&& (!SetLogicalOperator(op_, c))) {
+			c->error("内部エラー：処理できない計算ノードがありました。");	
 		}
 		return TYPE_INTEGER;
 	}
 
+	//Vector2計算ノード
+	if (left_type == TYPE_VOID + 1|| right_type == TYPE_VOID + 1) {
+		if (!SetDefaultOperator<ButiEngine::Vector2>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 1;
+	}
 
 	// 文字列計算ノードの処理
 	switch (op_) {
@@ -822,35 +786,37 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 // 代入文
 int Node::Assign(Compiler* c) const
 {
-	if (op_ != OP_ASSIGN)
-		left_->Push(c);
-	auto rightType = right_->Push(c);
-
-	//rightがまだ定義されてない関数なのでスキップ
-	if (rightType == -1) {
-		return -1;
+	int leftType = -1;
+	//代入のみのパターンではないので左辺をpush
+	if (op_ != OP_ASSIGN) {
+		leftType= left_->Push(c)&~TYPE_REF;
 	}
+	else {
+		leftType = left_->GetType(c) & ~TYPE_REF;
+	}
+	int rightType = right_->Push(c) & ~TYPE_REF;
+
 
 	if (rightType == TYPE_INTEGER) {
 		switch (op_) {
 		case OP_ADD_ASSIGN:
-			c->OpAdd();
+			c->OpAdd<int>();
 			break;
 
 		case OP_SUB_ASSIGN:
-			c->OpSub();
+			c->OpSub<int>();
 			break;
 
 		case OP_MUL_ASSIGN:
-			c->OpMul();
+			c->OpMul<int>();
 			break;
 
 		case OP_DIV_ASSIGN:
-			c->OpDiv();
+			c->OpDiv<int>();
 			break;
 
 		case OP_MOD_ASSIGN:
-			c->OpMod();
+			c->OpMod<int>();
 			break;
 
 		case OP_AND_ASSIGN:
@@ -876,23 +842,23 @@ int Node::Assign(Compiler* c) const
 	if (rightType == TYPE_FLOAT) {
 		switch (op_) {
 		case OP_ADD_ASSIGN:
-			c->OpFloatAdd();
+			c->OpAdd<float>();
 			break;
 
 		case OP_SUB_ASSIGN:
-			c->OpFloatSub();
+			c->OpSub<float>();
 			break;
 
 		case OP_MUL_ASSIGN:
-			c->OpFloatMul();
+			c->OpMul<float>();
 			break;
 
 		case OP_DIV_ASSIGN:
-			c->OpFloatDiv();
+			c->OpDiv<float>();
 			break;
 
 		case OP_MOD_ASSIGN:
-			c->OpFloatMod();
+			c->OpMod<float>();
 			break;
 
 		case OP_AND_ASSIGN:
@@ -916,23 +882,34 @@ int Node::Assign(Compiler* c) const
 		return 0;
 	}
 
-	switch (op_) {
-	case OP_ADD_ASSIGN:
-		c->OpStrAdd();
-		break;
+	if (rightType==TYPE_STRING) {
+		switch (op_) {
+		case OP_ADD_ASSIGN:
+			c->OpStrAdd();
+			break;
 
-	case OP_ASSIGN:
-		break;
+		case OP_ASSIGN:
+			break;
 
-	default:
-		c->error("文字列では許されない計算です。");
-		break;
+		default:
+			c->error("文字列では許されない計算です。");
+			break;
+		}
+		if (left_->Pop(c) != TYPE_STRING) {
+			c->error("代入出来ない変数の組み合わせです");
+		}
+		return 0;
 	}
-	if (left_->Pop(c) != TYPE_STRING)
-		c->error("整数型に文字列を代入しています。");
+
+	if (leftType == rightType) {
+		//同じ型同士なので代入可能
+		left_->Pop(c);
+	}
+	else {
+		c->error("代入出来ない変数の組み合わせです");
+	}
 
 	return 0;
-	return -1;
 }
 
 const ValueTag* Node_value::GetValueTag(Compiler* c) const
@@ -1561,7 +1538,7 @@ int Node_Member::Push(Compiler* c) const
 			{
 
 				//型
-				auto typeTag = c->GetType(left_->GetType(c));
+				auto typeTag = c->GetType(left_->GetType(c)&~TYPE_REF);
 
 
 				if (valueTag->global_) {		// 外部変数

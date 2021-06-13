@@ -502,93 +502,56 @@ namespace ButiScript {
 		}
 
 		// +
+		template<typename T>
 		void OpAdd()
 		{
-			auto rhs = top().v_->Get<int>(); pop();
-			auto lhs = top().v_->Get<int>(); pop();
+			auto rhs = top().v_->Get<T>(); pop();
+			auto lhs = top().v_->Get<T>(); pop();
 			push(lhs + rhs);
 		}
 
 		// -
+		template<typename T>
 		void OpSub()
 		{
-			auto rhs = top().v_->Get<int>(); pop();
-			auto lhs = top().v_->Get<int>(); pop();
+			auto rhs = top().v_->Get<T>(); pop();
+			auto lhs = top().v_->Get<T>(); pop();
 			push(lhs - rhs);
 		}
 
 		// *
+		template<typename T>
 		void OpMul()
 		{
-			auto rhs = top().v_->Get<int>(); pop();
-			auto lhs = top().v_->Get<int>(); pop();
+			auto rhs = top().v_->Get<T>(); pop();
+			auto lhs = top().v_->Get<T>(); pop();
 			push(lhs * rhs);
 		}
 
 		// /
+		template<typename T>
 		void OpDiv()
 		{
-			auto rhs = top().v_->Get<int>(); pop();
+			auto rhs = top().v_->Get<T>(); pop();
 			if (rhs == 0)
 				throw DevideByZero();
-			auto lhs = top().v_->Get<int>(); pop();
+			auto lhs = top().v_->Get<T>(); pop();
 			push(lhs / rhs);
 		}
 
 		// %
+		template<typename T>
 		void OpMod()
 		{
-			auto rhs = top().v_->Get<int>(); pop();
+			int rhs = top().v_->Get<int>(); pop();
 			if (rhs == 0)
 				throw DevideByZero();
-			auto lhs = top().v_->Get<int>(); pop();
+			int lhs = top().v_->Get<int>(); pop();
 			push(lhs % rhs);
 		}
 
 
-		// +
-		void OpFloatAdd()
-		{
-			auto rhs = top().v_->Get<float>(); pop();
-			auto lhs = top().v_->Get<float>(); pop();
-			push(lhs + rhs);
-		}
 
-		// -
-		void OpFloatSub()
-		{
-			auto rhs = top().v_->Get<float>(); pop();
-			auto lhs = top().v_->Get<float>(); pop();
-			push(lhs - rhs);
-		}
-
-		// *
-		void OpFloatMul()
-		{
-			auto rhs = top().v_->Get<float>(); pop();
-			auto lhs = top().v_->Get<float>(); pop();
-			push(lhs * rhs);
-		}
-
-		// /
-		void OpFloatDiv()
-		{
-			auto rhs = top().v_->Get<float>(); pop();
-			if (rhs == 0)
-				throw DevideByZero();
-			auto lhs = top().v_->Get<float>(); pop();
-			push(lhs / rhs);
-		}
-
-		// %
-		void OpFloatMod()
-		{
-			auto rhs = top().v_->Get<float>(); pop();
-			if (rhs == 0)
-				throw DevideByZero();
-			auto lhs = top().v_->Get<float>(); pop();
-			push((int)lhs %(int) rhs);
-		}
 
 		// •¶š—ñ‚Ì==
 		void OpStrEq()

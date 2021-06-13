@@ -6,7 +6,6 @@ int main()
 {
 	ButiScript::Data data;
 
-
 	bool compile_result;
 	{
 		ButiScript::Compiler driver;

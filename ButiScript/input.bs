@@ -2,12 +2,19 @@ main():int
 {
 	var s :string;
 	var v:Vector2;
+	var v2:Vector2;
+	var v3:Vector2;
 	var f_ref:float&;
 
 	v.x=10.12;
 	v.y=v.x*0.5;
 
-	f_ref=v.x;
+	v2=v;
+
+	v3=v-v2;
+
+	f_ref=v3.x;
+
 
 	s=ToString(f_ref)+EndL();
 	print(s);
