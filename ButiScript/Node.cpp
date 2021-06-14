@@ -558,8 +558,7 @@ bool SetLogicalOperator(const int op_, Compiler* c) {
 
 
 // ノードのpush処理
-int Node::Push(Compiler* c) const
-{
+int Node::Push(Compiler* c) const{
 	if (op_ >= OP_ASSIGN && op_ <= OP_RSHIFT_ASSIGN) {
 		return Assign(c);
 	}
@@ -659,8 +658,7 @@ int Node::Push(Compiler* c) const
 // ノードのpop
 // 計算ノードはpopできない
 
-int Node::Pop(Compiler* c) const
-{
+int Node::Pop(Compiler* c) const{
 	c->error("内部エラー：計算ノードをpopしています。");
 	return TYPE_INTEGER;
 }
@@ -784,8 +782,7 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 }
 
 // 代入文
-int Node::Assign(Compiler* c) const
-{
+int Node::Assign(Compiler* c) const{
 	int leftType = -1;
 	//代入のみのパターンではないので左辺をpush
 	if (op_ != OP_ASSIGN) {
@@ -912,8 +909,7 @@ int Node::Assign(Compiler* c) const
 	return 0;
 }
 
-const ValueTag* Node_value::GetValueTag(Compiler* c) const
-{
+const ValueTag* Node_value::GetValueTag(Compiler* c) const{
 
 	if (op_ != OP_IDENTIFIER) {
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
@@ -950,8 +946,7 @@ const ValueTag* Node_value::GetValueTag(Compiler* c) const
 }
 
 // 変数ノードのpush
-int Node_value::Push(Compiler* c) const
-{
+int Node_value::Push(Compiler* c) const{
 	if (op_ != OP_IDENTIFIER) {
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
@@ -982,8 +977,7 @@ int Node_value::Push(Compiler* c) const
 	return TYPE_INTEGER;
 }
 
-int Node_value::PushClone(Compiler* c) const
-{
+int Node_value::PushClone(Compiler* c) const{
 	if (op_ != OP_IDENTIFIER) {
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
@@ -1015,8 +1009,7 @@ int Node_value::PushClone(Compiler* c) const
 }
 
 // 変数ノードのpop
-int Node_value::Pop(Compiler* c) const
-{
+int Node_value::Pop(Compiler* c) const{
 	if (op_ != OP_IDENTIFIER) {
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}

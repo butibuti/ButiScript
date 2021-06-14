@@ -6,6 +6,9 @@ int main()
 {
 	ButiScript::Data data;
 
+	auto method = &ButiEngine::Vector2::Normalize;
+
+
 	bool compile_result;
 	{
 		ButiScript::Compiler driver;

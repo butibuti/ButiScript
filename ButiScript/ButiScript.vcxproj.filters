@@ -80,6 +80,9 @@
     <ClInclude Include="..\..\..\2nd\Engine\ButiEngine\Libs\Library\Header\Common\ButiMath.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Tags.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="input.bs">

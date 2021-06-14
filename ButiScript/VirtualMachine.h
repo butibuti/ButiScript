@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "vm_value.h"
+#include"Tags.h"
 namespace ButiScript {
 
 #include"value_type.h"
@@ -16,27 +17,7 @@ namespace ButiScript {
 	};
 #undef	VM_ENUMDEF
 
-	class VirtualCPU;
-	using OperationFunction = void (VirtualCPU::*)();
-
-	struct TypeTag {
-		TypeTag(){}
-		//生成用アドレス
-		OperationFunction typeFunc;
-		//参照型生成用アドレス
-		OperationFunction refTypeFunc;
-		//型情報
-		int typeIndex;
-		//型名
-		std::string typeName;
-		//引数記号
-		std::string argName;
-
-		//メンバ変数へのアクセス名とインデックス
-		std::map<std::string, int> map_memberIndex;
-		//メンバ変数へのアクセス名と型
-		std::map<std::string, int> map_memberType;
-	};
+	
 
 	class Data {
 	public:
@@ -58,6 +39,7 @@ namespace ButiScript {
 		int entryPoint;			// エントリーポイント
 
 		std::vector<OperationFunction> vec_sysCalls;
+		std::vector<OperationFunction> vec_sysCallMethods;
 		std::vector<TypeTag> vec_types;
 		int definedTypeCount = 0;
 	};
@@ -636,7 +618,6 @@ namespace ButiScript {
 			if (cond)
 				jmp(arg_val);
 		}
-
 		void OpJmpC() {
 			OpJmpC(Value_Int());
 		}
@@ -648,7 +629,6 @@ namespace ButiScript {
 			if (!cond)
 				jmp(arg_val);
 		}
-
 		void OpJmpNC() {
 			OpJmpNC(Value_Int());
 		}
@@ -662,11 +642,11 @@ namespace ButiScript {
 				jmp(arg_val);
 			}
 		}
-
 		void OpTest() {
 			OpTest(Value_Int());
 		}
 
+		/////////////関数呼び出し定義////////////////
 		// 関数コール
 		void OpCall(const int arg_val)
 		{
@@ -708,21 +688,27 @@ namespace ButiScript {
 		void OpHalt()
 		{
 		}
-
-
-		/////////////関数呼び出し定義////////////////
 		// 組み込み関数
 		void OpSysCall(const int val)
 		{
 			pop();	// arg_count
-
 			(this->*p_syscall[val])();
-
 		}
 
 		void OpSysCall() {
 			OpSysCall(Value_Int());
 		}
+
+		//組み込みメソッド
+		void OpSysMethodCall(const int val) 
+		{
+			pop();	// arg_count
+			(this->*p_sysMethodCall[val])();
+		}
+		void OpSysMethodCall() {
+			OpSysMethodCall(Value_Int());
+		}
+
 	public:
 		// 組み込み関数（print）
 		void sys_print()
@@ -733,7 +719,7 @@ namespace ButiScript {
 
 		// 組み込み関数（pause）
 		void Sys_pause() {
-			std::system("pause");
+			std::system("pause");			
 		}
 
 		// 組み込み関数(数値を文字列に変換)
@@ -743,6 +729,13 @@ namespace ButiScript {
 			push(v);			// 戻り値はスタックに入れる
 		}
 
+		//組み込みメソッド(return 無し)
+		template<typename T,void(T::*Method)() >
+		void sys_method_retNo() 
+		{
+			auto v = &(top().v_->GetRef<T>());
+			((v)->*Method)();
+		}
 
 		template<typename T,int typeIndex>
 		void pushValue() {
@@ -820,7 +813,9 @@ namespace ButiScript {
 		//命令テーブル
 		OperationFunction* p_op=nullptr;
 		//組み込み関数テーブル
-		OperationFunction* p_syscall=nullptr;
+		OperationFunction* p_syscall = nullptr;
+		//組み込みメソッドテーブル
+		OperationFunction* p_sysMethodCall = nullptr;
 		//変数の確保関数テーブル
 		OperationFunction* p_pushValues = nullptr;
 		//変数(参照型)の確保関数テーブル

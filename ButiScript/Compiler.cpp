@@ -34,6 +34,7 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "f");
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_VOID + 1, "ToString", "vec2");
 
+	DefineSystemMethod(&ButiScript::VirtualCPU::sys_method_retNo< ButiEngine::Vector2,& ButiEngine::Vector2::Normalize >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
 
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
@@ -46,7 +47,7 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 		return false;// パーサーエラー
 
 	int code_size = LabelSetting();				// ラベルにアドレスを設定
-	CraeteData(Data, code_size);				// バイナリ生成
+	CreateData(Data, code_size);				// バイナリ生成
 	return error_count == 0;
 }
 
@@ -78,17 +79,33 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 
 
 // 内部関数の定義
-bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int type, const char* name, const char* args)
+bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int type, const std::string& name, const std::string&  args)
 {
 	FunctionTag func(type);
-	if (!func.SetArgs(args,types.GetArgmentKeyMap()))		// 引数を設定
+	if (!func.SetArgs(args,types.GetArgmentKeyMap()))		
 		return false;
 
-	func.SetDeclaration();			// 宣言済み
+	func.SetDeclaration();			
 	func.SetSystem();				// Systemフラグセット
 	func.SetIndex(vec_sysCalls.size());			// 組み込み関数番号を設定
 	vec_sysCalls.push_back(arg_op);
 	if (functions.Add(name, func) == 0) {
+		return false;
+	}
+	return true;
+}
+
+bool ButiScript::Compiler::DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args)
+{
+	FunctionTag func(retType);
+	if (!func.SetArgs(arg_args, types.GetArgmentKeyMap()))
+		return false;
+
+	func.SetDeclaration();
+	func.SetSystem();				// Systemフラグセット
+	func.SetIndex(vec_sysMethodCalls.size());			// 組み込み関数番号を設定
+	vec_sysMethodCalls.push_back(arg_p_method);
+	if (types.GetType(type)->AddMethod(name, func) == 0) {
 		return false;
 	}
 	return true;
@@ -399,7 +416,7 @@ struct copy_code {
 	}
 };
 
-bool ButiScript::Compiler::CraeteData(ButiScript::Data& Data, int code_size)
+bool ButiScript::Compiler::CreateData(ButiScript::Data& Data, int code_size)
 {
 	const FunctionTag* tag = GetFunctionTag("main",std::vector<int>(),false);	// 開始位置
 	if (tag == 0) {
@@ -414,6 +431,7 @@ bool ButiScript::Compiler::CraeteData(ButiScript::Data& Data, int code_size)
 	Data.valueSize = (int)variables[0].size();
 	Data.entryPoint = labels[tag->index_].pos_;
 	Data.vec_sysCalls = vec_sysCalls;
+	Data.vec_sysCallMethods = vec_sysMethodCalls;
 	types.CreateTypeVec(Data.vec_types);
 
 

@@ -324,7 +324,7 @@ namespace ButiClosure {
 		member2 Op;
 		member3 name;
 	};
-	// 変数呼び出しのクロージャ
+	// メンバ呼び出しのクロージャ
 	struct callmember_val : closure<callmember_val, Node_t, int, std::string> {
 		member1 memberNode;
 		member1 valueNode;
@@ -393,7 +393,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
-		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
+		rule<ScannerT>	string_node,number,floatNumber,callMethod,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
 			and_expr,expr,assign,argument,statement,arg,decl_func,callMemberValue ,block,input,ident;
 
 		symbols<> keywords;
@@ -445,10 +445,14 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				'(' >> !argument >> ')';
 
 			//メンバ変数呼び出し
-			callMemberValue = (Value >> "." >> identifier);
+			callMemberValue = Value >> "." >> identifier;
+			//メンバ関数呼び出し
+			callMethod = Value >> "." >> identifier >>'(' >> !argument >> ')';
 
 			// 計算のprimeノード
-			prime = callMemberValue
+			prime =
+				callMethod
+				|callMemberValue
 				|func_node
 				| Value
 				| floatNumber
@@ -563,7 +567,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				| str_p("for")>> '('
 				>> !(assign) >> ';'
 				>> expr >> ';'
-				>> !(assign|| func_node) >> ')'
+				>> !(assign|| func_node||callMethod) >> ')'
 				>> statement
 
 				| str_p("while") >> '('
@@ -575,6 +579,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *statement
 				>> '}'
 				| func_node >> ';'
+				|callMethod>>';'
 				| block
 				;
 
@@ -618,6 +623,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::callmember_val::context_t> callMemberValue;
+		rule<ScannerT, ButiClosure::callmember_val::context_t> callMethod;
 		rule<ScannerT, ButiClosure::node_val::context_t>		prime;
 		rule<ScannerT, ButiClosure::node_val::context_t>		unary;
 		rule<ScannerT, ButiClosure::node_val::context_t>		mul_expr;
@@ -690,12 +696,15 @@ struct script_grammer : public grammar<script_grammer> {
 				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
+			callMethod = Value >> "." >> identifier >> '(' >> !argument >> ')';
+
 			//メンバ変数呼び出し
 			callMemberValue =(Value[ callMemberValue.valueNode=arg1])>>"."
 				>> identifier[callMemberValue.memberNode = binary_node(OP_MEMBER, callMemberValue.valueNode,arg1)]
 				;
 			// 計算のprimeノード
-			prime = callMemberValue[prime.node = arg1]
+			prime =	callMethod
+				|callMemberValue[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
@@ -826,6 +835,7 @@ struct script_grammer : public grammar<script_grammer> {
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
 				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
+				| callMethod>>';'
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 

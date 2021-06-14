@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-
+#include"Tags.h"
 namespace ButiScript {
 
 
@@ -506,40 +506,6 @@ namespace ButiScript {
 	};
 
 	// à¯êî
-
-	class ArgDefine {
-	public:
-		ArgDefine()
-			: valueType(0)
-		{
-		}
-
-		ArgDefine(const int arg_type)
-			: valueType(arg_type)
-		{
-		}
-		ArgDefine(const int arg_type, const std::string& arg_name)
-			: valueType(arg_type), name_(arg_name)
-		{
-		}
-
-		void set_ref()
-		{
-			valueType |= TYPE_REF;
-		}
-
-		void set_name(const std::string& arg_name)
-		{
-			name_ = arg_name;
-		}
-
-		int type() const { return valueType; }
-		const std::string& name() const { return name_; }
-
-	private:
-		int valueType;
-		std::string name_;
-	};
 
 	// ä÷êî
 

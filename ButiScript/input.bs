@@ -11,7 +11,7 @@ main():int
 
 	v2=v;
 
-	v3=v-v2;
+	v3=v+v2;
 
 	f_ref=v3.x;
 

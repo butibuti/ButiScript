@@ -6,9 +6,15 @@
 #include <exception>
 #include <string>
 #include"ButiMath.h"
+
 #define RegistGet(T) \
 virtual T operator()(const IValue* b, const T * p_dummy) const {\
 return static_cast<const Class*>(b)->get_value_stub< T >();\
+}\
+
+#define RegistGetRef(T) \
+virtual T& operator()(IValue* b, const T * p_dummy) const {\
+return static_cast<Class*>(b)->get_ref_stub< T >();\
 }\
 
 #define RegistSet(T) \
@@ -55,6 +61,10 @@ namespace ButiScript {
 		template <typename T> T Get()const {
 			static T* p_dummy = nullptr;
 			return get_value()(this, p_dummy);
+		}
+		template <typename T> T& GetRef() {
+			static T* p_dummy = nullptr;
+			return get_ref()(this, p_dummy);
 		}
 		template <typename T> void Set(const T& arg_v) {
 			return set_value()(this, arg_v);
@@ -125,6 +135,18 @@ namespace ButiScript {
 			RegistGet(ButiEngine::Vector2);
 		};
 		template <typename Class, typename Super = IValue>
+		struct get_ref_t : public Super::get_ref_base_t {
+			virtual ~get_ref_t() {}
+			RegistGetRef(int);
+			RegistGetRef(char);
+			RegistGetRef(short);
+			RegistGetRef(long long);
+			RegistGetRef(float);
+			RegistGetRef(double);
+			RegistGetRef(std::string);
+			RegistGetRef(ButiEngine::Vector2);
+		};
+		template <typename Class, typename Super = IValue>
 		struct set_value_t : public Super::set_value_base_t {
 			virtual ~set_value_t() {}
 			RegistSet(int);
@@ -177,13 +199,15 @@ namespace ButiScript {
 		};
 
 
-		struct empty_class { struct get_value_base_t {}; struct set_value_base_t {}; struct eq_base_t {}; struct gt_base_t {}; struct ge_base_t {}; };
+		struct empty_class { struct get_value_base_t {}; struct get_ref_base_t {}; struct set_value_base_t {}; struct eq_base_t {}; struct gt_base_t {}; struct ge_base_t {}; };
 		typedef get_value_t<const IValue, empty_class> get_value_base_t;
+		typedef get_ref_t<IValue, empty_class> get_ref_base_t;
 		typedef set_value_t<IValue, empty_class> set_value_base_t;
 		typedef eq_t<const IValue, empty_class> eq_base_t;
 		typedef gt_t<const IValue, empty_class> gt_base_t;
 		typedef ge_t<const IValue, empty_class> ge_base_t;
 		virtual const get_value_base_t& get_value() const = 0;
+		virtual const get_ref_base_t& get_ref() const = 0;
 		virtual const set_value_base_t& set_value() const = 0;
 		virtual const eq_base_t& eq() const = 0;
 		virtual const gt_base_t& gt() const = 0;
@@ -193,6 +217,11 @@ namespace ButiScript {
 		template <typename T> T get_value_stub()const {
 			assert(0);
 			return T();
+		}
+		template <typename T> T& get_ref_stub() {
+			assert(0);
+			auto ret = T();
+			return ret;
 		}
 		template <typename T> void set_value_stub(const T& arg_v) {
 			assert(0);
@@ -253,6 +282,10 @@ namespace ButiScript {
 			static const IValue::get_value_t<Value_wrap<T>> s;
 			return s;
 		}
+		virtual const IValue::get_ref_base_t& get_ref() const {
+			static const IValue::get_ref_t<Value_wrap<T>> s;
+			return s;
+		}
 		virtual const IValue::set_value_base_t& set_value() const {
 			static const IValue::set_value_t<Value_wrap<T>> s;
 			return s;
@@ -273,6 +306,10 @@ namespace ButiScript {
 		template <typename U> U get_value_stub()const {
 			return (U) * (T*)p_instance;
 		}
+		template <typename U> U& get_ref_stub() {
+			auto v = U();
+			return v;
+		}
 		template <typename U> void set_value_stub(const U& arg_v) {
 			*(T*)p_instance = (T)arg_v;
 		}
@@ -287,6 +324,10 @@ namespace ButiScript {
 			return *(T*)p_instance >= arg_v;
 		}
 
+
+		template <> T& get_ref_stub() {
+			return *(T*)p_instance;
+		}
 
 		template <> std::string get_value_stub()const {
 			return std::to_string(*(T*)p_instance);
@@ -363,6 +404,10 @@ namespace ButiScript {
 			static const IValue::get_value_t<Value_wrap<std::string>> s;
 			return s;
 		}
+		virtual const IValue::get_ref_base_t& get_ref() const {
+			static const IValue::get_ref_t<Value_wrap<std::string>> s;
+			return s;
+		}
 		virtual const IValue::set_value_base_t& set_value() const {
 			static const IValue::set_value_t<Value_wrap<std::string>> s;
 			return s;
@@ -384,10 +429,16 @@ namespace ButiScript {
 		template <typename U> U get_value_stub()const {
 			return (U)StrConvert::ConvertString<U>(*(std::string*)p_instance);
 		}
+		template <typename U> U& get_ref_stub() {
+			auto v = U();
+			return v;
+		}
 		template <> std::string get_value_stub()const {
 			return (*(std::string*)p_instance);
 		}
-
+		template <> std::string& get_ref_stub() {
+			return *(std::string*)p_instance;
+		}
 		template <typename U> void set_value_stub(const U& arg_v) {
 			*(std::string*)p_instance = std::to_string(arg_v);
 		}
@@ -451,6 +502,10 @@ namespace ButiScript {
 			static const IValue::get_value_t<Value_wrap<ButiEngine::Vector2>> s;
 			return s;
 		}
+		virtual const IValue::get_ref_base_t& get_ref() const {
+			static const IValue::get_ref_t<Value_wrap<ButiEngine::Vector2>> s;
+			return s;
+		}
 		virtual const IValue::set_value_base_t& set_value() const {
 			static const IValue::set_value_t<Value_wrap<ButiEngine::Vector2>> s;
 			return s;
@@ -471,6 +526,14 @@ namespace ButiScript {
 
 		template <typename U> U get_value_stub()const {
 			return U();
+		}
+		template <typename U> U& get_ref_stub() {
+			auto v = U();
+			return v;
+		}
+
+		template <> ButiEngine::Vector2& get_ref_stub() {
+			return *(ButiEngine::Vector2*)p_instance;
 		}
 		template <> ButiEngine::Vector2 get_value_stub()const {
 			return (*(ButiEngine::Vector2*)p_instance);

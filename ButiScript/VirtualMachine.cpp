@@ -58,6 +58,12 @@ void ButiScript::VirtualCPU::Initialize()
 		p_syscall[i] = data_.vec_sysCalls[i];
 	}
 
+	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * data_.vec_sysCallMethods.size());
+	for (int i = 0; i < data_.vec_sysCallMethods.size(); i++) {
+		p_sysMethodCall[i] = data_.vec_sysCallMethods[i];
+	}
+
+
 	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() + data_.definedTypeCount));
 	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() +data_.definedTypeCount));
 	for (int i = 0; i < data_.vec_types.size(); i++) {
