@@ -32,7 +32,7 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 	DefineSystemFunction(&ButiScript::VirtualCPU::Sys_pause, TYPE_VOID, "pause", "");
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "i");
 	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "f");
-	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_VOID + 1, "ToString", "vec2");
+	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec2");
 
 	DefineSystemMethod(&ButiScript::VirtualCPU::sys_method_retNo< ButiEngine::Vector2,& ButiEngine::Vector2::Normalize >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
 

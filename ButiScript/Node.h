@@ -52,6 +52,7 @@ namespace ButiScript {
 		OP_FLOAT,
 		OP_IDENTIFIER,
 		OP_MEMBER,
+		OP_METHOD,
 		OP_STRING,
 		OP_FUNCTION,
 		OP_ARRAY,
@@ -204,6 +205,26 @@ namespace ButiScript {
 		virtual int Pop(Compiler* c) const;
 		int GetType(Compiler* c)const override;
 	private:
+	};
+
+	//メンバ関数のノード
+	class Node_Method :public Node {
+	public:
+		Node_Method(const int Op, const Node_t& arg_valueNode, const std::string& arg_memberName, const NodeList_t& arg_list)
+			:Node(Op, arg_valueNode), node_list_(arg_list)
+		{
+			string_ = (arg_memberName);
+		}
+		Node_Method(const int Op, const Node_t& arg_valueNode, const std::string& arg_memberName)
+			:Node(Op, arg_valueNode)
+		{
+			string_ = (arg_memberName);
+		}
+		virtual int Push(Compiler* c) const;
+		virtual int Pop(Compiler* c) const;
+		int GetType(Compiler* c)const override;
+	private:
+		NodeList_t node_list_;
 	};
 
 	// ステートメント

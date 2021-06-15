@@ -45,6 +45,9 @@ Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberNa
 	if (Op == OP_MEMBER) {
 		return Node_t(new Node_Member(Op,left,arg_memberName) );
 	}
+	else if (Op == OP_METHOD) {
+		return Node_t(new Node_Method(Op, left, arg_memberName));
+	}
 	return Node_t();
 }
 
@@ -1536,17 +1539,20 @@ int Node_Member::Push(Compiler* c) const
 
 				if (valueTag->global_) {		// 外部変数
 					if (left_->GetLeft()) {		// 配列
+						c->PushConstInt(valueTag->address);
 						left_->GetLeft()->Push(c);
-						c->PushGlobalArrayRef(valueTag->address);
+						c->PushGlobalArrayMemberRef(typeTag->map_memberIndex.at(string_));
 					}
 					else {
-						c->PushGlobalValueRef(valueTag->address);
+						c->PushConstInt(valueTag->address);
+						c->PushGlobalMemberRef(typeTag->map_memberIndex.at(string_));
 					}
 				}
 				else {					// ローカル変数
 					if (left_->GetLeft()) {		// 配列
+						c->PushConstInt(valueTag->address);
 						left_->GetLeft()->Push(c);
-						c->PushLocalArrayRef(valueTag->address);
+						c->PushLocalArrayMemberRef(typeTag->map_memberIndex.at(string_));
 					}
 					else {
 						c->PushConstInt(valueTag->address);
@@ -1616,17 +1622,20 @@ int Node_Member::Pop(Compiler* c) const
 			
 			if (valueTag->global_) {		// 外部変数
 				if (left_->GetLeft()) {		// 配列
+					c->PushConstInt(valueTag->address);
 					left_->GetLeft()->Push(c);
-					c->PopArray(valueTag->address);
+					c->PopGlobalArrayMember(valueTag->address);
 				}
 				else {
-					c->PopValue(valueTag->address);
+					c->PushConstInt(valueTag->address);
+					c->PopGlobalMember(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_->GetLeft()) {		// 配列
+					c->PushConstInt(valueTag->address);
 					left_->GetLeft()->Push(c);
-					c->PopLocalArray(valueTag->address);
+					c->PopLocalArrayMember(typeTag->map_memberIndex.at(string_));
 				}
 				else {
 					c->PushConstInt(valueTag->address);
@@ -1658,5 +1667,88 @@ int Node_Member::GetType(Compiler* c) const
 			}
 		}
 	}
+}
+int Node_Method::Push(Compiler* c) const
+{
+	if (op_ != OP_METHOD) {
+		c->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
+	}
+
+	std::vector<int> argTypes;
+	if (node_list_) {
+		auto end = node_list_->args_.end();
+		for (auto itr = node_list_->args_.begin(); itr != end; itr++) {
+			argTypes.push_back((*itr)->GetType(c));
+		}
+	}
+
+	int argSize = argTypes.size();
+	const TypeTag* typeTag = nullptr;
+	const FunctionTag* methodTag = nullptr;
+
+
+	typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+	methodTag = typeTag->methods.Find(string_, argTypes);
+
+
+	if (methodTag == nullptr) {
+		std::string message = "";
+		if (argSize) {
+			for (int i = 0; i < argSize; i++) {
+				message += c->GetTypeName(argTypes[i]) + " ";
+			}
+			message += "を引数にとる";
+		}
+		message += "関数" + string_ + "は未宣言です";
+		c->error(message);
+		return -1;
+	}
+
+	// 引数をpush
+	if (node_list_&& methodTag->ArgSize() == argSize) {
+		std::for_each(node_list_->args_.begin(), node_list_->args_.end(), set_arg(c, methodTag));
+	}
+
+	left_->Push(c);
+
+	// 引数の数をpush
+	c->PushConstInt(argSize);
+
+
+	if (methodTag->IsSystem()) {
+		c->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
+	}
+	else {
+		c->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
+	}
+
+
+	return methodTag->valueType;
+}
+int Node_Method::Pop(Compiler* c) const
+{
+	c->error("内部エラー：メンバ関数ノードをpop");
+	return TYPE_INTEGER;
+}
+int Node_Method::GetType(Compiler* c) const
+{
+	if (op_ != OP_METHOD) {
+		c->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
+	}
+
+	std::vector<int> argTypes;
+
+	if (node_list_) {
+		auto end = node_list_->args_.end();
+		for (auto itr = node_list_->args_.begin(); itr != end; itr++) {
+			argTypes.push_back((*itr)->GetType(c));
+		}
+	}
+
+
+	const TypeTag* typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+	const FunctionTag* tag = typeTag->methods.Find(string_, argTypes);
+
+	return tag->valueType;
 }
 }

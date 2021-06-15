@@ -8,15 +8,16 @@ main():int
 
 	v.x=10.12;
 	v.y=v.x*0.5;
-
+	
 	v2=v;
-
 	v3=v+v2;
+
+	v2.Normalize();
 
 	f_ref=v3.x;
 
 
-	s=ToString(f_ref)+EndL();
+	s=ToString(v2)+EndL();
 	print(s);
 	
 	var i :int;
