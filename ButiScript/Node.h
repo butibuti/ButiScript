@@ -210,10 +210,11 @@ namespace ButiScript {
 	//ƒƒ“ƒoŠÖ”‚Ìƒm[ƒh
 	class Node_Method :public Node {
 	public:
-		Node_Method(const int Op, const Node_t& arg_valueNode, const std::string& arg_memberName, const NodeList_t& arg_list)
-			:Node(Op, arg_valueNode), node_list_(arg_list)
+		Node_Method(const int Op, const Node_t& arg_methodNode,  const NodeList_t& arg_list)
+			:Node(Op, arg_methodNode->GetLeft()), node_list_(arg_list)
 		{
-			string_ = (arg_memberName);
+			string_ =arg_methodNode->GetString();
+
 		}
 		Node_Method(const int Op, const Node_t& arg_valueNode, const std::string& arg_memberName)
 			:Node(Op, arg_valueNode)

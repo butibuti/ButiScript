@@ -610,6 +610,26 @@ namespace ButiScript {
 			push(lhs / rhs);
 		}
 
+		// 異なる型*
+		template<typename T,typename U>
+		void OpMul()
+		{
+			auto rhs = top().v_->Get<U>(); pop();
+			auto lhs = top().v_->Get<T>(); pop();
+			push(lhs * rhs);
+		}
+
+		// 異なる型/
+		template<typename T, typename U>
+		void OpDiv()
+		{
+			auto rhs = top().v_->Get<U>(); pop();
+			if (rhs == 0)
+				throw DevideByZero();
+			auto lhs = top().v_->Get<T>(); pop();
+			push(lhs / rhs);
+		}
+
 		// %
 		template<typename T>
 		void OpMod()
@@ -815,18 +835,246 @@ namespace ButiScript {
 		void sys_tostr()
 		{
 			auto v = top().v_->Get<std::string>(); pop();
-			push(v);			// 戻り値はスタックに入れる
+			push(v);
+			// 戻り値はスタックに入れる
 		}
 
 		//組み込みメソッド(return 無し)
-		template<typename T,void(T::*Method)() >
-		void sys_method_retNo() 
+		template<typename T, void(T::* Method)() >
+		void sys_method_retNo()
 		{
 			auto v = &(top().v_->GetRef<T>());
 			((v)->*Method)();
 			pop();
 		}
+		template<typename T, void(T::* Method)() const>
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			((v)->*Method)();
+			pop();
+		}
+		//組み込みメソッド(return 有り)
+		template<typename T, typename U, U(T::* Method)() >
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			U ret = ((v)->*Method)();
+			pop();
+			push(ret);
+		}
+		template<typename T, typename U, U(T::* Method)() const>
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			U ret = ((v)->*Method)();
+			pop();
+			push(ret);
+		}
 
+		//組み込みメソッド(return 無し、引数有り)
+		template<typename T, typename Arg, void(T::* Method)(Arg) const>
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(arg);
+			pop();
+
+		}
+		template<typename T, typename Arg, void(T::* Method)(Arg&) const>
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(const Arg&) const>
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(Arg*)const >
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(&arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(const Arg*) const>
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(&arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(Arg) >
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(arg);
+			pop();
+
+		}
+		template<typename T, typename Arg, void(T::* Method)(Arg&) >
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(const Arg&) >
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(Arg*) >
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(&arg);
+			pop();
+		}
+		template<typename T, typename Arg, void(T::* Method)(const Arg*) >
+		void sys_method_retNo()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			((v)->*Method)(&arg);
+			pop();
+		}
+
+		//組み込みメソッド(return 有り、引数有り)
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) const>
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) const>
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) const>
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) const>
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(&arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) const>
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(&arg);
+			pop();
+			push(ret);
+		}
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) >
+			void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) >
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) >
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) >
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(&arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) >
+		void sys_method_ret()
+		{
+			auto v = &(top().v_->GetRef<T>());
+			pop();
+			auto arg = (top().v_->GetRef<Arg>());
+			U ret = ((v)->*Method)(&arg);
+			pop();
+			push(ret);
+		}
 		template<typename T,int typeIndex>
 		void pushValue() {
 			auto value = Value(T());

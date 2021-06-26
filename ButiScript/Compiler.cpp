@@ -26,16 +26,45 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 	RegistSystemType<float,TYPE_FLOAT>( "float","f");
 	RegistSystemType<std::string, TYPE_STRING>( "string","s");
 	RegistSystemType<int, TYPE_VOID>( "void","v");
-	RegistSystemType<ButiEngine::Vector2, TYPE_VOID + 1>( "Vector2","vec2", "x:f,y:f");
+	RegistSystemType<ButiEngine::Vector2, TYPE_VOID + 1>("Vector2", "vec2", "x:f,y:f");
+	RegistSystemType<ButiEngine::Vector3, TYPE_VOID + 2>("Vector3", "vec3", "x:f,y:f,z:f");
+	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>( "Vector4","vec4", "x:f,y:f,z:f,w:f");
+	{
+		using namespace ButiEngine;
+		DefineSystemFunction(&VirtualCPU::sys_print, TYPE_VOID, "print", "s");
+		DefineSystemFunction(&VirtualCPU::Sys_pause, TYPE_VOID, "pause", "");
+		DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "i");
+		DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "f");
+		DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec2");
+		DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec3");
+		DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec4");
 
-	DefineSystemFunction(&ButiScript::VirtualCPU::sys_print, TYPE_VOID, "print", "s");
-	DefineSystemFunction(&ButiScript::VirtualCPU::Sys_pause, TYPE_VOID, "pause", "");
-	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "i");
-	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "f");
-	DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec2");
+		DefineSystemMethod(&VirtualCPU::sys_method_retNo< Vector2, &Vector2::Normalize >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, float, &Vector2::GetLength >, TYPE_VOID + 1, TYPE_FLOAT, "GetLength", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, float, &Vector2::GetLengthSqr >, TYPE_VOID + 1, TYPE_FLOAT, "GetLengthSqr", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, float, Vector2, &Vector2::Dot >, TYPE_VOID + 1, TYPE_FLOAT, "Dot", "vec2");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2&, int, &Vector2::Floor >, TYPE_VOID + 1, (TYPE_VOID + 1), "Floor", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2&, int, &Vector2::Round >, TYPE_VOID + 1, (TYPE_VOID + 1), "Round", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2&, int, &Vector2::Ceil >, TYPE_VOID + 1, (TYPE_VOID + 1), "Ceil", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, int, &Vector2::GetFloor >, TYPE_VOID + 1, TYPE_VOID + 1, "GetFloor", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, int, &Vector2::GetRound >, TYPE_VOID + 1, TYPE_VOID + 1, "GetRound", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, int, &Vector2::GetCeil >, TYPE_VOID + 1, TYPE_VOID + 1, "GetCeil", "i");
 
-	DefineSystemMethod(&ButiScript::VirtualCPU::sys_method_retNo< ButiEngine::Vector2,& ButiEngine::Vector2::Normalize >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, &Vector3::Normalize >, TYPE_VOID + 2, TYPE_VOID, "Normalize", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, &Vector3::GetNormalize >, TYPE_VOID + 2, TYPE_VOID + 2, "GetNormalize", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, float, &Vector3::GetLength >, TYPE_VOID + 2, TYPE_FLOAT, "GetLength", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, float, &Vector3::GetLengthSqr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLengthSqr", "");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, float, Vector3, &Vector3::Dot >, TYPE_VOID + 2, TYPE_FLOAT, "Dot", "vec3");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, Vector3, &Vector3::GetCross >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCross", "vec3");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, int, &Vector3::Floor >, TYPE_VOID + 2, (TYPE_VOID + 2), "Floor", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, int, &Vector3::Round >, TYPE_VOID + 2, (TYPE_VOID + 2), "Round", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, int, &Vector3::Ceil >, TYPE_VOID + 2, (TYPE_VOID + 2), "Ceil", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetFloor >, TYPE_VOID + 2, TYPE_VOID + 2, "GetFloor", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetRound >, TYPE_VOID + 2, TYPE_VOID + 2, "GetRound", "i");
+		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetCeil >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCeil", "i");
 
+	}
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
 	variables[0].set_global();

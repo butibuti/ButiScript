@@ -835,8 +835,8 @@ struct script_grammer : public grammar<script_grammer> {
 				>> '{'
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
+				| callMethod[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
-				| callMethod[statement.statement = make_statement1(CALL_STATE, arg1)]>>';'
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 

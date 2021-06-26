@@ -5,8 +5,11 @@
 #include <iostream>
 #include <exception>
 #include <string>
-#include"ButiMath.h"
+#include"../../Header/Common/ButiMath.h"
 
+////////////////////////////////
+////テンプレート継承の実装用マクロ////
+////////////////////////////////
 #define RegistGet(T) \
 virtual T operator()(const IValue* b, const T * p_dummy) const {\
 return static_cast<const Class*>(b)->get_value_stub< T >();\
@@ -41,6 +44,86 @@ virtual bool operator()(const IValue* b,const T & v) const {\
 virtual bool operator()(const IValue* b,const T & v) const {\
 return static_cast<const Class*>(b)->ge_stub<T>(v);\
 }\
+
+
+//////////////////////////////////
+////変数の中身の明示的特殊化用マクロ////
+//////////////////////////////////
+#define RegistSpecialization(Type)\
+bool Eq(IValue* p_other)const override {\
+	return p_other->Equal(*( Type *)p_instance);\
+}\
+bool Gt(IValue* p_other)const override {\
+	return false;\
+}\
+bool Ge(IValue* p_other)const override {\
+	return false;\
+}\
+void ValueCopy(IValue* p_other) const override {\
+	p_other->Set< Type >(*( Type *)p_instance);\
+}\
+IValue* Clone()const {\
+	return new Value_wrap< Type >(*( Type *)p_instance, 1);\
+}\
+void Nagative()override {\
+	*( Type *)p_instance = -1 * (*( Type *)p_instance);\
+}\
+virtual const IValue::get_value_base_t& get_value() const {\
+	static const IValue::get_value_t<Value_wrap< Type >> s;\
+	return s;\
+}\
+virtual const IValue::get_ref_base_t& get_ref() const {\
+	static const IValue::get_ref_t<Value_wrap< Type >> s;\
+	return s;\
+}\
+virtual const IValue::set_value_base_t& set_value() const {\
+	static const IValue::set_value_t<Value_wrap< Type >> s;\
+	return s;\
+}\
+virtual const IValue::eq_base_t& eq() const {\
+	static const IValue::eq_t<Value_wrap< Type >> s;\
+	return s;\
+}\
+virtual const IValue::gt_base_t& gt() const {\
+	static const IValue::gt_t<Value_wrap< Type >> s;\
+	return s;\
+}\
+virtual const IValue::ge_base_t& ge() const {\
+	static const IValue::ge_t<Value_wrap< Type >> s;\
+	return s;\
+}\
+template <typename U> U get_value_stub()const {\
+	return U();\
+}\
+template <typename U> U& get_ref_stub() {\
+	auto v = U();\
+	return v;\
+}\
+template <>  Type & get_ref_stub() {\
+	return *( Type *)p_instance;\
+}\
+template <>  Type  get_value_stub()const {\
+	return (*( Type *)p_instance);\
+}\
+template <> std::string get_value_stub()const {\
+	return std::to_string(*( Type *)p_instance);\
+}\
+template <typename U> void set_value_stub(const U& arg_v) {\
+	*(std::string*)p_instance = std::to_string(arg_v);\
+}\
+template <>void set_value_stub(const  Type & arg_v) {\
+	*( Type *)p_instance = (arg_v);\
+}\
+template <>void set_value_stub(const std::string& arg_v) {\
+	*( Type *)p_instance = StrConvert::ConvertString< Type >(arg_v);\
+}\
+template <typename U> bool eq_stub(const U& arg_v)const {\
+	return  false;\
+}\
+template <>bool eq_stub(const  Type & arg_v)const {\
+	return *( Type *)p_instance == arg_v;\
+}\
+
 
 namespace ButiScript {
 
@@ -133,6 +216,8 @@ namespace ButiScript {
 			RegistGet(double);
 			RegistGet(std::string);
 			RegistGet(ButiEngine::Vector2);
+			RegistGet(ButiEngine::Vector3);
+			RegistGet(ButiEngine::Vector4);
 		};
 		template <typename Class, typename Super = IValue>
 		struct get_ref_t : public Super::get_ref_base_t {
@@ -145,6 +230,8 @@ namespace ButiScript {
 			RegistGetRef(double);
 			RegistGetRef(std::string);
 			RegistGetRef(ButiEngine::Vector2);
+			RegistGetRef(ButiEngine::Vector3);
+			RegistGetRef(ButiEngine::Vector4);
 		};
 		template <typename Class, typename Super = IValue>
 		struct set_value_t : public Super::set_value_base_t {
@@ -156,6 +243,8 @@ namespace ButiScript {
 			RegistSet(float);
 			RegistSet(double);
 			RegistSet(ButiEngine::Vector2);
+			RegistSet(ButiEngine::Vector3);
+			RegistSet(ButiEngine::Vector4);
 			RegistSetRef(std::string);
 
 		};
@@ -169,6 +258,8 @@ namespace ButiScript {
 			RegistEq(float);
 			RegistEq(double);
 			RegistEq(ButiEngine::Vector2);
+			RegistEq(ButiEngine::Vector3);
+			RegistEq(ButiEngine::Vector4);
 			RegistEq(std::string);
 
 		};
@@ -182,6 +273,8 @@ namespace ButiScript {
 			RegistGt(float);
 			RegistGt(double);
 			RegistGt(ButiEngine::Vector2);
+			RegistGt(ButiEngine::Vector3);
+			RegistGt(ButiEngine::Vector4);
 			RegistGt(std::string);
 		};
 		template <typename Class, typename Super = IValue>
@@ -194,6 +287,8 @@ namespace ButiScript {
 			RegistGe(float);
 			RegistGe(double);
 			RegistGe(ButiEngine::Vector2);
+			RegistGe(ButiEngine::Vector3);
+			RegistGe(ButiEngine::Vector4);
 			RegistGe(std::string);
 
 		};
@@ -339,7 +434,19 @@ namespace ButiScript {
 		template <> ButiEngine::Vector2 get_value_stub()const {
 			return ButiEngine::Vector2();
 		}
+		template <> ButiEngine::Vector3 get_value_stub()const {
+			return ButiEngine::Vector3();
+		}
+		template <> ButiEngine::Vector4 get_value_stub()const {
+			return ButiEngine::Vector4();
+		}
 		template <>void set_value_stub(const ButiEngine::Vector2& arg_v) {
+			*(T*)p_instance = arg_v.x;
+		}
+		template <>void set_value_stub(const ButiEngine::Vector3& arg_v) {
+			*(T*)p_instance = arg_v.x;
+		}
+		template <>void set_value_stub(const ButiEngine::Vector4& arg_v) {
 			*(T*)p_instance = arg_v.x;
 		}
 
@@ -359,6 +466,24 @@ namespace ButiScript {
 			return false;
 		}
 		template <>bool ge_stub(const ButiEngine::Vector2& arg_v)const {
+			return false;
+		}
+		template <>bool eq_stub(const ButiEngine::Vector3& arg_v)const {
+			return false;
+		}
+		template <>bool gt_stub(const ButiEngine::Vector3& arg_v)const {
+			return false;
+		}
+		template <>bool ge_stub(const ButiEngine::Vector3& arg_v)const {
+			return false;
+		}
+		template <>bool eq_stub(const ButiEngine::Vector4& arg_v)const {
+			return false;
+		}
+		template <>bool gt_stub(const ButiEngine::Vector4& arg_v)const {
+			return false;
+		}
+		template <>bool ge_stub(const ButiEngine::Vector4& arg_v)const {
 			return false;
 		}
 
@@ -462,8 +587,8 @@ namespace ButiScript {
 	public:
 		Value_wrap(const ButiEngine::Vector2& v, const int ref) :IValue(ref) {
 			p_instance = new ButiEngine::Vector2(v);
-			ary_p_member = (IValue**)malloc(sizeof(IValue*)*2);
-			ary_memberType = (int*)malloc(sizeof(int)*2);
+			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 2);
+			ary_memberType = (int*)malloc(sizeof(int) * 2);
 			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->x, 1);
 			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->y, 1);
 			ary_memberType[0] = TYPE_FLOAT;
@@ -471,96 +596,72 @@ namespace ButiScript {
 		}
 		Value_wrap(const int ref) :IValue(ref) {
 			p_instance = new ButiEngine::Vector2();
+			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 2);
+			ary_memberType = (int*)malloc(sizeof(int) * 2);
+			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->x, 1);
+			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->y, 1);
+			ary_memberType[0] = TYPE_FLOAT;
+			ary_memberType[1] = TYPE_FLOAT;
 		}
-
-
-		bool Eq(IValue* p_other)const override {
-			return p_other->Equal(*(ButiEngine::Vector2 *)p_instance);
+		RegistSpecialization(ButiEngine::Vector2);
+	};
+	template<>
+	class Value_wrap<ButiEngine::Vector3> : public IValue {
+	public:
+		Value_wrap(const ButiEngine::Vector3& v, const int ref) :IValue(ref) {
+			p_instance = new ButiEngine::Vector3(v);
+			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 3);
+			ary_memberType = (int*)malloc(sizeof(int) * 3);
+			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->x, 1);
+			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->y, 1);
+			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->z, 1);
+			ary_memberType[0] = TYPE_FLOAT;
+			ary_memberType[1] = TYPE_FLOAT;
+			ary_memberType[2] = TYPE_FLOAT;
 		}
-		bool Gt(IValue* p_other)const override {
-			return false;
+		Value_wrap(const int ref) :IValue(ref) {
+			p_instance = new ButiEngine::Vector3();
+			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 3);
+			ary_memberType = (int*)malloc(sizeof(int) * 3);
+			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->x, 1);
+			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->y, 1);
+			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->z, 1);
+			ary_memberType[0] = TYPE_FLOAT;
+			ary_memberType[1] = TYPE_FLOAT;
+			ary_memberType[2] = TYPE_FLOAT;
 		}
-		bool Ge(IValue* p_other)const override {
-			return false;
+		RegistSpecialization(ButiEngine::Vector3);
+	};
+	template<>
+	class Value_wrap<ButiEngine::Vector4> : public IValue {
+	public:
+		Value_wrap(const ButiEngine::Vector4& v, const int ref) :IValue(ref) {
+			p_instance = new ButiEngine::Vector4(v);
+			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 4);
+			ary_memberType = (int*)malloc(sizeof(int) * 4);
+			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->x, 1);
+			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->y, 1);
+			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->z, 1);
+			ary_p_member[3] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->w, 1);
+			ary_memberType[0] = TYPE_FLOAT;
+			ary_memberType[1] = TYPE_FLOAT;
+			ary_memberType[2] = TYPE_FLOAT;
+			ary_memberType[3] = TYPE_FLOAT;
 		}
-
-		void ValueCopy(IValue* p_other) const override {
-			p_other->Set<ButiEngine::Vector2>(*(ButiEngine::Vector2*)p_instance);
+		Value_wrap(const int ref) :IValue(ref) {
+			p_instance = new ButiEngine::Vector4();
+			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 4);
+			ary_memberType = (int*)malloc(sizeof(int) * 4);
+			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->x, 1);
+			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->y, 1);
+			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->z, 1);
+			ary_p_member[3] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->w, 1);
+			ary_memberType[0] = TYPE_FLOAT;
+			ary_memberType[1] = TYPE_FLOAT;
+			ary_memberType[2] = TYPE_FLOAT;
+			ary_memberType[3] = TYPE_FLOAT;
 		}
-
-		IValue* Clone()const {
-			return new Value_wrap<ButiEngine::Vector2>(*(ButiEngine::Vector2*)p_instance,1);
-		}
-
-		void Nagative()override {
-			*(ButiEngine::Vector2*)p_instance = -1 * (*(ButiEngine::Vector2*)p_instance);
-
-		}
-
-
-		virtual const IValue::get_value_base_t& get_value() const {
-			static const IValue::get_value_t<Value_wrap<ButiEngine::Vector2>> s;
-			return s;
-		}
-		virtual const IValue::get_ref_base_t& get_ref() const {
-			static const IValue::get_ref_t<Value_wrap<ButiEngine::Vector2>> s;
-			return s;
-		}
-		virtual const IValue::set_value_base_t& set_value() const {
-			static const IValue::set_value_t<Value_wrap<ButiEngine::Vector2>> s;
-			return s;
-		}
-
-		virtual const IValue::eq_base_t& eq() const {
-			static const IValue::eq_t<Value_wrap<ButiEngine::Vector2>> s;
-			return s;
-		}
-		virtual const IValue::gt_base_t& gt() const {
-			static const IValue::gt_t<Value_wrap<ButiEngine::Vector2>> s;
-			return s;
-		}
-		virtual const IValue::ge_base_t& ge() const {
-			static const IValue::ge_t<Value_wrap<ButiEngine::Vector2>> s;
-			return s;
-		}
-
-		template <typename U> U get_value_stub()const {
-			return U();
-		}
-		template <typename U> U& get_ref_stub() {
-			auto v = U();
-			return v;
-		}
-
-		template <> ButiEngine::Vector2& get_ref_stub() {
-			return *(ButiEngine::Vector2*)p_instance;
-		}
-		template <> ButiEngine::Vector2 get_value_stub()const {
-			return (*(ButiEngine::Vector2*)p_instance);
-		}
-		template <> std::string get_value_stub()const {
-			return std::to_string(*(ButiEngine::Vector2*)p_instance);
-		}
-
-		template <typename U> void set_value_stub(const U& arg_v) {
-			*(std::string*)p_instance = std::to_string(arg_v);
-		}
-		template <>void set_value_stub(const ButiEngine::Vector2& arg_v) {
-			*(ButiEngine::Vector2*)p_instance = (arg_v);
-		}
-		template <>void set_value_stub(const std::string& arg_v) {
-			*(ButiEngine::Vector2 *)p_instance = StrConvert::ConvertString<ButiEngine::Vector2>(arg_v);
-		}
-
-
-		template <typename U> bool eq_stub(const U& arg_v)const {
-			return  false;
-		}
-
-		template <>bool eq_stub(const ButiEngine::Vector2& arg_v)const {
-			return *(ButiEngine::Vector2*)p_instance == arg_v;
-		}
-
+		RegistSpecialization(ButiEngine::Vector4);
 	};
 
 	//参照型など実体を持たない変数の初期化に使用
@@ -606,7 +707,19 @@ namespace ButiScript {
 		Value(const ButiEngine::Vector2 vec2)
 		{
 			v_ = new Value_wrap<ButiEngine::Vector2>(vec2, 1);
-			valueType = TYPE_VOID+1;
+			valueType = TYPE_VOID + 1;
+		}
+		//Vector3として初期化
+		Value(const ButiEngine::Vector3 vec3)
+		{
+			v_ = new Value_wrap<ButiEngine::Vector3>(vec3, 1);
+			valueType = TYPE_VOID + 2;
+		}
+		//Vector4として初期化
+		Value(const ButiEngine::Vector4 vec4)
+		{
+			v_ = new Value_wrap<ButiEngine::Vector4>(vec4, 1);
+			valueType = TYPE_VOID + 3;
 		}
 
 		//変数を指定して初期化

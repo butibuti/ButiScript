@@ -461,6 +461,9 @@ Node_t Node::make_node(const int Op, Node_t left, Node_t right)
 // 関数ノードの生成
 Node_t Node::make_node(const int Op, Node_t left, NodeList_t right)
 {
+	if (Op == OP_METHOD) {
+		return  Node_t(new Node_Method(Op, left, right));
+	}
 	return Node_t(new Node_function(Op, left, right));
 }
 
@@ -491,6 +494,24 @@ bool SetDefaultOperator(const int op_, Compiler* c) {
 		break;
 	}
 	return true;
+}
+template <typename T, typename U>
+bool SetDeferentTypeMulOperator(const int op_, Compiler* c) {
+	if (op_ == OP_MUL) {
+
+		c->OpMul<T, U>();
+		return true;
+	}
+	return false;
+}
+template <typename T, typename U>
+bool SetDeferentTypeDivOperator(const int op_, Compiler* c) {
+	if (op_ == OP_DIV) {
+
+		c->OpDiv<T, U>();
+		return true;
+	}
+	return false;
 }
 
 template <typename T>
@@ -614,11 +635,70 @@ int Node::Push(Compiler* c) const{
 	}
 
 	//Vector2計算ノード
-	if (left_type == TYPE_VOID + 1|| right_type == TYPE_VOID + 1) {
+	if (left_type == TYPE_VOID + 1 && right_type == TYPE_VOID + 1) {
 		if (!SetDefaultOperator<ButiEngine::Vector2>(op_, c)) {
 			c->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 1;
+	}
+	if (left_type == TYPE_VOID + 1 && right_type == TYPE_FLOAT) {
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, float>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, float>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 1;
+	}
+	if (left_type == TYPE_VOID + 1 && right_type == TYPE_INTEGER) {
+
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, int>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, int>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 1;
+	}
+	if (left_type == TYPE_FLOAT && right_type == TYPE_VOID + 1) {
+		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector2>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 1;
+	}
+	if (left_type == TYPE_INTEGER && right_type == TYPE_VOID + 1) {
+
+		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector2>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 1;
+	}
+	//Vector3計算ノード
+	if (left_type == TYPE_VOID + 2 && right_type == TYPE_VOID + 2) {
+		if (!SetDefaultOperator<ButiEngine::Vector3>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 2;
+	}
+	if (left_type == TYPE_VOID + 2 && right_type == TYPE_FLOAT) {
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, float>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, float>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 2;
+	}
+	if (left_type == TYPE_VOID + 2 && right_type == TYPE_INTEGER) {
+
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, int>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, int>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 2;
+	}
+	if (left_type == TYPE_FLOAT && right_type == TYPE_VOID + 2) {
+		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector3>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 2;
+	}
+	if (left_type == TYPE_INTEGER && right_type == TYPE_VOID + 2) {
+
+		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector3>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 2;
 	}
 
 	// 文字列計算ノードの処理

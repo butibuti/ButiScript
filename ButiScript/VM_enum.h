@@ -13,5 +13,7 @@
 #define	VMCODE3(code_, name_)	code_,
 #define	VMCODE_T(code_, name_)	code_,
 #define	VMCODE_T0(code_, name_, Type_)	code_,
+#define	VMCODE_TU(code_, name_)			code_,		
+#define	VMCODE_TU0(code_, name_, Type_T, Type_U)code_,
 
 #include"VM_code.h"

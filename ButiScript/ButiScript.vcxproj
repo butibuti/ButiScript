@@ -164,7 +164,6 @@
     <ClCompile Include="VM_value.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\2nd\Engine\ButiEngine\Libs\Library\Header\Common\ButiMath.h" />
     <ClInclude Include="Compiler.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="Parser.h" />
