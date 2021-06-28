@@ -1,4 +1,13 @@
 #include "stdafx.h"
+#ifndef BOOST_INCLUDE_H
+#define BOOST_INCLUDE_H
+#include <boost/bind.hpp>
+#include <boost/spirit.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/spirit/include/phoenix1_functions.hpp>
+#include <boost/spirit/include/phoenix1_new.hpp>
+#include <boost/mem_fn.hpp>
+#endif
 #include "Parser.h"
 #include "Node.h"
 #include"Compiler.h"
@@ -68,6 +77,18 @@ struct binary_node_impl {
 	Node_t operator()(Ty1 Op, const Ty2& left, const Ty3& right) const
 	{
 		return Node::make_node(Op, left, right);
+	}
+};
+
+// 二項演算子ノードを生成する(コンパイラ使用)
+struct binary_node_impl_useDriver {
+	template <typename Ty1, typename Ty2, typename Ty3, typename Ty4>
+	struct result { typedef Node_t type; };
+
+	template <typename Ty1, typename Ty2, typename Ty3, typename Ty4>
+	Node_t operator()(Ty1 Op, const Ty2& left, const Ty3& right,const Ty4 driver) const
+	{
+		return Node::make_node(Op, left, right,driver);
 	}
 };
 
@@ -207,6 +228,29 @@ struct make_function_impl {
 	}
 };
 
+//列挙型の生成
+struct make_enum_impl {
+	template < typename Ty2>
+	struct result { typedef Enum_t type; };
+
+	template <typename Ty2>
+	Enum_t operator()(const Ty2& name) const
+	{
+		return Enum_t(new Enum(name));
+	}
+};
+//列挙型の追加
+struct add_enum_impl {
+	template <typename Ty1, typename Ty2>
+	struct result { typedef void type; };
+
+	template <typename Ty1, typename Ty2>
+	void operator()(Ty1 enum_t, const Ty2& name) const
+	{
+		enum_t->SetIdentifer(name);
+	}
+};
+
 // 名前空間の生成
 struct make_namespace_impl {
 	template < typename Ty2>
@@ -282,6 +326,7 @@ struct analyze_impl {
 
 // phoenixが使用する無名関数用の関数
 phoenix::function<binary_node_impl> const binary_node = binary_node_impl();
+phoenix::function<binary_node_impl_useDriver> const binary_node_comp = binary_node_impl_useDriver();
 phoenix::function<unary_node_impl> const unary_node = unary_node_impl();
 phoenix::function<push_back_impl> const push_back = push_back_impl();
 phoenix::function<make_argument_impl> const make_argument = make_argument_impl();
@@ -293,6 +338,8 @@ phoenix::function<make_decl1_impl> const make_decl1 = make_decl1_impl();
 phoenix::function<arg_ref_impl> const arg_ref = arg_ref_impl();
 phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
+phoenix::function<add_enum_impl> const add_enum = add_enum_impl();
+phoenix::function<make_enum_impl> const make_enum = make_enum_impl();
 phoenix::function<make_namespace_impl> const make_namespace = make_namespace_impl();
 phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
 phoenix::function<specificType_impl> const specificType = specificType_impl();
@@ -364,6 +411,10 @@ namespace ButiClosure {
 		member3 name;
 	};
 
+	struct enum_val : closure<enum_val, Enum_t> {
+		member1 enum_t;
+	};
+
 	// 引数定義のクロージャ
 	struct argdef_val : closure<argdef_val, ArgDefine, std::string> {
 		member1 node;
@@ -376,7 +427,7 @@ namespace ButiClosure {
 	};
 }
 
-// 関数、グローバル変数、クラス登録
+// 関数、グローバル変数登録
 struct Regist_grammer : public grammar<Regist_grammer> {
 	Regist_grammer(Compiler* driver)
 		:driver_(driver)
@@ -392,6 +443,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::namespace_val ::context_t>	nameSpace;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
+		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
 		rule<ScannerT>	string_node,number,floatNumber,callMethod,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
 			and_expr,expr,assign,argument,statement,arg,decl_func,callMemberValue ,block,input,ident;
@@ -410,12 +462,20 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			using phoenix::construct_;
 
 			keywords = "if", "for", "while", "switch", "case", "default", "break", "return","namespace";
+
+
 			// 識別子
 			ident = lexeme_d[
 				((alpha_p | '_') >> *(alnum_p | '_')) - (keywords >> anychar_p - (alnum_p | '_'))
 			];
 			// 識別子（クロージャに登録）
 			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
+
+
+			Enum = "enum">>identifier[Enum.enum_t= make_enum(arg1)] >> "{" >>
+				!identifier[add_enum(Enum.enum_t,arg1)]
+				>> *(',' >> identifier[add_enum(Enum.enum_t, arg1)])>>
+				"}";
 
 			//整数
 			number = uint_p;
@@ -584,14 +644,15 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				;
 
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(function[regist(arg1, self.driver_)]
+				>> *(Enum[analyze(arg1, self.driver_)]
+					|function[regist(arg1, self.driver_)]
 					| decl_func
 					| decl_value[analyze(arg1, self.driver_)]
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
-			input = *(
-				function[regist(arg1, self.driver_)]
+			input = *(Enum[analyze(arg1,self.driver_)]
+				|function[regist(arg1, self.driver_)]
 				| decl_func
 				| decl_value[analyze(arg1, self.driver_)]
 				| nameSpace[popNameSpace(self.driver_)]
@@ -644,7 +705,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		rule<ScannerT>							input;
+		rule<ScannerT>							input, Enum;
 		rule<ScannerT>							ident;
 
 		symbols<> keywords;
@@ -659,7 +720,6 @@ struct script_grammer : public grammar<script_grammer> {
 			using phoenix::var;
 			using phoenix::new_;
 			using phoenix::construct_;
-
 			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace";
 			// 識別子
 			ident = lexeme_d[
@@ -667,6 +727,12 @@ struct script_grammer : public grammar<script_grammer> {
 			];
 			// 識別子（クロージャに登録）
 			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
+			
+
+			Enum = "enum" >> identifier >> "{" >>
+				identifier
+				>> *(',' >> identifier) >>
+				"}";
 
 			//名前空間からの呼び出し
 			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
@@ -696,12 +762,12 @@ struct script_grammer : public grammar<script_grammer> {
 				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
-			callMethod = Value[callMethod.valueNode=arg1] >> "." >> identifier[callMethod.memberNode = binary_node(OP_METHOD, callMethod.valueNode, arg1)]
+			callMethod = Value[callMethod.valueNode=arg1] >> "." >> identifier[callMethod.memberNode = binary_node_comp(OP_METHOD, callMethod.valueNode, arg1,self.driver_)]
 				>> '(' >> !argument[callMethod.memberNode = binary_node(OP_METHOD, callMethod.memberNode, arg1)] >> ')';
 
 			//メンバ呼び出し
 			callMemberValue =(Value[ callMemberValue.valueNode=arg1])>>"."
-				>> identifier[callMemberValue.memberNode = binary_node(OP_MEMBER, callMemberValue.valueNode,arg1)]
+				>> identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.valueNode,arg1, self.driver_)]
 				;
 			// 計算のprimeノード
 			prime = callMethod[prime.node = arg1]
@@ -842,14 +908,15 @@ struct script_grammer : public grammar<script_grammer> {
 
 
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(function[analyze(arg1, self.driver_)]
+				>> *(Enum
+					|function[analyze(arg1, self.driver_)]
 					| decl_func[analyze(arg1, self.driver_)]
 					| decl_value
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
-			input = *(
-				function[analyze(arg1, self.driver_)]
+			input = *(Enum
+				|function[analyze(arg1, self.driver_)]
 				| decl_func[analyze(arg1, self.driver_)]
 				| decl_value
 				| nameSpace[popNameSpace(self.driver_)]
@@ -928,11 +995,11 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 	}
 	driver-> OpHalt();
 	info = parse(begin, end, gr, skip_p);
+
 	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
 		return true;
 	}
 
 	driver->error("構文解析失敗");
-
 	return false;
 }

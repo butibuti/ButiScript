@@ -39,6 +39,55 @@ namespace ButiScript {
 		int valueType;
 		std::string name_;
 	};
+	class EnumTag {
+	public:
+		EnumTag(){}
+		EnumTag(const std::string& arg_typeName):type_Name(arg_typeName){}
+
+		void SetValue(const std::string& arg_identiferName, const int value) {
+			if (map_identifers.count(arg_identiferName)) {
+				return;
+			}
+			map_identifers.emplace(arg_identiferName, value);
+		}
+		int GetValue(const std::string& arg_identiferName)const {
+			return map_identifers.at(arg_identiferName);
+		}
+		bool ExistenceIdentifers(const std::string& arg_identiferName)const {
+			return map_identifers.count(arg_identiferName);
+		}
+		const std::string& GetTypeName()const {
+			return type_Name;
+		}
+	private:
+		std::string type_Name;
+		std::map<std::string, int>map_identifers;
+	};
+	class EnumTable {
+	public:
+		EnumTable(){}
+
+		void SetEnum(const EnumTag& arg_enumTag) {
+			map_enumTag.emplace(arg_enumTag.GetTypeName(), arg_enumTag);
+		}
+
+		const EnumTag* FindType(const std::string& arg_typeName)const {
+			if (!map_enumTag.count(arg_typeName)) {
+				return nullptr;
+			}
+
+			return &map_enumTag.at(arg_typeName);
+		}
+		EnumTag* FindType(const std::string& arg_typeName){
+			if (!map_enumTag.count(arg_typeName)) {
+				return nullptr;
+			}
+			return &map_enumTag.at(arg_typeName);
+		}
+
+	private:
+		std::map<std::string, EnumTag> map_enumTag;
+	};
 
 	class ValueTag {
 	public:
@@ -173,7 +222,6 @@ namespace ButiScript {
 			: valueType(type), flags_(0), index_(0)
 		{
 		}
-
 		void SetArg(const int type)
 		{
 			args_.push_back((unsigned char)type);
@@ -222,12 +270,12 @@ namespace ButiScript {
 			}
 
 			for (int i = 0; i < splited.size(); i++) {
-				if (!arg_map_argmentChars.count(args)) {
+				if (!arg_map_argmentChars.count(splited[i])) {
 					return false;
 				}
 				else {
 
-					args_.push_back(arg_map_argmentChars.at(args));
+					args_.push_back(arg_map_argmentChars.at(splited[i]));
 				}
 
 			}
@@ -357,6 +405,7 @@ namespace ButiScript {
 		{
 		}
 
+
 		FunctionTag* Add(const std::string& name, const FunctionTag& tag)
 		{
 			auto key = name;
@@ -476,16 +525,16 @@ namespace ButiScript {
 	class TypeTable {
 	public:
 		const TypeTag* GetType(const int index) const {
-			if (vec_systemTypes.size() <= index) {
+			if (vec_types.size() <= index) {
 				return nullptr;
 			}
-			return vec_systemTypes[index];
+			return vec_types[index];
 		}
 		TypeTag* GetType(const int index) {
-			if (vec_systemTypes.size() <= index) {
+			if (vec_types.size() <= index) {
 				return nullptr;
 			}
-			return vec_systemTypes[index];
+			return vec_types[index];
 		}
 		const std::map<std::string, int>& GetArgmentKeyMap()const {
 			return map_argmentChars;
@@ -501,22 +550,22 @@ namespace ButiScript {
 		void RegistType(const TypeTag& arg_type) {
 
 
-			if (vec_systemTypes.size() <= arg_type.typeIndex) {
-				vec_systemTypes.resize(arg_type.typeIndex + 1);
+			if (vec_types.size() <= arg_type.typeIndex) {
+				vec_types.resize(arg_type.typeIndex + 1);
 			}
 			map_argmentChars.emplace(arg_type.argName, arg_type.typeIndex);
 			map_types.emplace(arg_type.typeName, arg_type);
-			vec_systemTypes[arg_type.typeIndex] = &map_types.at(arg_type.typeName);
+			vec_types[arg_type.typeIndex] = &map_types.at(arg_type.typeName);
 		}
 
 		const std::vector<TypeTag* >& GetSystemType()const {
-			return vec_systemTypes;
+			return vec_types;
 		}
 
 		void CreateTypeVec(std::vector<TypeTag>& arg_ref_types) const {
-			arg_ref_types.reserve(vec_systemTypes.size());
-			auto end = vec_systemTypes.end();
-			for (auto itr = vec_systemTypes.begin(); itr != end; itr++) {
+			arg_ref_types.reserve(vec_types.size());
+			auto end = vec_types.end();
+			for (auto itr = vec_types.begin(); itr != end; itr++) {
 				arg_ref_types.push_back(*(*itr));
 			}
 
@@ -525,7 +574,7 @@ namespace ButiScript {
 
 	private:
 
-		std::vector<TypeTag* > vec_systemTypes;
+		std::vector<TypeTag* > vec_types;
 		std::map<std::string, int> map_argmentChars;
 		std::map<std::string, TypeTag> map_types;
 

@@ -15,20 +15,17 @@ ButiScript::Compiler::~Compiler()
 {
 }
 
-// コンパイル
-bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Data)
+void ButiScript::Compiler::RegistDefaultSystems()
 {
-	//グローバル名前空間の設定
-	currentNameSpace = std::make_shared<NameSpace>("");
 
 	//組み込み関数の設定
-	RegistSystemType<int, TYPE_INTEGER>( "int","i");
-	RegistSystemType<float,TYPE_FLOAT>( "float","f");
-	RegistSystemType<std::string, TYPE_STRING>( "string","s");
-	RegistSystemType<int, TYPE_VOID>( "void","v");
+	RegistSystemType<int, TYPE_INTEGER>("int", "i");
+	RegistSystemType<float, TYPE_FLOAT>("float", "f");
+	RegistSystemType<std::string, TYPE_STRING>("string", "s");
+	RegistSystemType<int, TYPE_VOID>("void", "v");
 	RegistSystemType<ButiEngine::Vector2, TYPE_VOID + 1>("Vector2", "vec2", "x:f,y:f");
 	RegistSystemType<ButiEngine::Vector3, TYPE_VOID + 2>("Vector3", "vec3", "x:f,y:f,z:f");
-	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>( "Vector4","vec4", "x:f,y:f,z:f,w:f");
+	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
 	{
 		using namespace ButiEngine;
 		DefineSystemFunction(&VirtualCPU::sys_print, TYPE_VOID, "print", "s");
@@ -65,11 +62,21 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Data& Da
 		DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetCeil >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCeil", "i");
 
 	}
+
+	RegistEnum("TestEnum", "First", 1);
+	RegistEnum("TestEnum", "Second", 2);
+}
+
+// コンパイル
+bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::CompiledData& Data)
+{
+	//グローバル名前空間の設定
+	currentNameSpace = std::make_shared<NameSpace>("");
+
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
 	variables[0].set_global();
 	OpHalt();
-
 	bool result = ScriptParser(file, this);	// 構文解析
 
 	if (!result)
@@ -217,6 +224,7 @@ struct add_value {
 
 void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, bool isReRegist)
 {
+
 	std::string functionName = currentNameSpace->GetGlobalNameString()+ name;
 	FunctionTag* tag = functions.Find_strict(functionName,args);
 	if (tag) {
@@ -276,6 +284,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 	BlockOut();		// 変数スタックを減らす
 
 	current_function_name.clear();		// 処理中の関数名を消去
+
 }
 
 void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist)
@@ -297,6 +306,24 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
+}
+
+void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value)
+{
+	auto enumType = GetEnumTag(arg_typeName);
+	if (!enumType) {
+		EnumTag tag(arg_typeName);
+		enums.SetEnum(tag);
+		enumType = enums.FindType(arg_typeName);
+	}
+
+	enumType->SetValue(identiferName, value);
+}
+
+void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
+{
+	EnumTag tag(arg_typeName);
+	enums.SetEnum(tag);
 }
 
 // 変数の登録
@@ -445,7 +472,7 @@ struct copy_code {
 	}
 };
 
-bool ButiScript::Compiler::CreateData(ButiScript::Data& Data, int code_size)
+bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_size)
 {
 	const FunctionTag* tag = GetFunctionTag("main",std::vector<int>(),false);	// 開始位置
 	if (tag == 0) {
@@ -469,6 +496,10 @@ bool ButiScript::Compiler::CreateData(ButiScript::Data& Data, int code_size)
 
 	std::for_each(statement.begin(), statement.end(), copy_code(Data.commandTable));
 
+	auto end = statement.end();
+	for (auto itr = statement.begin(); itr != end; itr++) {
+		itr->Release();
+	}
 	return true;
 }
 

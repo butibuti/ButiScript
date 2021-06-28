@@ -135,10 +135,6 @@ namespace ButiScript {
 		}
 
 		virtual ~IValue() {
-			delete p_instance;
-			if (ary_memberType) {
-				delete ary_memberType;
-			}
 		}
 
 		template <typename T> T Get()const {
@@ -331,11 +327,12 @@ namespace ButiScript {
 			return false;
 		}
 		//実体
-		void* p_instance;
+		void* p_instance=nullptr;
 		//メンバ変数
 		IValue** ary_p_member=nullptr;
 		//メンバ変数の型
 		int* ary_memberType=nullptr;
+		bool isOuterMemoryRef = false;
 	private:
 		int ref_ = 0;
 	};
@@ -348,9 +345,18 @@ namespace ButiScript {
 		}
 		Value_wrap(T* v, const int ref) :IValue(ref) {
 			p_instance = v;
+			isOuterMemoryRef = true;
 		}
 		Value_wrap(const int ref) :IValue(ref) {
 			p_instance = new T();
+		}
+		~Value_wrap() {
+			if (!isOuterMemoryRef) {
+				delete ((T*)p_instance);
+			}
+			if (ary_memberType) {
+				delete ary_memberType;
+			}
 		}
 		IValue* Clone()const override {
 			return new Value_wrap<T>(*(T*)p_instance, 1);
@@ -499,6 +505,9 @@ namespace ButiScript {
 		Value_wrap(const int ref) :IValue(ref) {
 			p_instance = new std::string();
 		}
+		~Value_wrap() override{
+			delete ((std::string*)p_instance);
+		}
 
 		bool Eq(IValue* p_other)const override {
 			return p_other->Equal(*(std::string*)p_instance);
@@ -603,6 +612,20 @@ namespace ButiScript {
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 		}
+
+		~Value_wrap() {
+			for (int i = 0; i < 2; i++) {
+				ary_p_member[i]->release();
+			}
+
+			delete ((ButiEngine::Vector2*)p_instance);
+			if (ary_memberType) {
+				free(ary_memberType);
+			}
+			if (ary_p_member) {
+				free(ary_p_member);
+			}
+		}
 		RegistSpecialization(ButiEngine::Vector2);
 	};
 	template<>
@@ -610,8 +633,10 @@ namespace ButiScript {
 	public:
 		Value_wrap(const ButiEngine::Vector3& v, const int ref) :IValue(ref) {
 			p_instance = new ButiEngine::Vector3(v);
+
 			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 3);
 			ary_memberType = (int*)malloc(sizeof(int) * 3);
+
 			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->x, 1);
 			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->y, 1);
 			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->z, 1);
@@ -629,6 +654,19 @@ namespace ButiScript {
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 			ary_memberType[2] = TYPE_FLOAT;
+		}
+		~Value_wrap() {
+			for (int i = 0; i < 3; i++) {
+				ary_p_member[i]->release();
+			}
+
+			delete ((ButiEngine::Vector3*)p_instance); 
+			if (ary_memberType) {
+				free( ary_memberType); 
+			}
+			if (ary_p_member) {
+				free(ary_p_member);
+			}
 		}
 		RegistSpecialization(ButiEngine::Vector3);
 	};
@@ -660,6 +698,19 @@ namespace ButiScript {
 			ary_memberType[1] = TYPE_FLOAT;
 			ary_memberType[2] = TYPE_FLOAT;
 			ary_memberType[3] = TYPE_FLOAT;
+		}
+		~Value_wrap() {
+			for (int i = 0; i < 4; i++) {
+				ary_p_member[i]->release();
+			}
+
+			delete ((ButiEngine::Vector4*)p_instance);
+			if (ary_memberType) {
+				free(ary_memberType);
+			}
+			if (ary_p_member) {
+				free(ary_p_member);
+			}
 		}
 		RegistSpecialization(ButiEngine::Vector4);
 	};
@@ -762,21 +813,15 @@ namespace ButiScript {
 
 		Value Clone() {
 			auto cloneV = v_->Clone();
-
-			return Value(cloneV,valueType);
+			auto output = Value(cloneV, valueType);
+			output.v_->release();
+			return output;
 		}
 
 		void Copy(const Value& a)
 		{
 			valueType = a.valueType;
-			if (valueType == TYPE_STRING) {
-
-				v_ = a.v_;
-				v_->addref();
-			}
-			else {
-				v_ = a.v_->Clone();
-			}
+			v_ = a.v_->Clone();
 		}
 		void Assign(const Value& a) {
 			if (!a.v_) {
@@ -790,7 +835,7 @@ namespace ButiScript {
 			}
 			else {
 				//自分が参照型の場合、相手の実体への参照を取得
-				if (valueType & TYPE_REF || a.valueType == TYPE_STRING || valueType == TYPE_VOID) {
+				if (valueType & TYPE_REF || valueType == TYPE_VOID) {
 
 					clear();
 

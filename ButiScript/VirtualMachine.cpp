@@ -13,6 +13,7 @@ int ButiScript::VirtualCPU::Run()
 
 	globalValue_base= stack_base;
 
+
 	//グローバル変数の確保
 	{
 
@@ -38,38 +39,43 @@ int ButiScript::VirtualCPU::Run()
 		std::cerr << "例外発生（" << e.what() << "）" << std::endl;
 		return -1;
 	}
-	return top().v_->Get<int>();
+
+	command_ptr_ = commandTable + data_->entryPoint;	// プログラムカウンター初期化
+	allocCommand_ptr_ = commandTable + 1;
+	auto ret = top().v_->Get<int>();
+	Stack.resize(0);
+	return ret;
 }
 
 void ButiScript::VirtualCPU::Initialize()
 {
-	commandTable = data_.commandTable;						// プログラム格納位置
-	textBuffer = data_.textBuffer;				// テキストデータ格納位置
-	commandSize = data_.commandSize;			// プログラムの大きさ
-	textSize = data_.textSize;					// データの大きさ
+	commandTable = data_->commandTable;						// プログラム格納位置
+	textBuffer = data_->textBuffer;				// テキストデータ格納位置
+	commandSize = data_->commandSize;			// プログラムの大きさ
+	textSize = data_->textSize;					// データの大きさ
 
-	command_ptr_ = commandTable + data_.entryPoint;	// プログラムカウンター初期化
+	command_ptr_ = commandTable + data_->entryPoint;	// プログラムカウンター初期化
 	allocCommand_ptr_ = commandTable +1;
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
 
-	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * data_.vec_sysCalls.size());
-	for (int i = 0; i < data_.vec_sysCalls.size(); i++) {
-		p_syscall[i] = data_.vec_sysCalls[i];
+	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * data_->vec_sysCalls.size());
+	for (int i = 0; i < data_->vec_sysCalls.size(); i++) {
+		p_syscall[i] = data_->vec_sysCalls[i];
 	}
 
-	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * data_.vec_sysCallMethods.size());
-	for (int i = 0; i < data_.vec_sysCallMethods.size(); i++) {
-		p_sysMethodCall[i] = data_.vec_sysCallMethods[i];
+	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * data_->vec_sysCallMethods.size());
+	for (int i = 0; i < data_->vec_sysCallMethods.size(); i++) {
+		p_sysMethodCall[i] = data_->vec_sysCallMethods[i];
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() + data_.definedTypeCount));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_.vec_types.size() +data_.definedTypeCount));
-	for (int i = 0; i < data_.vec_types.size(); i++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() + data_->definedTypeCount));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() +data_->definedTypeCount));
+	for (int i = 0; i < data_->vec_types.size(); i++) {
 
-		p_pushValues[data_.vec_types.at(i).typeIndex] = data_.vec_types.at(i).typeFunc;
-		p_pushRefValues[data_.vec_types.at(i).typeIndex] = data_.vec_types.at(i).refTypeFunc;
+		p_pushValues[data_->vec_types.at(i).typeIndex] = data_->vec_types.at(i).typeFunc;
+		p_pushRefValues[data_->vec_types.at(i).typeIndex] = data_->vec_types.at(i).refTypeFunc;
 	}
 
 

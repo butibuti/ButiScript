@@ -1,10 +1,9 @@
-#ifndef __COMPILER_H__
-#define	__COMPILER_H__
+
 
 #include "VirtualMachine.h"
 #include "Node.h"
 #include<unordered_map>
-#include"StringHelper.h"
+#include"../../Header/Device/Helper/StringHelper.h"
 namespace ButiScript {
 
 
@@ -33,6 +32,11 @@ public:
 	~VMCode() {
 	}
 
+	void Release() {
+		if (p_constValue) {
+			delete p_constValue;
+		}
+	}
 	static VMCode GetCode(const char Op, const int arg1, const int arg2) {
 
 	}
@@ -47,12 +51,12 @@ public:
 					{
 					case TYPE_INTEGER:
 						*(int*)p = *((int*)p_constValue);
-						delete(p_constValue);
+
 						p += 4;
 						break;
 					case TYPE_FLOAT:
 						*(float*)p = *((float*)p_constValue);
-						delete(p_constValue);
+
 						p += 4;
 						break;
 					default:
@@ -136,8 +140,8 @@ public:
 
 	Compiler();
 	virtual ~Compiler();
-
-	bool Compile(const std::string& file, ButiScript::Data& Data);
+	void RegistDefaultSystems();
+	bool Compile(const std::string& file, ButiScript::CompiledData& Data);
 
 #ifdef	_DEBUG
 	void debug_dump();
@@ -197,6 +201,16 @@ public:
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
 	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist = false);
 	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const bool isReRegist=false);
+
+	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
+	void RegistEnumType(const std::string& arg_typeName);
+
+	const EnumTag* GetEnumTag(const std::string& arg_name) const {
+		return enums.FindType(arg_name);
+	}
+	EnumTag* GetEnumTag(const std::string& arg_name)  {
+		return enums.FindType(arg_name);
+	}
 
 	// 変数の検索、内側のブロックから検索する。
 	const ValueTag* GetValueTag(const std::string& name) const
@@ -264,7 +278,7 @@ public:
 
 	void PushString(const std::string& name);
 	int GetFunctionType() const { return current_function_type; }
-	bool CreateData(ButiScript::Data& Data,const int code_size);
+	bool CreateData(ButiScript::CompiledData& Data,const int code_size);
 
 	void PushNameSpace(NameSpace_t arg_namespace);
 	void PopNameSpace();
@@ -278,6 +292,7 @@ public:
 private:
 	FunctionTable functions;
 	TypeTable types;
+	EnumTable enums;
 	std::vector<ValueTable> variables;
 	std::vector<VMCode> statement;
 	std::vector<Label> labels;
@@ -293,4 +308,3 @@ private:
 
 };
 }
-#endif

@@ -1,4 +1,13 @@
 #include "stdafx.h"
+#ifndef BOOST_INCLUDE_H
+#define BOOST_INCLUDE_H
+#include <boost/bind.hpp>
+#include <boost/spirit.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/spirit/include/phoenix1_functions.hpp>
+#include <boost/spirit/include/phoenix1_new.hpp>
+#include <boost/mem_fn.hpp>
+#endif
 #include "Node.h"
 #include "compiler.h"
 namespace ButiScript {
@@ -39,17 +48,23 @@ Node_t Node::make_node(const int Op, Node_t left)
 	return Node_t(new Node(Op, left));
 }
 
-//メンバ変数へのアクセスノードを作成
-Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName)
+Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName,const Compiler* c)
 {
+	if (c->GetEnumTag(left->GetString())) {
+		return  Node_t(new Node_enum( left, arg_memberName));
+	}
+
 	if (Op == OP_MEMBER) {
-		return Node_t(new Node_Member(Op,left,arg_memberName) );
+		return Node_t(new Node_Member(Op, left, arg_memberName));
 	}
 	else if (Op == OP_METHOD) {
 		return Node_t(new Node_Method(Op, left, arg_memberName));
 	}
 	return Node_t();
 }
+
+
+
 
 // 二項演算子のノードを生成
 Node_t Node::make_node(const int Op, Node_t left, Node_t right)
@@ -618,7 +633,7 @@ int Node::Push(Compiler* c) const{
 	}
 
 	// float計算ノードの処理
-	if (left_type ==TYPE_FLOAT|| right_type == TYPE_FLOAT ) {
+	if ((left_type == TYPE_FLOAT && right_type == TYPE_FLOAT ) || (left_type == TYPE_INTEGER && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_INTEGER)) {
 		if (!SetDefaultOperator<float>(op_, c) && (!SetModOperator<float>(op_, c)) && (!SetLogicalOperator(op_, c))) {
 				c->error("内部エラー：処理できない計算ノードがありました。");
 		}
@@ -1276,8 +1291,12 @@ Statement_t Statement::make_statement(const int state)
 	case BREAK_STATE:
 		return Statement_t(new Statement_break());
 
-	case RETURN_STATE:
-		return Statement_t(new Statement_return());
+	case RETURN_STATE: {
+		auto ret = Statement_t(new Statement_return());
+
+		return ret;
+	}
+
 
 	case IF_STATE:
 		return Statement_t(new Statement_if());
@@ -1419,6 +1438,7 @@ int Statement_break::Analyze(Compiler* c)
 // return文
 int Statement_return::Analyze(Compiler* c) 
 {
+
 	if (c->GetFunctionType() == TYPE_VOID) {	// 戻り値無し
 		if (vec_node != 0) {
 			c->error("void関数に戻り値が設定されています");
@@ -1438,6 +1458,7 @@ int Statement_return::Analyze(Compiler* c)
 		}
 		c->OpReturnV();
 	}
+
 	return 0;
 }
 
@@ -1581,6 +1602,7 @@ int Declaration::Analyze(Compiler* c)
 // 関数の解析
 int Function::Analyze(Compiler* c) 
 {
+
 	c->AddFunction(valueType, name_, args_, block_);
 
 	return 0;
@@ -1830,5 +1852,47 @@ int Node_Method::GetType(Compiler* c) const
 	const FunctionTag* tag = typeTag->methods.Find(string_, argTypes);
 
 	return tag->valueType;
+}
+int Node_enum::Push(Compiler* c) const
+{
+	auto enumType=c->GetEnumTag(left_->GetString());
+	if (!enumType) {
+		c->error("列挙型　" + left_->GetString() + "は未定義です");
+		return -1;
+	}
+	if (!enumType->ExistenceIdentifers(string_)) {
+
+		c->error("列挙型　" + left_->GetString()+"."+string_ + "は未定義です");
+		return -1;
+	}
+	c->PushConstInt( enumType->GetValue(string_));
+
+	return TYPE_INTEGER;
+}
+int Node_enum::Pop(Compiler* c) const
+{
+	c->error("内部エラー：列挙型ノードをpop");
+	return -1;
+}
+int Node_enum::GetType(Compiler* c) const
+{
+	return TYPE_INTEGER;
+}
+void Enum::SetIdentifer(const std::string& arg_name)
+{
+	map_identifer.emplace(arg_name, map_identifer.size());
+}
+void Enum::SetIdentifer(const std::string& arg_name, const int value)
+{
+	map_identifer.emplace(arg_name, value);
+}
+void Enum::Analyze(Compiler* c)
+{
+	c->RegistEnumType(typeName);
+	auto tag = c->GetEnumTag(typeName);
+	auto end = map_identifer.end();
+	for (auto itr = map_identifer.begin(); itr != end; itr++) {
+		tag->SetValue(itr->first, itr->second);
+	}
 }
 }

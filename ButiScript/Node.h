@@ -126,7 +126,7 @@ namespace ButiScript {
 
 		static Node_t make_node(const int Op, const std::string& str);
 		static Node_t make_node(const int Op, Node_t left);
-		static Node_t make_node(const int Op, Node_t left,const std::string arg_memberName);
+		static Node_t make_node(const int Op, Node_t left,const std::string arg_memberName,const Compiler* c);
 		static Node_t make_node(const int Op, Node_t left, Node_t right);
 		static Node_t make_node(const int Op, Node_t left, NodeList_t right);
 
@@ -227,6 +227,19 @@ namespace ButiScript {
 	private:
 		NodeList_t node_list_;
 	};
+
+	//enum呼び出しのノード
+	class Node_enum:public Node {
+	public:
+		Node_enum(const Node_t& arg_enumTypeNode, const std::string& arg_identiferName): Node(OP_INT, arg_enumTypeNode) {
+			string_ = arg_identiferName;
+		}
+
+		virtual int Push(Compiler* c) const;
+		virtual int Pop(Compiler* c) const;
+		int GetType(Compiler* c)const override;
+	};
+
 
 	// ステートメント
 
@@ -562,5 +575,19 @@ namespace ButiScript {
 	};
 	using Function_t = std::shared_ptr<Function>;
 
+	//列挙型
+
+	class Enum {
+	public:
+		Enum(const std::string& arg_typeName):typeName(arg_typeName){}
+
+		void SetIdentifer(const std::string& arg_name);
+		void SetIdentifer(const std::string& arg_name,const int value);
+		void Analyze(Compiler* c);
+	private:
+		std::string typeName;
+		std::map<std::string, int> map_identifer;
+	};
+	using Enum_t = std::shared_ptr<Enum>;
 }
 #endif

@@ -19,12 +19,12 @@ namespace ButiScript {
 
 	
 
-	class Data {
+	class CompiledData {
 	public:
-		Data() : commandTable(0), textBuffer(0)
+		CompiledData() : commandTable(0), textBuffer(0)
 		{
 		}
-		~Data()
+		~CompiledData()
 		{
 			delete[] commandTable;
 			delete[] textBuffer;
@@ -63,18 +63,30 @@ namespace ButiScript {
 
 
 	public:
-		VirtualCPU(Data& mem)
-			: data_(mem)
+		VirtualCPU(std::shared_ptr<CompiledData> arg_data)
+			: data_(arg_data)
 		{
 		}
 		~VirtualCPU()
 		{
+			free( p_op);
+			free( p_syscall );
+			
+			free( p_sysMethodCall );
+			free(p_pushValues );
+			free(p_pushRefValues );
 		}
 
 		int Run();
 
-		void Initialize();
 
+#ifdef IMPL_BUTIENGINE
+		void SetGameObject(std::shared_ptr<ButiEngine::GameObject> arg_gameObject) {
+			shp_gameObject = arg_gameObject;
+		}
+#endif
+
+		void Initialize();
 	private:
 		/////////////定数Push定義////////////////
 		// 定数Push
@@ -819,10 +831,45 @@ namespace ButiScript {
 		}
 
 	public:
+
+
+#ifdef IMPL_BUTIENGINE
+		void sys_translate() {
+
+			auto v = top().v_->Get<ButiEngine::Vector3>(); pop();
+			shp_gameObject->transform->Translate(v);
+		}
+		void sys_getKeyboard() {
+
+			int k = top().v_->Get<int>(); pop();
+			int res = ButiEngine::GameDevice::GetInput()->CheckKey(k);
+			push(res);
+		}
+		void sys_triggerKeyboard() {
+
+			int k = top().v_->Get<int>(); pop();
+			int res = ButiEngine::GameDevice::GetInput()->TriggerKey(k);
+			push(res);
+		}
+		void sys_releaseKeyboard() {
+
+			int k = top().v_->Get<int>(); pop();
+			int res = ButiEngine::GameDevice::GetInput()->ReleaseKey(k);
+			push(res);
+		}
+#endif // IMPL_BUTIENGINE
+
 		// 組み込み関数（print）
 		void sys_print()
 		{
+#ifdef IMPL_BUTIENGINE
+
+			ButiEngine::GUI::Console( text(top()));
+#else
+
 			std::cout << text(top());
+#endif // IMPL_BUTIENGINE
+
 			pop();
 		}
 
@@ -839,6 +886,57 @@ namespace ButiScript {
 			// 戻り値はスタックに入れる
 		}
 
+		//組み込み関数(return 無し)
+		template< void(*Method)() >
+		void sys_func_retNo()
+		{
+			(*Method)();
+		}
+		//組み込み関数(return 有り)
+		template<typename T, T(*Method)() >
+		void sys_func_ret()
+		{
+			T ret = (*Method)();
+			push(ret);
+		}
+
+		//組み込み関数(return 無し)
+		template<typename Arg, void(*Method)(Arg) >
+		void sys_func_retNo()
+		{
+			auto arg = top().v_->Get<Arg>(); pop();
+			(*Method)(arg);
+		}
+		//組み込み関数(return 有り)
+		template<typename T, typename Arg, T(*Method)(Arg) >
+		void sys_func_ret()
+		{
+			auto arg = top().v_->Get<Arg>(); pop();
+			T ret = (*Method)(arg);
+			push(ret);
+		}
+		//組み込み関数(return 有り)
+		template<typename T, typename Arg1, typename Arg2, T(*Method)(Arg1, Arg2) >
+		void sys_func_ret()
+		{
+			auto arg2 = top().v_->Get<Arg2>(); pop();
+			auto arg1 = top().v_->Get<Arg1>(); pop();
+			T ret = (*Method)(arg1, arg2);
+			push(ret);
+		}
+		//組み込み関数(return 有り)
+		template<typename T, typename Arg1, typename Arg2, typename Arg3, T(*Method)(Arg1, Arg2, Arg3) >
+		void sys_func_ret()
+		{
+			auto arg3 = top().v_->Get<Arg3>(); pop();
+			auto arg2 = top().v_->Get<Arg2>(); pop();
+			auto arg1 = top().v_->Get<Arg1>(); pop();
+			T ret = (*Method)(arg1, arg2,arg3);
+			push(ret);
+		}
+		
+
+		/////////////メソッド呼び出し定義////////////////
 		//組み込みメソッド(return 無し)
 		template<typename T, void(T::* Method)() >
 		void sys_method_retNo()
@@ -1133,7 +1231,7 @@ namespace ButiScript {
 		}
 
 	private:
-		Data& data_;
+		std::shared_ptr<CompiledData> data_;
 
 		//コマンド羅列
 		unsigned char* commandTable;
@@ -1165,7 +1263,10 @@ namespace ButiScript {
 		//スタックの参照位置
 		int stack_base=0;
 		int globalValue_base=0;
-		
+
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiEngine::GameObject> shp_gameObject;
+#endif
 	};
 
 }
