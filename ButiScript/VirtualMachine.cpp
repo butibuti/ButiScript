@@ -2,18 +2,11 @@
 #include <exception>
 #include "VirtualMachine.h"
 
-// 実行
-int ButiScript::VirtualCPU::Run()
+
+void ButiScript::VirtualCPU::AllocGlobalValue()
 {
-	// mainをcall
-	push(0);										// mainへの引数カウントをpush
-	push(0);										// stack_baseの初期値をpush
-	push(0);										// プログラム終了位置をpush
 	stack_base = Stack.size();						// スタック参照位置初期化
-
-	globalValue_base= stack_base;
-
-
+	globalValue_base = stack_base;
 	//グローバル変数の確保
 	{
 
@@ -26,25 +19,7 @@ int ButiScript::VirtualCPU::Run()
 		}
 		command_ptr_ = buff;
 	}
-
-	//mainから開始
-	try {
-		int Op;
-		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
-
-			(this->*p_op[Op])();
-		}
-	}
-	catch (const std::exception& e) {
-		std::cerr << "例外発生（" << e.what() << "）" << std::endl;
-		return -1;
-	}
-
-	command_ptr_ = commandTable + data_->entryPoint;	// プログラムカウンター初期化
-	allocCommand_ptr_ = commandTable + 1;
-	auto ret = top().v_->Get<int>();
-	Stack.resize(0);
-	return ret;
+	globalValue_size = Stack.size();
 }
 
 void ButiScript::VirtualCPU::Initialize()
@@ -54,7 +29,7 @@ void ButiScript::VirtualCPU::Initialize()
 	commandSize = data_->commandSize;			// プログラムの大きさ
 	textSize = data_->textSize;					// データの大きさ
 
-	command_ptr_ = commandTable + data_->entryPoint;	// プログラムカウンター初期化
+
 	allocCommand_ptr_ = commandTable +1;
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
@@ -80,4 +55,25 @@ void ButiScript::VirtualCPU::Initialize()
 
 
 
+}
+
+void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
+{
+	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];
+	stack_base = Stack.size();
+
+	//mainから開始
+	try {
+		int Op;
+		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
+
+			(this->*p_op[Op])();
+		}
+	}
+	catch (const std::exception& e) {
+		std::cerr << "例外発生（" << e.what() << "）" << std::endl;
+		return ;
+	}
+
+	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];	// プログラムカウンター初期化
 }

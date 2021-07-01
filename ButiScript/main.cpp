@@ -17,7 +17,7 @@ int DoSomething(int i,int j,int k) {
 int main()
 {
 	std::shared_ptr< ButiScript::CompiledData> data=std::make_shared<ButiScript::CompiledData>();
-	std::shared_ptr< ButiScript::VirtualCPU >machine;
+	std::shared_ptr< ButiScript::VirtualCPU >machine,machine2;
 	bool compile_result;
 	{
 		ButiScript::Compiler driver;
@@ -26,10 +26,22 @@ int main()
 		compile_result = driver.Compile("input.bs", *data);
 	}
 	if (compile_result) {
-		machine=std::make_shared<ButiScript::VirtualCPU>(data);
+		machine = std::make_shared<ButiScript::VirtualCPU>(data);
+		machine2 = std::make_shared<ButiScript::VirtualCPU>(data);
 		machine->Initialize();
-		int retunCode= machine->Run();
-		std::cout<<"return : " << retunCode << std::endl;
+		machine2->Initialize();
+		machine->AllocGlobalValue();
+		machine2->AllocGlobalValue();
+		auto retunCode = machine->Execute<float>("main");
+		std::cout << "return : " << retunCode << std::endl;
+		std::system("pause");
+	}
+	if (compile_result) {
+		machine2 = std::make_shared<ButiScript::VirtualCPU>(data);
+		machine2->Initialize();
+		machine2->AllocGlobalValue();
+		auto retunCode = machine2->Execute<int>("main2:i",12);
+		std::cout << "return : " << retunCode << std::endl;
 		std::system("pause");
 	}
 

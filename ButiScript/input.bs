@@ -2,7 +2,7 @@
 enum ScriptEnum{
 	Zero,First,Second,Third
 }
-main():int
+main():float
 {
 	var s :string;
 	var v:Vector3;
@@ -29,7 +29,7 @@ main():int
 	i_ref=i;
 	var f:float;
 	f=v3.Dot(v);
-	Functions::Functions_inner::Functions_inner2::m=2.0;
+	Functions::Functions_inner::Functions_inner2::m=50.0;
 
 
 
@@ -40,8 +40,13 @@ main():int
 	}
 	
 
-	return ScriptEnum.First;
+	return 0.5;
 }
+main2(i:int):int{
+	print("main2!!"+EndL());
+	return i*ScriptEnum.Second;
+}
+
 namespace Functions{
 	Pow(i:float ):float{
 			return i*i;

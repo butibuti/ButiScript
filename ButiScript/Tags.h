@@ -5,6 +5,7 @@
 namespace ButiScript {
 
 	class Compiler;
+	class TypeTable;
 	// à¯êî
 	class ArgDefine {
 	public:
@@ -215,11 +216,11 @@ namespace ButiScript {
 		};
 
 	public:
-		FunctionTag()
+		FunctionTag(const std::string& arg_name):name(arg_name)
 		{
 		}
-		FunctionTag(const int type)
-			: valueType(type), flags_(0), index_(0)
+		FunctionTag(const int type,const std::string &arg_name) 
+			: valueType(type), flags_(0), index_(0), name(arg_name)
 		{
 		}
 		void SetArg(const int type)
@@ -386,13 +387,14 @@ namespace ButiScript {
 		bool IsDeclaration() const { return (flags_ & flag_declaration) != 0; }
 		bool IsDefinition() const { return (flags_ & flag_definition) != 0; }
 		bool IsSystem() const { return (flags_ & flag_system) != 0; }
-
+		const std::string& GetName() const{ return name; }
+		inline std::string GetNameWithArgment(const TypeTable& arg_typeTable)const;
 	public:
 		int		valueType = 0;
 		int		flags_ = 0;
 		int		index_ = 0;
 		std::vector<unsigned char>	args_;
-
+		std::string name;
 	};
 
 	class FunctionTable {
@@ -485,6 +487,19 @@ namespace ButiScript {
 		void Clear()
 		{
 			map_functions.clear();
+		}
+		int Size()const {
+			return map_functions.size();
+		}
+
+		FunctionTag* operator[](const int index) {
+			auto itr = map_functions.begin();
+			int maxCount = min(map_functions.size(),index);
+			for (int i = 0; i < maxCount; i++) {
+				itr++;
+			}
+
+			return &(itr->second);
 		}
 
 	protected:
@@ -579,5 +594,22 @@ namespace ButiScript {
 		std::map<std::string, TypeTag> map_types;
 
 	};
+	
+}
+inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& arg_typeTable) const
+{
+	std::string output = name;
+
+	if (args_.size()) {
+		output += ":";
+	}
+
+	for (int i = 0; i < args_.size(); i++) {
+		output += arg_typeTable.GetType(args_[i] & ~TYPE_REF)->argName;
+		if (i + 1 != args_.size()) {
+			output += ",";
+		}
+	}
+	return output;
 }
 #endif // !TAGS_H

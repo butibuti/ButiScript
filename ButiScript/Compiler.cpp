@@ -117,7 +117,7 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 // 内部関数の定義
 bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int type, const std::string& name, const std::string&  args)
 {
-	FunctionTag func(type);
+	FunctionTag func(type,name);
 	if (!func.SetArgs(args,types.GetArgmentKeyMap()))		
 		return false;
 
@@ -133,7 +133,7 @@ bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int typ
 
 bool ButiScript::Compiler::DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args)
 {
-	FunctionTag func(retType);
+	FunctionTag func(retType,name);
 	if (!func.SetArgs(arg_args, types.GetArgmentKeyMap()))
 		return false;
 
@@ -177,7 +177,7 @@ void ButiScript::Compiler::FunctionDefine(int type, const std::string& name, con
 		}
 	}
 	else {
-		FunctionTag func(type);
+		FunctionTag func(type, name);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
@@ -239,7 +239,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 		tag->SetDefinition();	// 定義済みに設定
 	}
 	else {
-		FunctionTag func(type);
+		FunctionTag func(type,functionName);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(MakeLabel());		// ラベル登録
@@ -298,7 +298,7 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 		}
 	}
 	else {
-		FunctionTag func(type);
+		FunctionTag func(type, functionName);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
@@ -373,8 +373,9 @@ void ButiScript::Compiler::PushString(const std::string& str)
 
 bool ButiScript::Compiler::JmpBreakLabel()
 {
-	if (break_index < 0)
+	if (break_index < 0) {
 		return false;
+	}
 	OpJmp(break_index);
 	return true;
 }
@@ -384,7 +385,7 @@ bool ButiScript::Compiler::JmpBreakLabel()
 void ButiScript::Compiler::BlockIn()
 {
 	int start_addr = 0;					// 変数アドレスの開始位置
-	if (variables.size() >= 1) {			// ブロックの入れ子は、開始アドレスを続きからにする。
+	if (variables.size() >= 2) {			// ブロックの入れ子は、開始アドレスを続きからにする。最初のvariablesTableはグローバル変数用なので考慮しない
 		start_addr = variables.back().size();
 	}
 	variables.push_back(ValueTable(start_addr));
@@ -474,18 +475,17 @@ struct copy_code {
 
 bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_size)
 {
-	const FunctionTag* tag = GetFunctionTag("main",std::vector<int>(),false);	// 開始位置
-	if (tag == 0) {
-		error("関数 \"main\" が見つかりません。");
-		return false;
+	for (int i = 0; i < functions.Size(); i++) {
+		Data.map_entryPoints.emplace(functions[i]-> GetNameWithArgment(types),labels[functions[i]->index_].pos_);
 	}
+
 
 	Data.commandTable = new unsigned char[code_size];
 	Data.textBuffer = new char[text_table.size()];
 	Data.commandSize = code_size;
 	Data.textSize = (int)text_table.size();
 	Data.valueSize = (int)variables[0].size();
-	Data.entryPoint = labels[tag->index_].pos_;
+
 	Data.vec_sysCalls = vec_sysCalls;
 	Data.vec_sysCallMethods = vec_sysMethodCalls;
 	types.CreateTypeVec(Data.vec_types);

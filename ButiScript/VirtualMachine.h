@@ -36,11 +36,11 @@ namespace ButiScript {
 		int commandSize;			// コマンドサイズ
 		int textSize;				// テキストサイズ
 		int valueSize;			// グローバル変数サイズ
-		int entryPoint;			// エントリーポイント
 
 		std::vector<OperationFunction> vec_sysCalls;
 		std::vector<OperationFunction> vec_sysCallMethods;
 		std::vector<TypeTag> vec_types;
+		std::map<std::string, int> map_entryPoints;
 		int definedTypeCount = 0;
 	};
 
@@ -76,8 +76,35 @@ namespace ButiScript {
 			free(p_pushValues );
 			free(p_pushRefValues );
 		}
+		template<typename T>
+		T Execute(const std::string& entryPoint = "main") {
+			stack_base = Stack.size();						// スタック参照位置初期化
+			push(0);										// mainへの引数カウントをpush
+			push(stack_base);										// stack_baseの初期値をpush
+			push(0);										// プログラム終了位置をpush
 
-		int Run();
+			Execute_(entryPoint);
+
+			auto ret = top().v_->Get<T>();
+			Stack.resize(globalValue_size);
+			return ret;
+		}
+
+		template<typename T, typename U>
+		int Execute(const std::string& entryPoint, U argment) {
+
+			stack_base = Stack.size();						// スタック参照位置初期化
+			push(argment);									//引数push
+			push(1);										// mainへの引数カウントをpush
+			push(stack_base);										// stack_baseの初期値をpush
+			push(0);										// プログラム終了位置をpush
+			Execute_(entryPoint);
+
+			auto ret = top().v_->Get<T>();
+			Stack.resize(globalValue_size);
+			return ret;
+		}
+		void AllocGlobalValue();
 
 
 #ifdef IMPL_BUTIENGINE
@@ -88,6 +115,8 @@ namespace ButiScript {
 
 		void Initialize();
 	private:
+		void Execute_(const std::string& entryPoint );
+
 		/////////////定数Push定義////////////////
 		// 定数Push
 		void PushConstInt(const int arg_val)
@@ -1241,9 +1270,9 @@ namespace ButiScript {
 		//コマンド羅列
 		unsigned char* commandTable;
 		//現在参照してるコマンドの位置
-		unsigned char* command_ptr_;
+		unsigned char* command_ptr_=nullptr;
 		//グローバル変数の確保コマンド
-		unsigned char* allocCommand_ptr_;
+		unsigned char* allocCommand_ptr_=nullptr;
 		//プログラム全体のサイズ
 		int commandSize;
 		//文字列データ
@@ -1267,7 +1296,8 @@ namespace ButiScript {
 
 		//スタックの参照位置
 		int stack_base=0;
-		int globalValue_base=0;
+		int globalValue_base = 0;
+		int globalValue_size=0;
 
 #ifdef IMPL_BUTIENGINE
 		std::shared_ptr<ButiEngine::GameObject> shp_gameObject;
