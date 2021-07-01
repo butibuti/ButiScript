@@ -1,8 +1,89 @@
+  
 enum ScriptEnum{
 	Zero,First,Second,Third
 }
-
 main():int
 {
+	var s :string;
+	var v:Vector3;
+	var v2:Vector3;
+	var v3:Vector3;
+	var f_ref:float&;
+
+	v.x=10.12;
+	v.y=v.x*0.5;
+	v.z=v.x*0.25;
+	
+	v2=v;
+	v3=v*2;
+
+	v2.Normalize();
+
+	f_ref=v3.x;
+
+
+	
+	var i :int;
+	
+	var i_ref:int&;
+	i_ref=i;
+	var f:float;
+	f=v3.Dot(v);
+	Functions::Functions_inner::Functions_inner2::m=2.0;
+
+
+
+	for(;i_ref<10;Add(i)){
+		s=ToString(Functions::Functions_inner::Functions_inner2::Multi(f,i_ref)) +EndL();
+		f+=0.5;
+		print(s);
+	}
+	
+
 	return ScriptEnum.First;
+}
+namespace Functions{
+	Pow(i:float ):float{
+			return i*i;
+		}
+	namespace Functions_inner{
+		
+		namespace Functions_inner2{
+			var m:float;
+			var m1:float;
+			var m2:float;
+			Pow3(i:float ):float{
+				return Pow(i) *i;
+			}
+
+			Multi(i:float,c:int):float{
+				return i*c;
+			}
+
+		}
+			
+			
+	}
+}
+
+Test(v: int):int{
+	v+=1;
+	return v;
+}
+
+Addition(v:int&, a:int):void{
+	v+=a;
+}
+
+Add(v :int&):void{
+	Addition(v,1);
+}
+
+Add():string{
+	return "!";
+}
+
+
+EndL():string{
+	return "\n";
 }

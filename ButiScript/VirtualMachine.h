@@ -857,6 +857,11 @@ namespace ButiScript {
 			int res = ButiEngine::GameDevice::GetInput()->ReleaseKey(k);
 			push(res);
 		}
+		void sys_printColor() {
+			ButiEngine::Vector4 color=top().v_->Get<ButiEngine::Vector4>();	pop();
+			auto message = text(top());	pop();
+			ButiEngine::GUI::Console(message,color);
+		}
 #endif // IMPL_BUTIENGINE
 
 		// ‘g‚İ‚İŠÖ”iprintj

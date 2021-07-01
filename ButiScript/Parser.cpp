@@ -510,8 +510,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			callMethod = Value >> "." >> identifier >>'(' >> !argument >> ')';
 
 			// åvéZÇÃprimeÉmÅ[Éh
-			prime =
-				callMethod
+			prime =callMethod
 				|callMemberValue
 				|func_node
 				| Value
