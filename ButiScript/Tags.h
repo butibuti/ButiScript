@@ -389,6 +389,38 @@ namespace ButiScript {
 		bool IsSystem() const { return (flags_ & flag_system) != 0; }
 		const std::string& GetName() const{ return name; }
 		inline std::string GetNameWithArgment(const TypeTable& arg_typeTable)const;
+
+		void FileOutput(std::ofstream& arg_fOut)const {
+			arg_fOut.write((char*)&valueType, sizeof(valueType));
+			arg_fOut.write((char*)&flags_, sizeof(flags_));
+			arg_fOut.write((char*)&index_, sizeof(index_));
+			int argsSize = args_.size();
+			arg_fOut.write((char*)&argsSize, sizeof(argsSize));
+			for (int i = 0; i < argsSize; i++) {
+				arg_fOut.write((char*)&args_[i], sizeof(args_[i]));
+			}
+			int size = name.size();
+			arg_fOut.write((char*)&size, sizeof(size));
+			arg_fOut.write(name.c_str(), (size));
+		}
+		void FileInput(std::ifstream& arg_fIn) {
+			arg_fIn.read((char*)&valueType, sizeof(valueType));
+			arg_fIn.read((char*)&flags_, sizeof(flags_));
+			arg_fIn.read((char*)&index_, sizeof(index_));
+			int argsSize = 0;
+			arg_fIn.read((char*)&argsSize, sizeof(argsSize));
+			for (int i = 0; i < argsSize; i++) {
+				unsigned char arg;
+				arg_fIn.read((char*)&arg, sizeof(arg));
+				args_.push_back(arg);
+			}
+			int size = 0;
+			arg_fIn.read((char*)&size, sizeof(size));
+			char* buff=(char*)malloc(size);
+			arg_fIn.read(buff, (size));
+			name = buff;
+		}
+
 	public:
 		int		valueType = 0;
 		int		flags_ = 0;
@@ -500,6 +532,38 @@ namespace ButiScript {
 			}
 
 			return &(itr->second);
+		}
+		
+		void FileOutput(std::ofstream& arg_fOut) const{
+			int functionsSize = map_functions.size();
+			arg_fOut.write((char*)&functionsSize, sizeof(functionsSize));
+			auto end = map_functions.end();
+			for (auto itr = map_functions.begin(); itr !=end;itr++) {
+				int size = itr->first.size();
+				arg_fOut.write((char*)&size, sizeof(size));
+				arg_fOut.write(itr->first.c_str(), size);
+				itr->second.FileOutput(arg_fOut);
+			}
+
+		}
+
+		void FileInput(std::ifstream& arg_fIn) {
+			int functionsSize = 0;
+			arg_fIn.read((char*)&functionsSize, sizeof(functionsSize));
+
+			for (int i = 0; i < functionsSize; i++) {
+				int size = 0;
+				std::string functionStr;
+				char* p_buff = (char*)malloc(size);
+				arg_fIn.read((char*)&size, sizeof(size));
+				arg_fIn.read(p_buff, size);
+				functionStr = p_buff;
+				free(p_buff);
+				FunctionTag tag(functionStr);
+				tag.FileInput(arg_fIn);
+				map_functions.emplace(functionStr, tag);
+			}
+
 		}
 
 	protected:

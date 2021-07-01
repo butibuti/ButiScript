@@ -140,8 +140,31 @@ public:
 
 	Compiler();
 	virtual ~Compiler();
+	/// <summary>
+	/// デフォルトの組み込み型、組み込み関数の設定
+	/// </summary>
 	void RegistDefaultSystems();
-	bool Compile(const std::string& file, ButiScript::CompiledData& Data);
+	/// <summary>
+	/// コンパイル
+	/// </summary>
+	/// <param name="arg_filePath">ファイルパス</param>
+	/// <param name="arg_ref_data">コンパイル済みデータの出力先</param>
+	/// <returns>成功/失敗</returns>
+	bool Compile(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data);
+	/// <summary>
+	/// コンパイル済みデータのファイル出力
+	/// </summary>
+	/// <param name="arg_filePath">ファイルパス</param>
+	/// <param name="arg_ref_data">コンパイル済みデータ</param>
+	/// <returns>成功/失敗</returns>
+	static int OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data);
+	/// <summary>
+	/// コンパイル済みデータのファイル入力
+	/// </summary>
+	/// <param name="arg_filePath">ファイルパス</param>
+	/// <param name="arg_ref_data">コンパイル済みデータの出力先</param>
+	/// <returns>成功/失敗</returns>
+	static int InputCompiledData(const std::string& arg_filePath,ButiScript::CompiledData& arg_ref_data);
 
 #ifdef	_DEBUG
 	void debug_dump();

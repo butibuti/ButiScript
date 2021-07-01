@@ -4,6 +4,8 @@
 #include"VirtualMachine.h"
 #include <iomanip>
 #include "Parser.h"
+auto baseFunc = &ButiScript::VirtualCPU::Initialize;
+long long int baseVMFunctionAddress =* (long long int*)& baseFunc;
 
 // コンストラクタ
 ButiScript:: Compiler::Compiler()
@@ -86,6 +88,7 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Compiled
 	CreateData(Data, code_size);				// バイナリ生成
 	return error_count == 0;
 }
+
 
 // エラーメッセージを出力
 void ButiScript::Compiler::error(const std::string& m)
@@ -553,6 +556,234 @@ void ButiScript::Compiler::debug_dump()
 }
 #endif
 
+int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
+{
+	std::ifstream fIn(arg_filePath);
+
+
+
+	fIn.read((char*)&arg_ref_data.commandSize, 4);
+	fIn.read((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
+
+	fIn.read((char*)&arg_ref_data.textSize, 4);
+	fIn.read((char*)arg_ref_data.textBuffer, arg_ref_data.textSize);
+
+
+	fIn.read((char*)&arg_ref_data.valueSize, 4);
+
+	int sysCallSize=0;
+	fIn.read((char*)&sysCallSize, 4);
+	for (int i = 0; i < sysCallSize; i++) {
+		long long int address =0;
+		fIn.read((char*)&address, sizeof(address));
+		address = address + baseVMFunctionAddress;
+		SysFunction sysFunc  =* (SysFunction*)&address;
+		arg_ref_data.vec_sysCalls.push_back(sysFunc);
+	}
+
+
+	fIn.read((char*)&sysCallSize, 4);
+	for (int i = 0; i < sysCallSize; i++) {
+		long long int address = 0;
+		fIn.read((char*)&address, sizeof(address));
+		address = address + baseVMFunctionAddress;
+		SysFunction sysFunc = *(SysFunction*)&address;
+		arg_ref_data.vec_sysCallMethods.push_back(sysFunc);
+	}
+
+
+	fIn.read((char*)&sysCallSize, 4);
+	for (int i = 0; i < sysCallSize; i++) {
+		TypeTag typeTag;
+
+		int size=0;
+		fIn.read((char*)&size, sizeof(size));
+		char* p_strBuff = (char*)malloc(size);
+		fIn.read(p_strBuff, size);
+		typeTag.argName = p_strBuff;
+		free(p_strBuff);
+
+		fIn.read((char*)&size, sizeof(size));
+		p_strBuff = (char*)malloc(size);
+		fIn.read(p_strBuff, size);
+		typeTag.typeName = p_strBuff;
+		free(p_strBuff);
+
+		long long int address = 0;
+		fIn.read((char*)&address, sizeof(address));
+		address = address + baseVMFunctionAddress;
+		SysFunction sysFunc = *(SysFunction*)&address;
+		typeTag.typeFunc = sysFunc;
+
+		address = 0;
+		fIn.read((char*)&address, sizeof(address));
+		address = address + baseVMFunctionAddress;
+		sysFunc = *(SysFunction*)&address;
+		typeTag.refTypeFunc = sysFunc;
+
+
+
+
+		fIn.read((char*)&typeTag.typeIndex, sizeof(int));
+
+		int typeMapSize = 0;
+		fIn.read((char*)&typeMapSize, sizeof(typeMapSize));
+
+		for (int j=0; j < typeMapSize;j++) {
+			int size =0;
+			std::string typeNameStr;
+			int typeIndex;
+			fIn.read((char*)&size, sizeof(size));
+			char* p_strBuff = (char*)malloc(size);
+			fIn.read(p_strBuff, size);
+			typeNameStr = p_strBuff;
+			fIn.read((char*)&typeIndex, sizeof(typeIndex));
+
+			typeTag.map_memberType.emplace(typeNameStr, typeIndex);
+		}
+		fIn.read((char*)&typeMapSize, sizeof(typeMapSize));
+		
+		for (int j=0; j < typeMapSize; j++) {
+			int size = 0;
+			std::string typeNameStr;
+			int typeIndex;
+			fIn.read((char*)&size, sizeof(size));
+			char* p_strBuff = (char*)malloc(size);
+			fIn.read(p_strBuff, size);
+			typeNameStr = p_strBuff;
+			fIn.read((char*)&typeIndex, sizeof(typeIndex));
+
+			typeTag.map_memberIndex.emplace(typeNameStr, typeIndex);
+		}
+
+		int functionsSize = 0;
+		fIn.read((char*)&functionsSize, sizeof(functionsSize));
+		typeTag.methods.FileInput(fIn);
+
+		arg_ref_data.vec_types.push_back(typeTag);
+	}
+
+	int entryPointsSize = 0;
+	fIn.read((char*)&entryPointsSize, sizeof(entryPointsSize));
+	for (int i = 0; i < entryPointsSize;i++) {
+		int size =0;
+
+		fIn.read((char*)&size, sizeof(size));
+		char* buff = (char*)malloc(size);
+		fIn.read(buff, size);
+		int entryPoint = 0;
+		fIn.read((char*)&entryPoint, sizeof(entryPoint));
+		std::string name = buff;
+		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
+	}
+
+
+	fIn.read((char*)&arg_ref_data.definedTypeCount, sizeof(arg_ref_data.definedTypeCount));
+
+
+	return 0;
+}
+
+int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
+{
+	std::ofstream fOut(arg_filePath);
+
+
+
+	fOut.write((char*)&arg_ref_data.commandSize, 4);
+	fOut.write((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
+
+	fOut.write((char*)&arg_ref_data.textSize, 4);
+	fOut.write((char*)arg_ref_data.textBuffer,  arg_ref_data.textSize);
+
+
+	fOut.write((char*)&arg_ref_data.valueSize, 4);
+
+	int sysCallSize = arg_ref_data.vec_sysCalls.size();
+	fOut.write((char*)&sysCallSize, 4);
+	for (int i = 0; i < sysCallSize; i++) {
+		 auto p_sysCallFunc=arg_ref_data.vec_sysCalls[i];
+		 auto address = *(long long int*) & p_sysCallFunc;
+		 address = address - baseVMFunctionAddress;
+		 fOut.write((char*)&address, sizeof(address));
+	}
+
+	sysCallSize = arg_ref_data.vec_sysCallMethods.size();
+	fOut.write((char*)&sysCallSize, 4);
+	for (int i = 0; i < sysCallSize; i++) {
+		auto p_sysCallFunc = arg_ref_data.vec_sysCallMethods[i];
+		auto address =* (long long int*)&p_sysCallFunc;
+		address = address - baseVMFunctionAddress;
+		fOut.write((char*)&address, sizeof(address));
+	}
+
+
+	sysCallSize = arg_ref_data.vec_types.size();
+	fOut.write((char*)&sysCallSize, 4);
+	for (int i = 0; i < sysCallSize; i++) {
+		auto p_type =& arg_ref_data.vec_types[i];
+
+		int size = p_type->argName.size();
+		fOut.write((char*)&size, sizeof(size));
+		fOut.write(p_type->argName.c_str(), size); 
+
+		size = p_type->typeName.size();
+		fOut.write((char*)&size, sizeof(size));
+		fOut.write(p_type->typeName.c_str(),size);
+
+		auto p_sysCallFunc = p_type->typeFunc;
+		auto address = *(long long int*) & p_sysCallFunc;
+		address = address - baseVMFunctionAddress;
+		fOut.write((char*)&address, sizeof(address));
+
+		p_sysCallFunc = p_type->refTypeFunc;
+		address = *(long long int*) & p_sysCallFunc;
+		address = address - baseVMFunctionAddress;
+		fOut.write((char*)&address, sizeof(address));
+
+
+
+		fOut.write((char*)&p_type->typeIndex, sizeof(p_type->typeIndex));
+
+		int typeMapSize = p_type->map_memberType.size();
+		fOut.write((char*)&typeMapSize, sizeof(typeMapSize));
+		auto end = p_type->map_memberType.end();
+		for (auto itr = p_type->map_memberType.begin(); itr != end; itr++) {
+			int size = itr->first.size();
+			fOut.write((char*)&size, sizeof(size));
+			fOut.write(itr->first.c_str(), size);
+			fOut.write((char*)&itr->second, sizeof(itr->second));
+		}
+		typeMapSize = p_type->map_memberIndex.size();
+		fOut.write((char*)&typeMapSize, sizeof(typeMapSize));
+		end = p_type->map_memberIndex.end();
+		for (auto itr = p_type->map_memberIndex.begin(); itr != end; itr++) {
+			int size = itr->first.size();
+			fOut.write((char*)&size, sizeof(size));
+			fOut.write(itr->first.c_str(), size);
+			fOut.write((char*)&itr->second, sizeof(itr->second));
+		}
+
+		p_type->methods.FileOutput(fOut);
+
+	}
+
+	int entryPointsSize = arg_ref_data.map_entryPoints.size();
+	fOut.write((char*)&entryPointsSize, sizeof(entryPointsSize));
+	auto end = arg_ref_data.map_entryPoints.end();
+	for (auto itr = arg_ref_data.map_entryPoints.begin(); itr != end; itr++) {
+		int size = itr->first.size();
+		fOut.write((char*)&size,sizeof(size));
+		fOut.write(itr->first.c_str(), size);
+		fOut.write((char*)&itr->second, sizeof(itr->second));
+	}
+
+
+	fOut.write((char*)&arg_ref_data.definedTypeCount, sizeof(arg_ref_data.definedTypeCount));	
+
+
+	return 0;
+}
 const std::string& ButiScript::NameSpace::GetNameString() const
 {
 	return name;
