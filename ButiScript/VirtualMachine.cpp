@@ -5,21 +5,23 @@
 
 void ButiScript::VirtualCPU::AllocGlobalValue()
 {
-	stack_base = Stack.size();						// スタック参照位置初期化
+	stack_base = valueStack.size();						// スタック参照位置初期化
 	globalValue_base = stack_base;
+	stack_base = valueStack.size();
 	//グローバル変数の確保
 	{
 
 		auto buff = command_ptr_;
 		command_ptr_ = allocCommand_ptr_;
 		int Op;
+		stack_base = valueStack.size();
 		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
 
 			(this->*p_op[Op])();
 		}
 		command_ptr_ = buff;
 	}
-	globalValue_size = Stack.size();
+	globalValue_size = valueStack.size();
 }
 
 void ButiScript::VirtualCPU::Initialize()
@@ -60,7 +62,7 @@ void ButiScript::VirtualCPU::Initialize()
 void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
 {
 	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];
-	stack_base = Stack.size();
+	stack_base = valueStack.size();
 
 	//mainから開始
 	try {

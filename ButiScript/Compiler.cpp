@@ -4,8 +4,8 @@
 #include"VirtualMachine.h"
 #include <iomanip>
 #include "Parser.h"
+#include<direct.h>
 auto baseFunc = &ButiScript::VirtualCPU::Initialize;
-long long int baseVMFunctionAddress =* (long long int*)& baseFunc;
 
 // コンストラクタ
 ButiScript:: Compiler::Compiler()
@@ -127,6 +127,9 @@ bool ButiScript::Compiler::DefineSystemFunction(SysFunction arg_op,const int typ
 	func.SetDeclaration();			
 	func.SetSystem();				// Systemフラグセット
 	func.SetIndex(vec_sysCalls.size());			// 組み込み関数番号を設定
+
+	long long int address = *(long long int*) & arg_op;
+	map_sysCallsIndex.emplace(address, vec_sysCalls.size());
 	vec_sysCalls.push_back(arg_op);
 	if (functions.Add(name, func) == 0) {
 		return false;
@@ -143,6 +146,9 @@ bool ButiScript::Compiler::DefineSystemMethod(SysFunction arg_p_method, const in
 	func.SetDeclaration();
 	func.SetSystem();				// Systemフラグセット
 	func.SetIndex(vec_sysMethodCalls.size());			// 組み込み関数番号を設定
+
+	long long int address = *(long long int*) & arg_p_method;
+	map_sysMethodCallsIndex.emplace(address, vec_sysMethodCalls.size());
 	vec_sysMethodCalls.push_back(arg_p_method);
 	if (types.GetType(type)->AddMethod(name, func) == 0) {
 		return false;
@@ -563,9 +569,11 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 
 	fIn.read((char*)&arg_ref_data.commandSize, 4);
+	arg_ref_data.commandTable = (unsigned char*)malloc(arg_ref_data.commandSize);
 	fIn.read((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
 
 	fIn.read((char*)&arg_ref_data.textSize, 4);
+	arg_ref_data.textBuffer = (char*)malloc(arg_ref_data.textSize);
 	fIn.read((char*)arg_ref_data.textBuffer, arg_ref_data.textSize);
 
 
@@ -574,20 +582,18 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	int sysCallSize=0;
 	fIn.read((char*)&sysCallSize, 4);
 	for (int i = 0; i < sysCallSize; i++) {
-		long long int address =0;
-		fIn.read((char*)&address, sizeof(address));
-		address = address + baseVMFunctionAddress;
-		SysFunction sysFunc  =* (SysFunction*)&address;
+		int index=0;
+		fIn.read((char*)&index, sizeof(index));
+		SysFunction sysFunc = vec_sysCalls[index];
 		arg_ref_data.vec_sysCalls.push_back(sysFunc);
 	}
 
 
 	fIn.read((char*)&sysCallSize, 4);
 	for (int i = 0; i < sysCallSize; i++) {
-		long long int address = 0;
-		fIn.read((char*)&address, sizeof(address));
-		address = address + baseVMFunctionAddress;
-		SysFunction sysFunc = *(SysFunction*)&address;
+		int index = 0;
+		fIn.read((char*)&index, sizeof(index));
+		SysFunction sysFunc = vec_sysMethodCalls[index];
 		arg_ref_data.vec_sysCallMethods.push_back(sysFunc);
 	}
 
@@ -600,25 +606,23 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		fIn.read((char*)&size, sizeof(size));
 		char* p_strBuff = (char*)malloc(size);
 		fIn.read(p_strBuff, size);
-		typeTag.argName = p_strBuff;
+		typeTag.argName =std::string( p_strBuff,size);
 		free(p_strBuff);
 
 		fIn.read((char*)&size, sizeof(size));
 		p_strBuff = (char*)malloc(size);
 		fIn.read(p_strBuff, size);
-		typeTag.typeName = p_strBuff;
+		typeTag.typeName = std::string(p_strBuff, size);
 		free(p_strBuff);
 
-		long long int address = 0;
-		fIn.read((char*)&address, sizeof(address));
-		address = address + baseVMFunctionAddress;
-		SysFunction sysFunc = *(SysFunction*)&address;
+		int index = 0;
+		fIn.read((char*)&index, sizeof(index));
+		SysFunction sysFunc = vec_valueAllocCall[index];
 		typeTag.typeFunc = sysFunc;
 
-		address = 0;
-		fIn.read((char*)&address, sizeof(address));
-		address = address + baseVMFunctionAddress;
-		sysFunc = *(SysFunction*)&address;
+		index = 0;
+		fIn.read((char*)&index, sizeof(index));
+		sysFunc = vec_refValueAllocCall[index];
 		typeTag.refTypeFunc = sysFunc;
 
 
@@ -656,8 +660,6 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 			typeTag.map_memberIndex.emplace(typeNameStr, typeIndex);
 		}
 
-		int functionsSize = 0;
-		fIn.read((char*)&functionsSize, sizeof(functionsSize));
 		typeTag.methods.FileInput(fIn);
 
 		arg_ref_data.vec_types.push_back(typeTag);
@@ -673,7 +675,8 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		fIn.read(buff, size);
 		int entryPoint = 0;
 		fIn.read((char*)&entryPoint, sizeof(entryPoint));
-		std::string name = buff;
+		std::string name =std::string( buff,size);
+		free(buff);
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 	}
 
@@ -686,6 +689,11 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
 {
+
+	auto dirPath = StringHelper::GetDirectory(arg_filePath);
+	if (dirPath != arg_filePath) {
+		auto dirRes = _mkdir(dirPath.c_str());
+	}
 	std::ofstream fOut(arg_filePath);
 
 
@@ -703,18 +711,20 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 	fOut.write((char*)&sysCallSize, 4);
 	for (int i = 0; i < sysCallSize; i++) {
 		 auto p_sysCallFunc=arg_ref_data.vec_sysCalls[i];
-		 auto address = *(long long int*) & p_sysCallFunc;
-		 address = address - baseVMFunctionAddress;
-		 fOut.write((char*)&address, sizeof(address));
+		 long long int address = *(long long int*) & p_sysCallFunc;
+		 int index = map_sysCallsIndex.at(address);
+
+		 fOut.write((char*)&index, sizeof(index));
 	}
 
 	sysCallSize = arg_ref_data.vec_sysCallMethods.size();
 	fOut.write((char*)&sysCallSize, 4);
 	for (int i = 0; i < sysCallSize; i++) {
 		auto p_sysCallFunc = arg_ref_data.vec_sysCallMethods[i];
-		auto address =* (long long int*)&p_sysCallFunc;
-		address = address - baseVMFunctionAddress;
-		fOut.write((char*)&address, sizeof(address));
+		long long int address = *(long long int*) & p_sysCallFunc;
+		int index = map_sysMethodCallsIndex.at(address);
+
+		fOut.write((char*)&index, sizeof(index));
 	}
 
 
@@ -732,14 +742,14 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		fOut.write(p_type->typeName.c_str(),size);
 
 		auto p_sysCallFunc = p_type->typeFunc;
-		auto address = *(long long int*) & p_sysCallFunc;
-		address = address - baseVMFunctionAddress;
-		fOut.write((char*)&address, sizeof(address));
+		long long int address = *(long long int*) & p_sysCallFunc;
+		int index = map_valueAllocCallsIndex.at(address);
+		fOut.write((char*)&index, sizeof(index));
 
 		p_sysCallFunc = p_type->refTypeFunc;
 		address = *(long long int*) & p_sysCallFunc;
-		address = address - baseVMFunctionAddress;
-		fOut.write((char*)&address, sizeof(address));
+		index = map_refValueAllocCallsIndex.at(address);
+		fOut.write((char*)&index, sizeof(index));
 
 
 

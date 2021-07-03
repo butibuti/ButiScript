@@ -16,32 +16,23 @@ int DoSomething(int i,int j,int k) {
 
 int main()
 {
+	ButiScript::Compiler driver;
 	std::shared_ptr< ButiScript::CompiledData> data=std::make_shared<ButiScript::CompiledData>();
-	std::shared_ptr< ButiScript::VirtualCPU >machine,machine2;
-	bool compile_result;
+	bool compile_result=true;
 	{
-		ButiScript::Compiler driver;
 		driver.RegistDefaultSystems();
 		driver.DefineSystemFunction(&ButiScript::VirtualCPU::sys_func_ret<int,int,int ,int, DoSomething>, TYPE_INTEGER, "DoSomething", "i,i,i");
-		compile_result = driver.Compile("input.bs", *data);
-		ButiScript::Compiler::OutputCompiledData("compiled.cbs", *data);
+		//compile_result = driver.Compile("input.bs", *data);
+		//driver.OutputCompiledData("output/compiled.cbs", *data);
 	}
 	if (compile_result) {
-		machine = std::make_shared<ButiScript::VirtualCPU>(data);
-		machine2 = std::make_shared<ButiScript::VirtualCPU>(data);
-		machine->Initialize();
-		machine2->Initialize();
-		machine->AllocGlobalValue();
-		machine2->AllocGlobalValue();
-		auto retunCode = machine->Execute<float>("main");
-		std::cout << "return : " << retunCode << std::endl;
-		std::system("pause");
-	}
-	if (compile_result) {
-		machine2 = std::make_shared<ButiScript::VirtualCPU>(data);
-		machine2->Initialize();
-		machine2->AllocGlobalValue();
-		auto retunCode = machine2->Execute<int>("main2:i",12);
+		data = std::make_shared<ButiScript::CompiledData>();
+		driver.InputCompiledData("output/compiled.cbs", *data);
+
+		ButiScript::VirtualCPU machine(data);
+		machine.Initialize();
+		machine.AllocGlobalValue();
+		auto retunCode = machine.Execute<float>("main");
 		std::cout << "return : " << retunCode << std::endl;
 		std::system("pause");
 	}

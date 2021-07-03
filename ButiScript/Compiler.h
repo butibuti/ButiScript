@@ -157,14 +157,14 @@ public:
 	/// <param name="arg_filePath">ファイルパス</param>
 	/// <param name="arg_ref_data">コンパイル済みデータ</param>
 	/// <returns>成功/失敗</returns>
-	static int OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data);
+	int OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data);
 	/// <summary>
 	/// コンパイル済みデータのファイル入力
 	/// </summary>
 	/// <param name="arg_filePath">ファイルパス</param>
 	/// <param name="arg_ref_data">コンパイル済みデータの出力先</param>
 	/// <returns>成功/失敗</returns>
-	static int InputCompiledData(const std::string& arg_filePath,ButiScript::CompiledData& arg_ref_data);
+	int InputCompiledData(const std::string& arg_filePath,ButiScript::CompiledData& arg_ref_data);
 
 #ifdef	_DEBUG
 	void debug_dump();
@@ -195,6 +195,15 @@ public:
 		TypeTag type;
 		type.typeFunc = &VirtualCPU::pushValue<T, arg_typeIndex>;
 		type.refTypeFunc = &VirtualCPU::pushValue<Type_Null,arg_typeIndex|TYPE_REF>;
+
+		long long int address = *(long long int*) & type.typeFunc;
+		map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
+		vec_valueAllocCall.push_back(type.typeFunc);
+
+		address = *(long long int*) & type.refTypeFunc;
+		map_refValueAllocCallsIndex.emplace(address, vec_refValueAllocCall.size());
+		vec_refValueAllocCall.push_back(type.refTypeFunc);
+
 		type.typeName = arg_name;
 		type.typeIndex = arg_typeIndex;
 		type.argName = arg_argmentName;
@@ -322,6 +331,12 @@ private:
 	std::vector<char> text_table;
 	std::vector<SysFunction> vec_sysCalls;
 	std::vector<SysFunction> vec_sysMethodCalls;
+	std::vector<SysFunction> vec_valueAllocCall;
+	std::vector<SysFunction> vec_refValueAllocCall;
+	std::map<long long int,int> map_sysCallsIndex;
+	std::map<long long int, int> map_sysMethodCallsIndex;
+	std::map<long long int, int> map_valueAllocCallsIndex;
+	std::map<long long int,int> map_refValueAllocCallsIndex;
 	NameSpace_t currentNameSpace = nullptr;
 	int break_index;
 	int error_count;

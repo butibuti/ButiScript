@@ -929,7 +929,9 @@ namespace ButiScript {
 
 		bool overflow() const { return size_ >= Size; }
 		bool empty() const { return size_ == 0; }
-		int size() const { return size_; }
+		int size() const { 
+			return 	size_;
+		}
 
 		const Ty& operator[](const int index) const { 
 			return *(const Ty*)data_[index]; 

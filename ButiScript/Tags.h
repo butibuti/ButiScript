@@ -418,7 +418,7 @@ namespace ButiScript {
 			arg_fIn.read((char*)&size, sizeof(size));
 			char* buff=(char*)malloc(size);
 			arg_fIn.read(buff, (size));
-			name = buff;
+			name =std::string( buff,size);
 		}
 
 	public:
@@ -554,10 +554,10 @@ namespace ButiScript {
 			for (int i = 0; i < functionsSize; i++) {
 				int size = 0;
 				std::string functionStr;
-				char* p_buff = (char*)malloc(size);
 				arg_fIn.read((char*)&size, sizeof(size));
+				char* p_buff = (char*)malloc(size);
 				arg_fIn.read(p_buff, size);
-				functionStr = p_buff;
+				functionStr =std::string( p_buff,size);
 				free(p_buff);
 				FunctionTag tag(functionStr);
 				tag.FileInput(arg_fIn);
