@@ -195,7 +195,7 @@ public:
 		TypeTag type;
 		type.typeFunc = &VirtualCPU::pushValue<T, arg_typeIndex>;
 		type.refTypeFunc = &VirtualCPU::pushValue<Type_Null,arg_typeIndex|TYPE_REF>;
-
+		type.isSystem = true;
 		long long int address = *(long long int*) & type.typeFunc;
 		map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
 		vec_valueAllocCall.push_back(type.typeFunc);
@@ -236,6 +236,7 @@ public:
 
 	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
 	void RegistEnumType(const std::string& arg_typeName);
+	void RegistSystemEnumType(const std::string& arg_typeName);
 
 	const EnumTag* GetEnumTag(const std::string& arg_name) const {
 		return enums.FindType(arg_name);

@@ -22,8 +22,8 @@ int main()
 	{
 		driver.RegistDefaultSystems();
 		driver.DefineSystemFunction(&ButiScript::VirtualCPU::sys_func_ret<int,int,int ,int, DoSomething>, TYPE_INTEGER, "DoSomething", "i,i,i");
-		//compile_result = driver.Compile("input.bs", *data);
-		//driver.OutputCompiledData("output/compiled.cbs", *data);
+		compile_result = driver.Compile("input.bs", *data);
+		driver.OutputCompiledData("output/compiled.cbs", *data);
 	}
 	if (compile_result) {
 		data = std::make_shared<ButiScript::CompiledData>();

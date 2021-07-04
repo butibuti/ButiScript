@@ -86,6 +86,17 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Compiled
 
 	int code_size = LabelSetting();				// ラベルにアドレスを設定
 	CreateData(Data, code_size);				// バイナリ生成
+
+	Data.sourceFilePath = file;
+
+	labels.clear();
+	statement.clear();
+	text_table.clear();
+	variables.clear();
+	functions.Clear_notSystem();
+	types.Clear_notSystem();
+	enums.Clear_notSystem();
+
 	return error_count == 0;
 }
 
@@ -335,6 +346,13 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 	enums.SetEnum(tag);
 }
 
+void ButiScript::Compiler::RegistSystemEnumType(const std::string& arg_typeName)
+{
+	EnumTag tag(arg_typeName);
+	tag.isSystem = true;
+	enums.SetEnum(tag);
+}
+
 // 変数の登録
 void ButiScript::Compiler::AddValue(int type, const std::string& name, Node_t node)
 {
@@ -566,6 +584,12 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 {
 	std::ifstream fIn(arg_filePath);
 
+	int sourceFilePathStrSize = 0;
+	fIn.read((char*)&sourceFilePathStrSize, sizeof(sourceFilePathStrSize));
+	char* sourceFilePathStrBuff = (char*)malloc(sourceFilePathStrSize);
+	fIn.read(sourceFilePathStrBuff, sourceFilePathStrSize);
+	arg_ref_data.sourceFilePath = std::string(sourceFilePathStrBuff, sourceFilePathStrSize);
+	free(sourceFilePathStrBuff);
 
 
 	fIn.read((char*)&arg_ref_data.commandSize, 4);
@@ -587,6 +611,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		SysFunction sysFunc = vec_sysCalls[index];
 		arg_ref_data.vec_sysCalls.push_back(sysFunc);
 	}
+
 
 
 	fIn.read((char*)&sysCallSize, 4);
@@ -639,10 +664,10 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 			int typeIndex;
 			fIn.read((char*)&size, sizeof(size));
 			char* p_strBuff = (char*)malloc(size);
+			free(p_strBuff);
 			fIn.read(p_strBuff, size);
-			typeNameStr = p_strBuff;
+			typeNameStr = std::string(p_strBuff,size);
 			fIn.read((char*)&typeIndex, sizeof(typeIndex));
-
 			typeTag.map_memberType.emplace(typeNameStr, typeIndex);
 		}
 		fIn.read((char*)&typeMapSize, sizeof(typeMapSize));
@@ -653,10 +678,10 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 			int typeIndex;
 			fIn.read((char*)&size, sizeof(size));
 			char* p_strBuff = (char*)malloc(size);
+			free(p_strBuff);
 			fIn.read(p_strBuff, size);
-			typeNameStr = p_strBuff;
+			typeNameStr = std::string(p_strBuff, size);
 			fIn.read((char*)&typeIndex, sizeof(typeIndex));
-
 			typeTag.map_memberIndex.emplace(typeNameStr, typeIndex);
 		}
 
@@ -664,6 +689,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 		arg_ref_data.vec_types.push_back(typeTag);
 	}
+
 
 	int entryPointsSize = 0;
 	fIn.read((char*)&entryPointsSize, sizeof(entryPointsSize));
@@ -683,6 +709,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 	fIn.read((char*)&arg_ref_data.definedTypeCount, sizeof(arg_ref_data.definedTypeCount));
 
+	fIn.close();
 
 	return 0;
 }
@@ -695,8 +722,9 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		auto dirRes = _mkdir(dirPath.c_str());
 	}
 	std::ofstream fOut(arg_filePath);
-
-
+	int sourcePathSize = arg_ref_data.sourceFilePath.size();
+	fOut.write((char*)&sourcePathSize,sizeof(sourcePathSize));
+	fOut.write(arg_ref_data.sourceFilePath.c_str(),sourcePathSize);
 
 	fOut.write((char*)&arg_ref_data.commandSize, 4);
 	fOut.write((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
@@ -790,7 +818,7 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 
 
 	fOut.write((char*)&arg_ref_data.definedTypeCount, sizeof(arg_ref_data.definedTypeCount));	
-
+	fOut.close();
 
 	return 0;
 }

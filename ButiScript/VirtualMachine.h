@@ -42,6 +42,7 @@ namespace ButiScript {
 		std::vector<TypeTag> vec_types;
 		std::map<std::string, int> map_entryPoints;
 		int definedTypeCount = 0;
+		std::string sourceFilePath;
 	};
 
 

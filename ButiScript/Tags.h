@@ -60,6 +60,7 @@ namespace ButiScript {
 		const std::string& GetTypeName()const {
 			return type_Name;
 		}
+		bool isSystem;
 	private:
 		std::string type_Name;
 		std::map<std::string, int>map_identifers;
@@ -85,7 +86,16 @@ namespace ButiScript {
 			}
 			return &map_enumTag.at(arg_typeName);
 		}
-
+		void Clear_notSystem() {
+			for (auto enumItr = map_enumTag.begin(); enumItr != map_enumTag.end(); ) {
+				if (!enumItr->second.isSystem) {
+					enumItr = map_enumTag.erase(enumItr);
+				}
+				else {
+					enumItr++;
+				}
+			}
+		}
 	private:
 		std::map<std::string, EnumTag> map_enumTag;
 	};
@@ -418,7 +428,8 @@ namespace ButiScript {
 			arg_fIn.read((char*)&size, sizeof(size));
 			char* buff=(char*)malloc(size);
 			arg_fIn.read(buff, (size));
-			name =std::string( buff,size);
+			name = std::string(buff, size);
+			free(buff);
 		}
 
 	public:
@@ -520,6 +531,17 @@ namespace ButiScript {
 		{
 			map_functions.clear();
 		}
+
+		void Clear_notSystem() {
+			for (auto funcItr = map_functions.begin(); funcItr != map_functions.end(); ) {
+				if (!funcItr->second.IsSystem()) {
+					funcItr = map_functions.erase(funcItr);
+				}
+				else {
+					funcItr++;
+				}
+			}
+		}
 		int Size()const {
 			return map_functions.size();
 		}
@@ -597,6 +619,7 @@ namespace ButiScript {
 		FunctionTag* AddMethod(const std::string& arg_methodName, const FunctionTag& arg_method) {
 			return methods.Add(arg_methodName, arg_method);
 		}
+		bool isSystem;
 	};
 
 	//Œ^’è‹`—p
@@ -651,6 +674,22 @@ namespace ButiScript {
 		}
 
 
+		void Clear_notSystem() {
+			for (auto typeItr = map_types.begin(); typeItr != map_types.end(); ) {
+				if (!typeItr->second.isSystem) {
+					typeItr = map_types.erase(typeItr);
+					map_argmentChars.erase(typeItr->first);
+					auto removeItr = vec_types.begin();
+					for (int i = 0; i < typeItr->second.typeIndex; i++) {
+						removeItr++;
+					}
+					vec_types.erase(removeItr);
+				}
+				else {
+					typeItr++;
+				}
+			}
+		}
 	private:
 
 		std::vector<TypeTag* > vec_types;
