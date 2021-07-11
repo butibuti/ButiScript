@@ -4,43 +4,15 @@ enum ScriptEnum{
 }
 main():float
 {
-	var s :string;
-	var v:Vector3;
-	var v2:Vector3;
-	var v3:Vector3;
-	var f_ref:float&;
+	var v:Vector4;
 
-	v.x=10.12;
-	v.y=v.x*0.5;
-	v.z=v.x*0.25;
-	
-	v2=v;
-	v3=v*2;
-
-	v2.Normalize();
-
-	f_ref=v3.x;
-
-
-	
-	var i :int;
-	
-	var i_ref:int&;
-	i_ref=i;
-	var f:float;
-	f=v3.Dot(v);
-	Functions::Functions_inner::Functions_inner2::m=50.0;
-
-
-
-	for(;i_ref<10;Add(i)){
-		s=ToString(Functions::Functions_inner::Functions_inner2::Multi(f,i_ref)) +EndL();
-		f+=0.5;
-		print(s);
-	}
-	
-
-	return 0.5;
+	v.x=50.0;
+	v.y=50.0;
+	v.z=50.0;
+	v.w=50.0;
+	v*=0.2;
+	v=v+v;
+	return ScriptEnum.Second*v.z;
 }
 main2(i:int):int{
 	print("main2!!"+EndL());
@@ -70,10 +42,14 @@ namespace Functions{
 			
 	}
 }
-
-Test(v: int):int{
-	v+=1;
-	return v;
+namespace Vector3Function{
+	Test():Vector3{
+		var output:Vector3;
+		output.x=1.0;
+		output.y=2.0;
+		output.z=3.0;
+		return output;
+	}
 }
 
 Addition(v:int&, a:int):void{

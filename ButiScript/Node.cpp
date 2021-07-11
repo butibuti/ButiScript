@@ -596,6 +596,89 @@ bool SetLogicalOperator(const int op_, Compiler* c) {
 
 
 
+template <typename T>
+bool SetDefaultAssignOperator(const int op_, Compiler* c) {
+	switch (op_) {
+	case OP_ADD_ASSIGN:
+		c->OpAdd<T>();
+		break;
+
+	case OP_SUB_ASSIGN:
+		c->OpSub<T>();
+		break;
+
+	case OP_MUL_ASSIGN:
+		c->OpMul<T>();
+		break;
+
+	case OP_DIV_ASSIGN:
+		c->OpDiv<T>();
+		break;
+
+	case OP_ASSIGN:
+
+		break;
+
+	default:
+		return false;
+		break;
+	}
+	return true;
+}
+template <typename T, typename U>
+bool SetDeferentTypeMulAssignOperator(const int op_, Compiler* c) {
+	if (op_ == OP_MUL_ASSIGN) {
+
+		c->OpMul<T, U>();
+		return true;
+	}
+	return false;
+}
+template <typename T, typename U>
+bool SetDeferentTypeDivAssignOperator(const int op_, Compiler* c) {
+	if (op_ == OP_DIV_ASSIGN) {
+
+		c->OpDiv<T, U>();
+		return true;
+	}
+	return false;
+}
+
+template <typename T>
+bool SetModAssignOperator(const int op_, Compiler* c) {
+	if (op_ == OP_MOD_ASSIGN) {
+		c->OpMod<T>();
+		return true;
+	}
+	return false;
+}
+bool SetLogicalAssignOperator(const int op_, Compiler* c) {
+	switch (op_) {
+	case OP_AND_ASSIGN:
+		c->OpAnd();
+		break;
+
+	case OP_OR_ASSIGN:
+		c->OpOr();
+		break;
+
+	case OP_LSHIFT_ASSIGN:
+		c->OpLeftShift();
+		break;
+
+	case OP_RSHIFT_ASSIGN:
+		c->OpRightShift();
+		break;
+
+	default:
+		return false;
+		break;
+	}
+	return true;
+}
+
+
+
 // ノードのpush処理
 int Node::Push(Compiler* c) const{
 	if (op_ >= OP_ASSIGN && op_ <= OP_RSHIFT_ASSIGN) {
@@ -715,6 +798,39 @@ int Node::Push(Compiler* c) const{
 		}
 		return TYPE_VOID + 2;
 	}
+	//Vector4計算ノード
+	if (left_type == TYPE_VOID + 3 && right_type == TYPE_VOID + 3) {
+		if (!SetDefaultOperator<ButiEngine::Vector4>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 3;
+	}
+	if (left_type == TYPE_VOID + 3 && right_type == TYPE_FLOAT) {
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, float>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, float>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 3;
+	}
+	if (left_type == TYPE_VOID +3 && right_type == TYPE_INTEGER) {
+
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, int>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, int>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 3;
+	}
+	if (left_type == TYPE_FLOAT && right_type == TYPE_VOID + 3) {
+		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector4>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 3;
+	}
+	if (left_type == TYPE_INTEGER && right_type == TYPE_VOID + 3) {
+
+		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector4>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		return TYPE_VOID + 3;
+	}
 
 	// 文字列計算ノードの処理
 	switch (op_) {
@@ -785,7 +901,7 @@ int Node::GetType(Compiler* c)const {
 		return GetCallType(c, string_, nullptr);
 	}
 	if (op_ == OP_IDENTIFIER) {
-		const ValueTag* tag = c->GetValueTag(string_);
+		const ValueTag* tag = GetValueTag(c);
 		if (tag == nullptr) {
 			c->error("変数 " + string_ + " は定義されていません。");
 		}
@@ -881,103 +997,108 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 
 // 代入文
 int Node::Assign(Compiler* c) const{
-	int leftType = -1;
+	int left_type = -1;
 	//代入のみのパターンではないので左辺をpush
 	if (op_ != OP_ASSIGN) {
-		leftType= left_->Push(c)&~TYPE_REF;
+		left_type = left_->Push(c)&~TYPE_REF;
 	}
 	else {
-		leftType = left_->GetType(c) & ~TYPE_REF;
+		left_type = left_->GetType(c) & ~TYPE_REF;
 	}
-	int rightType = right_->Push(c) & ~TYPE_REF;
+	int right_type = right_->Push(c) & ~TYPE_REF;
 
 
-	if (rightType == TYPE_INTEGER) {
-		switch (op_) {
-		case OP_ADD_ASSIGN:
-			c->OpAdd<int>();
-			break;
 
-		case OP_SUB_ASSIGN:
-			c->OpSub<int>();
-			break;
-
-		case OP_MUL_ASSIGN:
-			c->OpMul<int>();
-			break;
-
-		case OP_DIV_ASSIGN:
-			c->OpDiv<int>();
-			break;
-
-		case OP_MOD_ASSIGN:
-			c->OpMod<int>();
-			break;
-
-		case OP_AND_ASSIGN:
-			c->OpAnd();
-			break;
-
-		case OP_OR_ASSIGN:
-			c->OpOr();
-			break;
-
-		case OP_LSHIFT_ASSIGN:
-			c->OpLeftShift();
-			break;
-
-		case OP_RSHIFT_ASSIGN:
-			c->OpRightShift();
-			break;
+	// float計算ノードの処理
+	if ((left_type == TYPE_FLOAT && right_type == TYPE_FLOAT) || (left_type == TYPE_INTEGER && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_INTEGER)) {
+		if (!SetDefaultAssignOperator<float>(op_, c) && (!SetModAssignOperator<float>(op_, c)) && (!SetLogicalAssignOperator(op_, c))) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		if (left_->Pop(c) == TYPE_STRING)
-			c->error("文字列型に整数を代入しています。");
-		return 0;
-	}
-	if (rightType == TYPE_FLOAT) {
-		switch (op_) {
-		case OP_ADD_ASSIGN:
-			c->OpAdd<float>();
-			break;
-
-		case OP_SUB_ASSIGN:
-			c->OpSub<float>();
-			break;
-
-		case OP_MUL_ASSIGN:
-			c->OpMul<float>();
-			break;
-
-		case OP_DIV_ASSIGN:
-			c->OpDiv<float>();
-			break;
-
-		case OP_MOD_ASSIGN:
-			c->OpMod<float>();
-			break;
-
-		case OP_AND_ASSIGN:
-			c->OpAnd();
-			break;
-
-		case OP_OR_ASSIGN:
-			c->OpOr();
-			break;
-
-		case OP_LSHIFT_ASSIGN:
-			c->OpLeftShift();
-			break;
-
-		case OP_RSHIFT_ASSIGN:
-			c->OpRightShift();
-			break;
-		}
-		if (left_->Pop(c) == TYPE_STRING)
-			c->error("文字列型に浮動小数を代入しています。");
+		left_->Pop(c);
 		return 0;
 	}
 
-	if (rightType==TYPE_STRING) {
+	// 整数計算ノードの処理
+	if (left_type == TYPE_INTEGER && right_type == TYPE_INTEGER) {
+		if (!SetDefaultAssignOperator<int>(op_, c) && (!SetModAssignOperator<int>(op_, c)) && (!SetLogicalAssignOperator(op_, c))) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+
+
+	//Vector2計算ノード
+	if (left_type == TYPE_VOID + 1 && right_type == TYPE_VOID + 1) {
+		if (!SetDefaultAssignOperator<ButiEngine::Vector2>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	if (left_type == TYPE_VOID + 1 && right_type == TYPE_FLOAT) {
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, float>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, float>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c); 
+		return 0;
+	}
+	if (left_type == TYPE_VOID + 1 && right_type == TYPE_INTEGER) {
+
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, int>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, int>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	//Vector3計算ノード
+	if (left_type == TYPE_VOID + 2 && right_type == TYPE_VOID + 2) {
+		if (!SetDefaultAssignOperator<ButiEngine::Vector3>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	if (left_type == TYPE_VOID + 2 && right_type == TYPE_FLOAT) {
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, float>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, float>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	if (left_type == TYPE_VOID + 2 && right_type == TYPE_INTEGER) {
+
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, int>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, int>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	//Vector4計算ノード
+	if (left_type == TYPE_VOID + 3 && right_type == TYPE_VOID + 3) {
+		if (!SetDefaultAssignOperator<ButiEngine::Vector4>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	if (left_type == TYPE_VOID + 3 && right_type == TYPE_FLOAT) {
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, float>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, float>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+	if (left_type == TYPE_VOID + 3 && right_type == TYPE_INTEGER) {
+
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, int>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, int>(op_, c)) {
+			c->error("内部エラー：処理できない計算ノードがありました。");
+		}
+		left_->Pop(c);
+		return 0;
+	}
+
+	if (left_type == TYPE_STRING&& right_type == TYPE_STRING) {
 		switch (op_) {
 		case OP_ADD_ASSIGN:
 			c->OpStrAdd();
@@ -990,21 +1111,21 @@ int Node::Assign(Compiler* c) const{
 			c->error("文字列では許されない計算です。");
 			break;
 		}
-		if (left_->Pop(c) != TYPE_STRING) {
-			c->error("代入出来ない変数の組み合わせです");
-		}
+		left_->Pop(c);
+
 		return 0;
 	}
 
-	if (leftType == rightType) {
+	if (left_type == right_type) {
 		//同じ型同士なので代入可能
 		left_->Pop(c);
-	}
-	else {
+		return 0;
+	}else
+	{
 		c->error("代入出来ない変数の組み合わせです");
 	}
 
-	return 0;
+	return -1;
 }
 
 const ValueTag* Node_value::GetValueTag(Compiler* c) const{

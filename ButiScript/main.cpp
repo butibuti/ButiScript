@@ -32,7 +32,7 @@ int main()
 		ButiScript::VirtualCPU machine(data);
 		machine.Initialize();
 		machine.AllocGlobalValue();
-		auto retunCode = machine.Execute<float>("main");
+		auto retunCode = machine.Execute<int>("main");
 		std::cout << "return : " << retunCode << std::endl;
 		std::system("pause");
 	}

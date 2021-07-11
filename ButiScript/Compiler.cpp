@@ -503,6 +503,10 @@ struct copy_code {
 bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_size)
 {
 	for (int i = 0; i < functions.Size(); i++) {
+		auto func = functions[i];
+		if (func->IsSystem()) {
+			continue;
+		}
 		Data.map_entryPoints.emplace(functions[i]-> GetNameWithArgment(types),labels[functions[i]->index_].pos_);
 	}
 
