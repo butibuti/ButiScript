@@ -1,7 +1,5 @@
   
-enum ScriptEnum{
-	Zero,First,Second,Third
-}
+
 main():float
 {
 	var v:Vector4;
@@ -12,14 +10,27 @@ main():float
 	v.w=50.0;
 	v*=0.2;
 	v=v+v;
-	return ScriptEnum.Second*v.z;
+	return v.x;
 }
 main2(i:int):int{
 	print("main2!!"+EndL());
-	return i*ScriptEnum.Second;
+	return i;
+}
+
+namespace Enum{
+
+GetEnumZero():int
+{
+	return 50;
+}
+
+enum ScriptEnum{
+	Zero,First,Second,Third
+}
 }
 
 namespace Functions{
+
 	Pow(i:float ):float{
 			return i*i;
 		}

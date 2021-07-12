@@ -20,6 +20,31 @@ bool CanTypeCast(const int arg_left, const int arg_right) {
 	return true;
 }
 
+
+const EnumTag* GetEnumType(const Compiler* c,Node& left_) {
+
+	auto shp_namespace = c->GetCurrentNameSpace();
+	std::string serchName;
+	const  EnumTag* enumType = nullptr;
+	while (!enumType)
+	{
+		serchName = shp_namespace->GetGlobalNameString() + left_.GetString();
+
+		enumType = c->GetEnumTag(serchName);
+
+		if (enumType) {
+			break;
+		}
+
+		shp_namespace = shp_namespace->GetParent();
+		if (!shp_namespace) {
+			break;
+		}
+
+	}
+	return enumType;
+}
+
 // •Ï”ƒm[ƒh‚ð¶¬
 Node_t Node::make_node(const int Op, const std::string& str)
 {
@@ -50,7 +75,7 @@ Node_t Node::make_node(const int Op, Node_t left)
 
 Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName,const Compiler* c)
 {
-	if (c->GetEnumTag(left->GetString())) {
+	if (GetEnumType(c,*left)) {
 		return  Node_t(new Node_enum( left, arg_memberName));
 	}
 
@@ -1976,8 +2001,10 @@ int Node_Method::GetType(Compiler* c) const
 }
 int Node_enum::Push(Compiler* c) const
 {
-	auto enumType=c->GetEnumTag(left_->GetString());
-	if (!enumType) {
+
+	auto enumType = GetEnumType(c,*left_);
+	if (enumType == nullptr) {
+
 		c->error("—ñ‹“Œ^@" + left_->GetString() + "‚Í–¢’è‹`‚Å‚·");
 		return -1;
 	}
@@ -2010,7 +2037,7 @@ void Enum::SetIdentifer(const std::string& arg_name, const int value)
 void Enum::Analyze(Compiler* c)
 {
 	c->RegistEnumType(typeName);
-	auto tag = c->GetEnumTag(typeName);
+	auto tag = c->GetEnumTag(c->GetCurrentNameSpace()->GetGlobalNameString()+ typeName);
 	auto end = map_identifer.end();
 	for (auto itr = map_identifer.begin(); itr != end; itr++) {
 		tag->SetValue(itr->first, itr->second);

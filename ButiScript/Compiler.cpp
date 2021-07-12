@@ -20,6 +20,8 @@ ButiScript::Compiler::~Compiler()
 void ButiScript::Compiler::RegistDefaultSystems()
 {
 
+	//グローバル名前空間の設定
+	currentNameSpace = std::make_shared<NameSpace>("");
 	//組み込み関数の設定
 	RegistSystemType<int, TYPE_INTEGER>("int", "i");
 	RegistSystemType<float, TYPE_FLOAT>("float", "f");
@@ -72,8 +74,6 @@ void ButiScript::Compiler::RegistDefaultSystems()
 // コンパイル
 bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::CompiledData& Data)
 {
-	//グローバル名前空間の設定
-	currentNameSpace = std::make_shared<NameSpace>("");
 
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
@@ -332,7 +332,8 @@ void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std
 {
 	auto enumType = GetEnumTag(arg_typeName);
 	if (!enumType) {
-		EnumTag tag(arg_typeName);
+		auto typeName = currentNameSpace->GetGlobalNameString() + arg_typeName;
+		EnumTag tag(typeName);
 		enums.SetEnum(tag);
 		enumType = enums.FindType(arg_typeName);
 	}
@@ -342,7 +343,8 @@ void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std
 
 void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 {
-	EnumTag tag(arg_typeName);
+	auto typeName = currentNameSpace->GetGlobalNameString()+arg_typeName;
+	EnumTag tag(typeName);
 	enums.SetEnum(tag);
 }
 
