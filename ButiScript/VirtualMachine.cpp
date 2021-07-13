@@ -64,9 +64,9 @@ void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
 	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];
 	stack_base = valueStack.size();
 
+	int Op;
 	//mainから開始
 	try {
-		int Op;
 		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
 
 			(this->*p_op[Op])();

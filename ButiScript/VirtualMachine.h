@@ -79,9 +79,9 @@ namespace ButiScript {
 		}
 		template<typename T>
 		T Execute(const std::string& entryPoint = "main") {
-			stack_base = valueStack.size();						// スタック参照位置初期化
+			stack_base = valueStack.size();					// スタック参照位置初期化
 			push(0);										// mainへの引数カウントをpush
-			push(stack_base);										// stack_baseの初期値をpush
+			push(stack_base);								// stack_baseの初期値をpush
 			push(0);										// プログラム終了位置をpush
 
 			Execute_(entryPoint);

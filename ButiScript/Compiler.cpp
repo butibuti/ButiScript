@@ -89,6 +89,7 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Compiled
 
 	Data.sourceFilePath = file;
 
+
 	labels.clear();
 	statement.clear();
 	text_table.clear();
@@ -524,8 +525,9 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_s
 	types.CreateTypeVec(Data.vec_types);
 
 
-	if (Data.textSize != 0)
+	if (Data.textSize != 0) {
 		memcpy(Data.textBuffer, &text_table[0], Data.textSize);
+	}
 
 	std::for_each(statement.begin(), statement.end(), copy_code(Data.commandTable));
 
@@ -588,7 +590,10 @@ void ButiScript::Compiler::debug_dump()
 
 int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
 {
-	std::ifstream fIn(arg_filePath);
+	std::ifstream fIn;
+	fIn.open(arg_filePath,std::ios::binary);
+
+
 
 	int sourceFilePathStrSize = 0;
 	fIn.read((char*)&sourceFilePathStrSize, sizeof(sourceFilePathStrSize));
@@ -700,15 +705,17 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	int entryPointsSize = 0;
 	fIn.read((char*)&entryPointsSize, sizeof(entryPointsSize));
 	for (int i = 0; i < entryPointsSize;i++) {
-		int size =0;
+		
+
+		int size =0, entryPoint = 0;
 
 		fIn.read((char*)&size, sizeof(size));
 		char* buff = (char*)malloc(size);
 		fIn.read(buff, size);
-		int entryPoint = 0;
-		fIn.read((char*)&entryPoint, sizeof(entryPoint));
-		std::string name =std::string( buff,size);
-		free(buff);
+		std::string name = std::string(buff, size);
+		free(buff); 
+		fIn.read((char*)&entryPoint, sizeof(int));
+		int current = fIn.tellg();
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 	}
 
@@ -727,7 +734,7 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 	if (dirPath != arg_filePath) {
 		auto dirRes = _mkdir(dirPath.c_str());
 	}
-	std::ofstream fOut(arg_filePath);
+	std::ofstream fOut(arg_filePath,  std::ios::binary);
 	int sourcePathSize = arg_ref_data.sourceFilePath.size();
 	fOut.write((char*)&sourcePathSize,sizeof(sourcePathSize));
 	fOut.write(arg_ref_data.sourceFilePath.c_str(),sourcePathSize);

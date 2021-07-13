@@ -2,17 +2,6 @@
 
 #include "Compiler.h"
 
-int DoSomething() {
-	return 52;
-}
-int DoSomething(int i) {
-	return 52 + i;
-}
-
-int DoSomething(int i,int j,int k) {
-	return 52 + i*j-k*2;
-}
-
 
 int main()
 {
@@ -21,7 +10,6 @@ int main()
 	bool compile_result=true;
 	{
 		driver.RegistDefaultSystems();
-		driver.DefineSystemFunction(&ButiScript::VirtualCPU::sys_func_ret<int,int,int ,int, DoSomething>, TYPE_INTEGER, "DoSomething", "i,i,i");
 		compile_result = driver.Compile("input.bs", *data);
 		driver.OutputCompiledData("output/compiled.cbs", *data);
 	}

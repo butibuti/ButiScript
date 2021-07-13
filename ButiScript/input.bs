@@ -3,13 +3,12 @@
 main():float
 {
 	var v:Vector4;
-
 	v.x=50.0;
-	v.y=50.0;
-	v.z=50.0;
-	v.w=50.0;
+	v.x=50.0;
+	v.x=50.0;
+	v.x=50.0;
 	v*=0.2;
-	v=v+v;
+	v/=0.2;
 	return v.x;
 }
 main2(i:int):int{
