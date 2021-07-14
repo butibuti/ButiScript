@@ -41,7 +41,7 @@ namespace ButiScript {
 		std::vector<OperationFunction> vec_sysCallMethods;
 		std::vector<TypeTag> vec_types;
 		std::map<std::string, int> map_entryPoints;
-		int definedTypeCount = 0;
+		std::vector<ScriptClassInfo> vec_scriptClassInfo;
 		std::string sourceFilePath;
 	};
 
@@ -474,12 +474,32 @@ namespace ButiScript {
 		// ローカル変数(参照型)を確保
 		void OpAllocStack_Ref(const int arg_val)
 		{
-			(this->*p_pushRefValues[arg_val& ~TYPE_REF])();
+			(this->*p_pushRefValues[arg_val & ~TYPE_REF])();
 
 		}
 		void OpAllocStack_Ref()
 		{
 			OpAllocStack_Ref(Value_Int());
+		}
+		// ローカル変数を確保(スクリプト定義)
+		void OpAllocStack_ScriptType(const int arg_val)
+		{
+			pushValue(&vec_scriptClassInfo[arg_val]);
+
+		}
+		void OpAllocStack_ScriptType()
+		{
+			OpAllocStack_ScriptType(Value_Int());
+		}
+
+		// ローカル変数(参照型)を確保(スクリプト定義)
+		void OpAllocStack_Ref_ScriptType(const int arg_val)
+		{
+			pushValue_ref(&vec_scriptClassInfo[arg_val]);
+		}
+		void OpAllocStack_Ref_ScriptType()
+		{
+			OpAllocStack_Ref_ScriptType(Value_Int());
 		}
 
 
@@ -1214,6 +1234,15 @@ namespace ButiScript {
 			value.SetType(typeIndex);
 			this->valueStack.push(value);
 		}
+		void pushValue(ScriptClassInfo* info) {
+			auto value = Value(*info);
+			this->valueStack.push(value);
+		}
+		void pushValue_ref(ScriptClassInfo* info) {
+			auto value = Value(Type_Null());
+			value.SetType(info->GetTypeIndex() | TYPE_REF);
+			this->valueStack.push(value);
+		}
 
 	private:
 		int Value_Int() { int v = *(int*)command_ptr_; command_ptr_ += 4; return v; }
@@ -1292,6 +1321,7 @@ namespace ButiScript {
 		//変数(参照型)の確保関数テーブル
 		OperationFunction* p_pushRefValues = nullptr;
 
+		std::vector<ScriptClassInfo> vec_scriptClassInfo;
 
 		ButiScript::Stack<ButiScript::Value, STACK_SIZE> valueStack;
 

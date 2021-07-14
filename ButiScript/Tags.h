@@ -595,6 +595,66 @@ namespace ButiScript {
 	class VirtualCPU;
 	using OperationFunction = void (VirtualCPU::*)();
 
+	/// <summary>
+	/// スクリプト側で定義するクラスの情報
+	/// </summary>
+	class ScriptClassInfo {
+	public:
+		std::string ToString()const {
+			return "ScriptClass!";
+		}
+		int GetTypeIndex()const {
+			return typeIndex;
+		}
+		int GetMemberTypeIndex(const int index)const {
+			return vec_memberTypes[index];
+		}
+		int GetMemberSize()const {
+			return vec_memberTypes.size();
+		}
+		void SetTypeIndex(const int arg_index) {
+			typeIndex = arg_index;
+		}
+		void SetMemberTypes(const std::vector<int> arg_vec_types) {
+			vec_memberTypes = arg_vec_types;
+		}
+		void SetClassName(const std::string& arg_className) {
+			className = arg_className;
+		}
+		void OutputFile(std::ofstream& arg_fOut) const {
+			int size = className.size();
+			arg_fOut.write((char*)&size, sizeof(int));
+			arg_fOut.write(className.c_str(), size);
+			arg_fOut.write((char*)&typeIndex, sizeof(int));
+			int memberSize = vec_memberTypes.size();
+			arg_fOut.write((char*)&memberSize, sizeof(int));
+			for (int i = 0; i < memberSize; i++) {
+				arg_fOut.write((char*)&vec_memberTypes[i], sizeof(int));
+			}
+
+		}
+		void InputFile(std::ifstream& arg_fIn) {
+			int size = 0;
+			arg_fIn.read((char*)&size, sizeof(int));
+			char* nameBuff = (char*)malloc(size);
+			arg_fIn.read(nameBuff, size);
+			className = std::string(nameBuff, size);
+			free(nameBuff);
+
+			arg_fIn.read((char*)&typeIndex, sizeof(int));
+			int memberSize = 0;
+			arg_fIn.read((char*)&memberSize, sizeof(int));
+			vec_memberTypes.resize(memberSize);
+			for (int i = 0; i < memberSize; i++) {
+				arg_fIn.read((char*)&vec_memberTypes[i], sizeof(int));
+			}
+
+		}
+	private:
+		int typeIndex;
+		std::vector<int> vec_memberTypes;
+		std::string className;
+	};
 	struct TypeTag {
 		TypeTag() {}
 
@@ -620,6 +680,28 @@ namespace ButiScript {
 			return methods.Add(arg_methodName, arg_method);
 		}
 		bool isSystem;
+
+		ScriptClassInfo GetScriptTypeInfo()const {
+			if (isSystem) {
+				//組み込み型なのでスクリプト型定義は作れない
+				assert(0);
+				return ScriptClassInfo();
+			}
+			ScriptClassInfo output;
+			output.SetClassName(typeName); 
+			output.SetTypeIndex(typeIndex);
+			std::vector<int> vec_types;
+			vec_types.resize(map_memberIndex.size());
+			for (auto itr = map_memberIndex.begin(); itr != map_memberIndex.end(); itr++) {
+				vec_types[itr->second] = map_memberType.at(itr->first);
+			}
+
+			output.SetMemberTypes(vec_types);
+
+			return output;
+
+		}
+
 	};
 
 	//型定義用
@@ -658,6 +740,9 @@ namespace ButiScript {
 			map_argmentChars.emplace(arg_type.argName, arg_type.typeIndex);
 			map_types.emplace(arg_type.typeName, arg_type);
 			vec_types[arg_type.typeIndex] = &map_types.at(arg_type.typeName);
+			if (arg_type.isSystem) {
+				systemTypeCount++;
+			}
 		}
 
 		const std::vector<TypeTag* >& GetSystemType()const {
@@ -690,12 +775,32 @@ namespace ButiScript {
 				}
 			}
 		}
+		int GetSize()const {
+			return vec_types.size();
+		}
+		int GetSystemTypeSize()const {
+			return systemTypeCount;
+		}
+		int GetScriptTypeSize()const {
+			return vec_types.size()-systemTypeCount;
+		}
+		std::vector<ScriptClassInfo> GetScriptClassInfo()const {
+			std::vector<ScriptClassInfo> output;
+			for (int i = 0; i < vec_types.size(); i++) {
+				if (vec_types[i]->isSystem){ continue; }
+					
+				output.push_back(vec_types[i]->GetScriptTypeInfo());
+
+			}
+
+			return output;
+		}
 	private:
 
 		std::vector<TypeTag* > vec_types;
 		std::map<std::string, int> map_argmentChars;
 		std::map<std::string, TypeTag> map_types;
-
+		int systemTypeCount;
 	};
 	
 }

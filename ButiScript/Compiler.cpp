@@ -30,6 +30,17 @@ void ButiScript::Compiler::RegistDefaultSystems()
 	RegistSystemType<ButiEngine::Vector2, TYPE_VOID + 1>("Vector2", "vec2", "x:f,y:f");
 	RegistSystemType<ButiEngine::Vector3, TYPE_VOID + 2>("Vector3", "vec3", "x:f,y:f,z:f");
 	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
+	//スクリプト定義の型がメンバとして利用する型の登録
+	PushCreateMemberInstance<int>();
+	PushCreateMemberInstance<float>();
+	PushCreateMemberInstance<std::string>();
+	PushCreateMemberInstance<int>();
+	PushCreateMemberInstance<ButiEngine::Vector2>();
+	PushCreateMemberInstance<ButiEngine::Vector3>();
+	PushCreateMemberInstance<ButiEngine::Vector4>();
+
+	RegistScriptType("Vector2PlusInt",{ {"vec2",TYPE_VOID + 1} ,{"i",TYPE_INTEGER} });
+
 	{
 		using namespace ButiEngine;
 		DefineSystemFunction(&VirtualCPU::sys_print, TYPE_VOID, "print", "s");
@@ -69,6 +80,7 @@ void ButiScript::Compiler::RegistDefaultSystems()
 
 	RegistEnum("TestEnum", "First", 1);
 	RegistEnum("TestEnum", "Second", 2);
+
 }
 
 // コンパイル
@@ -181,6 +193,38 @@ struct Define_value {
 		comp_->AddValue(valueType, node->GetString(), node->GetLeft());
 	}
 };
+
+void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, const std::map<std::string, int>& arg_memberInfo)
+{
+	TypeTag type;
+	int typeIndex = types.GetSize();
+	//type.typeFunc = &VirtualCPU::pushValue;
+	//type.refTypeFunc = &VirtualCPU::pushValue;
+	type.isSystem = false;
+	long long int address = *(long long int*) & type.typeFunc;
+	map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
+	vec_valueAllocCall.push_back(type.typeFunc);
+
+	address = *(long long int*) & type.refTypeFunc;
+	map_refValueAllocCallsIndex.emplace(address, vec_refValueAllocCall.size());
+	vec_refValueAllocCall.push_back(type.refTypeFunc);
+
+	type.typeName = arg_typeName;
+	type.typeIndex = typeIndex;
+	type.argName = arg_typeName;
+
+	if (arg_memberInfo.size()) {
+		auto memberInfoEnd = arg_memberInfo.end();
+		int i = 0;
+		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; i++,itr++) {
+			
+			type.map_memberIndex.emplace(itr->first, i);
+			type.map_memberType.emplace(itr->first, itr->second);
+
+		}
+	}
+	types.RegistType(type);
+}
 
 void ButiScript::Compiler::ValueDefine(int type, const std::vector<Node_t>& node)
 {
@@ -523,7 +567,7 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_s
 	Data.vec_sysCalls = vec_sysCalls;
 	Data.vec_sysCallMethods = vec_sysMethodCalls;
 	types.CreateTypeVec(Data.vec_types);
-
+	Data.vec_scriptClassInfo = types.GetScriptClassInfo();
 
 	if (Data.textSize != 0) {
 		memcpy(Data.textBuffer, &text_table[0], Data.textSize);
@@ -719,8 +763,12 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 	}
 
-
-	fIn.read((char*)&arg_ref_data.definedTypeCount, sizeof(arg_ref_data.definedTypeCount));
+	int definedTypeCount = 0;
+	fIn.read((char*)&definedTypeCount, sizeof(definedTypeCount));
+	arg_ref_data.vec_scriptClassInfo.resize(definedTypeCount);
+	for (int i = 0; i < definedTypeCount; i++) {
+		arg_ref_data.vec_scriptClassInfo.at(i).InputFile(fIn);
+	}
 
 	fIn.close();
 
@@ -829,8 +877,12 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		fOut.write((char*)&itr->second, sizeof(itr->second));
 	}
 
+	int defineTypeCout = arg_ref_data.vec_scriptClassInfo.size();
+	fOut.write((char*)&defineTypeCout, sizeof(defineTypeCout));
+	for (int i = 0; i < defineTypeCout; i++) {
+		arg_ref_data.vec_scriptClassInfo[i].OutputFile(fOut);
+	}
 
-	fOut.write((char*)&arg_ref_data.definedTypeCount, sizeof(arg_ref_data.definedTypeCount));	
 	fOut.close();
 
 	return 0;
@@ -874,10 +926,23 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 	for (auto itr = vec_variableTypes.begin(); itr != end; itr++)
 	{
 		if (*itr & TYPE_REF) {
-			arg_comp->OpAllocStack_Ref(*itr);
+			int typeIndex = *itr &~TYPE_REF;
+			auto type = arg_comp->GetType(typeIndex);
+			if (type->isSystem) {
+				arg_comp->OpAllocStack_Ref(*itr);
+			}
+			else {
+				arg_comp->OpAllocStack_Ref_ScriptType(*itr - arg_comp->GetSystemTypeSize());
+			}
 		}
 		else {
-			arg_comp->OpAllocStack(*itr);
+			auto type = arg_comp->GetType(*itr);
+			if (type->isSystem) {
+				arg_comp->OpAllocStack(*itr);
+			}
+			else {
+				arg_comp->OpAllocStack_ScriptType(*itr - arg_comp->GetSystemTypeSize());
+			}
 		}
 		
 	}

@@ -224,7 +224,7 @@ public:
 		}
 		types.RegistType(type);
 	}
-
+	void RegistScriptType(const std::string& arg_typeName,  const std::map<std::string, int>& arg_memberInfo);
 	const std::vector<TypeTag* >& GetSystemTypes()const {
 		return types.GetSystemType();
 	}
@@ -275,13 +275,14 @@ public:
 		}
 		return -1;
 	}
-
 	//
 
 	const TypeTag* GetType(const int index)const {
 		return types.GetType(index);
 	}
-
+	int GetSystemTypeSize()const {
+		return types.GetSystemTypeSize();
+	}
 	NameSpace_t GetCurrentNameSpace()const {
 		return currentNameSpace;
 	}

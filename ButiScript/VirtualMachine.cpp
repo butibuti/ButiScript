@@ -47,15 +47,15 @@ void ButiScript::VirtualCPU::Initialize()
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() + data_->definedTypeCount));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() +data_->definedTypeCount));
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() ));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() ));
 	for (int i = 0; i < data_->vec_types.size(); i++) {
 
 		p_pushValues[data_->vec_types.at(i).typeIndex] = data_->vec_types.at(i).typeFunc;
 		p_pushRefValues[data_->vec_types.at(i).typeIndex] = data_->vec_types.at(i).refTypeFunc;
 	}
 
-
+	vec_scriptClassInfo = data_->vec_scriptClassInfo;
 
 }
 

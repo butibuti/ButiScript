@@ -1740,7 +1740,13 @@ int Declaration::Analyze(Compiler* c)
 	}
 	else {
 		c->ValueDefine(valueType, vec_node);
-		c->OpAllocStack(valueType);
+		auto type = c->GetType(valueType);
+		if (type->isSystem) {
+			c->OpAllocStack(valueType);
+		}
+		else {
+			c->OpAllocStack_ScriptType(valueType-c->GetSystemTypeSize());
+		}
 	}
 	return 0;
 }
@@ -1777,7 +1783,7 @@ int Node_Member::Push(Compiler* c) const
 	}
 	else {
 		//•Ï”‚Ìƒƒ“ƒo•Ï”
-		if (left_->Op() == OP_IDENTIFIER|| left_->Op() == OP_MEMBER) {
+		if (left_->Op() == OP_IDENTIFIER) {
 			const ValueTag* valueTag = left_->GetValueTag(c);
 			{
 
@@ -1809,6 +1815,21 @@ int Node_Member::Push(Compiler* c) const
 				}
 				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
 			}
+		}
+		else if (left_->Op() == OP_MEMBER) {
+
+			{
+
+				//Œ^
+				auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+
+
+
+				left_->Push(c);
+				c->PushLocalMemberRef(typeTag->map_memberIndex.at(string_));
+				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
+			}
+
 		}
 
 		
@@ -1902,10 +1923,7 @@ int Node_Member::GetType(Compiler* c) const
 	}
 	else {
 		//•Ï”‚Ìƒƒ“ƒo•Ï”
-		if (left_->Op() == OP_IDENTIFIER || left_->Op() == OP_MEMBER) {
-			std::string  valueName;
-			NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
-			const ValueTag* valueTag=  left_->GetValueTag(c);
+		if (left_->Op() == OP_IDENTIFIER|| left_->Op() == OP_MEMBER) {
 			{
 
 				//Œ^
