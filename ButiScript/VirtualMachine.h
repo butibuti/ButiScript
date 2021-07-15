@@ -197,45 +197,15 @@ namespace ButiScript {
 			PushLocalArray(Value_Int());
 		}
 
-
 		//グローバル変数のメンバ変数のコピーをpush
-		void PushGlobalMember(const int arg_val, const int arg_valueIndex) {
-			pop(); push_clone(valueStack[arg_val + globalValue_base].v_->GetMember(arg_valueIndex), valueStack[arg_val + globalValue_base].v_->GetMemberType(arg_valueIndex));
-		}
-
-		void PushGlobalMember() {
-			PushGlobalMember(top().v_->Get<int>(), Value_Int());
-		}
-
-		//ローカル変数のメンバ変数のコピーをpush
-		void PushLocalMember(const int arg_val, const int arg_valueIndex) {
-			pop(); push_clone(valueStack[arg_val + stack_base].v_->GetMember(arg_valueIndex), valueStack[arg_val + stack_base].v_->GetMemberType(arg_valueIndex));
-		}
-
-		void PushLocalMember() {
-			PushLocalMember(top().v_->Get<int>(), Value_Int());
-		}
-
-		//グローバル配列のメンバ変数のコピーをpush
-		void PushGlobalArrayMember(const int arg_val, const int arg_valueIndex) {
+		void PushMember( const int arg_valueIndex) {
+			auto v = top();
 			pop();
-			int index = top().v_->Get<int>(); pop();
-			push_clone(valueStack[arg_val+ index + globalValue_base].v_->GetMember(arg_valueIndex), valueStack[arg_val + globalValue_base].v_->GetMemberType(arg_valueIndex));
+			push_clone(v.v_->GetMember(arg_valueIndex), v.v_->GetMemberType(arg_valueIndex));
 		}
 
-		void PushGlobalArrayMember() {
-			PushGlobalArrayMember(top().v_->Get<int>(), Value_Int());
-		}
-
-		//ローカル配列のメンバ変数のコピーをpush
-		void PushLocalArrayMember(const int arg_val, const int arg_valueIndex) {
-			pop();
-			int index = top().v_->Get<int>(); pop();
-			push_clone(valueStack[arg_val+ index + stack_base].v_->GetMember(arg_valueIndex), valueStack[arg_val + stack_base].v_->GetMemberType(arg_valueIndex));
-		}
-
-		void PushLocalArrayMember() {
-			PushLocalArrayMember(top().v_->Get<int>(), Value_Int());
+		void PushMember() {
+			PushMember( Value_Int());
 		}
 
 		/////////////グローバル変数の参照Push定義////////////////
@@ -286,44 +256,15 @@ namespace ButiScript {
 		}
 
 
-		//グローバル変数のメンバ変数の参照をpush
-		void PushGlobalMemberRef(const int arg_val, const int arg_valueIndex) {
-			pop(); push(valueStack[arg_val + globalValue_base].v_->GetMember(arg_valueIndex), valueStack[arg_val + globalValue_base].v_->GetMemberType(arg_valueIndex));
-		}
-
-		void PushGlobalMemberRef() {
-			PushGlobalMemberRef(top().v_->Get<int>(), Value_Int());
-		}
-
-		//ローカル変数のメンバ変数の参照をpush
-		void PushLocalMemberRef(const int arg_val, const int arg_valueIndex) {
-			pop(); push(valueStack[arg_val + stack_base].v_->GetMember(arg_valueIndex), valueStack[arg_val + stack_base].v_->GetMemberType(arg_valueIndex));
-		}
-
-		void PushLocalMemberRef() {
-			PushLocalMemberRef(top().v_->Get<int>(), Value_Int());
-		}
-
-		//グローバル変数の配列のメンバ変数の参照をpush
-		void PushGlobalArrayMemberRef(const int arg_val, const int arg_valueIndex) {
+		//メンバ変数の参照をpush
+		void PushMemberRef( const int arg_valueIndex) {
+			auto v = top().v_;
 			pop();
-			int index = top().v_->Get<int>(); pop(); 
-			push(valueStack[arg_val + globalValue_base+index].v_->GetMember(arg_valueIndex), valueStack[arg_val + globalValue_base+index].v_->GetMemberType(arg_valueIndex));
+			push(v->GetMember(arg_valueIndex), v->GetMemberType(arg_valueIndex));
 		}
 
-		void PushGlobalArrayMemberRef() {
-			PushGlobalArrayMemberRef(top().v_->Get<int>(), Value_Int());
-		}
-
-		//ローカル変数の配列のメンバ変数の参照をpush
-		void PushLocalArrayMemberRef(const int arg_val, const int arg_valueIndex) {
-			pop();
-			int index = top().v_->Get<int>(); pop(); 
-			push(valueStack[arg_val + stack_base+index].v_->GetMember(arg_valueIndex), valueStack[arg_val + stack_base+index].v_->GetMemberType(arg_valueIndex));
-		}
-
-		void PushLocalArrayMemberRef() {
-			PushLocalArrayMemberRef(top().v_->Get<int>(), Value_Int());
+		void PushMemberRef() {
+			PushMemberRef( Value_Int());
 		}
 
 
@@ -367,47 +308,22 @@ namespace ButiScript {
 		// ローカル変数にPop
 		void PopLocal(const int arg_val)
 		{
-			valueStack[arg_val + stack_base] = top(); pop();
+			auto v = top();
+			valueStack[arg_val + stack_base] = v; pop();
 		}
 		void PopLocal() {
 			PopLocal(Value_Int());
 		}
 
-		// グローバル変数のメンバ変数にPop
-		void PopGlobalMember(const int arg_val, const int arg_index)
+		//メンバ変数にPop
+		void PopMember(const int arg_index)
 		{
-			pop(); valueStack[arg_val + globalValue_base].v_->GetMember(arg_index)->Set(*top().v_); pop();
-		}
-		void PopGlobalMember() {
-			PopGlobalMember(top().v_->Get<int>(), Value_Int());
-		}
-		// ローカル変数のメンバ変数にPop
-		void PopLocalMember(const int arg_val, const int arg_index)
-		{
-			pop(); valueStack[arg_val + stack_base].v_->GetMember(arg_index)->Set(*top().v_); pop();
-		}
-		void PopLocalMember() {
-			PopLocalMember(top().v_->Get<int>(), Value_Int());
-		}
-		// グローバル変数配列のメンバ変数にPop
-		void PopGlobalArrayMember(const int arg_val, const int arg_index)
-		{
+			auto v = top().v_;
 			pop();
-			int index = top().v_->Get<int>(); pop();
-			valueStack[index+ arg_val + globalValue_base].v_->GetMember(arg_index)->Set(*top().v_); pop();
+			v->GetMember(arg_index)->Set(*top().v_); pop();
 		}
-		void PopGlobalArrayMember() {
-			PopGlobalArrayMember(top().v_->Get<int>(), Value_Int());
-		}
-		// ローカル変数配列のメンバ変数にPop
-		void PopLocalArrayMember(const int arg_val, const int arg_index)
-		{
-			pop();
-			int index = top().v_->Get<int>(); pop();
-			valueStack[index + arg_val + stack_base].v_->GetMember(arg_index)->Set(*top().v_); pop();
-		}
-		void PopLocalArrayMember() {
-			PopLocalArrayMember(top().v_->Get<int>(), Value_Int());
+		void PopMember() {
+			PopMember( Value_Int());
 		}
 
 		// 配列変数にPop

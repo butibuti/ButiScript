@@ -8,6 +8,8 @@ int main()
 	ButiScript::Compiler driver;
 	std::shared_ptr< ButiScript::CompiledData> data=std::make_shared<ButiScript::CompiledData>();
 	bool compile_result=true;
+	ButiEngine::Vector2 v = ButiEngine::Vector2(50,25);
+	float f = v.GetLength();
 	{
 		driver.RegistDefaultSystems();
 		compile_result = driver.Compile("input.bs", *data);

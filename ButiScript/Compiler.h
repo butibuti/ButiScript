@@ -223,6 +223,8 @@ public:
 			}
 		}
 		types.RegistType(type);
+		//スクリプト定義の型がメンバとして利用する型の登録
+		PushCreateMemberInstance<T>();
 	}
 	void RegistScriptType(const std::string& arg_typeName,  const std::map<std::string, int>& arg_memberInfo);
 	const std::vector<TypeTag* >& GetSystemTypes()const {

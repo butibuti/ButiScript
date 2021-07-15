@@ -1,12 +1,14 @@
-  
-
 main():float
 {
-	
 	var v2i: Vector2PlusInt;
 	var v:Vector2;
+	var f:float;
 	v.x=50;
-	v2i.vec2=v;
 
-	return v.x;
+	v2i.vec2=v;
+	v2i.vec2.y=v.x*0.5;
+
+	f=v2i.vec2.GetLength();
+
+	return f;
 }

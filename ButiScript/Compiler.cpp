@@ -30,14 +30,7 @@ void ButiScript::Compiler::RegistDefaultSystems()
 	RegistSystemType<ButiEngine::Vector2, TYPE_VOID + 1>("Vector2", "vec2", "x:f,y:f");
 	RegistSystemType<ButiEngine::Vector3, TYPE_VOID + 2>("Vector3", "vec3", "x:f,y:f,z:f");
 	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
-	//スクリプト定義の型がメンバとして利用する型の登録
-	PushCreateMemberInstance<int>();
-	PushCreateMemberInstance<float>();
-	PushCreateMemberInstance<std::string>();
-	PushCreateMemberInstance<int>();
-	PushCreateMemberInstance<ButiEngine::Vector2>();
-	PushCreateMemberInstance<ButiEngine::Vector3>();
-	PushCreateMemberInstance<ButiEngine::Vector4>();
+
 
 	RegistScriptType("Vector2PlusInt",{ {"vec2",TYPE_VOID + 1} ,{"i",TYPE_INTEGER} });
 

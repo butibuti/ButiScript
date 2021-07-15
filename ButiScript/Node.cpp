@@ -62,6 +62,9 @@ Node_t Node::make_node(const int Op, const std::string& str)
 // 単項演算子のノードを生成
 Node_t Node::make_node(const int Op, Node_t left)
 {
+	if (Op == OP_METHOD) {
+		return Node_t(new Node_Method(Op, left->GetLeft(), left->GetString()));
+	}
 	switch (Op) {
 	case OP_NEG:
 		if (left->op_ == OP_INT) {			// 定数演算を計算する
@@ -72,6 +75,7 @@ Node_t Node::make_node(const int Op, Node_t left)
 	}
 	return Node_t(new Node(Op, left));
 }
+
 
 Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName,const Compiler* c)
 {
@@ -1782,58 +1786,12 @@ int Node_Member::Push(Compiler* c) const
 		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		//変数のメンバ変数
-		if (left_->Op() == OP_IDENTIFIER) {
-			const ValueTag* valueTag = left_->GetValueTag(c);
-			{
-
-				//型
-				auto typeTag = c->GetType(left_->GetType(c)&~TYPE_REF);
-
-
-				if (valueTag->global_) {		// 外部変数
-					if (left_->GetLeft()) {		// 配列
-						c->PushConstInt(valueTag->address);
-						left_->GetLeft()->Push(c);
-						c->PushGlobalArrayMemberRef(typeTag->map_memberIndex.at(string_));
-					}
-					else {
-						c->PushConstInt(valueTag->address);
-						c->PushGlobalMemberRef(typeTag->map_memberIndex.at(string_));
-					}
-				}
-				else {					// ローカル変数
-					if (left_->GetLeft()) {		// 配列
-						c->PushConstInt(valueTag->address);
-						left_->GetLeft()->Push(c);
-						c->PushLocalArrayMemberRef(typeTag->map_memberIndex.at(string_));
-					}
-					else {
-						c->PushConstInt(valueTag->address);
-						c->PushLocalMemberRef(typeTag->map_memberIndex.at(string_));
-					}
-				}
-				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
-			}
-		}
-		else if (left_->Op() == OP_MEMBER) {
-
-			{
-
-				//型
-				auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
-
-
-
-				left_->Push(c);
-				c->PushLocalMemberRef(typeTag->map_memberIndex.at(string_));
-				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
-			}
-
-		}
-
-		
+		left_->Push(c);
+		auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+		c->PushMemberRef(typeTag->map_memberIndex.at(string_));
+		return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
 	}
+	return -1;
 }
 int Node_Member::PushClone(Compiler* c) const
 {
@@ -1841,40 +1799,13 @@ int Node_Member::PushClone(Compiler* c) const
 		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		//変数のメンバ変数
-		if (left_->Op() == OP_IDENTIFIER || left_->Op() == OP_MEMBER) {
-			const ValueTag* valueTag = left_->GetValueTag(c);
-			{
-
-				//型
-				auto typeTag = c->GetType(left_->GetType(c));
-
-
-				if (valueTag->global_) {		// 外部変数
-					if (left_->GetLeft()) {		// 配列
-						left_->GetLeft()->PushClone(c);
-						c->PushGlobalArray(valueTag->address);
-					}
-					else {
-						c->PushGlobalValue(valueTag->address);
-					}
-				}
-				else {					// ローカル変数
-					if (left_->GetLeft()) {		// 配列
-						left_->GetLeft()->PushClone(c);
-						c->PushLocalArray(valueTag->address);
-					}
-					else {
-						c->PushConstInt(valueTag->address);
-						c->PushLocalMember(typeTag->map_memberIndex.at(string_));
-					}
-				}
-				return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
-			}
-		}
-
+		left_->Push(c);
+		auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+		c->PushMember(typeTag->map_memberIndex.at(string_)); 
+		return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
 
 	}
+	return -1;
 }
 int Node_Member::Pop(Compiler* c) const
 {
@@ -1883,36 +1814,14 @@ int Node_Member::Pop(Compiler* c) const
 	}
 	else {
 
-		const ValueTag* valueTag = left_->GetValueTag(c);
-		{
+		//型
+		auto typeTag = c->GetType(left_->GetType(c));
+		left_->Push(c);
 
-			//型
-			auto typeTag = c->GetType(left_->GetType(c));
-			
-			if (valueTag->global_) {		// 外部変数
-				if (left_->GetLeft()) {		// 配列
-					c->PushConstInt(valueTag->address);
-					left_->GetLeft()->Push(c);
-					c->PopGlobalArrayMember(valueTag->address);
-				}
-				else {
-					c->PushConstInt(valueTag->address);
-					c->PopGlobalMember(valueTag->address);
-				}
-			}
-			else {					// ローカル変数
-				if (left_->GetLeft()) {		// 配列
-					c->PushConstInt(valueTag->address);
-					left_->GetLeft()->Push(c);
-					c->PopLocalArrayMember(typeTag->map_memberIndex.at(string_));
-				}
-				else {
-					c->PushConstInt(valueTag->address);
-					c->PopLocalMember(typeTag->map_memberIndex.at(string_));
-				}
-			}
-			return   typeTag->map_memberType.at(string_) & ~TYPE_REF;;
-		}
+		c->PopMember(typeTag->map_memberIndex.at(string_));
+
+		return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
+		
 	}
 	return TYPE_INTEGER;
 }

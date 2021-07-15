@@ -505,11 +505,9 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				'(' >> !argument >> ')';
 
 			//メンバ変数呼び出し
-			callMemberValue = Value >> "." >> identifier>>*("." >> identifier)
-				
-				;
+			callMemberValue = Value >> "." >> identifier>>*("." >> identifier);
 			//メンバ関数呼び出し
-			callMethod = Value >> "." >> identifier >>'(' >> !argument >> ')';
+			callMethod = Value >> "." >> identifier >> *("." >> identifier)>>'(' >> !argument >> ')';
 
 			// 計算のprimeノード
 			prime =callMethod
@@ -763,8 +761,6 @@ struct script_grammer : public grammar<script_grammer> {
 				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
-			callMethod = Value[callMethod.valueNode=arg1] >> "." >> identifier[callMethod.memberNode = binary_node_comp(OP_METHOD, callMethod.valueNode, arg1,self.driver_)]
-				>> '(' >> !argument[callMethod.memberNode = binary_node(OP_METHOD, callMethod.memberNode, arg1)] >> ')';
 
 			//メンバ呼び出し
 			callMemberValue =Value[ callMemberValue.valueNode=arg1]>>"."
@@ -772,6 +768,9 @@ struct script_grammer : public grammar<script_grammer> {
 				>>* (".">> identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.memberNode, arg1, self.driver_)])
 				
 				;
+
+			callMethod = callMemberValue[callMethod.memberNode =  unary_node(OP_METHOD, arg1)]
+				>> '(' >> !argument[callMethod.memberNode = binary_node(OP_METHOD, callMethod.memberNode, arg1)] >> ')';
 			// 計算のprimeノード
 			prime = callMethod[prime.node = arg1]
 				| callMemberValue[prime.node = arg1]
