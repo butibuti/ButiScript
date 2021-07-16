@@ -1094,7 +1094,7 @@ public:
 		valueType = TYPE_VOID + 3;
 	}
 	//ユーザー定義型として初期化
-	Value(ScriptClassInfo& arg_info);
+	Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* arg_p_vec_scriptClassInfo);
 
 	//変数を指定して初期化
 	Value(IValue* p,const int type)

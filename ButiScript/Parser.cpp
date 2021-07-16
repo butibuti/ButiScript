@@ -445,7 +445,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
-		rule<ScannerT>	string_node,number,floatNumber,callMethod,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
+		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
 			and_expr,expr,assign,argument,statement,arg,decl_func,callMemberValue ,block,input,ident;
 
 		symbols<> keywords;
@@ -505,13 +505,16 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				'(' >> !argument >> ')';
 
 			//メンバ変数呼び出し
-			callMemberValue = Value >> "." >> identifier>>*("." >> identifier);
-			//メンバ関数呼び出し
-			callMethod = Value >> "." >> identifier >> *("." >> identifier)>>'(' >> !argument >> ')';
+			callMemberValue = Value >> "."
+				>> identifier
+				>> !('(' >> !argument >> ')')
+				>> *("." >>
+					identifier >>
+					!('(' >> !argument >> ')')
+					);
 
 			// 計算のprimeノード
-			prime =callMethod
-				|callMemberValue
+			prime =callMemberValue
 				|func_node
 				| Value
 				| floatNumber
@@ -626,7 +629,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				| str_p("for")>> '('
 				>> !(assign) >> ';'
 				>> expr >> ';'
-				>> !(assign|| func_node||callMethod) >> ')'
+				>> !(assign|| func_node|| callMemberValue) >> ')'
 				>> statement
 
 				| str_p("while") >> '('
@@ -638,7 +641,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *statement
 				>> '}'
 				| func_node >> ';'
-				|callMethod>>';'
+				| callMemberValue >>';'
 				| block
 				;
 
@@ -683,7 +686,6 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::callmember_val::context_t> callMemberValue;
-		rule<ScannerT, ButiClosure::callmember_val::context_t> callMethod;
 		rule<ScannerT, ButiClosure::node_val::context_t>		prime;
 		rule<ScannerT, ButiClosure::node_val::context_t>		unary;
 		rule<ScannerT, ButiClosure::node_val::context_t>		mul_expr;
@@ -765,15 +767,16 @@ struct script_grammer : public grammar<script_grammer> {
 			//メンバ呼び出し
 			callMemberValue =Value[ callMemberValue.valueNode=arg1]>>"."
 				>> identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.valueNode,arg1, self.driver_)]
-				>>* (".">> identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.memberNode, arg1, self.driver_)])
+				>>!(ch_p('(' )[callMemberValue.memberNode = unary_node(OP_METHOD, callMemberValue.memberNode)]>> !argument[callMemberValue.memberNode = binary_node(OP_METHOD, callMemberValue.memberNode, arg1)] >> ')')
+				>>* (".">> 
+					identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.memberNode, arg1, self.driver_)]  >>  
+					!(ch_p('(')[callMemberValue.memberNode = unary_node(OP_METHOD, callMemberValue.memberNode)] >> !argument[callMemberValue.memberNode = binary_node(OP_METHOD, callMemberValue.memberNode, arg1)] >> ')')
+					)
 				
 				;
 
-			callMethod = callMemberValue[callMethod.memberNode =  unary_node(OP_METHOD, arg1)]
-				>> '(' >> !argument[callMethod.memberNode = binary_node(OP_METHOD, callMethod.memberNode, arg1)] >> ')';
 			// 計算のprimeノード
-			prime = callMethod[prime.node = arg1]
-				| callMemberValue[prime.node = arg1]
+			prime = callMemberValue[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
@@ -903,7 +906,7 @@ struct script_grammer : public grammar<script_grammer> {
 				>> '{'
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
-				| callMethod[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
+				| callMemberValue[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;

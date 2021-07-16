@@ -400,7 +400,7 @@ namespace ButiScript {
 		// ローカル変数を確保(スクリプト定義)
 		void OpAllocStack_ScriptType(const int arg_val)
 		{
-			pushValue(&vec_scriptClassInfo[arg_val]);
+			pushValue(&vec_scriptClassInfo[arg_val],&vec_scriptClassInfo);
 
 		}
 		void OpAllocStack_ScriptType()
@@ -1150,8 +1150,8 @@ namespace ButiScript {
 			value.SetType(typeIndex);
 			this->valueStack.push(value);
 		}
-		void pushValue(ScriptClassInfo* info) {
-			auto value = Value(*info);
+		void pushValue(ScriptClassInfo* info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
+			auto value = Value(*info,p_vec_scriptClassInfo);
 			this->valueStack.push(value);
 		}
 		void pushValue_ref(ScriptClassInfo* info) {

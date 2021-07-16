@@ -32,7 +32,8 @@ void ButiScript::Compiler::RegistDefaultSystems()
 	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
 
 
-	RegistScriptType("Vector2PlusInt",{ {"vec2",TYPE_VOID + 1} ,{"i",TYPE_INTEGER} });
+	RegistScriptType("Vector2PlusInt", { {"vec2",TYPE_VOID + 1} ,{"i",TYPE_INTEGER} });
+	RegistScriptType("TestStruct",{ {"vec3",TYPE_VOID + 2} ,{"vpi",TYPE_VOID + 4} });
 
 	{
 		using namespace ButiEngine;
@@ -93,7 +94,6 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Compiled
 	CreateData(Data, code_size);				// ÉoÉCÉiÉäê∂ê¨
 
 	Data.sourceFilePath = file;
-
 
 	labels.clear();
 	statement.clear();

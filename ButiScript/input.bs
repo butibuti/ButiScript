@@ -1,14 +1,17 @@
 main():float
 {
-	var v2i: Vector2PlusInt;
+
 	var v:Vector2;
 	var f:float;
+	var test:TestStruct;
 	v.x=50;
+	v.y=12;
+	test.vpi.vec2=v;
+	test.vpi.vec2.y=v.x*0.25;
 
-	v2i.vec2=v;
-	v2i.vec2.y=v.x*0.5;
-
-	f=v2i.vec2.GetLength();
-
-	return f;
+	f=test.vpi.vec2.GetCeil(1).GetLength();
+	test.vec3.x=f*2;
+	test.vec3.y=test.vpi.vec2.x;
+	test.vec3.z=test.vpi.vec2.y;
+	return test.vec3;
 }

@@ -8,8 +8,8 @@ int main()
 	ButiScript::Compiler driver;
 	std::shared_ptr< ButiScript::CompiledData> data=std::make_shared<ButiScript::CompiledData>();
 	bool compile_result=true;
-	ButiEngine::Vector2 v = ButiEngine::Vector2(50,25);
-	float f = v.GetLength();
+
+
 	{
 		driver.RegistDefaultSystems();
 		compile_result = driver.Compile("input.bs", *data);
@@ -22,8 +22,8 @@ int main()
 		ButiScript::VirtualCPU machine(data);
 		machine.Initialize();
 		machine.AllocGlobalValue();
-		auto retunCode = machine.Execute<int>("main");
-		std::cout << "return : " << retunCode << std::endl;
+		auto retunCode = machine.Execute<ButiEngine::Vector3>("main");
+		std::cout << "return : " << std::to_string(retunCode) << std::endl;
 		std::system("pause");
 	}
 

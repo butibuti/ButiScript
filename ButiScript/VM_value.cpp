@@ -4,13 +4,24 @@
 
 
 std::vector<ButiScript::CreateMemberInstanceFunction> vec_createMemberInstanceFunction;
-ButiScript::Value::Value(ScriptClassInfo& arg_info)	{
-	std::vector<IValue*> vec_members;
+
+ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
+	std::vector<ButiScript::IValue*> vec_members;
 	int memberSize = arg_info.GetMemberSize();
 	for (int i = 0; i < memberSize; i++) {
-		vec_members.push_back(vec_createMemberInstanceFunction[arg_info.GetMemberTypeIndex(i)]());
+		auto typeIndex = arg_info.GetMemberTypeIndex(i);
+		if (typeIndex < vec_createMemberInstanceFunction.size()) {
+			vec_members.push_back(vec_createMemberInstanceFunction[typeIndex]());
+		}
+		else {
+			vec_members.push_back(GetScriptIValue(p_vec_scriptClassInfo->at(typeIndex- vec_createMemberInstanceFunction.size()),p_vec_scriptClassInfo));
+		}
 	}
-	v_ = new Value_wrap<ScriptClassInfo>(&arg_info, vec_members, 1);
+	return new ButiScript::Value_wrap<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
+}
+ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
+	
+	v_ = GetScriptIValue(arg_info,p_vec_scriptClassInfo);
 	valueType = arg_info.GetTypeIndex();
 }
 
