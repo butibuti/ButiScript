@@ -472,10 +472,17 @@ public:
 
 	void ValueCopy(IValue* p_other) const override {
 
+		*p_other =* Clone();
 	}
 
 	IValue* Clone()const {
-		return nullptr;
+		std::vector<IValue*> vec_clonedMember;
+		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
+		for (int i = 0; i < memberSize; i++) {
+			vec_clonedMember.push_back(ary_p_member[i]->Clone());
+		}
+
+		return new Value_wrap<ScriptClassInfo>((ScriptClassInfo*)p_instance, vec_clonedMember,1);
 	}
 
 	void Nagative()override {

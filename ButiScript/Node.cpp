@@ -10,6 +10,8 @@
 #endif
 #include "Node.h"
 #include "compiler.h"
+
+
 namespace ButiScript {
 bool CanTypeCast(const int arg_left, const int arg_right) {
 	if (arg_left == TYPE_STRING || arg_right == TYPE_STRING) {
@@ -1161,7 +1163,9 @@ const ValueTag* Node_value::GetValueTag(Compiler* c) const{
 
 	if (op_ != OP_IDENTIFIER) {
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+		return nullptr;
 	}
+
 	else {
 
 		std::string  valueName;
@@ -1756,17 +1760,17 @@ int Declaration::Analyze(Compiler* c)
 }
 
 // 関数の解析
-int Function::Analyze(Compiler* c) 
+int Function::Analyze(Compiler* c, FunctionTable* funcTable)
 {
 
-	c->AddFunction(valueType, name_, args_, block_);
+	c->AddFunction(valueType, name_, args_, block_,funcTable);
 
 	return 0;
 }
 
-int Function::Regist(Compiler* c)
+int Function::Regist(Compiler* c, FunctionTable* funcTable)
 {
-	c->RegistFunction(valueType, name_, args_, block_);
+	c->RegistFunction(valueType, name_, args_, block_,funcTable);
 	return 0;
 }
 
@@ -1884,16 +1888,18 @@ int Node_Method::Push(Compiler* c) const
 		std::for_each(node_list_->args_.begin(), node_list_->args_.end(), set_arg(c, methodTag));
 	}
 
-	left_->Push(c);
 
-	// 引数の数をpush
-	c->PushConstInt(argSize);
+	left_->Push(c);
 
 
 	if (methodTag->IsSystem()) {
+		// 引数の数をpush
+		c->PushConstInt(argSize);
 		c->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
 	}
 	else {
+		// 引数の数+thisをpush
+		c->PushConstInt(argSize+1);
 		c->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
 	}
 
@@ -1969,5 +1975,43 @@ void Enum::Analyze(Compiler* c)
 	for (auto itr = map_identifer.begin(); itr != end; itr++) {
 		tag->SetValue(itr->first, itr->second);
 	}
+}
+int Class::Analyze(Compiler* c)
+{
+	c->RegistScriptType(name_, map_values);
+	auto typeTag = c->GetType(name_);
+	auto methodTable = &typeTag->methods;
+	auto end = vec_methods.end();
+	for (auto itr = vec_methods.begin(); itr != end; itr++) {
+		(*itr)->Regist(c, methodTable);
+	}
+	vec_methods.clear();
+	return 0;
+}
+int Class::AnalyzeMethod(Compiler* c)
+{
+	auto typeTag = c->GetType(name_);
+	auto methodTable = &typeTag->methods;
+	auto end = vec_methods.end();
+	c->SetCurrentThisType(typeTag);
+	for (auto itr = vec_methods.begin(); itr != end; itr++) {
+		(*itr)->Analyze(c,methodTable);
+	}
+	c->SetCurrentThisType(nullptr);
+	vec_methods.clear();
+	return 0;
+}
+int Class::Regist(Compiler* c)
+{
+	return 0;
+}
+void Class::RegistMethod(Function_t method, Compiler* c)
+{
+	vec_methods.push_back(method);
+	
+}
+void Class::SetValue(const std::string& arg_name, const int arg_type)
+{
+	map_values.emplace(arg_name, arg_type);
 }
 }

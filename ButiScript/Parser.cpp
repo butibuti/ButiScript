@@ -228,6 +228,42 @@ struct make_function_impl {
 	}
 };
 
+//クラスの生成
+struct make_class_impl {
+	template < typename Ty2>
+	struct result { typedef Class_t type; };
+
+	template <typename Ty2>
+	Class_t operator()(const Ty2& name) const
+	{
+		return Class_t(new Class(name));
+	}
+};
+
+//メンバ変数の生成
+struct make_classMember_impl {
+	template < typename Ty1, typename Ty2>
+	struct result { typedef void type; };
+
+	template < typename Ty1, typename Ty2>
+	void operator()(Ty1 shp_class, const Ty2& type_and_name) const
+	{
+		shp_class->SetValue(type_and_name.second, type_and_name.first);
+	}
+};
+
+//std::pairの生成
+struct make_pair_impl {
+	template < typename Ty1, typename Ty2>
+	struct result { typedef std::pair<Ty1,Ty2> type; };
+
+	template < typename Ty1, typename Ty2>
+	std::pair<Ty1, Ty2> operator()(const Ty1 index, const Ty2& name) const
+	{
+		return {index,name};
+	}
+};
+
 //列挙型の生成
 struct make_enum_impl {
 	template < typename Ty2>
@@ -287,6 +323,28 @@ struct regist_impl {
 		decl->Regist(driver);
 	}
 };
+// メソッド登録
+struct registMethod_impl {
+	template <typename Ty1, typename Ty2, typename Ty3>
+	struct result { typedef void type; };
+
+	template <typename Ty1, typename Ty2, typename Ty3>
+	void operator()(const Ty1& decl, Ty2 type, Ty3 driver) const
+	{
+		type->RegistMethod(decl, driver);
+	}
+};
+// メソッド解析
+struct analyzeMethod_impl {
+	template <typename Ty1, typename Ty2>
+	struct result { typedef void type; };
+
+	template <typename Ty1, typename Ty2>
+	void operator()( Ty1 type, Ty2 driver) const
+	{
+		type->AnalyzeMethod( driver);
+	}
+};
 
 //名前空間からの離脱
 struct pop_nameSpace_impl {
@@ -338,13 +396,18 @@ phoenix::function<make_decl1_impl> const make_decl1 = make_decl1_impl();
 phoenix::function<arg_ref_impl> const arg_ref = arg_ref_impl();
 phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
+phoenix::function<make_class_impl> const make_class = make_class_impl();
+phoenix::function<make_classMember_impl> const make_classMember = make_classMember_impl();
 phoenix::function<add_enum_impl> const add_enum = add_enum_impl();
 phoenix::function<make_enum_impl> const make_enum = make_enum_impl();
 phoenix::function<make_namespace_impl> const make_namespace = make_namespace_impl();
+phoenix::function<make_pair_impl> const make_pair = make_pair_impl();
 phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
 phoenix::function<specificType_impl> const specificType = specificType_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
+phoenix::function<registMethod_impl> const registMethod = registMethod_impl();
+phoenix::function<analyzeMethod_impl> const analyzeMethod = analyzeMethod_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
 phoenix::function<call_namespace_impl> const functionCall_namespace = call_namespace_impl();
 
@@ -410,6 +473,16 @@ namespace ButiClosure {
 		member2 type;
 		member3 name;
 	};
+	// クラスメンバ定義のクロージャ
+	struct classMember_val : closure<classMember_val,std::pair< int,std::string>,std::string> {
+		member1 type_and_name;
+		member2 name;
+	};
+	// クラス定義のクロージャ
+	struct class_val : closure<class_val, Class_t, std::string> {
+		member1 Class;
+		member2 name;
+	};
 
 	struct enum_val : closure<enum_val, Enum_t> {
 		member1 enum_t;
@@ -445,8 +518,10 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
+		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
+		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
 		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,arg,decl_func,callMemberValue ,block,input,ident;
+			and_expr,expr,assign,argument,statement,arg,decl_func,callMember ,block,input,ident;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -505,7 +580,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				'(' >> !argument >> ')';
 
 			//メンバ変数呼び出し
-			callMemberValue = Value >> "."
+			callMember = Value >> "."
 				>> identifier
 				>> !('(' >> !argument >> ')')
 				>> *("." >>
@@ -514,7 +589,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 					);
 
 			// 計算のprimeノード
-			prime =callMemberValue
+			prime =callMember
 				|func_node
 				| Value
 				| floatNumber
@@ -577,7 +652,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				("|=", OP_OR_ASSIGN)
 				("<<=", OP_LSHIFT_ASSIGN)
 				(">>=", OP_RSHIFT_ASSIGN);
-			assign = (callMemberValue|Value)
+			assign = (callMember|Value)
 				>> assign_op
 				>> expr;
 
@@ -612,6 +687,15 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *(statement
 					| decl_value)
 				>> '}';
+
+			//クラスのメンバー定義
+			decl_classMember = identifier[decl_classMember.name=arg1] >> ':' >> type[decl_classMember.type_and_name=make_pair( arg1,decl_classMember.name)] >> ';';
+
+			//クラス定義
+			define_class = "class" >> identifier[define_class.Class= make_class(arg1)] >> "{" >>
+				*(decl_classMember[make_classMember(define_class.Class,arg1)]
+					| function[registMethod(arg1,define_class.Class, self.driver_)])
+				>> "}";
 			// 文
 			statement = ch_p(';')
 				| assign >> ';'
@@ -629,7 +713,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				| str_p("for")>> '('
 				>> !(assign) >> ';'
 				>> expr >> ';'
-				>> !(assign|| func_node|| callMemberValue) >> ')'
+				>> !(assign|| func_node|| callMember) >> ')'
 				>> statement
 
 				| str_p("while") >> '('
@@ -641,19 +725,21 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *statement
 				>> '}'
 				| func_node >> ';'
-				| callMemberValue >>';'
+				| callMember >>';'
 				| block
 				;
 
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(Enum[analyze(arg1, self.driver_)]
+				>> *(define_class[analyze(arg1,self.driver_)]
+					|Enum[analyze(arg1, self.driver_)]
 					|function[regist(arg1, self.driver_)]
 					| decl_func
 					| decl_value[analyze(arg1, self.driver_)]
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
-			input = *(Enum[analyze(arg1,self.driver_)]
+			input = *(define_class[analyze(arg1, self.driver_)]
+				|Enum[analyze(arg1,self.driver_)]
 				|function[regist(arg1, self.driver_)]
 				| decl_func
 				| decl_value[analyze(arg1, self.driver_)]
@@ -685,7 +771,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::type_val::context_t>		type;
 		rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
-		rule<ScannerT, ButiClosure::callmember_val::context_t> callMemberValue;
+		rule<ScannerT, ButiClosure::callmember_val::context_t> callMember;
 		rule<ScannerT, ButiClosure::node_val::context_t>		prime;
 		rule<ScannerT, ButiClosure::node_val::context_t>		unary;
 		rule<ScannerT, ButiClosure::node_val::context_t>		mul_expr;
@@ -699,6 +785,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::nodelist_val::context_t>	argument;
 		rule<ScannerT, ButiClosure::state_val::context_t>	statement;
 		rule<ScannerT, ButiClosure::func_val::context_t>		function;
+		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		rule<ScannerT, ButiClosure::type_val::context_t>		arg;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_func;
@@ -706,7 +793,7 @@ struct script_grammer : public grammar<script_grammer> {
 		rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		rule<ScannerT>							input, Enum;
+		rule<ScannerT>							input, Enum,decl_classMember;
 		rule<ScannerT>							ident;
 
 		symbols<> keywords;
@@ -765,18 +852,18 @@ struct script_grammer : public grammar<script_grammer> {
 
 
 			//メンバ呼び出し
-			callMemberValue =Value[ callMemberValue.valueNode=arg1]>>"."
-				>> identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.valueNode,arg1, self.driver_)]
-				>>!(ch_p('(' )[callMemberValue.memberNode = unary_node(OP_METHOD, callMemberValue.memberNode)]>> !argument[callMemberValue.memberNode = binary_node(OP_METHOD, callMemberValue.memberNode, arg1)] >> ')')
+			callMember =Value[ callMember.valueNode=arg1]>>"."
+				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode,arg1, self.driver_)]
+				>>!(ch_p('(' )[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode)]>> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 				>>* (".">> 
-					identifier[callMemberValue.memberNode = binary_node_comp(OP_MEMBER, callMemberValue.memberNode, arg1, self.driver_)]  >>  
-					!(ch_p('(')[callMemberValue.memberNode = unary_node(OP_METHOD, callMemberValue.memberNode)] >> !argument[callMemberValue.memberNode = binary_node(OP_METHOD, callMemberValue.memberNode, arg1)] >> ')')
+					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.driver_)]  >>  
+					!(ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 					)
 				
 				;
 
 			// 計算のprimeノード
-			prime = callMemberValue[prime.node = arg1]
+			prime = callMember[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
@@ -839,7 +926,7 @@ struct script_grammer : public grammar<script_grammer> {
 				("|=", OP_OR_ASSIGN)
 				("<<=", OP_LSHIFT_ASSIGN)
 				(">>=", OP_RSHIFT_ASSIGN);
-			assign = (callMemberValue[assign.node = arg1]|Value[assign.node = arg1] )
+			assign = (callMember[assign.node = arg1]|Value[assign.node = arg1] )
 				>> assign_op[assign.Op = arg1]
 				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
 
@@ -869,6 +956,14 @@ struct script_grammer : public grammar<script_grammer> {
 				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
 				':' >> type[function.node = set_functionType(function.node, arg1)]
 				>> block[function.node = push_back(function.node, arg1)];
+
+			//クラスのメンバー定義
+			decl_classMember= Value >> ':' >> type >> ';';
+
+			//クラス定義
+			define_class = "class" >> identifier[define_class.Class = make_class(arg1)]>> "{" >>
+				*(decl_classMember| function[registMethod(arg1, define_class.Class, self.driver_)])
+				>>"}";
 
 			// 文ブロック
 			block = ch_p('{')[block.node = construct_<Block_t>(new_<Block>())]
@@ -906,21 +1001,23 @@ struct script_grammer : public grammar<script_grammer> {
 				>> '{'
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
-				| callMemberValue[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
+				| callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 
 
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(Enum
+				>> *(define_class[analyzeMethod(arg1,self.driver_)]
+					|Enum
 					|function[analyze(arg1, self.driver_)]
 					| decl_func[analyze(arg1, self.driver_)]
 					| decl_value
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
-			input = *(Enum
+			input = *(define_class[analyzeMethod(arg1, self.driver_)]
+				|Enum
 				|function[analyze(arg1, self.driver_)]
 				| decl_func[analyze(arg1, self.driver_)]
 				| decl_value

@@ -542,8 +542,8 @@ namespace ButiScript {
 
 	// à¯êî
 
-	// ä÷êî
 
+	// ä÷êî
 	class Function {
 	public:
 		Function(const std::string& arg_name)
@@ -561,8 +561,8 @@ namespace ButiScript {
 			block_ = block;
 		}
 
-		int Analyze(Compiler* c);
-		int Regist(Compiler* c);
+		int Analyze(Compiler* c,FunctionTable* funcTable=nullptr);
+		int Regist(Compiler* c, FunctionTable* funcTable = nullptr);
 		void set_type(const int arg_type) {
 			valueType = arg_type;
 		}
@@ -574,6 +574,26 @@ namespace ButiScript {
 		Block_t block_;
 	};
 	using Function_t = std::shared_ptr<Function>;
+
+	class Class {
+	public:
+		Class(const std::string& arg_name)
+			: name_(arg_name)
+		{
+		}
+		int Analyze(Compiler* c);
+		int Regist(Compiler* c);
+		int AnalyzeMethod(Compiler* c);
+		void RegistMethod(Function_t method, Compiler* c);
+		void SetValue(const std::string& arg_name, const int arg_type);
+	private:
+		std::map<std::string, int> map_values;
+		std::vector<Function_t> vec_methods;
+		std::string name_;
+	};
+	using Class_t = std::shared_ptr<Class>;
+
+
 
 	//óÒãìå^
 

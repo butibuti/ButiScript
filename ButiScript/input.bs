@@ -1,17 +1,51 @@
+
+
+class Vector2PlusInt{
+	vec2:Vector2;
+	i:int;
+}
+class TestStruct{
+	vec3:Vector3;
+	vpi:Vector2PlusInt;
+}
+
+class TestClass{
+	test:TestStruct;
+	vec:Vector2;
+
+	TestClassMethod(i:int):void{
+		print("TestClassMethod called!"+EndL());
+		print(ToString(this.vec)+EndL());
+	}
+}
 main():float
 {
-
-	var v:Vector2;
 	var f:float;
-	var test:TestStruct;
-	v.x=50;
-	v.y=12;
-	test.vpi.vec2=v;
-	test.vpi.vec2.y=v.x*0.25;
+	var test:TestClass;
 
-	f=test.vpi.vec2.GetCeil(1).GetLength();
-	test.vec3.x=f*2;
-	test.vec3.y=test.vpi.vec2.x;
-	test.vec3.z=test.vpi.vec2.y;
-	return test.vec3;
+	test=GetTestClass();
+
+	f=test.test.vpi.vec2.GetCeil(1).GetLength();
+	test.test.vec3.x=f*2;
+	test.test.vec3.y=test.test.vpi.vec2.x;
+	test.test.vec3.z=test.test.vpi.vec2.y;
+
+	test.TestClassMethod(12);
+
+	return test.test.vec3;
+}
+
+GetTestClass():TestClass{
+	var output:TestClass;
+
+	
+	output.vec.x=50;
+	output.vec.y=12;
+	output.test.vpi.vec2=output.vec;
+	output.test.vpi.vec2.y=output.vec.x*0.25;
+
+	return output;
+}
+EndL():string{
+	return "\n";
 }

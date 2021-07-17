@@ -233,8 +233,8 @@ public:
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
-	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist = false);
-	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const bool isReRegist=false);
+	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable = nullptr);
+	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,FunctionTable* arg_funcTable=nullptr);
 
 	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
 	void RegistEnumType(const std::string& arg_typeName);
@@ -279,7 +279,17 @@ public:
 	}
 	//
 
+	TypeTag* GetType(const int index) {
+		return types.GetType(index);
+	}
 	const TypeTag* GetType(const int index)const {
+		return types.GetType(index);
+	}
+
+	TypeTag* GetType(const std::string& index) {
+		return types.GetType(index);
+	}
+	const TypeTag* GetType(const std::string& index)const {
 		return types.GetType(index);
 	}
 	int GetSystemTypeSize()const {
@@ -288,6 +298,17 @@ public:
 	NameSpace_t GetCurrentNameSpace()const {
 		return currentNameSpace;
 	}
+
+	const TypeTag* GetCurrentThisType()const {
+		return currentThisType;
+	}
+	TypeTag* GetCurrentThisType() {
+		return currentThisType;
+	}
+	void SetCurrentThisType(TypeTag* arg_this) {
+		currentThisType = arg_this;
+	}
+
 	// for code generator.
 #define	VM_CREATE
 #include "VM_create.h"
@@ -329,6 +350,7 @@ private:
 	FunctionTable functions;
 	TypeTable types;
 	EnumTable enums;
+	TypeTag* currentThisType = nullptr;
 	std::vector<ValueTable> variables;
 	std::vector<VMCode> statement;
 	std::vector<Label> labels;

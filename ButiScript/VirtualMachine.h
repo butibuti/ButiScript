@@ -761,7 +761,8 @@ namespace ButiScript {
 		// 引数付きリターン
 		void OpReturnV()
 		{
-			ButiScript::Value result = top(); pop();
+			ButiScript::Value result = top(); 
+			pop();
 			valueStack.resize(stack_base);		// ローカル変数排除
 			int addr = top().v_->Get<int>(); pop();
 			stack_base = top().v_->Get<int>(); pop();

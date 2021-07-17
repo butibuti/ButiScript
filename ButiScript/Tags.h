@@ -730,6 +730,12 @@ namespace ButiScript {
 			}
 			return &map_types.at(arg_typename);
 		}
+		TypeTag* GetType(const std::string& arg_typename) {
+			if (!map_types.count(arg_typename)) {
+				return nullptr;
+			}
+			return &map_types.at(arg_typename);
+		}
 
 		void RegistType(const TypeTag& arg_type) {
 

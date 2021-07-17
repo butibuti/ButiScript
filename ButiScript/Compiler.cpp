@@ -6,6 +6,7 @@
 #include "Parser.h"
 #include<direct.h>
 auto baseFunc = &ButiScript::VirtualCPU::Initialize;
+std::string thisPtrName = "this";
 
 // コンストラクタ
 ButiScript:: Compiler::Compiler()
@@ -32,8 +33,6 @@ void ButiScript::Compiler::RegistDefaultSystems()
 	RegistSystemType<ButiEngine::Vector4, TYPE_VOID + 3>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
 
 
-	RegistScriptType("Vector2PlusInt", { {"vec2",TYPE_VOID + 1} ,{"i",TYPE_INTEGER} });
-	RegistScriptType("TestStruct",{ {"vec3",TYPE_VOID + 2} ,{"vpi",TYPE_VOID + 4} });
 
 	{
 		using namespace ButiEngine;
@@ -210,7 +209,9 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, con
 		auto memberInfoEnd = arg_memberInfo.end();
 		int i = 0;
 		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; i++,itr++) {
-			
+			if (typeIndex == itr->second) {
+				error("クラス "+itr->first + "が自身と同じ型をメンバ変数として保持しています。");
+			}
 			type.map_memberIndex.emplace(itr->first, i);
 			type.map_memberType.emplace(itr->first, itr->second);
 
@@ -280,13 +281,21 @@ struct add_value {
 	}
 };
 
-void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, bool isReRegist)
+void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable )
 {
 
 	std::string functionName = currentNameSpace->GetGlobalNameString()+ name;
-	FunctionTag* tag = functions.Find_strict(functionName,args);
+	FunctionTable* p_functable;
+	if (arg_funcTable) {
+		p_functable = arg_funcTable;
+	}
+	else {
+		p_functable = &functions;
+	}
+
+	FunctionTag* tag = p_functable->Find_strict(functionName,args);
 	if (tag) {
-		if (tag->IsDefinition()&&!isReRegist) {
+		if (tag->IsDefinition()) {
 			error("関数 " + functionName + " は既に定義されています");
 			return;
 		}
@@ -301,7 +310,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		tag = functions.Add(functionName, func);
+		tag = p_functable->Add(functionName, func);
 		if (tag == nullptr)
 			error("内部エラー：関数テーブルに登録できません");
 	}
@@ -316,12 +325,19 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 	BlockIn();		// 変数スタックを増やす
 
 	// 引数リストを登録
-	auto endItr = args.rend();
 	int address = -4;
+	//メンバ関数の場合thisを引数に追加
+	if (arg_funcTable) {
+		ArgDefine argDef(GetCurrentThisType()->typeIndex, thisPtrName);
+		add_value(this, variables.back(), address)(argDef);
+		address--;
+	}
+	auto endItr = args.rend();
 	for (auto itr = args.rbegin(); itr != endItr; itr++) {
 		add_value(this, variables.back(),address)(*itr);
 		address--;
 	}
+
 
 	// 文があれば、文を登録
 	if (block) {
@@ -345,10 +361,14 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 
 }
 
-void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const bool isReRegist)
+void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,FunctionTable* arg_funcTable )
 {
 	std::string functionName = currentNameSpace->GetGlobalNameString() + name;
-	const FunctionTag* tag = functions.Find_strict(functionName,args);
+	if (!arg_funcTable) {
+		arg_funcTable = &functions;
+	}
+
+	const FunctionTag* tag = arg_funcTable->Find_strict(functionName,args);
 	if (tag) {			// 既に宣言済み
 		if (!tag->CheckArgList_strict(args)) {
 			error("関数 " + functionName + " に異なる型の引数が指定されています");
@@ -360,7 +380,7 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 		func.SetArgs(args);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		if (functions.Add(functionName, func) == 0) {
+		if (arg_funcTable->Add(functionName, func) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
