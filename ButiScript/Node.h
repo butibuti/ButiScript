@@ -550,6 +550,11 @@ namespace ButiScript {
 			: name_(arg_name)
 		{
 		}
+		Function(std::shared_ptr<Function> access,const std::string& arg_name)
+			: name_(arg_name)
+		{
+			accessType = StringToAccessModifier(access->name_);
+		}
 
 		void Add(ArgDefine arg)
 		{
@@ -571,6 +576,7 @@ namespace ButiScript {
 		int valueType;
 		std::string name_;
 		std::vector<ArgDefine> args_;
+		AccessModifier accessType=AccessModifier::Public;
 		Block_t block_;
 	};
 	using Function_t = std::shared_ptr<Function>;
@@ -585,9 +591,9 @@ namespace ButiScript {
 		int Regist(Compiler* c);
 		int AnalyzeMethod(Compiler* c);
 		void RegistMethod(Function_t method, Compiler* c);
-		void SetValue(const std::string& arg_name, const int arg_type);
+		void SetValue(const std::string& arg_name, const int arg_type,const AccessModifier accessType);
 	private:
-		std::map<std::string, int> map_values;
+		std::map < std::string, std::pair< int,AccessModifier>> map_values;
 		std::vector<Function_t> vec_methods;
 		std::string name_;
 	};

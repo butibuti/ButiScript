@@ -6,6 +6,14 @@ namespace ButiScript {
 
 	class Compiler;
 	class TypeTable;
+
+	enum class AccessModifier {
+		Public, Private,Protected
+	};
+
+
+	AccessModifier StringToAccessModifier(const std::string& arg_modifierStr);
+
 	// 引数
 	class ArgDefine {
 	public:
@@ -399,7 +407,12 @@ namespace ButiScript {
 		bool IsSystem() const { return (flags_ & flag_system) != 0; }
 		const std::string& GetName() const{ return name; }
 		inline std::string GetNameWithArgment(const TypeTable& arg_typeTable)const;
-
+		AccessModifier GetAccessType()const {
+			return accessType;
+		}
+		void SetAccessType(AccessModifier arg_modifier) {
+			accessType = arg_modifier;
+		}
 		void FileOutput(std::ofstream& arg_fOut)const {
 			arg_fOut.write((char*)&valueType, sizeof(valueType));
 			arg_fOut.write((char*)&flags_, sizeof(flags_));
@@ -438,6 +451,7 @@ namespace ButiScript {
 		int		index_ = 0;
 		std::vector<unsigned char>	args_;
 		std::string name;
+		AccessModifier accessType;
 	};
 
 	class FunctionTable {
@@ -655,6 +669,12 @@ namespace ButiScript {
 		std::vector<int> vec_memberTypes;
 		std::string className;
 	};
+	struct MemberValueInfo {
+		int index;
+		int type;
+		AccessModifier access;
+	};
+
 	struct TypeTag {
 		TypeTag() {}
 
@@ -669,10 +689,8 @@ namespace ButiScript {
 		//引数記号
 		std::string argName;
 
-		//メンバ変数へのアクセス名とインデックス
-		std::map<std::string, int> map_memberIndex;
-		//メンバ変数へのアクセス名と型
-		std::map<std::string, int> map_memberType;
+		//メンバ変数
+		std::map<std::string, MemberValueInfo> map_memberValue;
 		//メソッド
 		FunctionTable methods;
 
@@ -691,9 +709,10 @@ namespace ButiScript {
 			output.SetClassName(typeName); 
 			output.SetTypeIndex(typeIndex);
 			std::vector<int> vec_types;
-			vec_types.resize(map_memberIndex.size());
-			for (auto itr = map_memberIndex.begin(); itr != map_memberIndex.end(); itr++) {
-				vec_types[itr->second] = map_memberType.at(itr->first);
+			vec_types.resize(map_memberValue.size());
+			auto end = map_memberValue.end();
+			for (auto itr = map_memberValue.begin(); itr !=end ; itr++) {
+				vec_types[itr->second.index] =itr->second.type;
 			}
 
 			output.SetMemberTypes(vec_types);

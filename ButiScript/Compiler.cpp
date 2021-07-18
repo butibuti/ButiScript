@@ -8,6 +8,25 @@
 auto baseFunc = &ButiScript::VirtualCPU::Initialize;
 std::string thisPtrName = "this";
 
+namespace AccessModifierStr {
+std::string publicStr = "public";
+std::string protectedStr = "protected";
+std::string privateStr = "private";
+}
+ButiScript::AccessModifier ButiScript::StringToAccessModifier(const std::string& arg_modifierStr)
+{
+	if (arg_modifierStr == AccessModifierStr::publicStr) {
+		return AccessModifier::Public;
+	}
+	if (arg_modifierStr == AccessModifierStr::privateStr) {
+		return AccessModifier::Private;
+	}
+	if (arg_modifierStr == AccessModifierStr::protectedStr) {
+		return AccessModifier::Protected;
+	}
+	return AccessModifier::Public;
+}
+
 // コンストラクタ
 ButiScript:: Compiler::Compiler()
 	: break_index(-1), error_count(0)
@@ -186,7 +205,7 @@ struct Define_value {
 	}
 };
 
-void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, const std::map<std::string, int>& arg_memberInfo)
+void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo)
 {
 	TypeTag type;
 	int typeIndex = types.GetSize();
@@ -209,11 +228,11 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, con
 		auto memberInfoEnd = arg_memberInfo.end();
 		int i = 0;
 		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; i++,itr++) {
-			if (typeIndex == itr->second) {
+			if (typeIndex == itr->second.first) {
 				error("クラス "+itr->first + "が自身と同じ型をメンバ変数として保持しています。");
 			}
-			type.map_memberIndex.emplace(itr->first, i);
-			type.map_memberType.emplace(itr->first, itr->second);
+			MemberValueInfo info = { i ,itr->second.first,itr->second.second };
+			type.map_memberValue.emplace(itr->first, info);
 
 		}
 	}
@@ -281,7 +300,7 @@ struct add_value {
 	}
 };
 
-void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable )
+void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const AccessModifier access, FunctionTable* arg_funcTable )
 {
 
 	std::string functionName = currentNameSpace->GetGlobalNameString()+ name;
@@ -361,7 +380,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 
 }
 
-void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,FunctionTable* arg_funcTable )
+void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable )
 {
 	std::string functionName = currentNameSpace->GetGlobalNameString() + name;
 	if (!arg_funcTable) {
@@ -380,6 +399,7 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 		func.SetArgs(args);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
+		func.SetAccessType(access);
 		if (arg_funcTable->Add(functionName, func) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
@@ -729,28 +749,14 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		for (int j=0; j < typeMapSize;j++) {
 			int size =0;
 			std::string typeNameStr;
-			int typeIndex;
+			MemberValueInfo memberInfo;
 			fIn.read((char*)&size, sizeof(size));
 			char* p_strBuff = (char*)malloc(size);
 			free(p_strBuff);
 			fIn.read(p_strBuff, size);
 			typeNameStr = std::string(p_strBuff,size);
-			fIn.read((char*)&typeIndex, sizeof(typeIndex));
-			typeTag.map_memberType.emplace(typeNameStr, typeIndex);
-		}
-		fIn.read((char*)&typeMapSize, sizeof(typeMapSize));
-		
-		for (int j=0; j < typeMapSize; j++) {
-			int size = 0;
-			std::string typeNameStr;
-			int typeIndex;
-			fIn.read((char*)&size, sizeof(size));
-			char* p_strBuff = (char*)malloc(size);
-			free(p_strBuff);
-			fIn.read(p_strBuff, size);
-			typeNameStr = std::string(p_strBuff, size);
-			fIn.read((char*)&typeIndex, sizeof(typeIndex));
-			typeTag.map_memberIndex.emplace(typeNameStr, typeIndex);
+			fIn.read((char*)&memberInfo, sizeof(memberInfo));
+			typeTag.map_memberValue.emplace(typeNameStr, memberInfo);
 		}
 
 		typeTag.methods.FileInput(fIn);
@@ -857,19 +863,10 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 
 		fOut.write((char*)&p_type->typeIndex, sizeof(p_type->typeIndex));
 
-		int typeMapSize = p_type->map_memberType.size();
+		int typeMapSize = p_type->map_memberValue.size();
 		fOut.write((char*)&typeMapSize, sizeof(typeMapSize));
-		auto end = p_type->map_memberType.end();
-		for (auto itr = p_type->map_memberType.begin(); itr != end; itr++) {
-			int size = itr->first.size();
-			fOut.write((char*)&size, sizeof(size));
-			fOut.write(itr->first.c_str(), size);
-			fOut.write((char*)&itr->second, sizeof(itr->second));
-		}
-		typeMapSize = p_type->map_memberIndex.size();
-		fOut.write((char*)&typeMapSize, sizeof(typeMapSize));
-		end = p_type->map_memberIndex.end();
-		for (auto itr = p_type->map_memberIndex.begin(); itr != end; itr++) {
+		auto end = p_type->map_memberValue.end();
+		for (auto itr = p_type->map_memberValue.begin(); itr != end; itr++) {
 			int size = itr->first.size();
 			fOut.write((char*)&size, sizeof(size));
 			fOut.write(itr->first.c_str(), size);

@@ -1763,14 +1763,14 @@ int Declaration::Analyze(Compiler* c)
 int Function::Analyze(Compiler* c, FunctionTable* funcTable)
 {
 
-	c->AddFunction(valueType, name_, args_, block_,funcTable);
+	c->AddFunction(valueType, name_, args_, block_,accessType,funcTable);
 
 	return 0;
 }
 
 int Function::Regist(Compiler* c, FunctionTable* funcTable)
 {
-	c->RegistFunction(valueType, name_, args_, block_,funcTable);
+	c->RegistFunction(valueType, name_, args_, block_, accessType, funcTable);
 	return 0;
 }
 
@@ -1792,8 +1792,12 @@ int Node_Member::Push(Compiler* c) const
 	else {
 		left_->Push(c);
 		auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
-		c->PushMemberRef(typeTag->map_memberIndex.at(string_));
-		return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
+		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
+			c->error(typeTag->typeName+"の" + string_ + "にアクセス出来ません");
+		}
+
+		c->PushMemberRef(typeTag->map_memberValue.at(string_).index);
+		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
 	}
 	return -1;
 }
@@ -1805,8 +1809,11 @@ int Node_Member::PushClone(Compiler* c) const
 	else {
 		left_->Push(c);
 		auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
-		c->PushMember(typeTag->map_memberIndex.at(string_)); 
-		return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
+		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
+			c->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
+		}
+		c->PushMember(typeTag->map_memberValue.at(string_).index);
+		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
 
 	}
 	return -1;
@@ -1820,11 +1827,14 @@ int Node_Member::Pop(Compiler* c) const
 
 		//型
 		auto typeTag = c->GetType(left_->GetType(c));
+		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
+			c->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
+		}
 		left_->Push(c);
 
-		c->PopMember(typeTag->map_memberIndex.at(string_));
+		c->PopMember(typeTag->map_memberValue.at(string_).index);
 
-		return   typeTag->map_memberType.at(string_) & ~TYPE_REF;
+		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
 		
 	}
 	return TYPE_INTEGER;
@@ -1842,7 +1852,7 @@ int Node_Member::GetType(Compiler* c) const
 				//型
 				auto typeTag = c->GetType(left_->GetType(c));
 
-				return typeTag->map_memberType.at(string_);
+				return typeTag->map_memberValue.at(string_).type;
 			}
 		}
 	}
@@ -1868,7 +1878,10 @@ int Node_Method::Push(Compiler* c) const
 
 	typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
 	methodTag = typeTag->methods.Find(string_, argTypes);
+	if (methodTag->accessType != AccessModifier::Public&&c->GetCurrentThisType()!=typeTag) {
 
+		c->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
+	}
 
 	if (methodTag == nullptr) {
 		std::string message = "";
@@ -1993,11 +2006,11 @@ int Class::AnalyzeMethod(Compiler* c)
 	auto typeTag = c->GetType(name_);
 	auto methodTable = &typeTag->methods;
 	auto end = vec_methods.end();
-	c->SetCurrentThisType(typeTag);
+	c->PushCurrentThisType(typeTag);
 	for (auto itr = vec_methods.begin(); itr != end; itr++) {
 		(*itr)->Analyze(c,methodTable);
 	}
-	c->SetCurrentThisType(nullptr);
+	c->PopCurrentThisType();
 	vec_methods.clear();
 	return 0;
 }
@@ -2010,8 +2023,9 @@ void Class::RegistMethod(Function_t method, Compiler* c)
 	vec_methods.push_back(method);
 	
 }
-void Class::SetValue(const std::string& arg_name, const int arg_type)
+void Class::SetValue(const std::string& arg_name, const int arg_type, const AccessModifier accessType)
 {
-	map_values.emplace(arg_name, arg_type);
+	std::pair<int, AccessModifier> v = { arg_type,accessType };
+	map_values.emplace(arg_name,v);
 }
 }

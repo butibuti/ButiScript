@@ -56,6 +56,13 @@ typedef functor_parser<error_parser> error_p;
 // 文法エラー処理パーサー
 error_p syntax_error_p = error_parser("文法エラー");
 
+//メンバ変数の情報
+struct MemberValue {
+	int type;
+	std::string name;
+	AccessModifier accessType;
+};
+
 // 単項演算子ノードを生成する
 struct unary_node_impl {
 	template <typename Ty1, typename Ty2>
@@ -227,6 +234,17 @@ struct make_function_impl {
 		return Function_t(new Function(name));
 	}
 };
+// 関数の生成
+struct make_functionWithAccess_impl {
+	template < typename Ty1, typename Ty2>
+	struct result { typedef Function_t type; };
+
+	template < typename Ty1, typename Ty2>
+	Function_t operator()(Ty1 accessNameFunction, const Ty2& name) const
+	{
+		return Function_t(new Function(accessNameFunction,name));
+	}
+};
 
 //クラスの生成
 struct make_class_impl {
@@ -248,7 +266,7 @@ struct make_classMember_impl {
 	template < typename Ty1, typename Ty2>
 	void operator()(Ty1 shp_class, const Ty2& type_and_name) const
 	{
-		shp_class->SetValue(type_and_name.second, type_and_name.first);
+		shp_class->SetValue(type_and_name.name, type_and_name.type, type_and_name.accessType);
 	}
 };
 
@@ -261,6 +279,18 @@ struct make_pair_impl {
 	std::pair<Ty1, Ty2> operator()(const Ty1 index, const Ty2& name) const
 	{
 		return {index,name};
+	}
+};
+
+//MemberValueの生成
+struct make_memberValue_impl {
+	template < typename Ty1, typename Ty2,typename Ty3>
+	struct result { typedef MemberValue type; };
+
+	template < typename Ty1, typename Ty2, typename Ty3>
+	MemberValue operator()(const Ty1 index, const Ty2& name,const Ty3 accessType) const
+	{
+		return { index,name,accessType };
 	}
 };
 
@@ -323,6 +353,20 @@ struct regist_impl {
 		decl->Regist(driver);
 	}
 };
+
+//アクセス指定子特定
+struct accessModifier_impl {
+	template <typename Ty1, typename Ty2, typename Ty3>
+	struct result { typedef std::string type; };
+
+	template <typename Ty1, typename Ty2, typename Ty3>
+	std::string operator()(const Ty1& modifierStr,Ty2& ref_accesModifier,const Ty3& ret) const
+	{
+		ref_accesModifier= StringToAccessModifier(modifierStr);
+		return ret;
+	}
+};
+
 // メソッド登録
 struct registMethod_impl {
 	template <typename Ty1, typename Ty2, typename Ty3>
@@ -370,6 +414,7 @@ struct	specificType_impl {
 	}
 };
 
+
 // 最終登録
 struct analyze_impl {
 	template <typename Ty1, typename Ty2>
@@ -396,14 +441,17 @@ phoenix::function<make_decl1_impl> const make_decl1 = make_decl1_impl();
 phoenix::function<arg_ref_impl> const arg_ref = arg_ref_impl();
 phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
+phoenix::function<make_functionWithAccess_impl> const make_functionWithAccess = make_functionWithAccess_impl();
 phoenix::function<make_class_impl> const make_class = make_class_impl();
 phoenix::function<make_classMember_impl> const make_classMember = make_classMember_impl();
 phoenix::function<add_enum_impl> const add_enum = add_enum_impl();
 phoenix::function<make_enum_impl> const make_enum = make_enum_impl();
 phoenix::function<make_namespace_impl> const make_namespace = make_namespace_impl();
 phoenix::function<make_pair_impl> const make_pair = make_pair_impl();
+phoenix::function<make_memberValue_impl> const make_memberValue = make_memberValue_impl();
 phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
 phoenix::function<specificType_impl> const specificType = specificType_impl();
+phoenix::function<accessModifier_impl> const specificAccessModifier = accessModifier_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<registMethod_impl> const registMethod = registMethod_impl();
@@ -474,9 +522,10 @@ namespace ButiClosure {
 		member3 name;
 	};
 	// クラスメンバ定義のクロージャ
-	struct classMember_val : closure<classMember_val,std::pair< int,std::string>,std::string> {
-		member1 type_and_name;
+	struct classMember_val : closure<classMember_val, MemberValue,std::string, AccessModifier> {
+		member1 memberValue;
 		member2 name;
+		member3 accessModifier;
 	};
 	// クラス定義のクロージャ
 	struct class_val : closure<class_val, Class_t, std::string> {
@@ -677,7 +726,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> !str_p("[]")[argdef.node = arg_ref(argdef.node)];
 
 			// 関数定義
-			function = identifier[function.node = make_function(arg1)]
+			function = identifier[function.node = make_function(arg1)]>>!identifier[function.node = make_functionWithAccess(function.node,arg1)]
 				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
 				':' >> type[function.node = set_functionType(function.node, arg1)]
 				>> block;
@@ -687,9 +736,9 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 				>> *(statement
 					| decl_value)
 				>> '}';
-
 			//クラスのメンバー定義
-			decl_classMember = identifier[decl_classMember.name=arg1] >> ':' >> type[decl_classMember.type_and_name=make_pair( arg1,decl_classMember.name)] >> ';';
+			decl_classMember = identifier[decl_classMember.name = arg1]>> !identifier[decl_classMember.name= specificAccessModifier(decl_classMember.name,decl_classMember.accessModifier, arg1)]
+				>> ':' >> type[decl_classMember.memberValue= make_memberValue( arg1,decl_classMember.name,decl_classMember.accessModifier)] >> ';';
 
 			//クラス定義
 			define_class = "class" >> identifier[define_class.Class= make_class(arg1)] >> "{" >>
@@ -952,17 +1001,18 @@ struct script_grammer : public grammar<script_grammer> {
 				>> !str_p("[]")[argdef.node = arg_ref(argdef.node)];
 
 			// 関数定義
-			function = identifier[function.node = make_function(arg1)]
+			function = identifier[function.node = make_function(arg1)]>>!(identifier[function.node = make_functionWithAccess(function.node, arg1)])
 				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
 				':' >> type[function.node = set_functionType(function.node, arg1)]
 				>> block[function.node = push_back(function.node, arg1)];
 
+
 			//クラスのメンバー定義
-			decl_classMember= Value >> ':' >> type >> ';';
+			decl_classMember= identifier>> (!identifier) >> ':' >> type >> ';';
 
 			//クラス定義
 			define_class = "class" >> identifier[define_class.Class = make_class(arg1)]>> "{" >>
-				*(decl_classMember| function[registMethod(arg1, define_class.Class, self.driver_)])
+				*(decl_classMember|  function[registMethod(arg1, define_class.Class, self.driver_)])
 				>>"}";
 
 			// 文ブロック

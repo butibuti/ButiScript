@@ -217,8 +217,8 @@ public:
 					error("組み込み型のメンバ変数の指定が間違っています");
 				}
 				auto memberTypeIndex = types.GetArgmentKeyMap().at(typeSplited[1]);
-				type.map_memberIndex.emplace(typeSplited[0], i);
-				type.map_memberType.emplace(typeSplited[0], memberTypeIndex);
+				MemberValueInfo info = { i,memberTypeIndex ,AccessModifier::Public };
+				type.map_memberValue.emplace(typeSplited[0], info);
 
 			}
 		}
@@ -226,15 +226,15 @@ public:
 		//スクリプト定義の型がメンバとして利用する型の登録
 		PushCreateMemberInstance<T>();
 	}
-	void RegistScriptType(const std::string& arg_typeName,  const std::map<std::string, int>& arg_memberInfo);
+	void RegistScriptType(const std::string& arg_typeName,  const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo);
 	const std::vector<TypeTag* >& GetSystemTypes()const {
 		return types.GetSystemType();
 	}
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
-	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable = nullptr);
-	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,FunctionTable* arg_funcTable=nullptr);
+	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const AccessModifier access, FunctionTable* arg_funcTable = nullptr);
+	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable=nullptr);
 
 	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
 	void RegistEnumType(const std::string& arg_typeName);
@@ -300,13 +300,23 @@ public:
 	}
 
 	const TypeTag* GetCurrentThisType()const {
-		return currentThisType;
+		if (!vec_thisType.size()) {
+			return nullptr;
+		}
+
+		return  vec_thisType.back();
 	}
 	TypeTag* GetCurrentThisType() {
-		return currentThisType;
+		if (!vec_thisType.size()) {
+			return nullptr;
+		}
+		return vec_thisType.back();
 	}
-	void SetCurrentThisType(TypeTag* arg_this) {
-		currentThisType = arg_this;
+	void PushCurrentThisType(TypeTag* arg_this) {
+		vec_thisType.push_back(arg_this);
+	}
+	void PopCurrentThisType() {
+		vec_thisType.pop_back();
 	}
 
 	// for code generator.
@@ -350,7 +360,7 @@ private:
 	FunctionTable functions;
 	TypeTable types;
 	EnumTable enums;
-	TypeTag* currentThisType = nullptr;
+	std::vector< TypeTag*> vec_thisType ;
 	std::vector<ValueTable> variables;
 	std::vector<VMCode> statement;
 	std::vector<Label> labels;
