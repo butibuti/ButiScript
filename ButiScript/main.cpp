@@ -22,7 +22,7 @@ int main()
 		ButiScript::VirtualCPU machine(data);
 		machine.Initialize();
 		machine.AllocGlobalValue();
-		auto retunCode = machine.Execute<ButiEngine::Vector3>("main");
+		auto retunCode = machine.Execute<ButiEngine::Vector2>("main");
 		std::cout << "return : " << std::to_string(retunCode) << std::endl;
 		std::system("pause");
 	}

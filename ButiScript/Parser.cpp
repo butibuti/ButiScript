@@ -58,9 +58,17 @@ error_p syntax_error_p = error_parser("文法エラー");
 
 //メンバ変数の情報
 struct MemberValue {
+	MemberValue(const int arg_index,const std::string& arg_name,const AccessModifier arg_accessType) {
+		type= arg_index;
+		name = arg_name;
+		if ((int)arg_accessType <= (int)AccessModifier::Protected && (int)arg_accessType >= (int)AccessModifier::Public) {
+			accessType = arg_accessType;
+		}
+	}
+	MemberValue(){}
 	int type;
 	std::string name;
-	AccessModifier accessType;
+	AccessModifier accessType=AccessModifier::Public;
 };
 
 // 単項演算子ノードを生成する
@@ -290,7 +298,7 @@ struct make_memberValue_impl {
 	template < typename Ty1, typename Ty2, typename Ty3>
 	MemberValue operator()(const Ty1 index, const Ty2& name,const Ty3 accessType) const
 	{
-		return { index,name,accessType };
+		return MemberValue(index, name, accessType);
 	}
 };
 
@@ -549,9 +557,265 @@ namespace ButiClosure {
 	};
 }
 
-// 関数、グローバル変数登録
-struct Regist_grammer : public grammar<Regist_grammer> {
-	Regist_grammer(Compiler* driver)
+//型登録
+struct typeRegist_grammer : public grammar<typeRegist_grammer> {
+	typeRegist_grammer(Compiler* driver)
+		:driver_(driver)
+	{
+	}
+	Compiler* driver_;
+	template <typename ScannerT>
+	struct definition {
+		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
+		rule<ScannerT, ButiClosure::type_val::context_t>		type;
+		rule<ScannerT, ButiClosure::func_val::context_t>		function;
+		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
+		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
+		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
+		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
+		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
+		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
+		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
+		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
+		rule<ScannerT>	string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
+			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident;
+
+		symbols<> keywords;
+		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
+		dynamic_distinct_parser<ScannerT> keyword_p;
+
+		definition(typeRegist_grammer const& self)
+			:keyword_p(alnum_p | '_')
+		{
+			using phoenix::arg1;
+			using phoenix::arg2;
+			using phoenix::var;
+			using phoenix::new_;
+			using phoenix::construct_;
+
+			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace";
+
+
+			// 識別子
+			ident = lexeme_d[
+				((alpha_p | '_') >> *(alnum_p | '_')) - (keywords >> anychar_p - (alnum_p | '_'))
+			];
+			// 識別子（クロージャに登録）
+			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
+
+
+			Enum = "enum" >> identifier[Enum.enum_t = make_enum(arg1)] >> "{" >>
+				!identifier[add_enum(Enum.enum_t, arg1)]
+				>> *(',' >> identifier[add_enum(Enum.enum_t, arg1)]) >>
+				"}";
+
+			//整数
+			number = uint_p;
+
+			//浮動小数
+			floatNumber = strict_real_p;
+
+			// 文字列
+			string_node = lexeme_d[
+				confix_p(ch_p('"'), *c_escape_ch_p, '"')
+			];
+
+
+			//名前空間からの呼び出し
+			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
+
+			// 変数
+			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
+				identifier[Value.node = unary_node(OP_IDENTIFIER, arg1)];
+
+			// 関数の引数
+			argument = expr
+				>> *(',' >> expr);
+
+			// 関数呼び出し
+			func_node = *(identifier >> "::") >> identifier >>
+				'(' >> !argument >> ')';
+
+			//メンバ変数呼び出し
+			callMember = Value >> "."
+				>> identifier
+				>> !('(' >> !argument >> ')')
+				>> *("." >>
+					identifier >>
+					!('(' >> !argument >> ')')
+					);
+
+			// 計算のprimeノード
+			prime = callMember
+				| func_node
+				| Value
+				| floatNumber
+				| number
+				| string_node
+				| '(' >> expr >> ')'
+				;
+
+			// 単項演算子
+			unary = prime
+				| '-' >> prime;
+
+			// 二項演算子（*, /, %）
+			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
+			mul_expr = unary
+				>> *(mul_op
+					>> unary);
+
+			// 二項演算子（+, -）
+			add_op.add("+", OP_ADD)("-", OP_SUB);
+			add_expr = mul_expr
+				>> *(add_op
+					>> mul_expr);
+
+			// 二項演算子（<<, >>）
+			shift_op.add("<<", OP_LSHIFT)(">>", OP_RSHIFT);
+			shift_expr = add_expr
+				>> *(shift_op
+					>> add_expr);
+
+			// 二項演算子（&, |）
+			bit_op.add("&", OP_AND)("|", OP_OR);
+			bit_expr = shift_expr
+				>> *(bit_op
+					>> shift_expr);
+
+			// 二項演算子（比較）
+			equ_op.add("==", OP_EQ)("!=", OP_NE)(">=", OP_GE)(">", OP_GT)("<=", OP_LE)("<", OP_LT);
+			equ_expr = bit_expr
+				>> !(equ_op
+					>> bit_expr);
+
+			// 二項演算子（&&）
+			and_expr = equ_expr
+				>> *("&&" >> equ_expr);
+
+			// 二項演算子（||）
+			expr = and_expr
+				>> *("||" >> and_expr);
+
+			// 代入
+			assign_op.add
+			("=", OP_ASSIGN)
+				("+=", OP_ADD_ASSIGN)
+				("-=", OP_SUB_ASSIGN)
+				("*=", OP_MUL_ASSIGN)
+				("/=", OP_DIV_ASSIGN)
+				("%=", OP_MOD_ASSIGN)
+				("&=", OP_AND_ASSIGN)
+				("|=", OP_OR_ASSIGN)
+				("<<=", OP_LSHIFT_ASSIGN)
+				(">>=", OP_RSHIFT_ASSIGN);
+			assign = (callMember | Value)
+				>> assign_op
+				>> expr;
+
+			// 変数宣言
+			decl_value = "var" >> Value % ',' >> ':' >> type >> ';';
+
+			// 型名
+			type = identifier >> !ch_p('&');
+
+			// 関数宣言の引数
+			arg = identifier >> ':'
+				>> type
+				>> !str_p("[]");
+
+			// 関数宣言
+			decl_func = identifier
+				>> '(' >> !(arg % ',') >> ')' >> ":" >> type >> ';';
+
+			// 関数定義の引数
+			argdef = identifier >> ':'
+				>> type
+				>> !str_p("[]");
+
+			// 関数定義
+			function = identifier >> !identifier
+				>> '(' >> !(argdef% ',') >> ')' >>
+				':' >> type
+				>> block;
+
+			// 文ブロック
+			block = ch_p('{')
+				>> *(statement
+					| decl_value)
+				>> '}';
+			//クラスのメンバー定義
+			decl_classMember = identifier >> !identifier
+				>> ':' >> type >> ';';
+
+			//クラス定義
+			define_class = "class" >> identifier[define_class.Class = make_class(arg1)] >> "{" >>
+				*(decl_classMember
+					| function)
+				>> "}";
+			// 文
+			statement = ch_p(';')
+				| assign >> ';'
+				| str_p("case") >> expr >> ':'
+				| str_p("default") >> ':'
+				| str_p("break") >> ';'
+				| str_p("return")
+				>> !expr >> ';'
+				| str_p("if")
+				>> '(' >> expr >> ')'
+				>> statement
+				>> !("else"
+					>> statement)
+
+				| str_p("for") >> '('
+				>> !(assign) >> ';'
+				>> expr >> ';'
+				>> !(assign || func_node || callMember) >> ')'
+				>> statement
+
+				| str_p("while") >> '('
+				>> expr >> ')'
+				>> statement
+				| str_p("switch") >> '('
+				>> expr >> ')'
+				>> '{'
+				>> *statement
+				>> '}'
+				| func_node >> ';'
+				| callMember >> ';'
+				| block
+				;
+
+			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
+				>> *(define_class[regist(arg1, self.driver_)]
+					| Enum[analyze(arg1, self.driver_)]
+					| function
+					| decl_func
+					| decl_value
+					| nameSpace[popNameSpace(self.driver_)]) >> "}";
+
+			// 入力された構文
+			input = *(define_class[regist(arg1, self.driver_)]
+				| Enum[analyze(arg1, self.driver_)]
+				| function
+				| decl_func
+				| decl_value
+				| nameSpace[popNameSpace(self.driver_)]
+				| syntax_error_p
+				);
+		}
+
+		rule<ScannerT> const& start() const
+		{
+			return input;
+		}
+	};
+};
+
+
+// 関数、グローバル変数登録、クラス解析
+struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_grammer> {
+	registFunc_classAnalyze_grammer(Compiler* driver)
 		:driver_(driver)
 	{
 	}
@@ -576,7 +840,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
 		dynamic_distinct_parser<ScannerT> keyword_p;
 
-		definition(Regist_grammer const& self)
+		definition(registFunc_classAnalyze_grammer const& self)
 			:keyword_p(alnum_p | '_')
 		{
 			using phoenix::arg1;
@@ -596,9 +860,9 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
 
 
-			Enum = "enum">>identifier[Enum.enum_t= make_enum(arg1)] >> "{" >>
-				!identifier[add_enum(Enum.enum_t,arg1)]
-				>> *(',' >> identifier[add_enum(Enum.enum_t, arg1)])>>
+			Enum = "enum">>identifier >> "{" >>
+				!identifier
+				>> *(',' >> identifier)>>
 				"}";
 
 			//整数
@@ -780,7 +1044,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
 				>> *(define_class[analyze(arg1,self.driver_)]
-					|Enum[analyze(arg1, self.driver_)]
+					|Enum
 					|function[regist(arg1, self.driver_)]
 					| decl_func
 					| decl_value[analyze(arg1, self.driver_)]
@@ -788,7 +1052,7 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 
 			// 入力された構文
 			input = *(define_class[analyze(arg1, self.driver_)]
-				|Enum[analyze(arg1,self.driver_)]
+				|Enum
 				|function[regist(arg1, self.driver_)]
 				| decl_func
 				| decl_value[analyze(arg1, self.driver_)]
@@ -804,9 +1068,9 @@ struct Regist_grammer : public grammar<Regist_grammer> {
 	};
 };
 
-// 文法定義
-struct script_grammer : public grammar<script_grammer> {
-	script_grammer(Compiler* driver)
+// 関数解析
+struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
+	funcAnalyze_grammer(Compiler* driver)
 		:driver_(driver)
 	{
 	}
@@ -849,7 +1113,7 @@ struct script_grammer : public grammar<script_grammer> {
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
 		dynamic_distinct_parser<ScannerT> keyword_p;
 
-		definition(script_grammer const& self)
+		definition(funcAnalyze_grammer const& self)
 			:keyword_p(alnum_p | '_')
 		{
 			using phoenix::arg1;
@@ -1137,10 +1401,17 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 	iterator_t end;
 	begin.set_tabchars(4);	// tab=4に設定
 
-	script_grammer	gr(driver);
-	Regist_grammer	gr_regist(driver);
+	funcAnalyze_grammer	gr(driver);
+	registFunc_classAnalyze_grammer	gr_regist(driver);
+	typeRegist_grammer	gr_typeRegist(driver);
 	skip_parser skip_p;
-	parse_info<iterator_t> info = parse(begin, end, gr_regist, skip_p);
+	parse_info<iterator_t> info = parse(begin, end, gr_typeRegist, skip_p);
+	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
+		driver->error("構文解析失敗");
+		return false;
+	}
+	
+	info = parse(begin, end, gr_regist, skip_p);
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
 		driver->error("構文解析失敗");
 		return false;

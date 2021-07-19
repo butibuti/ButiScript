@@ -323,7 +323,17 @@ namespace ButiScript {
 			v->GetMember(arg_index)->Set(*top().v_); pop();
 		}
 		void PopMember() {
-			PopMember( Value_Int());
+			PopMember(Value_Int());
+		}
+		//ƒƒ“ƒo•Ï”‚ÉPop(QÆ)
+		void PopMemberRef(const int arg_index)
+		{
+			auto v = top().v_;
+			pop();
+			v->SetMember(top().v_, arg_index); pop();
+		}
+		void PopMemberRef() {
+			PopMemberRef(Value_Int());
 		}
 
 		// ”z—ñ•Ï”‚ÉPop

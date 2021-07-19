@@ -161,7 +161,11 @@ public:
 	}
 
 	void SetMember(IValue* arg_v,const int index) {
+		if (ary_p_member[index]) {
+			ary_p_member[index]->release();
+		}
 		ary_p_member[index] = arg_v;
+		ary_p_member[index]->addref();
 	}
 
 	template <typename T> bool Equal(const T& arg_v)const {
@@ -479,7 +483,12 @@ public:
 		std::vector<IValue*> vec_clonedMember;
 		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
 		for (int i = 0; i < memberSize; i++) {
-			vec_clonedMember.push_back(ary_p_member[i]->Clone());
+			if (ary_memberType[i] & TYPE_REF) {
+				vec_clonedMember.push_back(ary_p_member[i]);
+			}
+			else {
+				vec_clonedMember.push_back(ary_p_member[i]->Clone());
+			}
 		}
 
 		return new Value_wrap<ScriptClassInfo>((ScriptClassInfo*)p_instance, vec_clonedMember,1);

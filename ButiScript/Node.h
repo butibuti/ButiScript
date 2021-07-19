@@ -549,6 +549,7 @@ namespace ButiScript {
 		Function(const std::string& arg_name)
 			: name_(arg_name)
 		{
+			accessType = AccessModifier::Public;
 		}
 		Function(std::shared_ptr<Function> access,const std::string& arg_name)
 			: name_(arg_name)

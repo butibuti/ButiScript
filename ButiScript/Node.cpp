@@ -1830,9 +1830,15 @@ int Node_Member::Pop(Compiler* c) const
 		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
 			c->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
 		}
+		
 		left_->Push(c);
-
-		c->PopMember(typeTag->map_memberValue.at(string_).index);
+		auto type = typeTag->map_memberValue.at(string_).type;
+		if (type & TYPE_REF) {
+			c->PopMemberRef(typeTag->map_memberValue.at(string_).index);
+		}
+		else {
+			c->PopMember(typeTag->map_memberValue.at(string_).index);
+		}
 
 		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
 		
@@ -1991,7 +1997,7 @@ void Enum::Analyze(Compiler* c)
 }
 int Class::Analyze(Compiler* c)
 {
-	c->RegistScriptType(name_, map_values);
+	c->AnalyzeScriptType(name_, map_values);
 	auto typeTag = c->GetType(name_);
 	auto methodTable = &typeTag->methods;
 	auto end = vec_methods.end();
@@ -2016,6 +2022,7 @@ int Class::AnalyzeMethod(Compiler* c)
 }
 int Class::Regist(Compiler* c)
 {
+	c->RegistScriptType(name_);
 	return 0;
 }
 void Class::RegistMethod(Function_t method, Compiler* c)

@@ -10,11 +10,18 @@ ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::
 	int memberSize = arg_info.GetMemberSize();
 	for (int i = 0; i < memberSize; i++) {
 		auto typeIndex = arg_info.GetMemberTypeIndex(i);
-		if (typeIndex < vec_createMemberInstanceFunction.size()) {
-			vec_members.push_back(vec_createMemberInstanceFunction[typeIndex]());
+		//’l‚Ì¶¬
+		if (! (typeIndex & TYPE_REF) ){
+			if (typeIndex < vec_createMemberInstanceFunction.size()) {
+				vec_members.push_back(vec_createMemberInstanceFunction[typeIndex]());
+			}
+			else {
+				vec_members.push_back(GetScriptIValue(p_vec_scriptClassInfo->at(typeIndex - vec_createMemberInstanceFunction.size()), p_vec_scriptClassInfo));
+			}
 		}
+		//ŽQÆŒ^
 		else {
-			vec_members.push_back(GetScriptIValue(p_vec_scriptClassInfo->at(typeIndex- vec_createMemberInstanceFunction.size()),p_vec_scriptClassInfo));
+			vec_members.push_back(nullptr);
 		}
 	}
 	return new ButiScript::Value_wrap<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);

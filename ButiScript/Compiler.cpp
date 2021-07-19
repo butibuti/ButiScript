@@ -205,12 +205,28 @@ struct Define_value {
 	}
 };
 
-void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo)
+void ButiScript::Compiler::AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo)
 {
+	auto typeTag = GetType(arg_typeName);
+	if (arg_memberInfo.size()) {
+		auto memberInfoEnd = arg_memberInfo.end();
+		int i = 0;
+		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; i++,itr++) {
+			if (typeTag->typeIndex == itr->second.first) {
+				error("クラス "+itr->first + "が自身と同じ型をメンバ変数として保持しています。");
+			}
+			MemberValueInfo info = { i ,itr->second.first,itr->second.second };
+			typeTag->map_memberValue.emplace(itr->first, info);
+
+		}
+	}
+}
+
+void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
+{
+
 	TypeTag type;
 	int typeIndex = types.GetSize();
-	//type.typeFunc = &VirtualCPU::pushValue;
-	//type.refTypeFunc = &VirtualCPU::pushValue;
 	type.isSystem = false;
 	long long int address = *(long long int*) & type.typeFunc;
 	map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
@@ -224,18 +240,7 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName, con
 	type.typeIndex = typeIndex;
 	type.argName = arg_typeName;
 
-	if (arg_memberInfo.size()) {
-		auto memberInfoEnd = arg_memberInfo.end();
-		int i = 0;
-		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; i++,itr++) {
-			if (typeIndex == itr->second.first) {
-				error("クラス "+itr->first + "が自身と同じ型をメンバ変数として保持しています。");
-			}
-			MemberValueInfo info = { i ,itr->second.first,itr->second.second };
-			type.map_memberValue.emplace(itr->first, info);
 
-		}
-	}
 	types.RegistType(type);
 }
 

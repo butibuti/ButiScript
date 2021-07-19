@@ -451,7 +451,7 @@ namespace ButiScript {
 		int		index_ = 0;
 		std::vector<unsigned char>	args_;
 		std::string name;
-		AccessModifier accessType;
+		AccessModifier accessType = AccessModifier::Public;
 	};
 
 	class FunctionTable {
@@ -672,7 +672,7 @@ namespace ButiScript {
 	struct MemberValueInfo {
 		int index;
 		int type;
-		AccessModifier access;
+		AccessModifier access = AccessModifier::Public;
 	};
 
 	struct TypeTag {

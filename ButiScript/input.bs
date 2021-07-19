@@ -1,48 +1,53 @@
 
 
-class Vector2PlusInt{
-	public vec2:Vector2;
-	i:int;
-}
-class TestStruct{
-	public vec3:Vector3;
-	public vpi:Vector2PlusInt;
-}
-
 class TestClass{
-	public test:TestStruct;
-	private vec:Vector2;
+	vec:Vector2;
+	private vv:Vec2Vec3;
+	public ref_f:float&;
+
 	public TestClassMethod(i:int):void{
 		print("TestClassMethod called!"+EndL());
+
+		this.vv.vec3.x=this.ref_f*10;
+		this.vv.vec3.y=this.ref_f*12;
+		this.vv.vec3.z=this.ref_f*13;
+
 		this.PrivateMethod();
 		print(ToString(this.vec)+EndL());
 	}
+
 	private PrivateMethod():void{
-		print("private!"+EndL());
+		print(ToString(this.vv.vec3)+EndL());
 	}
+
 	SetVec(arg_v:Vector2):void{
 		this.vec=arg_v;
 	}
 }
-main():float
+
+class Vec2Vec3{
+	vec2:Vector2;
+	vec3:Vector3;
+}
+main():Vector2
 {
 	var f:float;
 	var test:TestClass;
-
 	test=GetTestClass();
 
-	test.TestClassMethod(12);
+	test.ref_f=f;
+	f=20;
 
-	return test.test.vec3;
+	test.vec.x=test.ref_f;
+
+	test.TestClassMethod(144);
+
+	return test.vec;
 }
 
 GetTestClass():TestClass{
 	var output:TestClass;
 
-	var v:Vector2;
-	v.x=20;
-	v.y=30;
-	output.SetVec(v);
 	return output;
 }
 EndL():string{

@@ -226,7 +226,8 @@ public:
 		//スクリプト定義の型がメンバとして利用する型の登録
 		PushCreateMemberInstance<T>();
 	}
-	void RegistScriptType(const std::string& arg_typeName,  const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo);
+	void AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo);
+	void RegistScriptType(const std::string& arg_typeName);
 	const std::vector<TypeTag* >& GetSystemTypes()const {
 		return types.GetSystemType();
 	}
