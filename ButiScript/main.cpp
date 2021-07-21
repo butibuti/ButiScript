@@ -12,6 +12,8 @@ int main()
 
 	{
 		driver.RegistDefaultSystems();
+		driver.RegistSystemType<Sample, TYPE_VOID + 4>("Sample", "Sample", "");
+		driver.DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "Sample");
 		compile_result = driver.Compile("input.bs", *data);
 		driver.OutputCompiledData("output/compiled.cbs", *data);
 	}

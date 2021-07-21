@@ -3,7 +3,7 @@
 class TestClass{
 	vec:Vector2;
 	private vv:Vec2Vec3;
-	public ref_f:float&;
+	private ref_f:float&;
 
 	public TestClassMethod(i:int):void{
 		print("TestClassMethod called!"+EndL());
@@ -13,7 +13,6 @@ class TestClass{
 		this.vv.vec3.z=this.ref_f*13;
 
 		this.PrivateMethod();
-		print(ToString(this.vec)+EndL());
 	}
 
 	private PrivateMethod():void{
@@ -22,6 +21,10 @@ class TestClass{
 
 	SetVec(arg_v:Vector2):void{
 		this.vec=arg_v;
+	}
+
+	SetRef_f(arg_f:float&):void{
+		this.ref_f=arg_f;
 	}
 }
 
@@ -33,14 +36,14 @@ main():Vector2
 {
 	var f:float;
 	var test:TestClass;
+	var s:Sample;
 	test=GetTestClass();
 
-	test.ref_f=f;
-	f=20;
-
-	test.vec.x=test.ref_f;
-
+	test.SetRef_f(f);
+	f=50;
 	test.TestClassMethod(144);
+
+	print(ToString(s)+EndL());
 
 	return test.vec;
 }

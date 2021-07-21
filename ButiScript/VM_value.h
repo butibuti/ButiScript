@@ -8,6 +8,20 @@
 #include"Tags.h"
 #include"../../Header/Common/ButiMath.h"
 
+class Sample {
+public:
+
+private:
+	int i;
+};
+using Sample_t = std::shared_ptr<Sample>;
+
+namespace std {
+template <typename T>
+static std::string to_string(const T&) {
+	return "このクラスはto_string()に対応していません";
+	}
+}
 ////////////////////////////////
 ////テンプレート継承の実装用マクロ////
 ////////////////////////////////
@@ -110,7 +124,6 @@ template <> std::string get_value_stub()const {\
 	return std::to_string(*( Type *)p_instance);\
 }\
 template <typename U> void set_value_stub(const U& arg_v) {\
-	*(std::string*)p_instance = std::to_string(arg_v);\
 }\
 template <>void set_value_stub(const  Type & arg_v) {\
 	*( Type *)p_instance = (arg_v);\
@@ -218,6 +231,7 @@ protected:
 			RegistGet(ButiEngine::Vector2);
 			RegistGet(ButiEngine::Vector3);
 			RegistGet(ButiEngine::Vector4);
+			RegistGet(Sample);
 		};
 	template <typename Class, typename Super = IValue>
 	struct get_ref_t : public Super::get_ref_base_t {
@@ -232,6 +246,7 @@ protected:
 			RegistGetRef(ButiEngine::Vector2);
 			RegistGetRef(ButiEngine::Vector3);
 			RegistGetRef(ButiEngine::Vector4);
+			RegistGetRef(Sample);
 		};
 	template <typename Class, typename Super = IValue>
 	struct set_value_t : public Super::set_value_base_t {
@@ -246,6 +261,7 @@ protected:
 			RegistSet(ButiEngine::Vector3);
 			RegistSet(ButiEngine::Vector4);
 			RegistSetRef(std::string);
+			RegistSetRef(Sample);
 
 		};
 	template <typename Class, typename Super = IValue>
@@ -261,6 +277,7 @@ protected:
 			RegistEq(ButiEngine::Vector3);
 			RegistEq(ButiEngine::Vector4);
 			RegistEq(std::string);
+			RegistEq(Sample);
 
 		};
 	template <typename Class, typename Super = IValue>
@@ -276,6 +293,7 @@ protected:
 			RegistGt(ButiEngine::Vector3);
 			RegistGt(ButiEngine::Vector4);
 			RegistGt(std::string);
+			RegistGt(Sample);
 		};
 	template <typename Class, typename Super = IValue>
 	struct ge_t : public Super::ge_base_t {
@@ -290,6 +308,7 @@ protected:
 			RegistGe(ButiEngine::Vector3);
 			RegistGe(ButiEngine::Vector4);
 			RegistGe(std::string);
+			RegistGe(Sample);
 
 		};
 
@@ -367,22 +386,27 @@ class Value_wrap : public IValue {
 			return new Value_wrap<T>(*(T*)p_instance, 1);
 		}
 
-		void Nagative() override {
-			*(T*)p_instance = -1 * (*(T*)p_instance);
-		}
-
 		bool Eq(IValue* p_other)const override {
 			return p_other->Equal(*(T*)p_instance);
 		}
 		bool Gt(IValue* p_other)const override {
-			return !p_other->GreaterEq(*(T*)p_instance);
-		}
-		bool Ge(IValue* p_other)const override {
 			return !p_other->GreaterThan(*(T*)p_instance);
 		}
+		bool Ge(IValue* p_other)const override {
+			return !p_other->GreaterEq(*(T*)p_instance);
+		}
+
 		void ValueCopy(IValue* p_other) const override {
 			p_other->Set<T>(*(T*)p_instance);
 		}
+
+
+		void Nagative()override {
+			//単項マイナスはない
+			assert(0);
+
+		}
+
 
 		virtual const IValue::get_value_base_t& get_value() const {
 			static const IValue::get_value_t<Value_wrap<T>> s;
@@ -396,6 +420,7 @@ class Value_wrap : public IValue {
 			static const IValue::set_value_t<Value_wrap<T>> s;
 			return s;
 		}
+
 		virtual const IValue::eq_base_t& eq() const {
 			static const IValue::eq_t<Value_wrap<T>> s;
 			return s;
@@ -410,35 +435,36 @@ class Value_wrap : public IValue {
 		}
 
 		template <typename U> U get_value_stub()const {
-			return (U) * (T*)p_instance;
+			return U();
 		}
 		template <typename U> U& get_ref_stub() {
 			auto v = U();
 			return v;
 		}
-		template <typename U> void set_value_stub(const U& arg_v) {
-			*(T*)p_instance = (T)arg_v;
+		template <> T get_value_stub()const {
+			return (*(T*)p_instance);
 		}
-
-		// ==演算、異なる型との比較は常にfalse
-		template <typename U> bool eq_stub(const U& arg_v)const {
-			return false;
-		}
-		// ==演算
-		template <>bool eq_stub(const T& arg_v)const {
-			return  *(T*)p_instance == arg_v;
-		}
-
-
-
-		template <> T& get_ref_stub() {
-			return *(T*)p_instance;
-		}
-
 		template <> std::string get_value_stub()const {
 			return std::to_string(*(T*)p_instance);
 		}
+		template <> T& get_ref_stub() {
+			return *(T*)p_instance;
+		}
+		template <typename U> void set_value_stub(const U& arg_v) {
 
+		}
+		template <>void set_value_stub(const T& arg_v) {
+			*(T*)p_instance = (arg_v);
+		}
+
+
+		template <typename U> bool eq_stub(const U& arg_v)const {
+			return  false;
+		}
+
+		template <>bool eq_stub(const T& arg_v)const {
+			return (T*)p_instance == &arg_v;
+		}
 
 	private:
 	};
@@ -1038,6 +1064,24 @@ class Value_wrap<ButiEngine::Vector4> : public IValue {
 		RegistSpecialization(ButiEngine::Vector4);
 	};
 
+
+class Value_Shared :public IValue {
+public:
+	Value_Shared(const int v, const int ref) :IValue(ref) {
+		shp = std::make_shared<Sample>();
+	}
+
+	Sample_t Get() {
+		return shp;
+	}
+	void Set(Sample_t arg_shp) {
+		shp = arg_shp;
+	}
+
+private:
+	Sample_t shp;
+};
+
 //参照型など実体を持たない変数の初期化に使用
 struct Type_Null {};
 
@@ -1065,50 +1109,17 @@ public:
 		v_ = nullptr;
 	}
 
+	template<typename T>
+	Value(const T v) {
+		v_ = new Value_wrap<T>(v, 1);
+		valueType = TYPE_VOID;
+	}
+
 	Value(const Type_Null) {
 		v_ = nullptr;
 		valueType = TYPE_VOID;
 	}
 
-	//intとして初期化
-	Value(const int ival)
-	{
-		v_ = new Value_wrap<int>(ival,1);
-		valueType = TYPE_INTEGER;
-	}
-
-	//floatとして初期化
-	Value(const float ival)
-	{
-		v_ = new Value_wrap<float>(ival,1);
-		valueType = TYPE_FLOAT;
-	}
-
-	//stringとして初期化
-	Value(const std::string& str)
-	{
-		v_ = new Value_wrap<std::string>(str, 1);
-		valueType = TYPE_STRING;
-	}
-
-	//Vector2として初期化
-	Value(const ButiEngine::Vector2& vec2)
-	{
-		v_ = new Value_wrap<ButiEngine::Vector2>(vec2, 1);
-		valueType = TYPE_VOID + 1;
-	}
-	//Vector3として初期化
-	Value(const ButiEngine::Vector3& vec3)
-	{
-		v_ = new Value_wrap<ButiEngine::Vector3>(vec3, 1);
-		valueType = TYPE_VOID + 2;
-	}
-	//Vector4として初期化
-	Value(const ButiEngine::Vector4& vec4)
-	{
-		v_ = new Value_wrap<ButiEngine::Vector4>(vec4, 1);
-		valueType = TYPE_VOID + 3;
-	}
 	//ユーザー定義型として初期化
 	Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* arg_p_vec_scriptClassInfo);
 
@@ -1200,9 +1211,7 @@ public:
 	void SetType(const int arg_type) {
 		valueType = arg_type;
 	}
-	union {
-		IValue* v_=nullptr;
-	};
+	IValue* v_ = nullptr;
 	int valueType;
 };
 

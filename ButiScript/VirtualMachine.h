@@ -308,8 +308,7 @@ namespace ButiScript {
 		// ƒ[ƒJƒ‹•Ï”‚ÉPop
 		void PopLocal(const int arg_val)
 		{
-			auto v = top();
-			valueStack[arg_val + stack_base] = v; pop();
+			valueStack[arg_val + stack_base] = top(); pop();
 		}
 		void PopLocal() {
 			PopLocal(Value_Int());
