@@ -698,6 +698,7 @@ namespace ButiScript {
 			return methods.Add(arg_methodName, arg_method);
 		}
 		bool isSystem;
+		bool isShared=false;
 
 		ScriptClassInfo GetScriptTypeInfo()const {
 			if (isSystem) {

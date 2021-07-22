@@ -36,15 +36,19 @@ main():Vector2
 {
 	var f:float;
 	var test:TestClass;
-	var s:Sample;
+	var s:Sample_t;
+	var s1:Sample_t;
+
 	test=GetTestClass();
 
 	test.SetRef_f(f);
 	f=50;
 	test.TestClassMethod(144);
 
-	print(ToString(s)+EndL());
-
+	//print(ToString(s)+EndL());
+	s.SampleMethod();
+	s=s1;
+	s.SampleMethod();
 	return test.vec;
 }
 

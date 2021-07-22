@@ -10,7 +10,13 @@
 
 class Sample {
 public:
-
+	Sample() {
+		static int incr = 0;
+		i = incr++;
+	}
+	void SampleMethod() {
+		std::cout << "SampleMethod:"<<i << std::endl;
+	}
 private:
 	int i;
 };
@@ -141,6 +147,8 @@ template <>bool eq_stub(const  Type & arg_v)const {\
 
 namespace ButiScript {
 
+//参照型など実体を持たない変数の初期化に使用
+struct Type_Null {};
 class IValue {
 public:
 	IValue(const int arg_ref) {
@@ -232,6 +240,7 @@ protected:
 			RegistGet(ButiEngine::Vector3);
 			RegistGet(ButiEngine::Vector4);
 			RegistGet(Sample);
+			RegistGet(Type_Null);
 		};
 	template <typename Class, typename Super = IValue>
 	struct get_ref_t : public Super::get_ref_base_t {
@@ -247,6 +256,7 @@ protected:
 			RegistGetRef(ButiEngine::Vector3);
 			RegistGetRef(ButiEngine::Vector4);
 			RegistGetRef(Sample);
+			RegistGetRef(Type_Null);
 		};
 	template <typename Class, typename Super = IValue>
 	struct set_value_t : public Super::set_value_base_t {
@@ -262,7 +272,7 @@ protected:
 			RegistSet(ButiEngine::Vector4);
 			RegistSetRef(std::string);
 			RegistSetRef(Sample);
-
+			RegistSetRef(Type_Null);
 		};
 	template <typename Class, typename Super = IValue>
 	struct eq_t : public Super::eq_base_t {
@@ -278,6 +288,7 @@ protected:
 			RegistEq(ButiEngine::Vector4);
 			RegistEq(std::string);
 			RegistEq(Sample);
+			RegistEq(Type_Null);
 
 		};
 	template <typename Class, typename Super = IValue>
@@ -294,6 +305,7 @@ protected:
 			RegistGt(ButiEngine::Vector4);
 			RegistGt(std::string);
 			RegistGt(Sample);
+			RegistGt(Type_Null);
 		};
 	template <typename Class, typename Super = IValue>
 	struct ge_t : public Super::ge_base_t {
@@ -309,6 +321,7 @@ protected:
 			RegistGe(ButiEngine::Vector4);
 			RegistGe(std::string);
 			RegistGe(Sample);
+			RegistGe(Type_Null);
 
 		};
 
@@ -847,87 +860,80 @@ class Value_wrap<float> :public IValue {
 	};
 
 template<>
-class Value_wrap<std::string> : public IValue {
+class Value_wrap<Type_Null> : public IValue {
 	public:
-		Value_wrap(const std::string& v, const int ref) :IValue(ref) {
-			p_instance = new std::string(v);
+		Value_wrap(const Type_Null& v, const int ref) :IValue(ref) {
+			p_instance = new Type_Null(v);
+			assert(0);
+			//void型のオブジェクトが生成されています
 		}
 		Value_wrap(const int ref) :IValue(ref) {
-			p_instance = new std::string();
+			p_instance = new Type_Null();
+			//void型のオブジェクトが生成されています
 		}
 		~Value_wrap() override{
-			delete ((std::string*)p_instance);
+			delete ((Type_Null*)p_instance);
 		}
 
 		bool Eq(IValue* p_other)const override {
-			return p_other->Equal(*(std::string*)p_instance);
+			return p_other->Equal(*(Type_Null*)p_instance);
 		}
 		bool Gt(IValue* p_other)const override {
-			return !p_other->GreaterThan(*(std::string*)p_instance);
+			return !p_other->GreaterThan(*(Type_Null*)p_instance);
 		}
 		bool Ge(IValue* p_other)const override {
-			return !p_other->GreaterEq(*(std::string*)p_instance);
+			return !p_other->GreaterEq(*(Type_Null*)p_instance);
 		}
 
 		void ValueCopy(IValue* p_other) const override {
-			p_other->Set<std::string>(*(std::string*)p_instance);
+			p_other->Set<Type_Null>(*(Type_Null*)p_instance);
 		}
 
 		IValue* Clone()const {
-			return new Value_wrap<std::string>(*(std::string*)p_instance, 1);
+			return new Value_wrap<Type_Null>(*(Type_Null*)p_instance, 1);
 		}
 
 		void Nagative()override {
-			//文字列に単項マイナスはない
+			//単項マイナスはない
 			assert(0);
 
 		}
 
 
 		virtual const IValue::get_value_base_t& get_value() const {
-			static const IValue::get_value_t<Value_wrap<std::string>> s;
+			static const IValue::get_value_t<Value_wrap<Type_Null>> s;
 			return s;
 		}
 		virtual const IValue::get_ref_base_t& get_ref() const {
-			static const IValue::get_ref_t<Value_wrap<std::string>> s;
+			static const IValue::get_ref_t<Value_wrap<Type_Null>> s;
 			return s;
 		}
 		virtual const IValue::set_value_base_t& set_value() const {
-			static const IValue::set_value_t<Value_wrap<std::string>> s;
+			static const IValue::set_value_t<Value_wrap<Type_Null>> s;
 			return s;
 		}
 
 		virtual const IValue::eq_base_t& eq() const {
-			static const IValue::eq_t<Value_wrap<std::string>> s;
+			static const IValue::eq_t<Value_wrap<Type_Null>> s;
 			return s;
 		}
 		virtual const IValue::gt_base_t& gt() const {
-			static const IValue::gt_t<Value_wrap<std::string>> s;
+			static const IValue::gt_t<Value_wrap<Type_Null>> s;
 			return s;
 		}
 		virtual const IValue::ge_base_t& ge() const {
-			static const IValue::ge_t<Value_wrap<std::string>> s;
+			static const IValue::ge_t<Value_wrap<Type_Null>> s;
 			return s;
 		}
 
 		template <typename U> U get_value_stub()const {
-			return (U)StrConvert::ConvertString<U>(*(std::string*)p_instance);
+			return U();
 		}
 		template <typename U> U& get_ref_stub() {
 			auto v = U();
 			return v;
 		}
-		template <> std::string get_value_stub()const {
-			return (*(std::string*)p_instance);
-		}
-		template <> std::string& get_ref_stub() {
-			return *(std::string*)p_instance;
-		}
 		template <typename U> void set_value_stub(const U& arg_v) {
-			*(std::string*)p_instance = std::to_string(arg_v);
-		}
-		template <>void set_value_stub(const std::string& arg_v) {
-			*(std::string*)p_instance = (arg_v);
 		}
 
 
@@ -935,11 +941,103 @@ class Value_wrap<std::string> : public IValue {
 			return  false;
 		}
 
-		template <>bool eq_stub(const std::string& arg_v)const {
-			return *(std::string*)p_instance == arg_v;
-		}
 
 	};
+
+template<>
+class Value_wrap<std::string> : public IValue {
+public:
+	Value_wrap(const std::string& v, const int ref) :IValue(ref) {
+		p_instance = new std::string(v);
+	}
+	Value_wrap(const int ref) :IValue(ref) {
+		p_instance = new std::string();
+	}
+	~Value_wrap() override {
+		delete ((std::string*)p_instance);
+	}
+
+	bool Eq(IValue* p_other)const override {
+		return p_other->Equal(*(std::string*)p_instance);
+	}
+	bool Gt(IValue* p_other)const override {
+		return !p_other->GreaterThan(*(std::string*)p_instance);
+	}
+	bool Ge(IValue* p_other)const override {
+		return !p_other->GreaterEq(*(std::string*)p_instance);
+	}
+
+	void ValueCopy(IValue* p_other) const override {
+		p_other->Set<std::string>(*(std::string*)p_instance);
+	}
+
+	IValue* Clone()const {
+		return new Value_wrap<std::string>(*(std::string*)p_instance, 1);
+	}
+
+	void Nagative()override {
+		//文字列に単項マイナスはない
+		assert(0);
+
+	}
+
+
+	virtual const IValue::get_value_base_t& get_value() const {
+		static const IValue::get_value_t<Value_wrap<std::string>> s;
+		return s;
+	}
+	virtual const IValue::get_ref_base_t& get_ref() const {
+		static const IValue::get_ref_t<Value_wrap<std::string>> s;
+		return s;
+	}
+	virtual const IValue::set_value_base_t& set_value() const {
+		static const IValue::set_value_t<Value_wrap<std::string>> s;
+		return s;
+	}
+
+	virtual const IValue::eq_base_t& eq() const {
+		static const IValue::eq_t<Value_wrap<std::string>> s;
+		return s;
+	}
+	virtual const IValue::gt_base_t& gt() const {
+		static const IValue::gt_t<Value_wrap<std::string>> s;
+		return s;
+	}
+	virtual const IValue::ge_base_t& ge() const {
+		static const IValue::ge_t<Value_wrap<std::string>> s;
+		return s;
+	}
+
+	template <typename U> U get_value_stub()const {
+		return (U)StrConvert::ConvertString<U>(*(std::string*)p_instance);
+	}
+	template <typename U> U& get_ref_stub() {
+		auto v = U();
+		return v;
+	}
+	template <> std::string get_value_stub()const {
+		return (*(std::string*)p_instance);
+	}
+	template <> std::string& get_ref_stub() {
+		return *(std::string*)p_instance;
+	}
+	template <typename U> void set_value_stub(const U& arg_v) {
+		*(std::string*)p_instance = std::to_string(arg_v);
+	}
+	template <>void set_value_stub(const std::string& arg_v) {
+		*(std::string*)p_instance = (arg_v);
+	}
+
+
+	template <typename U> bool eq_stub(const U& arg_v)const {
+		return  false;
+	}
+
+	template <>bool eq_stub(const std::string& arg_v)const {
+		return *(std::string*)p_instance == arg_v;
+	}
+
+};
 template<>
 class Value_wrap<ButiEngine::Vector2> : public IValue {
 	public:
@@ -1064,26 +1162,69 @@ class Value_wrap<ButiEngine::Vector4> : public IValue {
 		RegistSpecialization(ButiEngine::Vector4);
 	};
 
-
+template<typename T>
 class Value_Shared :public IValue {
 public:
-	Value_Shared(const int v, const int ref) :IValue(ref) {
-		shp = std::make_shared<Sample>();
+	Value_Shared(const int ref) :IValue(ref) {
+		int i = 0;
+	}
+	Value_Shared(std::shared_ptr<T> arg_instance, const int ref) :IValue(ref) {
+		shp = arg_instance;
 	}
 
-	Sample_t Get() {
+	std::shared_ptr<T> Get() {
 		return shp;
 	}
-	void Set(Sample_t arg_shp) {
+	void Set(std::shared_ptr<T> arg_shp) {
 		shp = arg_shp;
 	}
 
+	//比較
+	bool Eq(IValue* p_other)const {return ((Value_Shared<T>*)p_other)->shp == shp;}
+	bool Gt(IValue* p_other)const {return false;}
+	bool Ge(IValue* p_other)const {return false;}
+
+	//値のコピー
+	void ValueCopy(IValue* p_other) const {
+		((Value_Shared<T>*)p_other)->shp = shp;
+	}
+
+	//変数そのもののコピー
+	IValue* Clone()const {
+		return new Value_Shared(shp, 1);
+	}
+
+	//単項マイナス
+	void Nagative() {}
+	const get_value_base_t& get_value() const {
+		static const IValue::get_value_t<Value_wrap<int>> s;
+		return s;
+
+	}
+	const get_ref_base_t& get_ref() const {
+		static const IValue::get_ref_t<Value_wrap<int>> s;
+		return s;
+	}
+	const set_value_base_t& set_value() const {
+		static const IValue::set_value_t<Value_wrap<int>> s;
+		return s;
+	}
+	const eq_base_t& eq() const {
+		static const IValue::eq_t<Value_wrap<int>> s;
+		return s;
+	}
+	const gt_base_t& gt() const {
+		static const IValue::gt_t<Value_wrap<int>> s;
+		return s;
+	}
+	const ge_base_t& ge() const {
+		static const IValue::ge_t<Value_wrap<int>> s;
+		return s;
+	}
 private:
-	Sample_t shp;
+	std::shared_ptr<T> shp=nullptr;
 };
 
-//参照型など実体を持たない変数の初期化に使用
-struct Type_Null {};
 
 template<typename T>
 IValue* CreateMemberInstance() {
@@ -1105,13 +1246,18 @@ class Value {
 public:
 	Value()
 	{
-		valueType = TYPE_VOID;
 		v_ = nullptr;
+		valueType = TYPE_VOID;
 	}
 
 	template<typename T>
 	Value(const T v) {
 		v_ = new Value_wrap<T>(v, 1);
+		valueType = TYPE_VOID;
+	}
+	template<typename T>
+	Value(std::shared_ptr<T> arg_instance) {
+		v_ = new Value_Shared<T>(arg_instance, 1);
 		valueType = TYPE_VOID;
 	}
 
@@ -1153,12 +1299,20 @@ public:
 		return *this;
 	}
 
+	static int SetTypeIndex(long long int arg_typeFunc);
+	static int GetTypeIndex(long long int arg_typeFunc);
+
 	void clear()
 	{
 		if (v_) {
 			v_->release();
 			v_ = nullptr;
 		}
+	}
+
+	template <typename T>
+	void SetSharedType() {
+		v_ = new Value_Shared<T>(1);
 	}
 
 	Value Clone() {

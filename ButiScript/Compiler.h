@@ -186,15 +186,16 @@ public:
 	/// 組み込み型の登録
 	/// </summary>
 	/// <typeparam name="T">型情報</typeparam>
-	/// <param name="arg_typeIndex">型のインデックス</param>
 	/// <param name="arg_name">型名</param>
 	/// <param name="arg_argmentName">引数に使う略名</param>
 	/// <param name="memberInfo">メンバ情報</param>
-	template <typename T,int arg_typeIndex>
-	void RegistSystemType( const std::string& arg_name,  const std::string& arg_argmentName,const std::string& memberInfo="") {
+	template <typename T>
+	void RegistSystemType(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
 		TypeTag type;
-		type.typeFunc = &VirtualCPU::pushValue<T, arg_typeIndex>;
-		type.refTypeFunc = &VirtualCPU::pushValue<Type_Null,arg_typeIndex|TYPE_REF>;
+		auto ptr = &VirtualCPU::pushValue<T>;
+		int index = Value::SetTypeIndex(*(long long int*) & (ptr));
+		type.typeFunc = &VirtualCPU::pushValue<T>;
+		type.refTypeFunc = &VirtualCPU::pushValue_ref<T>;
 		type.isSystem = true;
 		long long int address = *(long long int*) & type.typeFunc;
 		map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
@@ -205,14 +206,52 @@ public:
 		vec_refValueAllocCall.push_back(type.refTypeFunc);
 
 		type.typeName = arg_name;
-		type.typeIndex = arg_typeIndex;
+		type.typeIndex = index;
 		type.argName = arg_argmentName;
 
 		if (memberInfo.size()) {
 			auto identiferSplited = StringHelper::Split(memberInfo, ",");
 
 			for (int i = 0; i < identiferSplited.size(); i++) {
-				auto typeSplited=StringHelper::Split(identiferSplited[i], ":");
+				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
+				if (typeSplited.size() != 2) {
+					error("組み込み型のメンバ変数の指定が間違っています");
+				}
+				auto memberTypeIndex = types.GetArgmentKeyMap().at(typeSplited[1]);
+				MemberValueInfo info = { i,memberTypeIndex ,AccessModifier::Public };
+				type.map_memberValue.emplace(typeSplited[0], info);
+
+			}
+		}
+		types.RegistType(type);
+		//スクリプト定義の型がメンバとして利用する型の登録
+		PushCreateMemberInstance<T>();
+	}
+	template <typename T>
+	void RegistSharedSystemType(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
+		TypeTag type;
+		auto ptr = &VirtualCPU::pushSharedValue<T>;
+		int index=Value::SetTypeIndex(*(long long int*) & (ptr));
+		type.typeFunc = &VirtualCPU::pushSharedValue<T>;
+		type.refTypeFunc = &VirtualCPU::pushSharedValue_ref<T>;
+		type.isSystem = true;
+		long long int address = *(long long int*) & type.typeFunc;
+		map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
+		vec_valueAllocCall.push_back(type.typeFunc);
+
+		address = *(long long int*) & type.refTypeFunc;
+		map_refValueAllocCallsIndex.emplace(address, vec_refValueAllocCall.size());
+		vec_refValueAllocCall.push_back(type.refTypeFunc);
+
+		type.typeName = arg_name;
+		type.typeIndex = index;
+		type.argName = arg_argmentName;
+
+		if (memberInfo.size()) {
+			auto identiferSplited = StringHelper::Split(memberInfo, ",");
+
+			for (int i = 0; i < identiferSplited.size(); i++) {
+				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
 				if (typeSplited.size() != 2) {
 					error("組み込み型のメンバ変数の指定が間違っています");
 				}

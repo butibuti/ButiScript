@@ -32,6 +32,20 @@ ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::Scri
 	valueType = arg_info.GetTypeIndex();
 }
 
+std::map<long long int, int> map_typeIndex;
+
+int ButiScript::Value::SetTypeIndex(long long int arg_typeFunc)
+{
+	auto index = map_typeIndex.size();
+	map_typeIndex.emplace(arg_typeFunc, index);
+	return index;
+}
+
+int ButiScript::Value::GetTypeIndex(long long int arg_typeFunc)
+{
+	return map_typeIndex.at(arg_typeFunc);
+}
+
 void ButiScript::PushCreateMemberInstance(CreateMemberInstanceFunction arg_function)
 {
 	vec_createMemberInstanceFunction.push_back(arg_function);

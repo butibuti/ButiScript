@@ -918,246 +918,289 @@ namespace ButiScript {
 		
 
 		/////////////メソッド呼び出し定義////////////////
+
+		template<typename T>
+		T* GetSharedTypePtr() {
+			return &(*((Value_Shared<T>*)top().v_)->Get());
+		}
+		template<typename T>
+		T* GetTypePtr() {
+			return &(top().v_->GetRef<T>());
+		}
+
 		//組み込みメソッド(return 無し)
-		template<typename T, void(T::* Method)() >
+		template<typename T, void(T::* Method)() ,T*(VirtualCPU::*getValueFunc)() >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			((v)->*Method)();
 			pop();
 		}
-		template<typename T, void(T::* Method)() const>
+		template<typename T, void(T::* Method)() const, T* (VirtualCPU::* getValueFunc)() >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			((v)->*Method)();
 			pop();
 		}
 		//組み込みメソッド(return 有り)
-		template<typename T, typename U, U(T::* Method)() >
+		template<typename T, typename U, U(T::* Method)(), T* (VirtualCPU::* getValueFunc)() >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			U ret = ((v)->*Method)();
 			pop();
 			push(ret);
 		}
-		template<typename T, typename U, U(T::* Method)() const>
+		template<typename T, typename U, U(T::* Method)() const, T* (VirtualCPU::* getValueFunc)() >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			U ret = ((v)->*Method)();
 			pop();
 			push(ret);
 		}
 
 		//組み込みメソッド(return 無し、引数有り)
-		template<typename T, typename Arg, void(T::* Method)(Arg) const>
+		template<typename T, typename Arg, void(T::* Method)(Arg) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(arg);
 			pop();
 
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg&) const>
+		template<typename T, typename Arg, void(T::* Method)(Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg&) const>
+		template<typename T, typename Arg, void(T::* Method)(const Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg*)const >
+		template<typename T, typename Arg, void(T::* Method)(Arg*)const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(&arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg*) const>
+		template<typename T, typename Arg, void(T::* Method)(const Arg*) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(&arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg) >
+		template<typename T, typename Arg, void(T::* Method)(Arg), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(arg);
 			pop();
 
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg&) >
+		template<typename T, typename Arg, void(T::* Method)(Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg&) >
+		template<typename T, typename Arg, void(T::* Method)(const Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg*) >
+		template<typename T, typename Arg, void(T::* Method)(Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(&arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg*) >
+		template<typename T, typename Arg, void(T::* Method)(const Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			((v)->*Method)(&arg);
 			pop();
 		}
 
 		//組み込みメソッド(return 有り、引数有り)
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) const>
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
-			U ret = ((v)->*Method)(arg);
+			auto arg = ((this)->*getArgValueFunc)();
+			U ret = ((v)->*Method)(*arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) const>
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
-			U ret = ((v)->*Method)(arg);
+			auto arg = ((this)->*getArgValueFunc)();
+			U ret = ((v)->*Method)(*arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) const>
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
-			U ret = ((v)->*Method)(arg);
+			auto arg = ((this)->*getArgValueFunc)();
+			U ret = ((v)->*Method)(*arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) const>
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			U ret = ((v)->*Method)(&arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) const>
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			U ret = ((v)->*Method)(&arg);
 			pop();
 			push(ret);
 		}
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) >
-			void sys_method_ret()
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
+			U ret = ((v)->*Method)(*arg);
+			pop();
+			push(ret);
+		}
+
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		void sys_method_ret()
+		{
+			auto v = ((this)->*getValueFunc)();
+			pop();
+			auto arg = ((this)->*getArgValueFunc)();
 			U ret = ((v)->*Method)(arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) >
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()    >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			U ret = ((v)->*Method)(arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()    >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
-			U ret = ((v)->*Method)(arg);
-			pop();
-			push(ret);
-		}
-
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) >
-		void sys_method_ret()
-		{
-			auto v = &(top().v_->GetRef<T>());
-			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			U ret = ((v)->*Method)(&arg);
 			pop();
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) >
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
-			auto v = &(top().v_->GetRef<T>());
+			auto v = ((this)->*getValueFunc)();
 			pop();
-			auto arg = (top().v_->GetRef<Arg>());
+			auto arg = ((this)->*getArgValueFunc)();
 			U ret = ((v)->*Method)(&arg);
 			pop();
 			push(ret);
 		}
-		template<typename T,int typeIndex>
+
+	
+
+		template<typename T>
 		void pushValue() {
 			auto value = Value(T());
-			value.SetType(typeIndex);
+			long long int address;
+			auto ptr = &VirtualCPU::pushValue<T>;
+			address = *(long long int*) & (ptr);
+			value.SetType(Value::GetTypeIndex(address));
+			this->valueStack.push(value);
+		}
+		template<typename T>
+		void pushValue_ref() {
+			auto value = Value();
+			long long int address;
+			auto ptr = &VirtualCPU::pushValue<T>;
+			address = *(long long int*) & (ptr);
+			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
+			this->valueStack.push(value);
+		}
+		template<typename T>
+		void pushSharedValue() {
+			auto value = Value(std::make_shared<T>());
+			long long int address;
+			auto ptr = &VirtualCPU::pushSharedValue<T>;
+			address = *(long long int*) & (ptr);
+			value.SetType(Value::GetTypeIndex(address));
+			this->valueStack.push(value);
+		}
+		template<typename T>
+		void pushSharedValue_ref() {
+			auto value = Value();
+			long long int address;
+			auto ptr = &VirtualCPU::pushSharedValue<T>;
+			address = *(long long int*) & (ptr);
+			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
 			this->valueStack.push(value);
 		}
 		void pushValue(ScriptClassInfo* info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
