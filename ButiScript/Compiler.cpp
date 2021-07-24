@@ -608,6 +608,11 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_s
 	types.CreateTypeVec(Data.vec_types);
 	Data.vec_scriptClassInfo = types.GetScriptClassInfo();
 
+	for (int i = 0; i < Data.valueSize; i++) {
+		auto p_value = &variables[0][i];
+		Data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->address);
+	}
+
 	if (Data.textSize != 0) {
 		memcpy(Data.textBuffer, &text_table[0], Data.textSize);
 	}
@@ -788,6 +793,17 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 	}
 
+	for (int i = 0; i < arg_ref_data.valueSize; i++) {
+		int strSize = 0;
+		fIn.read((char*)&strSize, sizeof(int));
+		char* strBuff = (char*)malloc(strSize);
+		fIn.read(strBuff, strSize);
+		int address = 0;
+		fIn.read((char*)&address, sizeof(int));
+		arg_ref_data.map_globalValueAddress.emplace(std::string(strBuff, strSize), address);
+		free(strBuff);
+	}
+
 	int definedTypeCount = 0;
 	fIn.read((char*)&definedTypeCount, sizeof(definedTypeCount));
 	arg_ref_data.vec_scriptClassInfo.resize(definedTypeCount);
@@ -891,6 +907,13 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		fOut.write((char*)&size,sizeof(size));
 		fOut.write(itr->first.c_str(), size);
 		fOut.write((char*)&itr->second, sizeof(itr->second));
+	}
+	auto itr = arg_ref_data.map_globalValueAddress.begin();
+	for (int i = 0; i < arg_ref_data.valueSize; i++,itr++) {
+		int strSize =itr->first.size();
+		fOut.write((char*)&strSize, sizeof(int));
+		fOut.write(itr->first.c_str(), strSize);
+		fOut.write((char*)&itr->second, sizeof(int));
 	}
 
 	int defineTypeCout = arg_ref_data.vec_scriptClassInfo.size();

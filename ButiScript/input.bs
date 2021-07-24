@@ -1,62 +1,27 @@
-
-
 class TestClass{
-	vec:Vector2;
-	private vv:Vec2Vec3;
-	private ref_f:float&;
 
-	public TestClassMethod(i:int):void{
-		print("TestClassMethod called!"+EndL());
-
-		this.vv.vec3.x=this.ref_f*10;
-		this.vv.vec3.y=this.ref_f*12;
-		this.vv.vec3.z=this.ref_f*13;
-
-		this.PrivateMethod();
-	}
-
-	private PrivateMethod():void{
-		print(ToString(this.vv.vec3)+EndL());
-	}
-
-	SetVec(arg_v:Vector2):void{
-		this.vec=arg_v;
-	}
-
-	SetRef_f(arg_f:float&):void{
-		this.ref_f=arg_f;
-	}
-}
-
-class Vec2Vec3{
-	vec2:Vector2;
-	vec3:Vector3;
-}
-main():Vector2
+GetFloat():float
 {
-	var f:float;
-	var test:TestClass;
-	var s:Sample_t;
-	var s1:Sample_t;
-
-	test=GetTestClass();
-
-	test.SetRef_f(f);
-	f=50;
-	test.TestClassMethod(144);
-
-	//print(ToString(s)+EndL());
-	s.SampleMethod();
-	s=s1;
-	s.SampleMethod();
-	return test.vec;
+	return this.f_ref;
 }
 
-GetTestClass():TestClass{
-	var output:TestClass;
+SetFloatRef(f:float&):void{
+	print("arg_f:"+ToString(f)+EndL());
+	this.f_ref=f;
 
-	return output;
 }
+f_ref:float&;
+
+}
+var g_i:int;
+var g_i1:int;
+main():int
+{
+
+
+	return g_i+g_i1*2;
+}
+
 EndL():string{
 	return "\n";
 }

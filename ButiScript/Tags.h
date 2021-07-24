@@ -172,6 +172,23 @@ namespace ButiScript {
 		}
 
 		void Alloc(Compiler* arg_comp)const;
+		ValueTag& operator[] (const int index) {
+			auto itr = variables_.begin();
+			for (int i = 0; i < index; i++) {
+				itr++;
+			}
+
+			return itr->second;
+		}
+
+		const std::string& GetVariableName(const int index)const {
+			auto itr = variables_.begin();
+			for (int i = 0; i < index; i++) {
+				itr++;
+			}
+
+			return itr->first;
+		}
 
 #ifdef	_DEBUG
 		struct DumpAction {
@@ -243,14 +260,14 @@ namespace ButiScript {
 		}
 		void SetArg(const int type)
 		{
-			args_.push_back((unsigned char)type);
+			args_.push_back(type);
 		}
 
 		void SetArgs(const std::vector<ArgDefine>& args)
 		{
 			size_t size = args.size();
 			for (size_t i = 0; i < size; i++) {
-				args_.push_back((unsigned char)args[i].type());
+				args_.push_back(args[i].type());
 			}
 		}
 
@@ -258,7 +275,7 @@ namespace ButiScript {
 		{
 			size_t size = args.size();
 			for (size_t i = 0; i < size; i++) {
-				args_.push_back((unsigned char)args[i]);
+				args_.push_back(args[i]);
 			}
 		}
 
@@ -433,7 +450,7 @@ namespace ButiScript {
 			int argsSize = 0;
 			arg_fIn.read((char*)&argsSize, sizeof(argsSize));
 			for (int i = 0; i < argsSize; i++) {
-				unsigned char arg;
+				int arg;
 				arg_fIn.read((char*)&arg, sizeof(arg));
 				args_.push_back(arg);
 			}
@@ -449,7 +466,7 @@ namespace ButiScript {
 		int		valueType = 0;
 		int		flags_ = 0;
 		int		index_ = 0;
-		std::vector<unsigned char>	args_;
+		std::vector<int>	args_;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
 	};
@@ -632,6 +649,9 @@ namespace ButiScript {
 		void SetMemberTypes(const std::vector<int> arg_vec_types) {
 			vec_memberTypes = arg_vec_types;
 		}
+		void SetMemberNames(const std::vector<std::string> arg_vec_names) {
+			vec_memberName = arg_vec_names;
+		}
 		void SetClassName(const std::string& arg_className) {
 			className = arg_className;
 		}
@@ -644,6 +664,11 @@ namespace ButiScript {
 			arg_fOut.write((char*)&memberSize, sizeof(int));
 			for (int i = 0; i < memberSize; i++) {
 				arg_fOut.write((char*)&vec_memberTypes[i], sizeof(int));
+			}
+			for (int i = 0; i < memberSize; i++) {
+				int size = vec_memberName[i].size();
+				arg_fOut.write((char*)&size, sizeof(int));
+				arg_fOut.write(vec_memberName[i].c_str(), size);
 			}
 
 		}
@@ -662,11 +687,20 @@ namespace ButiScript {
 			for (int i = 0; i < memberSize; i++) {
 				arg_fIn.read((char*)&vec_memberTypes[i], sizeof(int));
 			}
+			for (int i = 0; i < memberSize; i++) {
+				int size = 0;
+				arg_fIn.read((char*)&size, sizeof(int));
+				char* nameBuff = (char*)malloc(size);
+				arg_fIn.read(nameBuff, size);
+				vec_memberName.push_back(std::string(nameBuff, size));
+				free(nameBuff);
+			}
 
 		}
 	private:
 		int typeIndex;
 		std::vector<int> vec_memberTypes;
+		std::vector<std::string> vec_memberName;
 		std::string className;
 	};
 	struct MemberValueInfo {
@@ -710,13 +744,17 @@ namespace ButiScript {
 			output.SetClassName(typeName); 
 			output.SetTypeIndex(typeIndex);
 			std::vector<int> vec_types;
+			std::vector<std::string> vec_memberNames;
 			vec_types.resize(map_memberValue.size());
+			vec_memberNames.resize(map_memberValue.size());
 			auto end = map_memberValue.end();
 			for (auto itr = map_memberValue.begin(); itr !=end ; itr++) {
-				vec_types[itr->second.index] =itr->second.type;
+				vec_types[itr->second.index] = itr->second.type;
+				vec_memberNames[itr->second.index] = itr->first;
 			}
 
 			output.SetMemberTypes(vec_types);
+			output.SetMemberNames(vec_memberNames);
 
 			return output;
 

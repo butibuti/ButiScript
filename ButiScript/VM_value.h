@@ -17,6 +17,11 @@ public:
 	void SampleMethod() {
 		std::cout << "SampleMethod:"<<i << std::endl;
 	}
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(i);
+	}
 private:
 	int i;
 };
@@ -224,6 +229,10 @@ public:
 		if (--ref_ == 0)
 			delete this;
 	}
+#ifdef IMPL_BUTIENGINE
+	virtual std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const = 0;
+	virtual void ShowGUI(const std::string& arg_label) = 0;
+#endif // IMPL_BUTIENGINE
 
 protected:
 	template <typename Class, typename Super = IValue>
@@ -369,6 +378,9 @@ protected:
 	//ÉÅÉìÉoïœêîÇÃå^
 	int* ary_memberType=nullptr;
 	bool isOuterMemoryRef = false;
+
+
+
 private:
 	int ref_ = 0;
 };
@@ -479,6 +491,14 @@ class Value_wrap : public IValue {
 			return (T*)p_instance == &arg_v;
 		}
 
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			return std::make_shared<GlobalValueSaveObject<T>>(*(T*)p_instance);
+		}
+		void ShowGUI(const std::string& arg_label) override {
+			ButiEngine::GUI::Text("GUIÇ≈ëÄçÏÇ≈Ç´Ç»Ç¢å^Ç≈Ç∑");
+		}
+#endif // IMPL_BUTIENGINE
 	private:
 	};
 
@@ -584,6 +604,21 @@ public:
 	template <typename U> bool eq_stub(const U& arg_v)const {
 		return  false;
 	}
+
+#ifdef IMPL_BUTIENGINE
+	std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+		assert(0);
+		//ÉXÉNÉäÉvÉgíËã`ÇÃå^ÇÃï€ë∂ÇÕñ¢íËã`
+		return nullptr;
+	}
+
+	void ShowGUI(const std::string& arg_label) override {
+		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
+		for (int i = 0; i < memberSize; i++) {
+			ary_p_member[i]->ShowGUI(arg_label+std::to_string(i));
+		}
+	}
+#endif // IMPL_BUTIENGINE
 };
 
 template<>
@@ -719,6 +754,15 @@ class Value_wrap<int> :public IValue {
 			return *(int*)p_instance >= (int)arg_v;
 		}
 
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			return std::make_shared<GlobalValueSaveObject<int>>(*(int*)p_instance);
+		}
+
+		void ShowGUI(const std::string& arg_label) override {
+			ButiEngine::GUI::Input(arg_label, * (int*)p_instance);
+		}
+#endif // IMPL_BUTIENGINE
 	};
 
 template<>
@@ -857,6 +901,14 @@ class Value_wrap<float> :public IValue {
 			return *(float*)p_instance >= (float)arg_v;
 		}
 
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			return std::make_shared<GlobalValueSaveObject<float>>(*(float*)p_instance);
+		}
+		void ShowGUI(const std::string& arg_label) override {
+			ButiEngine::GUI::Input(arg_label,*(float*)p_instance);
+		}
+#endif // IMPL_BUTIENGINE
 	};
 
 template<>
@@ -941,6 +993,17 @@ class Value_wrap<Type_Null> : public IValue {
 			return  false;
 		}
 
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			assert(0);
+			//éQè∆å^ÇÃï€ë∂ÇÕñ¢íËã`
+			return nullptr;
+		}
+
+		void ShowGUI(const std::string& arg_label)override {
+			ButiEngine::GUI::Text("GUIÇ≈ëÄçÏÇ≈Ç´Ç»Ç¢å^Ç≈Ç∑");
+		}
+#endif // IMPL_BUTIENGINE
 
 	};
 
@@ -1037,6 +1100,14 @@ public:
 		return *(std::string*)p_instance == arg_v;
 	}
 
+#ifdef IMPL_BUTIENGINE
+	std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+		return std::make_shared<GlobalValueSaveObject<std::string>>(*(std::string*)p_instance);
+	}
+	void ShowGUI(const std::string& arg_label)override {
+		ButiEngine::GUI::Input(arg_label, *(std::string*)p_instance);
+	}
+#endif // IMPL_BUTIENGINE
 };
 template<>
 class Value_wrap<ButiEngine::Vector2> : public IValue {
@@ -1074,6 +1145,15 @@ class Value_wrap<ButiEngine::Vector2> : public IValue {
 			}
 		}
 		RegistSpecialization(ButiEngine::Vector2);
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			return std::make_shared<GlobalValueSaveObject<ButiEngine::Vector2>>(*(ButiEngine::Vector2*)p_instance);
+		}
+
+		void ShowGUI(const std::string& arg_label)override {
+			ButiEngine::GUI::Input(arg_label, *(ButiEngine::Vector2*)p_instance);
+		}
+#endif // IMPL_BUTIENGINE
 	};
 template<>
 class Value_wrap<ButiEngine::Vector3> : public IValue {
@@ -1116,6 +1196,15 @@ class Value_wrap<ButiEngine::Vector3> : public IValue {
 			}
 		}
 		RegistSpecialization(ButiEngine::Vector3);
+
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			return std::make_shared<GlobalValueSaveObject<ButiEngine::Vector3>>(*(ButiEngine::Vector2*)p_instance);
+		}
+		void ShowGUI(const std::string& arg_label)override {
+			ButiEngine::GUI::Input(arg_label,*(ButiEngine::Vector3*)p_instance);
+		}
+#endif // IMPL_BUTIENGINE
 	};
 template<>
 class Value_wrap<ButiEngine::Vector4> : public IValue {
@@ -1160,6 +1249,16 @@ class Value_wrap<ButiEngine::Vector4> : public IValue {
 			}
 		}
 		RegistSpecialization(ButiEngine::Vector4);
+
+#ifdef IMPL_BUTIENGINE
+		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+			return std::make_shared<GlobalValueSaveObject<ButiEngine::Vector4>>(*(ButiEngine::Vector4*)p_instance);
+		}
+
+		void ShowGUI(const std::string& arg_label)override {
+			ButiEngine::GUI::Input(arg_label, *(ButiEngine::Vector4*)p_instance);
+		}
+#endif // IMPL_BUTIENGINE
 	};
 
 template<typename T>
@@ -1221,6 +1320,15 @@ public:
 		static const IValue::ge_t<Value_wrap<int>> s;
 		return s;
 	}
+#ifdef IMPL_BUTIENGINE
+	std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
+		return std::make_shared<ButiScript::GlobalSharedPtrValueSaveObject<T>>(shp);
+	}
+
+	void ShowGUI(const std::string& arg_label)override {
+		ButiEngine::GUI::Text("GUIÇ≈ëÄçÏÇ≈Ç´Ç»Ç¢å^Ç≈Ç∑");
+	}
+#endif // IMPL_BUTIENGINE
 private:
 	std::shared_ptr<T> shp=nullptr;
 };

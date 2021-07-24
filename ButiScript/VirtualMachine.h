@@ -41,6 +41,7 @@ namespace ButiScript {
 		std::vector<OperationFunction> vec_sysCallMethods;
 		std::vector<TypeTag> vec_types;
 		std::map<std::string, int> map_entryPoints;
+		std::map<std::string, int>map_globalValueAddress;
 		std::vector<ScriptClassInfo> vec_scriptClassInfo;
 		std::string sourceFilePath;
 	};
@@ -107,11 +108,19 @@ namespace ButiScript {
 		}
 		void AllocGlobalValue();
 
+		template<typename T>
+		void AccessGlobalVariable(const T value, const std::string arg_variableName) {
+			valueStack[globalValue_base + data_->map_globalValueAddress.at(arg_variableName)].v_->Set(value);
+		}
 
 #ifdef IMPL_BUTIENGINE
 		void SetGameObject(std::shared_ptr<ButiEngine::GameObject> arg_gameObject) {
 			shp_gameObject = arg_gameObject;
 		}
+
+		void RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
+		void SaveGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
+		void ShowGUI();
 #endif
 
 		void Initialize();
@@ -1187,7 +1196,7 @@ namespace ButiScript {
 		}
 		template<typename T>
 		void pushSharedValue() {
-			auto value = Value(std::make_shared<T>());
+			auto value = Value();
 			long long int address;
 			auto ptr = &VirtualCPU::pushSharedValue<T>;
 			address = *(long long int*) & (ptr);
@@ -1224,8 +1233,12 @@ namespace ButiScript {
 		void push(float v) { 
 			valueStack.push(ButiScript::Value(v)); 
 		}
-		void push(const std::string& v) { 
-			valueStack.push(ButiScript::Value(v)); 
+		void push(const std::string& v) {
+			valueStack.push(ButiScript::Value(v));
+		}
+		template <typename T>
+		void push(std::shared_ptr<T> v) {
+			valueStack.push(ButiScript::Value(v));
 		}
 		void push(IValue* arg_p_ivalue,const int arg_type) {
 			valueStack.push(ButiScript::Value(arg_p_ivalue, arg_type));
@@ -1305,5 +1318,19 @@ namespace ButiScript {
 	};
 
 }
+#ifdef IMPL_BUTIENGINE
+
+template<typename T>
+void  ButiScript::GlobalValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
+{
+	*arg_v = new ButiScript::Value_wrap<T>(data, 1);
+}
+template<typename T>
+void ButiScript::GlobalSharedPtrValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
+{
+	*arg_v = new ButiScript::Value_Shared<T>(data, 1);
+}
+#endif // IMPL_BUTIENGINE
+
 
 #endif

@@ -79,3 +79,34 @@ void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
 
 	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];	// プログラムカウンター初期化
 }
+
+
+#ifdef IMPL_BUTIENGINE
+
+void ButiScript::VirtualCPU::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
+	for (int i = 0; i < globalValue_size- globalValue_base; i++) {
+		arg_ref_vec_saveObject.push_back(valueStack[globalValue_base+i].v_->GetSaveObject());
+		arg_ref_vec_saveObject.at(i)->SetTypeIndex(valueStack[globalValue_base + i].valueType);
+	}
+}
+void ButiScript::VirtualCPU::RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
+	if (globalValue_size - globalValue_base != arg_ref_vec_saveObject.size()) {
+		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
+		
+		return;
+	}
+	for (int i = 0; i < globalValue_size - globalValue_base; i++) {
+		if (valueStack[globalValue_base + i].v_) {
+			valueStack[globalValue_base + i].v_->release();
+		}
+		arg_ref_vec_saveObject.at(i)->RestoreValue(&valueStack[globalValue_base + i].v_);
+		valueStack[globalValue_base + i].valueType = arg_ref_vec_saveObject.at(i)->GetTypeIndex();
+	}
+}
+void ButiScript::VirtualCPU::ShowGUI() {
+	auto end = data_->map_globalValueAddress.end();
+	for (auto itr = data_->map_globalValueAddress.begin(); itr != end;itr++) {
+		valueStack[globalValue_base + itr->second].v_->ShowGUI(itr->first);
+	}
+}
+#endif

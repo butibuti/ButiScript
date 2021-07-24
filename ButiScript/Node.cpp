@@ -1748,12 +1748,23 @@ int Declaration::Analyze(Compiler* c)
 	}
 	else {
 		c->ValueDefine(valueType, vec_node);
-		auto type = c->GetType(valueType);
-		if (type->isSystem) {
-			c->OpAllocStack(valueType);
+
+		auto type = c->GetType(valueType&~TYPE_REF);
+		if (valueType & TYPE_REF) {
+			if (type->isSystem) {
+				c->OpAllocStack_Ref(valueType);
+			}
+			else {
+				c->OpAllocStack_Ref_ScriptType((valueType & ~TYPE_REF) - c->GetSystemTypeSize());
+			}
 		}
 		else {
-			c->OpAllocStack_ScriptType(valueType-c->GetSystemTypeSize());
+			if (type->isSystem) {
+				c->OpAllocStack(valueType);
+			}
+			else {
+				c->OpAllocStack_ScriptType(valueType - c->GetSystemTypeSize());
+			}
 		}
 	}
 	return 0;
