@@ -520,6 +520,13 @@ public:
 		if (ary_memberType) {
 			delete ary_memberType;
 		}
+		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
+		for (int i = 0; i < memberSize; i++) {
+			ary_p_member[i]->release();
+		}
+		if (ary_p_member) {
+			delete ary_p_member;
+		}
 	}
 
 
@@ -611,15 +618,21 @@ public:
 
 		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
 		for (int i = 0; i < memberSize; i++) {
-			ret->Push(ary_p_member[i]->GetSaveObject());
+			ret->Push(ary_p_member[i]->GetSaveObject(), ary_memberType[i]);
+			
 		}
 		return  ret;
 	}
 
 	void ShowGUI(const std::string& arg_label) override {
-		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
-		for (int i = 0; i < memberSize; i++) {
-			ary_p_member[i]->ShowGUI(arg_label+std::to_string(i));
+		if (ButiEngine::GUI::TreeNode(arg_label)) {
+			auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
+			auto memberNameItr = ((ScriptClassInfo*)p_instance)->GetMamberName().begin();
+			for (int i = 0; i < memberSize; i++, memberNameItr++)
+			{
+				ary_p_member[i]->ShowGUI(*memberNameItr);
+			}
+			ButiEngine::GUI::TreePop();
 		}
 	}
 #endif // IMPL_BUTIENGINE

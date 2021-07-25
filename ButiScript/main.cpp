@@ -20,19 +20,18 @@ int main()
 		compile_result = driver.Compile("input.bs", *data);
 		driver.OutputCompiledData("output/compiled.cbs", *data);
 	}
-	if (compile_result) {
-		data = std::make_shared<ButiScript::CompiledData>();
-		driver.InputCompiledData("output/compiled.cbs", *data);
 
-		ButiScript::VirtualCPU machine(data);
-		machine.Initialize();
-		machine.AllocGlobalValue();
-		machine.SetGlobalVariable(1, "g_i");
-		machine.SetGlobalVariable(2, "g_i1");
-		auto retunCode = machine.Execute<int>("main");
-		std::cout << "return : " << std::to_string(retunCode) << std::endl;
-		std::system("pause");
-	}
+	data = std::make_shared<ButiScript::CompiledData>();
+	driver.InputCompiledData("output/compiled.cbs", *data);
+
+	ButiScript::VirtualCPU machine(data);
+	machine.Initialize();
+	machine.AllocGlobalValue();
+	machine.SetGlobalVariable(1, "g_i");
+	machine.SetGlobalVariable(2, "g_i1");
+	auto retunCode = machine.Execute<int>("main");
+	std::cout << "return : " << std::to_string(retunCode) << std::endl;
+	std::system("pause");
 
 
 

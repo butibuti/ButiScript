@@ -31,7 +31,15 @@ ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::
 
 void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValue** arg_v) const
 {
-	*arg_v = GetScriptIValue(shp_compiledData->vec_scriptClassInfo[type- shp_compiledData->vec_types.size()],& shp_compiledData->vec_scriptClassInfo);
+	std::vector<ButiScript::IValue*> vec_members;
+	auto end = vec_data.end();
+	for (auto itr = vec_data.begin(); itr != end; itr++) {
+		IValue* member;
+		(*itr)->RestoreValue(&member);
+		vec_members.push_back(member);
+	}
+	*arg_v = new ButiScript::Value_wrap<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - 7], vec_members, 1);
+
 }
 #endif
 ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{

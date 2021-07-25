@@ -1,8 +1,9 @@
+
+var g_i,g_i1 :int;
+var t:Test;
 class Test{
 	f:float;
 }
-var g_i,g_i1 :int;
-var t:Test;
 main():int
 {
 

@@ -653,6 +653,9 @@ namespace ButiScript {
 		void SetMemberNames(const std::vector<std::string> arg_vec_names) {
 			vec_memberName = arg_vec_names;
 		}
+		const std::vector<std::string>& GetMamberName()const {
+			return vec_memberName;
+		}
 		void SetClassName(const std::string& arg_className) {
 			className = arg_className;
 		}
@@ -827,13 +830,13 @@ namespace ButiScript {
 		void Clear_notSystem() {
 			for (auto typeItr = map_types.begin(); typeItr != map_types.end(); ) {
 				if (!typeItr->second.isSystem) {
-					typeItr = map_types.erase(typeItr);
-					map_argmentChars.erase(typeItr->first);
 					auto removeItr = vec_types.begin();
 					for (int i = 0; i < typeItr->second.typeIndex; i++) {
 						removeItr++;
 					}
 					vec_types.erase(removeItr);
+					map_argmentChars.erase(typeItr->first);
+					typeItr = map_types.erase(typeItr);
 				}
 				else {
 					typeItr++;
@@ -865,7 +868,7 @@ namespace ButiScript {
 		std::vector<TypeTag* > vec_types;
 		std::map<std::string, int> map_argmentChars;
 		std::map<std::string, TypeTag> map_types;
-		int systemTypeCount;
+		int systemTypeCount=0;
 	};
 	
 }

@@ -744,12 +744,17 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 		int index = 0;
 		fIn.read((char*)&index, sizeof(index));
-		SysFunction sysFunc = vec_valueAllocCall[index];
+		SysFunction sysFunc=nullptr;
+		if (index < vec_valueAllocCall.size()) {
+			sysFunc = vec_valueAllocCall[index];
+		}
 		typeTag.typeFunc = sysFunc;
 
 		index = 0;
 		fIn.read((char*)&index, sizeof(index));
-		sysFunc = vec_refValueAllocCall[index];
+		if (index < vec_refValueAllocCall.size()) {
+			sysFunc = vec_refValueAllocCall[index];
+		}
 		typeTag.refTypeFunc = sysFunc;
 
 

@@ -102,6 +102,7 @@ void ButiScript::VirtualCPU::RestoreGlobalValue(std::vector<std::shared_ptr< But
 		if (valueStack[globalValue_base + i].v_) {
 			valueStack[globalValue_base + i].v_->release();
 		}
+		arg_ref_vec_saveObject.at(i)->SetCompiledData(data_);
 		arg_ref_vec_saveObject.at(i)->RestoreValue(&valueStack[globalValue_base + i].v_);
 		
 	}
