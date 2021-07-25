@@ -277,6 +277,11 @@ namespace ButiScript {
 			std::cerr << "内部エラー：Add(node)が呼ばれました" << std::endl;
 		}
 
+		virtual void Add(const std::vector<Node_t >& node)
+		{
+			std::cerr << "内部エラー：Add(std::vector< node>)が呼ばれました" << std::endl;
+		}
+
 		virtual void Add(const int index, Statement_t statement)
 		{
 			std::cerr << "内部エラー：Add(index, statement)が呼ばれました" << std::endl;
@@ -488,6 +493,13 @@ namespace ButiScript {
 			:valueType(arg_type), isFunction(false)
 		{
 		}
+		Declaration(const int arg_type,const AccessModifier arg_access)
+			:valueType(arg_type), isFunction(false)
+		{
+			if (arg_access == AccessModifier::Private || arg_access == AccessModifier::Public) {
+				accessType = arg_access;
+			}
+		}
 
 		Declaration(const int arg_type, const std::string& arg_name)
 			:valueType(arg_type), name_(arg_name), isFunction(true)
@@ -497,6 +509,10 @@ namespace ButiScript {
 		void Add(Node_t node)
 		{
 			vec_node.push_back(node);
+		}
+		void Add(const std::vector<Node_t >& node)
+		{
+			vec_node=(node);
 		}
 
 		void Add(const int arg_type)
@@ -511,11 +527,12 @@ namespace ButiScript {
 			return isFunction;
 		}
 	private:
-		int valueType;					// 型
-		bool isFunction;				// 関数か変数か
-		std::vector<Node_t> vec_node;	// 変数
-		std::string name_;			// 関数名
-		std::vector<int> args;		// 関数の引数
+		int valueType;					
+		bool isFunction;				
+		std::vector<Node_t> vec_node;	
+		std::string name_;			
+		std::vector<int> args;		
+		AccessModifier accessType=AccessModifier::Public;
 	};
 
 	using Declaration_t = std::shared_ptr<Declaration>;

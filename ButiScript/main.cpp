@@ -27,8 +27,8 @@ int main()
 		ButiScript::VirtualCPU machine(data);
 		machine.Initialize();
 		machine.AllocGlobalValue();
-		machine.AccessGlobalVariable(1, "g_i");
-		machine.AccessGlobalVariable(1, "g_i1");
+		machine.SetGlobalVariable(1, "g_i");
+		machine.SetGlobalVariable(2, "g_i1");
 		auto retunCode = machine.Execute<int>("main");
 		std::cout << "return : " << std::to_string(retunCode) << std::endl;
 		std::system("pause");

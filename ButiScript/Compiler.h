@@ -271,7 +271,7 @@ public:
 		return types.GetSystemType();
 	}
 
-	void ValueDefine(const int type, const std::vector<Node_t>& node);
+	void ValueDefine(const int type, const std::vector<Node_t>& node,const AccessModifier arg_access);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
 	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const AccessModifier access, FunctionTable* arg_funcTable = nullptr);
 	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable=nullptr);
@@ -379,7 +379,7 @@ public:
 
 	int MakeLabel();
 
-	void AddValue(const int type, const std::string& name, Node_t node);
+	void AddValue(const int type, const std::string& name, Node_t node, const AccessModifier access);
 
 	void SetLabel(const int label);
 

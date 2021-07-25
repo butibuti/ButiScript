@@ -113,8 +113,8 @@ namespace ButiScript {
 		ValueTag() : address(-1), valueType(TYPE_INTEGER), size_(1), global_(false)
 		{
 		}
-		ValueTag(const int addr, const int type, const int size, const bool global)
-			: address(addr), valueType(type), size_(size), global_(global)
+		ValueTag(const int addr, const int type, const int size, const bool global ,const AccessModifier arg_access)
+			: address(addr), valueType(type), size_(size), global_(global),access(arg_access)
 		{
 		}
 
@@ -123,6 +123,7 @@ namespace ButiScript {
 		int		valueType;
 		int		size_;
 		bool	global_;
+		AccessModifier access=AccessModifier::Public;
 	};
 	class ValueTable {
 	private:
@@ -139,10 +140,10 @@ namespace ButiScript {
 			global_ = true;
 		}
 
-		bool Add(const int type, const std::string& name, const int size = 1)
+		bool Add(const int type, const std::string& name,const AccessModifier access, const int size = 1)
 		{
 			if (!variables_.count(name)) {
-				variables_.emplace(name, ValueTag(addr_, type, size, global_));
+				variables_.emplace(name, ValueTag(addr_, type, size, global_,access));
 				vec_variableTypes.push_back(type);
 				addr_ += size;
 				return true;
@@ -160,7 +161,7 @@ namespace ButiScript {
 
 		bool add_arg(const int type, const std::string& name, const int addr)
 		{
-			std::pair<iter, bool> result = variables_.insert(make_pair(name, ValueTag(addr, type, 1, false)));
+			std::pair<iter, bool> result = variables_.insert(make_pair(name, ValueTag(addr, type, 1, false,AccessModifier::Public)));
 			return result.second;
 		}
 

@@ -1,6 +1,6 @@
 #include"stdafx.h"
 #include"Tags.h"
-#include "VM_value.h"
+#include "VirtualMachine.h"
 
 
 std::vector<ButiScript::CreateMemberInstanceFunction> vec_createMemberInstanceFunction;
@@ -26,6 +26,14 @@ ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::
 	}
 	return new ButiScript::Value_wrap<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
 }
+
+#ifdef IMPL_BUTIENGINE
+
+void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValue** arg_v) const
+{
+	*arg_v = GetScriptIValue(shp_compiledData->vec_scriptClassInfo[type- shp_compiledData->vec_types.size()],& shp_compiledData->vec_scriptClassInfo);
+}
+#endif
 ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
 	
 	v_ = GetScriptIValue(arg_info,p_vec_scriptClassInfo);

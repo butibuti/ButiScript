@@ -607,9 +607,13 @@ public:
 
 #ifdef IMPL_BUTIENGINE
 	std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
-		assert(0);
-		//スクリプト定義の型の保存は未定義
-		return nullptr;
+		auto ret = std::make_shared<GlobalScriptTypeValueSaveObject>();
+
+		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
+		for (int i = 0; i < memberSize; i++) {
+			ret->Push(ary_p_member[i]->GetSaveObject());
+		}
+		return  ret;
 	}
 
 	void ShowGUI(const std::string& arg_label) override {

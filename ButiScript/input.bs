@@ -1,27 +1,11 @@
-class TestClass{
-
-GetFloat():float
-{
-	return this.f_ref;
+class Test{
+	f:float;
 }
-
-SetFloatRef(f:float&):void{
-	print("arg_f:"+ToString(f)+EndL());
-	this.f_ref=f;
-
-}
-f_ref:float&;
-
-}
-var g_i:int;
-var g_i1:int;
+var g_i,g_i1 :int;
+var t:Test;
 main():int
 {
 
 
 	return g_i+g_i1*2;
-}
-
-EndL():string{
-	return "\n";
 }

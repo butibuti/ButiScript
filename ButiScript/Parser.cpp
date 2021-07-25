@@ -119,6 +119,17 @@ struct push_back_impl {
 		return list;
 	}
 };
+// 値を追加(std::vector)
+struct vector_push_back_impl {
+	template <typename Ty1, typename Ty2>
+	struct result { typedef void type; };
+
+	template <typename Ty1, typename Ty2>
+	void operator()(Ty1& vector, const Ty2& object) const
+	{
+		vector.push_back(object);
+	}
+};
 
 // ノードリストを生成する
 struct make_argument_impl {
@@ -440,6 +451,7 @@ phoenix::function<binary_node_impl> const binary_node = binary_node_impl();
 phoenix::function<binary_node_impl_useDriver> const binary_node_comp = binary_node_impl_useDriver();
 phoenix::function<unary_node_impl> const unary_node = unary_node_impl();
 phoenix::function<push_back_impl> const push_back = push_back_impl();
+phoenix::function<vector_push_back_impl> const vec_push_back = vector_push_back_impl();
 phoenix::function<make_argument_impl> const make_argument = make_argument_impl();
 phoenix::function<make_statement_impl> const make_statement = make_statement_impl();
 phoenix::function<make_statement1_impl> const make_statement1 = make_statement1_impl();
@@ -517,10 +529,11 @@ namespace ButiClosure {
 	};
 
 	// 変数定義のクロージャ
-	struct decl_val : closure<decl_val, Declaration_t, int, Node_t> {
+	struct decl_val : closure<decl_val, Declaration_t, int,std::vector< Node_t>,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 value;
+		member4 access;
 	};
 
 	// 関数定義のクロージャ
@@ -567,17 +580,11 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 	template <typename ScannerT>
 	struct definition {
 		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
-		rule<ScannerT, ButiClosure::type_val::context_t>		type;
-		rule<ScannerT, ButiClosure::func_val::context_t>		function;
-		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
-		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
 		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
-		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
-		rule<ScannerT>	string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
+		rule<ScannerT>	decl_value,decl_classMember,Value,function, argdef, type,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
 			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident;
 
 		symbols<> keywords;
@@ -625,8 +632,8 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
 
 			// 変数
-			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
-				identifier[Value.node = unary_node(OP_IDENTIFIER, arg1)];
+			Value = (*(nameSpace_call)) >>
+				identifier;
 
 			// 関数の引数
 			argument = expr
@@ -714,7 +721,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				>> expr;
 
 			// 変数宣言
-			decl_value = "var" >> Value % ',' >> ':' >> type >> ';';
+			decl_value = !(str_p("private") | str_p("public")) >> "var" >> Value % ',' >> ':' >> type >> ';';
 
 			// 型名
 			type = identifier >> !ch_p('&');
@@ -970,7 +977,8 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 				>> expr;
 
 			// 変数宣言
-			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
+			decl_value = !(str_p("private")[decl_value.access=AccessModifier::Private] | str_p("public")[decl_value.access = AccessModifier::Public]) 
+				>> "var" >> Value[vec_push_back (decl_value.value ,arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.access), decl_value.value)] >> ';';
 
 			// 型名
 			type = identifier[type.type = specificType(arg1,self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF];
@@ -1244,7 +1252,8 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
 
 			// 変数宣言
-			decl_value = "var" >> Value[decl_value.value = arg1] % ',' >> ':' >> type[decl_value.node = push_back(make_decl(arg1), decl_value.value)] >> ';';
+			decl_value = !(str_p("private")[decl_value.access = AccessModifier::Private] | str_p("public")[decl_value.access = AccessModifier::Public])
+				>> "var" >> Value[vec_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.access), decl_value.value)] >> ';';
 
 
 			// 型名

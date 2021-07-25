@@ -196,13 +196,14 @@ bool ButiScript::Compiler::DefineSystemMethod(SysFunction arg_p_method, const in
 struct Define_value {
 	ButiScript::Compiler* comp_;
 	int valueType;
-	Define_value(ButiScript::Compiler* comp, int type) : comp_(comp), valueType(type)
+	ButiScript::AccessModifier access;
+	Define_value(ButiScript::Compiler* comp, const int type,ButiScript::AccessModifier arg_access ) : comp_(comp), valueType(type),access(arg_access)
 	{
 	}
 
 	void operator()(ButiScript::Node_t node) const
 	{
-		comp_->AddValue(valueType, node->GetString(), node->GetLeft());
+		comp_->AddValue(valueType, node->GetString(), node->GetLeft(),access);
 	}
 };
 
@@ -245,9 +246,9 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 	types.RegistType(type);
 }
 
-void ButiScript::Compiler::ValueDefine(int type, const std::vector<Node_t>& node)
+void ButiScript::Compiler::ValueDefine(int type, const std::vector<Node_t>& node, const AccessModifier arg_access)
 {
-	std::for_each(node.begin(), node.end(), Define_value(this, type));
+	std::for_each(node.begin(), node.end(), Define_value(this, type,arg_access));
 }
 
 // ä÷êîêÈåæ
@@ -440,7 +441,7 @@ void ButiScript::Compiler::RegistSystemEnumType(const std::string& arg_typeName)
 }
 
 // ïœêîÇÃìoò^
-void ButiScript::Compiler::AddValue(int type, const std::string& name, Node_t node)
+void ButiScript::Compiler::AddValue(const int type, const std::string& name, Node_t node ,const AccessModifier access)
 {
 	std::string valueName = GetCurrentNameSpace()->GetGlobalNameString() + name;
 	int size = 1;
@@ -455,7 +456,7 @@ void ButiScript::Compiler::AddValue(int type, const std::string& name, Node_t no
 	}
 
 	ValueTable& values = variables.back();
-	if (!values.Add(type, valueName, size)) {
+	if (!values.Add(type, valueName, access,size)) {
 		error("ïœêî " + valueName + " ÇÕä˘Ç…ìoò^Ç≥ÇÍÇƒÇ¢Ç‹Ç∑ÅB");
 	}
 }
@@ -610,7 +611,9 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_s
 
 	for (int i = 0; i < Data.valueSize; i++) {
 		auto p_value = &variables[0][i];
-		Data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->address);
+		if (p_value->access == AccessModifier::Public) {
+			Data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->address);
+		}
 	}
 
 	if (Data.textSize != 0) {
@@ -793,7 +796,9 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 	}
 
-	for (int i = 0; i < arg_ref_data.valueSize; i++) {
+	int publicGlobalValue = 0;
+	fIn.read((char*)&publicGlobalValue, sizeof(publicGlobalValue));
+	for (int i = 0; i < publicGlobalValue; i++) {
 		int strSize = 0;
 		fIn.read((char*)&strSize, sizeof(int));
 		char* strBuff = (char*)malloc(strSize);
@@ -908,8 +913,11 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		fOut.write(itr->first.c_str(), size);
 		fOut.write((char*)&itr->second, sizeof(itr->second));
 	}
+
+	int publicGlobalValue = arg_ref_data.map_globalValueAddress.size();
+	fOut.write((char*)&publicGlobalValue, sizeof(publicGlobalValue));
 	auto itr = arg_ref_data.map_globalValueAddress.begin();
-	for (int i = 0; i < arg_ref_data.valueSize; i++,itr++) {
+	for (int i = 0; i < publicGlobalValue; i++,itr++) {
 		int strSize =itr->first.size();
 		fOut.write((char*)&strSize, sizeof(int));
 		fOut.write(itr->first.c_str(), strSize);

@@ -96,11 +96,14 @@ void ButiScript::VirtualCPU::RestoreGlobalValue(std::vector<std::shared_ptr< But
 		return;
 	}
 	for (int i = 0; i < globalValue_size - globalValue_base; i++) {
+		if (valueStack[globalValue_base + i].valueType != arg_ref_vec_saveObject.at(i)->GetTypeIndex()) {
+			continue;
+		}
 		if (valueStack[globalValue_base + i].v_) {
 			valueStack[globalValue_base + i].v_->release();
 		}
 		arg_ref_vec_saveObject.at(i)->RestoreValue(&valueStack[globalValue_base + i].v_);
-		valueStack[globalValue_base + i].valueType = arg_ref_vec_saveObject.at(i)->GetTypeIndex();
+		
 	}
 }
 void ButiScript::VirtualCPU::ShowGUI() {

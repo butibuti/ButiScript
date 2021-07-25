@@ -1747,23 +1747,32 @@ int Declaration::Analyze(Compiler* c)
 		c->FunctionDefine(valueType, name_, args);
 	}
 	else {
-		c->ValueDefine(valueType, vec_node);
+		c->ValueDefine(valueType, vec_node,accessType);
 
 		auto type = c->GetType(valueType&~TYPE_REF);
+		int size = vec_node.size();
 		if (valueType & TYPE_REF) {
 			if (type->isSystem) {
-				c->OpAllocStack_Ref(valueType);
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStack_Ref(valueType);
+				}
 			}
 			else {
-				c->OpAllocStack_Ref_ScriptType((valueType & ~TYPE_REF) - c->GetSystemTypeSize());
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStack_Ref_ScriptType((valueType & ~TYPE_REF) - c->GetSystemTypeSize());
+				}
 			}
 		}
 		else {
 			if (type->isSystem) {
-				c->OpAllocStack(valueType);
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStack(valueType);
+				}
 			}
 			else {
-				c->OpAllocStack_ScriptType(valueType - c->GetSystemTypeSize());
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStack_ScriptType(valueType - c->GetSystemTypeSize());
+				}
 			}
 		}
 	}
@@ -1792,7 +1801,7 @@ void Declaration::Define(Compiler* c)
 		c->FunctionDefine(valueType, name_, args);
 	}
 	else {
-		c->ValueDefine(valueType, vec_node);
+		c->ValueDefine(valueType, vec_node,accessType);
 	}
 }
 int Node_Member::Push(Compiler* c) const

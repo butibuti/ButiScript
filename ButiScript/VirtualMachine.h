@@ -109,8 +109,21 @@ namespace ButiScript {
 		void AllocGlobalValue();
 
 		template<typename T>
-		void AccessGlobalVariable(const T value, const std::string arg_variableName) {
+		void SetGlobalVariable(const T value, const std::string arg_variableName) {
+			if (!data_->map_globalValueAddress.count(arg_variableName)) {
+				std::cout << arg_variableName << "にはアクセスできません" << std::endl;
+				return;
+			}
 			valueStack[globalValue_base + data_->map_globalValueAddress.at(arg_variableName)].v_->Set(value);
+		}
+		template<typename T>
+		T& GetGlobalVariable(const std::string arg_variableName) {
+			if (!data_->map_globalValueAddress.count(arg_variableName)) {
+				std::cout << arg_variableName << "にはアクセスできません" << std::endl;
+				static T temp;
+				return temp;
+			}
+			return valueStack[globalValue_base + data_->map_globalValueAddress.at(arg_variableName)].v_->GetRef<T>();
 		}
 
 #ifdef IMPL_BUTIENGINE
@@ -1319,7 +1332,6 @@ namespace ButiScript {
 
 }
 #ifdef IMPL_BUTIENGINE
-
 template<typename T>
 void  ButiScript::GlobalValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
 {
