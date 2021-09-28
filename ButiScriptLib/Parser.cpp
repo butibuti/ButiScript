@@ -432,6 +432,17 @@ struct	specificType_impl {
 		return  driver->GetTypeIndex(key);
 	}
 };
+//å^ÇÃì¡íË
+struct	specificFunctionType_impl {
+	template <typename Ty1, typename Ty2, typename Ty3>
+	struct result { typedef int type; };
+
+	template <typename Ty1, typename Ty2, typename Ty3>
+	int operator()(const Ty1& ret,const Ty2& args ,Ty3 driver) const
+	{
+		return  driver->GetfunctionTypeIndex(args, ret);
+	}
+};
 
 
 // ç≈èIìoò^
@@ -471,6 +482,7 @@ phoenix::function<make_pair_impl> const make_pair = make_pair_impl();
 phoenix::function<make_memberValue_impl> const make_memberValue = make_memberValue_impl();
 phoenix::function<setFunctionType_impl> const set_functionType = setFunctionType_impl();
 phoenix::function<specificType_impl> const specificType = specificType_impl();
+phoenix::function<specificFunctionType_impl> const specificFunctionType = specificFunctionType_impl();
 phoenix::function<accessModifier_impl> const specificAccessModifier = accessModifier_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
@@ -526,6 +538,11 @@ namespace ButiClosure {
 	// å^ÇÃÉNÉçÅ[ÉWÉÉ
 	struct type_val : closure<type_val, int> {
 		member1 type;
+	};
+	// ä÷êîå^ÇÃÉNÉçÅ[ÉWÉÉ
+	struct type_func_val : closure<type_func_val, int,std::vector<int>> {
+		member1 type;
+		member2 argments;
 	};
 
 	// ïœêîíËã`ÇÃÉNÉçÅ[ÉWÉÉ
@@ -584,7 +601,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
-		rule<ScannerT>	decl_value,decl_classMember,Value,function, argdef, type,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
+		rule<ScannerT>	decl_value,decl_classMember,Value,function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
 			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident;
 
 		symbols<> keywords;
@@ -724,7 +741,10 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 			decl_value = !(str_p("private") | str_p("public")) >> "var" >> Value % ',' >> ':' >> type >> ';';
 
 			// å^ñº
-			type = identifier >> !ch_p('&');
+			type = identifier >> !ch_p('&')
+				| funcType;
+			//ä÷êîå^ñº
+			funcType = '(' >> !(arg % ',') >> ')' >> "=>" >> type;
 
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
@@ -831,6 +851,8 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 	struct definition {
 		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
 		rule<ScannerT, ButiClosure::type_val::context_t>		type;
+		rule<ScannerT, ButiClosure::type_val::context_t>		arg;
+		rule<ScannerT, ButiClosure::type_func_val::context_t>		funcType;
 		rule<ScannerT, ButiClosure::func_val::context_t>		function;
 		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
 		rule<ScannerT, ButiClosure::namespace_val ::context_t>	nameSpace;
@@ -841,7 +863,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
 		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,arg,decl_func,callMember ,block,input,ident;
+			and_expr,expr,assign,argument,statement,decl_func,callMember ,block,input,ident;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -981,12 +1003,15 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 				>> "var" >> Value[vec_push_back (decl_value.value ,arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.access), decl_value.value)] >> ';';
 
 			// å^ñº
-			type = identifier[type.type = specificType(arg1,self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF];
+			type = identifier[type.type = specificType(arg1,self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF]
+				| funcType[type.type = arg1];
 
+			//ä÷êîå^ñº
+			funcType = '(' >> !(arg[vec_push_back(funcType.argments, arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = specificFunctionType(arg1,funcType.argments,self.driver_)];
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
-				>> type
-				>> !str_p("[]");
+				>> type[arg.type = arg1]
+				>> !str_p("[]")[arg.type |= TYPE_REF];
 
 			// ä÷êîêÈåæ
 			decl_func = identifier
@@ -1090,6 +1115,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 		rule<ScannerT, ButiClosure::number_val::context_t>	number;
 		rule<ScannerT, ButiClosure::float_val::context_t>	floatNumber;
 		rule<ScannerT, ButiClosure::type_val::context_t>		type;
+		rule<ScannerT, ButiClosure::type_func_val::context_t>		funcType;
 		rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
 		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
 		rule<ScannerT, ButiClosure::callmember_val::context_t> callMember;
@@ -1257,7 +1283,10 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 
 			// å^ñº
-			type = identifier[type.type = specificType(arg1, self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF];
+			type = (identifier[type.type = specificType(arg1, self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF])
+				|funcType[type.type=arg1];
+			//ä÷êîå^ñº
+			funcType = '(' >> !(arg[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type=specificFunctionType(arg1, funcType.argments ,self.driver_)];
 
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'

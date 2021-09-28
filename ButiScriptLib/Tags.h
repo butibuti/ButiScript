@@ -68,10 +68,58 @@ namespace ButiScript {
 		const std::string& GetTypeName()const {
 			return type_Name;
 		}
+		void OutputFile(std::ofstream& arg_out)const {
+			int nameSize = type_Name.size();
+			arg_out.write((char*)&nameSize, sizeof(int));
+			arg_out.write(type_Name.c_str(), nameSize);
+
+			int identSize = map_identifers.size();
+			arg_out.write((char*)&identSize, sizeof(int));
+			for (auto itr = map_identifers.begin(), end = map_identifers.end(); itr != end; itr++) {
+				int identiferSize = itr->first.size();
+				arg_out.write((char*)&identiferSize, sizeof(int));
+				arg_out.write(itr->first.c_str(), identiferSize);
+				arg_out.write((char*)&itr->second, sizeof(int));
+
+			}
+		}
+		void InputFile(std::ifstream& arg_in) {
+			int nameSize = 0;
+			arg_in.read((char*)&nameSize, sizeof(int));
+			char* buff =(char*) malloc(nameSize);
+			arg_in.read(buff, nameSize);
+			type_Name = std::string(buff);
+			delete buff;
+			int identSize = 0;
+			arg_in.read((char*)&identSize, sizeof(int));
+			for (int i = 0; i < identSize;i++) {
+				int identiferSize = 0;
+				arg_in.read((char*)&identiferSize, sizeof(int));
+				buff = (char*)malloc(identiferSize);
+				arg_in.read(buff, identiferSize);
+				auto identifer = std::string(buff);
+				delete buff;
+				int value = 0;
+				arg_in.read((char*)&value, sizeof(int));
+				map_identifers.emplace(identifer, value);
+			}
+		}
+		void CreateEnumMap() {
+			for (auto itr = map_identifers.begin(), end = map_identifers.end(); itr != end; itr++) {
+				if (!map_identifer_value.count(itr->second)) {
+					map_identifer_value.emplace(itr->second, itr->first);
+				}
+			}
+		}
+		const std::map<int, std::string>& GetIdentiferMap()const {
+			return map_identifer_value;
+		}
 		bool isSystem;
+		int typeIndex;
 	private:
 		std::string type_Name;
 		std::map<std::string, int>map_identifers;
+		std::map<int, std::string>map_identifer_value;
 	};
 	class EnumTable {
 	public:
@@ -103,6 +151,14 @@ namespace ButiScript {
 					enumItr++;
 				}
 			}
+		}
+		int Size()const {
+			return map_enumTag.size();
+		}
+		EnumTag* operator[](const int index) {
+			auto itr = map_enumTag.begin();
+			for (int i = 0; i < index; i++) { itr++; }
+			return &itr->second;
 		}
 	private:
 		std::map<std::string, EnumTag> map_enumTag;
@@ -195,13 +251,23 @@ namespace ButiScript {
 		struct DumpAction {
 			void operator()(const std::pair<std::string, ValueTag>& it)
 			{
+#ifdef BUTIGUI_H
+				ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.valueType )+ ", size = " +std::to_string( it.second.size_ )+ ", global = " + std::to_string( it.second.global_));
+#else
 				std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.valueType << ", size = " << it.second.size_ << ", global = " << it.second.global_ << std::endl;
-			}
+
+#endif // BUTIGUI_H
+				}
 		};
 
 		void dump() const
 		{
+
+#ifdef BUTIGUI_H
+			ButiEngine::GUI::Console("-------- value --------\n");
+#else
 			std::cout << "-------- value --------" << std::endl;
+#endif // BUTIGUI_H
 			std::for_each(variables_.begin(), variables_.end(), DumpAction());
 		}
 #endif
@@ -726,7 +792,6 @@ namespace ButiScript {
 		std::string typeName;
 		//引数記号
 		std::string argName;
-
 		//メンバ変数
 		std::map<std::string, MemberValueInfo> map_memberValue;
 		//メソッド
@@ -735,9 +800,8 @@ namespace ButiScript {
 		FunctionTag* AddMethod(const std::string& arg_methodName, const FunctionTag& arg_method) {
 			return methods.Add(arg_methodName, arg_method);
 		}
-		bool isSystem;
-		bool isShared=false;
-
+		bool isSystem=false, isShared=false;
+		EnumTag* p_enumTag = nullptr;
 		ScriptClassInfo GetScriptTypeInfo()const {
 			if (isSystem) {
 				//組み込み型なのでスクリプト型定義は作れない
@@ -812,6 +876,24 @@ namespace ButiScript {
 				systemTypeCount++;
 			}
 		}
+		void RegistType(EnumTag& arg_type) {
+			TypeTag enumType;
+			enumType.typeName = arg_type.GetTypeName();
+			enumType.argName = arg_type.GetTypeName();
+			enumType.p_enumTag = &arg_type;
+			enumType.typeIndex = vec_types.size();
+			arg_type.typeIndex = enumType.typeIndex;
+			enumType.isSystem = arg_type.isSystem;
+			if (vec_types.size() <= enumType.typeIndex) {
+				vec_types.resize(enumType.typeIndex + 1);
+			}
+			map_argmentChars.emplace(arg_type.GetTypeName(), enumType.typeIndex);
+			map_types.emplace(arg_type.GetTypeName(), enumType);
+			vec_types[enumType.typeIndex] = &map_types.at(arg_type.GetTypeName());
+			if (arg_type.isSystem) {
+				systemTypeCount++;
+			}
+		}
 
 		const std::vector<TypeTag* >& GetSystemType()const {
 			return vec_types;
@@ -828,13 +910,16 @@ namespace ButiScript {
 
 
 		void Clear_notSystem() {
+			for (auto itr = vec_types.begin(); itr != vec_types.end();) {
+				if (!(*itr)->isSystem) {
+					itr = vec_types.erase(itr);
+				}
+				else {
+					itr++;
+				}
+			}
 			for (auto typeItr = map_types.begin(); typeItr != map_types.end(); ) {
 				if (!typeItr->second.isSystem) {
-					auto removeItr = vec_types.begin();
-					for (int i = 0; i < typeItr->second.typeIndex; i++) {
-						removeItr++;
-					}
-					vec_types.erase(removeItr);
 					map_argmentChars.erase(typeItr->first);
 					typeItr = map_types.erase(typeItr);
 				}

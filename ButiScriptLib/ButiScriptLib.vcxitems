@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{a12cef01-ae4a-4989-b9a7-515e6239717f}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)Compiler.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Node.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Parser.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)VirtualMachine.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)VM_value.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)BuiltInTypeRegister.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Compiler.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Node.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Parser.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Tags.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)value_type.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VirtualMachine.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VM_code.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VM_create.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VM_enum.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VM_nametable.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VM_table.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)VM_value.h" />
+  </ItemGroup>
+</Project>

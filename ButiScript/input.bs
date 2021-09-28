@@ -1,12 +1,21 @@
-
-var g_i,g_i1 :int;
-var t:Test;
-class Test{
-	f:float;
+Function():void{
+	print("Function Called!");
 }
+Function1():void{
+	print("Function1 Called!");
+}
+Function2():void{
+	print("Function2 Called!");
+}
+Function3():void{
+	print("Function3 Called!");
+}
+
+
 main():int
 {
-
-
-	return g_i+g_i1*2;
+	var funcObject:(i: int ,f:float)=>void;
+	funcObject=10;
+	Function();
+	return funcObject;
 }

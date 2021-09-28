@@ -110,7 +110,7 @@ namespace ButiScript {
 		virtual int GetType(Compiler* c)const;
 
 		virtual const ValueTag* GetValueTag(Compiler* c)const;
-
+		virtual int EnumType(Compiler* c)const {return TYPE_INTEGER;}
 		int GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const;
 
 		int Assign(Compiler* c) const;
@@ -238,6 +238,7 @@ namespace ButiScript {
 		virtual int Push(Compiler* c) const;
 		virtual int Pop(Compiler* c) const;
 		int GetType(Compiler* c)const override;
+		int EnumType(Compiler* c)const override;
 	};
 
 

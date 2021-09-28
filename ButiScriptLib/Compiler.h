@@ -1,9 +1,11 @@
-
+#ifndef BUTISCRIPTCOMPILER_H
+#define BUTISCRIPTCOMPILER_H
 
 #include "VirtualMachine.h"
 #include "Node.h"
 #include<unordered_map>
-#include"../../Header/Device/Helper/StringHelper.h"
+#include"../../ButiUtil/Util/Helper/StringHelper.h"
+#include<typeinfo>
 namespace ButiScript {
 
 
@@ -134,12 +136,20 @@ public:
 
 class VirtualCPU;
 using SysFunction = void (VirtualCPU::*)();
+
+
+
 class Compiler {
 public:
 
 
+
 	Compiler();
 	virtual ~Compiler();
+
+	static void CreateBaseInstance();
+	static Compiler* GetBaseInstance();
+
 	/// <summary>
 	/// デフォルトの組み込み型、組み込み関数の設定
 	/// </summary>
@@ -170,101 +180,8 @@ public:
 	void debug_dump();
 #endif
 
-	/// <summary>
-	/// 組み込み関数の登録
-	/// </summary>
-	/// <param name="arg_op">関数のポインタ</param>
-	/// <param name="retType">返り値の型</param>
-	/// <param name="name">関数名</param>
-	/// <param name="args">引数の組み合わせ</param>
-	/// <returns>成功</returns>
-	bool DefineSystemFunction(SysFunction arg_op,const int retType, const std::string& name, const std::string& args);
 
-	bool DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args);
 
-	/// <summary>
-	/// 組み込み型の登録
-	/// </summary>
-	/// <typeparam name="T">型情報</typeparam>
-	/// <param name="arg_name">型名</param>
-	/// <param name="arg_argmentName">引数に使う略名</param>
-	/// <param name="memberInfo">メンバ情報</param>
-	template <typename T>
-	void RegistSystemType(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
-		TypeTag type;
-		auto ptr = &VirtualCPU::pushValue<T>;
-		int index = Value::SetTypeIndex(*(long long int*) & (ptr));
-		type.typeFunc = &VirtualCPU::pushValue<T>;
-		type.refTypeFunc = &VirtualCPU::pushValue_ref<T>;
-		type.isSystem = true;
-		long long int address = *(long long int*) & type.typeFunc;
-		map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
-		vec_valueAllocCall.push_back(type.typeFunc);
-
-		address = *(long long int*) & type.refTypeFunc;
-		map_refValueAllocCallsIndex.emplace(address, vec_refValueAllocCall.size());
-		vec_refValueAllocCall.push_back(type.refTypeFunc);
-
-		type.typeName = arg_name;
-		type.typeIndex = index;
-		type.argName = arg_argmentName;
-
-		if (memberInfo.size()) {
-			auto identiferSplited = StringHelper::Split(memberInfo, ",");
-
-			for (int i = 0; i < identiferSplited.size(); i++) {
-				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
-				if (typeSplited.size() != 2) {
-					error("組み込み型のメンバ変数の指定が間違っています");
-				}
-				auto memberTypeIndex = types.GetArgmentKeyMap().at(typeSplited[1]);
-				MemberValueInfo info = { i,memberTypeIndex ,AccessModifier::Public };
-				type.map_memberValue.emplace(typeSplited[0], info);
-
-			}
-		}
-		types.RegistType(type);
-		//スクリプト定義の型がメンバとして利用する型の登録
-		PushCreateMemberInstance<T>();
-	}
-	template <typename T>
-	void RegistSharedSystemType(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
-		TypeTag type;
-		auto ptr = &VirtualCPU::pushSharedValue<T>;
-		int index=Value::SetTypeIndex(*(long long int*) & (ptr));
-		type.typeFunc = &VirtualCPU::pushSharedValue<T>;
-		type.refTypeFunc = &VirtualCPU::pushSharedValue_ref<T>;
-		type.isSystem = true;
-		long long int address = *(long long int*) & type.typeFunc;
-		map_valueAllocCallsIndex.emplace(address, vec_valueAllocCall.size());
-		vec_valueAllocCall.push_back(type.typeFunc);
-
-		address = *(long long int*) & type.refTypeFunc;
-		map_refValueAllocCallsIndex.emplace(address, vec_refValueAllocCall.size());
-		vec_refValueAllocCall.push_back(type.refTypeFunc);
-
-		type.typeName = arg_name;
-		type.typeIndex = index;
-		type.argName = arg_argmentName;
-
-		if (memberInfo.size()) {
-			auto identiferSplited = StringHelper::Split(memberInfo, ",");
-
-			for (int i = 0; i < identiferSplited.size(); i++) {
-				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
-				if (typeSplited.size() != 2) {
-					error("組み込み型のメンバ変数の指定が間違っています");
-				}
-				auto memberTypeIndex = types.GetArgmentKeyMap().at(typeSplited[1]);
-				MemberValueInfo info = { i,memberTypeIndex ,AccessModifier::Public };
-				type.map_memberValue.emplace(typeSplited[0], info);
-
-			}
-		}
-		types.RegistType(type);
-		//スクリプト定義の型がメンバとして利用する型の登録
-		PushCreateMemberInstance<T>();
-	}
 	void AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo);
 	void RegistScriptType(const std::string& arg_typeName);
 	const std::vector<TypeTag* >& GetSystemTypes()const {
@@ -278,7 +195,6 @@ public:
 
 	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
 	void RegistEnumType(const std::string& arg_typeName);
-	void RegistSystemEnumType(const std::string& arg_typeName);
 
 	const EnumTag* GetEnumTag(const std::string& arg_name) const {
 		return enums.FindType(arg_name);
@@ -317,7 +233,8 @@ public:
 		}
 		return -1;
 	}
-	//
+	//関数型の検索
+	int GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType)const;
 
 	TypeTag* GetType(const int index) {
 		return types.GetType(index);
@@ -397,6 +314,7 @@ public:
 
 
 private:
+
 	FunctionTable functions;
 	TypeTable types;
 	EnumTable enums;
@@ -421,4 +339,17 @@ private:
 	int current_function_type;
 
 };
+template<typename T>
+struct CompilerSystemTypeRegister {
+	CompilerSystemTypeRegister() {
+		Compiler::RegistSystemType<T>(typeid(T).name(), typeid(T).name());
+	}
+};
+template<typename T>
+struct CompilerSystemSharedTypeRegister {
+	CompilerSystemSharedTypeRegister() {
+		Compiler::RegistSharedSystemType<T>(typeid(T).name(), typeid(T).name());
+	}
+};
 }
+#endif

@@ -863,6 +863,14 @@ int Node::Push(Compiler* c) const{
 		return TYPE_VOID + 3;
 	}
 
+	if (c->GetType(left_type)->p_enumTag && right_type == TYPE_INTEGER) {
+		if (op_ == OP_EQ)
+		{
+			c->OpEq();
+		}
+		return left_type;
+	}
+
 	// 文字列計算ノードの処理
 	switch (op_) {
 	case OP_EQ:
@@ -983,9 +991,6 @@ int  Node_function::GetType(Compiler* c)const {
 }
 //ノードの関数呼び出し型チェック
 int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const {
-
-
-
 
 	std::vector<int> argTypes;
 	if (args) {
@@ -1151,7 +1156,12 @@ int Node::Assign(Compiler* c) const{
 		//同じ型同士なので代入可能
 		left_->Pop(c);
 		return 0;
-	}else
+	}
+	else if (right_->EnumType(c) == left_type) {
+		left_->Pop(c);
+		return 0;
+	}
+	else
 	{
 		c->error("代入出来ない変数の組み合わせです");
 	}
@@ -1769,6 +1779,11 @@ int Declaration::Analyze(Compiler* c)
 					c->OpAllocStack(valueType);
 				}
 			}
+			else if (type->p_enumTag) {
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStackEnumType(valueType);
+				}
+			}
 			else {
 				for (int i = 0; i < size; i++) {
 					c->OpAllocStack_ScriptType(valueType - c->GetSystemTypeSize());
@@ -1877,7 +1892,10 @@ int Node_Member::GetType(Compiler* c) const
 
 				//型
 				auto typeTag = c->GetType(left_->GetType(c));
-
+				if (!typeTag->map_memberValue.count(string_)) {
+					c->error("構文エラー："+typeTag->typeName+"にメンバ変数"+string_+"は存在しません");
+					return -1;
+				}
 				return typeTag->map_memberValue.at(string_).type;
 			}
 		}
@@ -1997,6 +2015,15 @@ int Node_enum::Pop(Compiler* c) const
 int Node_enum::GetType(Compiler* c) const
 {
 	return TYPE_INTEGER;
+}
+int Node_enum::EnumType(Compiler* c) const
+{
+	auto type=c->GetType(left_->GetString());
+	if (!type) {
+		c->error("列挙型　" + left_->GetString() + "." + string_ + "は未定義です");
+		return 0;
+	}
+	return type->typeIndex;
 }
 void Enum::SetIdentifer(const std::string& arg_name)
 {

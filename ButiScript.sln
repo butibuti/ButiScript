@@ -5,7 +5,13 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ButiScript", "ButiScript\ButiScript.vcxproj", "{274F036C-2F27-42AA-BDDC-04D7B04CF399}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ButiScriptLib", "ButiScriptLib\ButiScriptLib.vcxitems", "{A12CEF01-AE4A-4989-B9A7-515E6239717F}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ButiScriptLib\ButiScriptLib.vcxitems*{274f036c-2f27-42aa-bddc-04d7b04cf399}*SharedItemsImports = 4
+		ButiScriptLib\ButiScriptLib.vcxitems*{a12cef01-ae4a-4989-b9a7-515e6239717f}*SharedItemsImports = 9
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86

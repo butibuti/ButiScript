@@ -8,6 +8,7 @@
 #include"Tags.h"
 namespace ButiScript {
 
+
 #include"value_type.h"
 
 #define	VM_ENUMDEF
@@ -16,7 +17,6 @@ namespace ButiScript {
 		VM_MAXCOMMAND,
 	};
 #undef	VM_ENUMDEF
-
 	
 
 	class CompiledData {
@@ -41,8 +41,12 @@ namespace ButiScript {
 		std::vector<OperationFunction> vec_sysCallMethods;
 		std::vector<TypeTag> vec_types;
 		std::map<std::string, int> map_entryPoints;
+		std::map< int,const std::string*> map_functionJumpPointsTable;
 		std::map<std::string, int>map_globalValueAddress;
+		std::map<int, EnumTag> map_enumTag;
+		FunctionTable functions;
 		std::vector<ScriptClassInfo> vec_scriptClassInfo;
+		int systemTypeCount;
 		std::string sourceFilePath;
 	};
 
@@ -80,6 +84,9 @@ namespace ButiScript {
 		}
 		template<typename T>
 		T Execute(const std::string& entryPoint = "main") {
+			if (!data_->map_entryPoints.count(entryPoint)) {
+				return T();
+			}
 			stack_base = valueStack.size();					// スタック参照位置初期化
 			push(0);										// mainへの引数カウントをpush
 			push(stack_base);								// stack_baseの初期値をpush
@@ -90,6 +97,20 @@ namespace ButiScript {
 			auto ret = top().v_->Get<T>();
 			valueStack.resize(globalValue_size);
 			return ret;
+		}
+		template<>
+		void Execute(const std::string& entryPoint ) {
+			if (!data_->map_entryPoints.count(entryPoint)) {
+				return;
+			}
+			stack_base = valueStack.size();					// スタック参照位置初期化
+			push(0);										// mainへの引数カウントをpush
+			push(stack_base);								// stack_baseの初期値をpush
+			push(0);										// プログラム終了位置をpush
+
+			Execute_(entryPoint);
+
+			valueStack.resize(globalValue_size);
 		}
 
 		template<typename T, typename U>
@@ -111,7 +132,11 @@ namespace ButiScript {
 		template<typename T>
 		void SetGlobalVariable(const T value, const std::string arg_variableName) {
 			if (!data_->map_globalValueAddress.count(arg_variableName)) {
-				std::cout << arg_variableName << "にはアクセスできません" << std::endl;
+
+#ifdef IMPL_BUTIENGINE
+				ButiEngine::GUI::Console( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
+#endif
+
 				return;
 			}
 			valueStack[globalValue_base + data_->map_globalValueAddress.at(arg_variableName)].v_->Set(value);
@@ -119,7 +144,10 @@ namespace ButiScript {
 		template<typename T>
 		T& GetGlobalVariable(const std::string arg_variableName) {
 			if (!data_->map_globalValueAddress.count(arg_variableName)) {
-				std::cout << arg_variableName << "にはアクセスできません" << std::endl;
+
+#ifdef IMPL_BUTIENGINE
+				ButiEngine::GUI::Console(arg_variableName + "にはアクセスできません", ButiEngine::Vector4(1.0f, 0.8f, 0.8f, 1.0f));
+#endif
 				static T temp;
 				return temp;
 			}
@@ -142,7 +170,7 @@ namespace ButiScript {
 
 		/////////////定数Push定義////////////////
 		// 定数Push
-		void PushConstInt(const int arg_val)
+		inline void PushConstInt(const int arg_val)
 		{
 			push(arg_val);
 		}
@@ -152,7 +180,7 @@ namespace ButiScript {
 		}
 
 		// 定数Push
-		void PushConstFloat(const float arg_val)
+		inline void PushConstFloat(const float arg_val)
 		{
 			push(arg_val);
 		}
@@ -162,7 +190,7 @@ namespace ButiScript {
 		}
 
 		// 文字定数Push
-		void PushString(const int arg_val)
+		inline void PushString(const int arg_val)
 		{
 			push(std::string(textBuffer + arg_val));
 		}
@@ -175,7 +203,7 @@ namespace ButiScript {
 
 		/////////////変数Push定義////////////////
 		// グローバル変数のコピーをPush
-		void PushGlobalValue(const int arg_val)
+		inline void PushGlobalValue(const int arg_val)
 		{
 			push(valueStack[globalValue_base + arg_val].Clone());
 		}
@@ -185,7 +213,7 @@ namespace ButiScript {
 		}
 
 		// ローカル変数のコピーをPush
-		void PushLocal(const int arg_val)
+		inline void PushLocal(const int arg_val)
 		{
 			push(valueStack[arg_val + stack_base].Clone());
 		}
@@ -196,7 +224,7 @@ namespace ButiScript {
 		}
 
 		// 配列からコピーをPush
-		void PushGlobalArray(const int arg_val)
+		inline void PushGlobalArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
 			push(valueStack[(int)(arg_val + index)].Clone());
@@ -208,7 +236,7 @@ namespace ButiScript {
 		}
 
 		// ローカルの配列からコピーをPush
-		void PushLocalArray(const int arg_val)
+		inline void PushLocalArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
 			push(valueStack[arg_val + stack_base + index].Clone());
@@ -220,10 +248,11 @@ namespace ButiScript {
 		}
 
 		//グローバル変数のメンバ変数のコピーをpush
-		void PushMember( const int arg_valueIndex) {
-			auto v = top();
+		inline void PushMember( const int arg_valueIndex) {
+			auto v_ = top().v_;
 			pop();
-			push_clone(v.v_->GetMember(arg_valueIndex), v.v_->GetMemberType(arg_valueIndex));
+			push_clone(v_->GetMember(arg_valueIndex), v_->GetMemberType(arg_valueIndex));
+			top().v_->release();
 		}
 
 		void PushMember() {
@@ -233,7 +262,7 @@ namespace ButiScript {
 		/////////////グローバル変数の参照Push定義////////////////
 
 		// グローバル変数の参照をPush
-		void PushGlobalValueRef(const int arg_val)
+		inline void PushGlobalValueRef(const int arg_val)
 		{
 			push(valueStack[globalValue_base + arg_val]);
 		}
@@ -243,7 +272,7 @@ namespace ButiScript {
 		}
 
 		// ローカル変数の参照をPush
-		void PushLocalRef(const int arg_val)
+		inline void PushLocalRef(const int arg_val)
 		{
 			push(valueStack[arg_val + stack_base]);
 		}
@@ -254,7 +283,7 @@ namespace ButiScript {
 		}
 
 		// 配列から参照をPush
-		void PushGlobalArrayRef(const int arg_val)
+		inline void PushGlobalArrayRef(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
 			push(valueStack[(int)(arg_val + index)]);
@@ -266,7 +295,7 @@ namespace ButiScript {
 		}
 
 		// ローカルの配列から参照をPush
-		void PushLocalArrayRef(const int arg_val)
+		inline void PushLocalArrayRef(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
 			push(valueStack[arg_val + stack_base + index]);
@@ -279,7 +308,7 @@ namespace ButiScript {
 
 
 		//メンバ変数の参照をpush
-		void PushMemberRef( const int arg_valueIndex) {
+		inline void PushMemberRef( const int arg_valueIndex) {
 			auto v = top().v_;
 			pop();
 			push(v->GetMember(arg_valueIndex), v->GetMemberType(arg_valueIndex));
@@ -292,7 +321,7 @@ namespace ButiScript {
 
 
 		// アドレスをPush
-		void PushAddr(const int arg_val)
+		inline void PushAddr(const int arg_val)
 		{
 			int base = arg_val;
 			if ((arg_val & global_flag) == 0)	// local
@@ -305,7 +334,7 @@ namespace ButiScript {
 		}
 
 		// 配列のアドレスをPush
-		void PushArrayAddr(const int arg_val)
+		inline void PushArrayAddr(const int arg_val)
 		{
 			int base = arg_val;
 			if ((arg_val & global_flag) == 0)	// local
@@ -320,7 +349,7 @@ namespace ButiScript {
 
 		/////////////Pop定義////////////////
 		// 変数にPop
-		void PopValue(const int arg_val)
+		inline void PopValue(const int arg_val)
 		{
 			valueStack[globalValue_base+ arg_val] = top(); pop();
 		}
@@ -328,7 +357,7 @@ namespace ButiScript {
 			PopValue(Value_Int());
 		}
 		// ローカル変数にPop
-		void PopLocal(const int arg_val)
+		inline void PopLocal(const int arg_val)
 		{
 			valueStack[arg_val + stack_base] = top(); pop();
 		}
@@ -337,7 +366,7 @@ namespace ButiScript {
 		}
 
 		//メンバ変数にPop
-		void PopMember(const int arg_index)
+		inline void PopMember(const int arg_index)
 		{
 			auto v = top().v_;
 			pop();
@@ -347,7 +376,7 @@ namespace ButiScript {
 			PopMember(Value_Int());
 		}
 		//メンバ変数にPop(参照)
-		void PopMemberRef(const int arg_index)
+		inline void PopMemberRef(const int arg_index)
 		{
 			auto v = top().v_;
 			pop();
@@ -358,7 +387,7 @@ namespace ButiScript {
 		}
 
 		// 配列変数にPop
-		void PopArray(const int arg_val)
+		inline void PopArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
 			valueStack[(int)(arg_val + index)] = top(); pop();
@@ -368,7 +397,7 @@ namespace ButiScript {
 		}
 
 		// ローカルの配列変数にPop
-		void PopLocalArray(const int arg_val)
+		inline void PopLocalArray(const int arg_val)
 		{
 			int index = top().v_->Get<int>(); pop();
 			valueStack[arg_val + stack_base + index] = top(); pop();
@@ -379,7 +408,7 @@ namespace ButiScript {
 		}
 
 		// ローカル変数(参照)にPop
-		void PopLocalRef(const int arg_val)
+		inline void PopLocalRef(const int arg_val)
 		{
 			int addr = valueStack[arg_val + stack_base].v_->Get<int>();
 			set_ref(addr, top()); pop();
@@ -388,7 +417,7 @@ namespace ButiScript {
 			PopLocalRef(Value_Int());
 		}
 		// ローカルの配列変数(参照)にPop
-		void PopLocalArrayRef(const int arg_val)
+		inline void PopLocalArrayRef(const int arg_val)
 		{
 			int addr = valueStack[arg_val + stack_base].v_->Get<int>();
 			int index = top().v_->Get<int>(); pop();
@@ -408,18 +437,30 @@ namespace ButiScript {
 
 		/////////////Alloc定義////////////////
 		// ローカル変数を確保
-		void OpAllocStack(const int arg_val)
+		inline void OpAllocStack(const int arg_val)
 		{
 			(this->*p_pushValues[arg_val])();
-
 		}
 		void OpAllocStack()
 		{
 			OpAllocStack(Value_Int());
 		}
 
+		void OpAllocStackEnumType() {
+			int type = Value_Int();
+			auto value = Value(Type_Enum(), &data_->map_enumTag.at(type));
+			value.SetType(type);
+			this->valueStack.push(value);
+		}
+		void OpAllocStackFunctionType() {
+			int type = Value_Int();
+			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable);
+			value.SetType(type);
+			this->valueStack.push(value);
+		}
+
 		// ローカル変数(参照型)を確保
-		void OpAllocStack_Ref(const int arg_val)
+		inline void OpAllocStack_Ref(const int arg_val)
 		{
 			(this->*p_pushRefValues[arg_val & ~TYPE_REF])();
 
@@ -429,7 +470,7 @@ namespace ButiScript {
 			OpAllocStack_Ref(Value_Int());
 		}
 		// ローカル変数を確保(スクリプト定義)
-		void OpAllocStack_ScriptType(const int arg_val)
+		inline void OpAllocStack_ScriptType(const int arg_val)
 		{
 			pushValue(&vec_scriptClassInfo[arg_val],&vec_scriptClassInfo);
 
@@ -440,7 +481,7 @@ namespace ButiScript {
 		}
 
 		// ローカル変数(参照型)を確保(スクリプト定義)
-		void OpAllocStack_Ref_ScriptType(const int arg_val)
+		inline void OpAllocStack_Ref_ScriptType(const int arg_val)
 		{
 			pushValue_ref(&vec_scriptClassInfo[arg_val]);
 		}
@@ -721,7 +762,7 @@ namespace ButiScript {
 
 		/////////////アドレス操作定義////////////////
 		// 無条件ジャンプ
-		void OpJmp(const int arg_val)
+		inline void OpJmp(const int arg_val)
 		{
 			jmp(arg_val);
 		}
@@ -730,7 +771,7 @@ namespace ButiScript {
 		}
 
 		// 真の時ジャンプ
-		void OpJmpC(const int arg_val)
+		inline void OpJmpC(const int arg_val)
 		{
 			int cond = top().v_->Get<int>(); pop();
 			if (cond)
@@ -741,7 +782,7 @@ namespace ButiScript {
 		}
 
 		// 偽の時ジャンプ
-		void OpJmpNC(const int arg_val)
+		inline void OpJmpNC(const int arg_val)
 		{
 			int cond = top().v_->Get<int>(); pop();
 			if (!cond)
@@ -752,7 +793,7 @@ namespace ButiScript {
 		}
 
 		// switch文用特殊判定
-		void OpTest(const int arg_val)
+		inline void OpTest(const int arg_val)
 		{
 			int Value = top().v_->Get<int>(); pop();
 			if (Value == top().v_->Get<int>()) {
@@ -766,7 +807,7 @@ namespace ButiScript {
 
 		/////////////関数呼び出し定義////////////////
 		// 関数コール
-		void OpCall(const int arg_val)
+		inline void OpCall(const int arg_val)
 		{
 			push(stack_base);
 			push(addr());					// リターンアドレスをPush
@@ -776,6 +817,11 @@ namespace ButiScript {
 
 		void OpCall() {
 			OpCall(Value_Int());
+		}
+
+		void OpCallByVariable() {
+			int addr = top().v_->Get<int>(); pop();
+			OpCall(addr);
 		}
 
 		// 引数なしリターン
@@ -808,7 +854,7 @@ namespace ButiScript {
 		{
 		}
 		// 組み込み関数
-		void OpSysCall(const int val)
+		inline void OpSysCall(const int val)
 		{
 			pop();	// arg_count
 			(this->*p_syscall[val])();
@@ -819,7 +865,7 @@ namespace ButiScript {
 		}
 
 		//組み込みメソッド
-		void OpSysMethodCall(const int val) 
+		inline void OpSysMethodCall(const int val)
 		{
 			pop();	// arg_count
 			(this->*p_sysMethodCall[val])();
@@ -836,6 +882,18 @@ namespace ButiScript {
 
 			auto v = top().v_->Get<ButiEngine::Vector3>(); pop();
 			shp_gameObject->transform->Translate(v);
+		}
+		void sys_setworldposition() {
+
+			auto v = top().v_->Get<ButiEngine::Vector3>(); pop();
+			shp_gameObject->transform->SetWorldPosition(v);
+		}
+		void sys_get_ownGameObject() {
+			push(shp_gameObject);
+		}
+		void sys_get_gameObjectByName() {
+			std::string name = top().v_->GetRef<std::string>(); pop();
+			push(shp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock());
 		}
 		void sys_getKeyboard() {
 
@@ -907,7 +965,7 @@ namespace ButiScript {
 		template<typename Arg, void(*Method)(Arg) >
 		void sys_func_retNo()
 		{
-			auto arg = top().v_->Get<Arg>(); pop();
+			auto arg = top().v_->Get<Arg>(); pop(); 
 			(*Method)(arg);
 		}
 		//組み込み関数(return 有り)
@@ -1036,7 +1094,7 @@ namespace ButiScript {
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg = ((this)->*getArgValueFunc)();
-			((v)->*Method)(arg);
+			((v)->*Method)(*arg);
 			pop();
 
 		}
@@ -1046,7 +1104,7 @@ namespace ButiScript {
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg = ((this)->*getArgValueFunc)();
-			((v)->*Method)(arg);
+			((v)->*Method)(*arg);
 			pop();
 		}
 		template<typename T, typename Arg, void(T::* Method)(const Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
@@ -1055,7 +1113,7 @@ namespace ButiScript {
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg = ((this)->*getArgValueFunc)();
-			((v)->*Method)(arg);
+			((v)->*Method)(*arg);
 			pop();
 		}
 		template<typename T, typename Arg, void(T::* Method)(Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
@@ -1149,7 +1207,7 @@ namespace ButiScript {
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg = ((this)->*getArgValueFunc)();
-			U ret = ((v)->*Method)(arg);
+			U ret = ((v)->*Method)(*arg);
 			pop();
 			push(ret);
 		}
@@ -1160,7 +1218,7 @@ namespace ButiScript {
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg = ((this)->*getArgValueFunc)();
-			U ret = ((v)->*Method)(arg);
+			U ret = ((v)->*Method)(*arg);
 			pop();
 			push(ret);
 		}
@@ -1192,36 +1250,35 @@ namespace ButiScript {
 		template<typename T>
 		void pushValue() {
 			auto value = Value(T());
-			long long int address;
-			auto ptr = &VirtualCPU::pushValue<T>;
-			address = *(long long int*) & (ptr);
+			long long int address = TypeSpecific<T>();
+			value.SetType(Value::GetTypeIndex(address));
+			this->valueStack.push(value);
+		}
+		template<>
+		void pushValue<Type_Null>() {
+			auto value = Value(Type_Null());
+			long long int address = TypeSpecific<Type_Null>();
 			value.SetType(Value::GetTypeIndex(address));
 			this->valueStack.push(value);
 		}
 		template<typename T>
 		void pushValue_ref() {
 			auto value = Value();
-			long long int address;
-			auto ptr = &VirtualCPU::pushValue<T>;
-			address = *(long long int*) & (ptr);
+			long long int address = TypeSpecific<T>();
 			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
 			this->valueStack.push(value);
 		}
 		template<typename T>
 		void pushSharedValue() {
 			auto value = Value();
-			long long int address;
-			auto ptr = &VirtualCPU::pushSharedValue<T>;
-			address = *(long long int*) & (ptr);
+			long long int address = TypeSpecific<T>();
 			value.SetType(Value::GetTypeIndex(address));
 			this->valueStack.push(value);
 		}
 		template<typename T>
 		void pushSharedValue_ref() {
 			auto value = Value();
-			long long int address;
-			auto ptr = &VirtualCPU::pushSharedValue<T>;
-			address = *(long long int*) & (ptr);
+			long long int address = TypeSpecific<T>();
 			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
 			this->valueStack.push(value);
 		}
@@ -1229,7 +1286,7 @@ namespace ButiScript {
 			auto value = Value(*info,p_vec_scriptClassInfo);
 			this->valueStack.push(value);
 		}
-		void pushValue_ref(ScriptClassInfo* info) {
+		inline void pushValue_ref(ScriptClassInfo* info) {
 			auto value = Value(Type_Null());
 			value.SetType(info->GetTypeIndex() | TYPE_REF);
 			this->valueStack.push(value);
@@ -1252,13 +1309,16 @@ namespace ButiScript {
 		template <typename T>
 		void push(std::shared_ptr<T> v) {
 			valueStack.push(ButiScript::Value(v));
+
+			auto ptr = &VirtualCPU::pushSharedValue<T>;
+			auto address = *(long long int*) & (ptr);
+			top().SetTypeIndex(address);
 		}
 		void push(IValue* arg_p_ivalue,const int arg_type) {
 			valueStack.push(ButiScript::Value(arg_p_ivalue, arg_type));
 		}
 		void push_clone(IValue* arg_p_ivalue,const int arg_type) {
-			auto cloneV = arg_p_ivalue->Clone();
-			valueStack.push(ButiScript::Value(cloneV, arg_type));
+			valueStack.push(ButiScript::Value(arg_p_ivalue->Clone(), arg_type));
 		}
 		void push(const ButiScript::Value& v) { 
 			valueStack.push(v); 
@@ -1331,18 +1391,6 @@ namespace ButiScript {
 	};
 
 }
-#ifdef IMPL_BUTIENGINE
-template<typename T>
-void  ButiScript::GlobalValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
-{
-	*arg_v = new ButiScript::Value_wrap<T>(data, 1);
-}
-template<typename T>
-void ButiScript::GlobalSharedPtrValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
-{
-	*arg_v = new ButiScript::Value_Shared<T>(data, 1);
-}
-#endif // IMPL_BUTIENGINE
 
 
 #endif
