@@ -366,9 +366,13 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 	types.RegistType(*enums.FindType(arg_typeName));
 }
 
-int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType) const
+int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType) 
 {
-	return 0;
+	auto type= types.GetFunctionType(arg_vec_argmentTypes, retType);
+	if (!type) {
+		type = types.CreateFunctionType(arg_vec_argmentTypes, retType);
+	}
+	return type->typeIndex;
 }
 
 
@@ -489,6 +493,7 @@ struct set_addr {
 		case ButiScript::VM_JMPNC:
 		case ButiScript::VM_TEST:
 		case ButiScript::VM_CALL:
+		case ButiScript::VM_PUSHFUNCTIONOBJECT:
 			code.SetConstValue( labels_[code.GetConstValue<int>()].pos_);
 			break;
 		}
@@ -641,6 +646,7 @@ void ButiScript::Compiler::debug_dump()
 	static const char* op_name[] = {
 #define	VM_NAMETABLE
 #include "VM_nametable.h"
+#include "Tags.h"
 #undef	VM_NAMETABLE
 		"LABEL",
 	};
@@ -1001,6 +1007,12 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 			if (type->isSystem) {
 				arg_comp->OpAllocStack_Ref(*itr);
 			}
+			else  if (type->p_enumTag) {
+				arg_comp->OpAllocStack_Ref_EnumType(*itr);
+			}
+			else  if (type->isFunctionObject) {
+				arg_comp->OpAllocStack_Ref_FunctionType(*itr);
+			}
 			else {
 				arg_comp->OpAllocStack_Ref_ScriptType(*itr - arg_comp->GetSystemTypeSize());
 			}
@@ -1012,6 +1024,9 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 			}
 			else  if (type->p_enumTag) {
 				arg_comp->OpAllocStackEnumType(*itr);
+			}
+			else  if (type->isFunctionObject) {
+				arg_comp->OpAllocStackFunctionType(*itr);
 			}
 			else
 			{
@@ -1172,7 +1187,32 @@ bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_met
 	}
 	return true;
 }
+int ButiScript::TypeTag::GetFunctionObjectReturnType() const
+{
+	if (!isFunctionObject) {
+		return -1;
+	}
+	auto retTypeStr = StringHelper::Split(StringHelper::Split(typeName, ":")[1], ",")[0];
+	return std::stoi(retTypeStr);
+}
+int ButiScript::TypeTag::GetFunctionObjectArgSize() const
+{
+	if (!isFunctionObject) {
+		return -1;
+	}
+	auto argTypeStrs = StringHelper::Split(StringHelper::Split(typeName, ":")[1], ",");
+	return argTypeStrs.size()-1;
+}
 
+std::vector<int> ButiScript::TypeTag::GetFunctionObjectArgment() const
+{
+	std::vector<int> output;
+	auto argTypeStrs = StringHelper::Split(StringHelper::Split(typeName, ":")[1], ",");
+	for (int i = 1,size= argTypeStrs.size(); i < size; i++) {
+		output.push_back(std::stoi(argTypeStrs[ i]));
+	}
+	return output;
+}
 
 #ifndef IMPL_BUTIENGINE
 template<typename T>

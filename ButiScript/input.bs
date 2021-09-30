@@ -1,21 +1,17 @@
 Function():void{
-	print("Function Called!");
+	print("Function Called!\n");
 }
-Function1():void{
-	print("Function1 Called!");
+Function_withArg(i:int,f:float):void{
+	print("Function_withArg Called!\n");
+	print("int:"+ToString(i)+",float:"+ToString(f)+"\n");
 }
-Function2():void{
-	print("Function2 Called!");
-}
-Function3():void{
-	print("Function3 Called!");
-}
+
 
 
 main():int
 {
 	var funcObject:(i: int ,f:float)=>void;
-	funcObject=10;
-	Function();
-	return funcObject;
+	funcObject=Function_withArg;
+	funcObject(0,1.0);
+	return 0;
 }

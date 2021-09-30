@@ -489,6 +489,17 @@ namespace ButiScript {
 		{
 			OpAllocStack_Ref_ScriptType(Value_Int());
 		}
+		// ローカル変数(参照型)を確保(列挙型)
+		void OpAllocStack_Ref_EnumType()
+		{
+			OpAllocStack_Ref(Value_Int());
+		}
+		// ローカル変数(参照型)を確保(関数型)
+		void OpAllocStack_Ref_FunctionType()
+		{
+			OpAllocStack_Ref(Value_Int());
+		}
+
 
 
 
@@ -847,6 +858,16 @@ namespace ButiScript {
 			valueStack.pop(arg_count);
 			push(result);
 			jmp(addr);
+		}
+
+		//関数オブジェクトのアドレスをPush
+		inline void OpPushFunctionAddress(const int address) {
+			push(address);
+		}
+		//関数オブジェクトのアドレスをPush
+		void OpPushFunctionAddress() {
+
+			OpPushFunctionAddress(Value_Int());
 		}
 
 		// 仮想CPU停止

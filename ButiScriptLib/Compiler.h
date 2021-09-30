@@ -216,13 +216,19 @@ public:
 	}
 
 	// ŠÖ”‚ÌŒŸõ
-	const FunctionTag* GetFunctionTag(const std::string& name,const std::vector<int>& args,const bool isStrict) const
+	const FunctionTag* GetFunctionTag(const std::string& name, const std::vector<int>& args, const bool isStrict) const
 	{
-		if(isStrict)
-		return functions.Find_strict(name,args);
+		if (isStrict) {
+			return functions.Find_strict(name, args);
+		}
 		else {
 			return functions.Find(name, args);
 		}
+	}
+	// ŠÖ”‚ÌŒŸõ
+	const FunctionTag* GetFunctionTag(const std::string& name) const
+	{
+		return functions.Find(name);
 	}
 
 	//Œ^‚ÌŒŸõ
@@ -234,7 +240,7 @@ public:
 		return -1;
 	}
 	//ŠÖ”Œ^‚ÌŒŸõ
-	int GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType)const;
+	int GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType);
 
 	TypeTag* GetType(const int index) {
 		return types.GetType(index);

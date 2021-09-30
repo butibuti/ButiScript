@@ -625,6 +625,24 @@ namespace ButiScript {
 			return nullptr;
 		}
 
+		const FunctionTag* Find(const std::string& name) const
+		{
+			const_iter itr = map_functions.find(name);
+			if (itr == map_functions.end()) {
+				return nullptr;
+			}
+			return &itr->second;
+		}
+
+		FunctionTag* Find(const std::string& name)
+		{
+			iter itr = map_functions.find(name);
+			if (itr == map_functions.end()) {
+				return nullptr;
+			}
+			return &itr->second;
+		}
+
 		void Clear()
 		{
 			map_functions.clear();
@@ -800,10 +818,13 @@ namespace ButiScript {
 		FunctionTag* AddMethod(const std::string& arg_methodName, const FunctionTag& arg_method) {
 			return methods.Add(arg_methodName, arg_method);
 		}
-		bool isSystem=false, isShared=false;
+		bool isSystem=false, isShared=false,isFunctionObject=false;
 		EnumTag* p_enumTag = nullptr;
+		int GetFunctionObjectReturnType()const;
+		int GetFunctionObjectArgSize()const;
+		std::vector<int> GetFunctionObjectArgment()const;
 		ScriptClassInfo GetScriptTypeInfo()const {
-			if (isSystem) {
+			if (isSystem||isFunctionObject) {
 				//組み込み型なのでスクリプト型定義は作れない
 				assert(0);
 				return ScriptClassInfo();
@@ -862,6 +883,50 @@ namespace ButiScript {
 			}
 			return &map_types.at(arg_typename);
 		}
+		const TypeTag* GetFunctionType(const std::vector<int>& arg_argmentTypes, const int arg_retType)const {
+			auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
+			for (auto i = 0; i < arg_argmentTypes.size(); i++) {
+				functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
+			}
+			if (!map_types.count(functionTypeName)) {
+				return nullptr;
+			}
+			return &map_types.at(functionTypeName);
+		}
+		TypeTag* GetFunctionType(const std::vector<int>& arg_argmentTypes, const int arg_retType) {
+			auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
+			for (auto i = 0; i < arg_argmentTypes.size(); i++) {
+				functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
+			}
+			if (!map_types.count(functionTypeName)) {
+				return nullptr;
+			}
+			return &map_types.at(functionTypeName);
+		}
+		TypeTag* CreateFunctionType(const std::vector<int>& arg_argmentTypes, const int arg_retType) {
+			auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
+			for (auto i = 0; i < arg_argmentTypes.size(); i++) {
+				functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
+			}
+			if (map_types.count(functionTypeName)) {
+				return &map_types.at(functionTypeName);
+			}
+			TypeTag functionType;
+			functionType.typeName = functionTypeName;
+			functionType.argName = functionTypeName;
+			functionType.isFunctionObject = true;
+			functionType.typeIndex = vec_types.size();
+			functionType.isSystem = false;
+			if (vec_types.size() <= functionType.typeIndex) {
+				vec_types.resize(functionType.typeIndex + 1);
+			}
+			map_argmentChars.emplace(functionTypeName, functionType.typeIndex);
+			map_types.emplace(functionTypeName, functionType);
+			vec_types[functionType.typeIndex] = &map_types.at(functionTypeName);
+
+			return &map_types.at(functionTypeName);
+		}
+
 
 		void RegistType(const TypeTag& arg_type) {
 
@@ -940,7 +1005,7 @@ namespace ButiScript {
 		std::vector<ScriptClassInfo> GetScriptClassInfo()const {
 			std::vector<ScriptClassInfo> output;
 			for (int i = 0; i < vec_types.size(); i++) {
-				if (vec_types[i]->isSystem){ continue; }
+				if (vec_types[i]->isSystem|| vec_types[i]->isFunctionObject){ continue; }
 					
 				output.push_back(vec_types[i]->GetScriptTypeInfo());
 

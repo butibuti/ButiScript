@@ -110,13 +110,14 @@ namespace ButiScript {
 		virtual int GetType(Compiler* c)const;
 
 		virtual const ValueTag* GetValueTag(Compiler* c)const;
+		virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* c)const;
 		virtual int EnumType(Compiler* c)const {return TYPE_INTEGER;}
 		int GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const;
 
 		int Assign(Compiler* c) const;
 		int Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const;
 
-		static Node_t make_node(const int Op, const float arg_number)
+		static Node_t make_node(const int Op, const float arg_number, const Compiler* c)
 		{
 			if (Op == OP_FLOAT)
 				return Node_t(new Node(Op, arg_number));
@@ -124,8 +125,8 @@ namespace ButiScript {
 			return Node_t(new Node(Op, (int)arg_number));
 		}
 
-		static Node_t make_node(const int Op, const std::string& str);
-		static Node_t make_node(const int Op, Node_t left);
+		static Node_t make_node(const int Op, const std::string& str, const Compiler* c);
+		static Node_t make_node(const int Op, Node_t left, const Compiler* c);
 		static Node_t make_node(const int Op, Node_t left,const std::string arg_memberName,const Compiler* c);
 		static Node_t make_node(const int Op, Node_t left, Node_t right);
 		static Node_t make_node(const int Op, Node_t left, NodeList_t right);
@@ -241,6 +242,16 @@ namespace ButiScript {
 		int EnumType(Compiler* c)const override;
 	};
 
+	//関数オブジェクトのノード
+	class Node_FunctionObject :public Node {
+	public:
+		Node_FunctionObject(const std::string& arg_identiferName) : Node(OP_INT,arg_identiferName) {
+			string_ = arg_identiferName;
+		}
+		virtual int Push(Compiler* c) const;
+		virtual int Pop(Compiler* c) const;
+		int GetType(Compiler* c)const override;
+	};
 
 	// ステートメント
 

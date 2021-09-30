@@ -23,7 +23,7 @@ bool CanTypeCast(const int arg_left, const int arg_right) {
 }
 
 
-const EnumTag* GetEnumType(const Compiler* c,Node& left_) {
+const EnumTag* GetEnumType(const Compiler* c, Node& left_) {
 
 	auto shp_namespace = c->GetCurrentNameSpace();
 	std::string serchName;
@@ -46,9 +46,55 @@ const EnumTag* GetEnumType(const Compiler* c,Node& left_) {
 	}
 	return enumType;
 }
+const FunctionTag* GetFunctionType(const Compiler* c, const Node& left_) {
+
+	auto shp_namespace = c->GetCurrentNameSpace();
+	std::string serchName;
+	const  FunctionTag* tag = nullptr;
+	while (!tag)
+	{
+		serchName = shp_namespace->GetGlobalNameString() + left_.GetString();
+
+		tag = c->GetFunctionTag(serchName);
+
+		if (tag) {
+			break;
+		}
+
+		shp_namespace = shp_namespace->GetParent();
+		if (!shp_namespace) {
+			break;
+		}
+
+	}
+	return tag;
+}
+const FunctionTag* GetFunctionType(const Compiler* c, const std::string& str) {
+
+	auto shp_namespace = c->GetCurrentNameSpace();
+	std::string serchName;
+	const  FunctionTag* tag = nullptr;
+	while (!tag)
+	{
+		serchName = shp_namespace->GetGlobalNameString() + str;
+
+		tag = c->GetFunctionTag(serchName);
+
+		if (tag) {
+			break;
+		}
+
+		shp_namespace = shp_namespace->GetParent();
+		if (!shp_namespace) {
+			break;
+		}
+
+	}
+	return tag;
+}
 
 // 変数ノードを生成
-Node_t Node::make_node(const int Op, const std::string& str)
+Node_t Node::make_node(const int Op, const std::string& str, const Compiler* c)
 {
 	if (Op == OP_IDENTIFIER)
 		return Node_t(new Node_value(str));
@@ -62,7 +108,7 @@ Node_t Node::make_node(const int Op, const std::string& str)
 }
 
 // 単項演算子のノードを生成
-Node_t Node::make_node(const int Op, Node_t left)
+Node_t Node::make_node(const int Op, Node_t left, const Compiler* c)
 {
 	if (Op == OP_METHOD) {
 		return Node_t(new Node_Method(Op, left->GetLeft(), left->GetString()));
@@ -940,13 +986,19 @@ int Node::GetType(Compiler* c)const {
 		return GetCallType(c, string_, nullptr);
 	}
 	if (op_ == OP_IDENTIFIER) {
-		const ValueTag* tag = GetValueTag(c);
-		if (tag == nullptr) {
-			c->error("変数 " + string_ + " は定義されていません。");
+		const ValueTag* valueTag = GetValueTag(c);
+		if (valueTag)  {
+			return valueTag->valueType;
 		}
-		else {
-			return tag->valueType;
+		auto funcTag = GetFunctionType(c, *this);
+
+		if (!funcTag) {
+			c->error(GetString() + "は未定義です");
+			return 0;
 		}
+
+		return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+
 	}
 	int left_type = left_->GetType(c);
 	int right_type = right_->GetType(c);
@@ -985,6 +1037,35 @@ const ValueTag* Node::GetValueTag(Compiler* c) const
 {
 		c->error("変数ノード以外から変数を受け取ろうとしています");
 		return nullptr;
+}
+const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* c) const
+{
+	std::string  valueName;
+	NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+	const ValueTag* valueTag = nullptr;
+
+	while (!valueTag)
+	{
+		if (currentSerchNameSpace) {
+			valueName = currentSerchNameSpace->GetGlobalNameString() + arg_name;
+		}
+		else {
+			valueName = arg_name;
+		}
+
+		valueTag = c->GetValueTag(valueName);
+		if (currentSerchNameSpace) {
+			currentSerchNameSpace = currentSerchNameSpace->GetParent();
+		}
+		else {
+			break;
+		}
+
+	}
+	if (!valueTag) {
+		//c->error("変数 " + valueName + " は定義されていません。");
+	}
+	return valueTag;
 }
 int  Node_function::GetType(Compiler* c)const {
 	return GetCallType(c, left_->GetString(), &node_list_->args_);
@@ -1201,7 +1282,7 @@ const ValueTag* Node_value::GetValueTag(Compiler* c) const{
 
 		}
 		if (!valueTag) {
-			c->error("変数 " + valueName + " は定義されていません。");
+			//c->error("変数 " + valueName + " は定義されていません。");
 		}
 		return valueTag;
 	}
@@ -1213,27 +1294,38 @@ int Node_value::Push(Compiler* c) const{
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* tag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(c);
+		if(valueTag)
 		{
-			if (tag->global_) {		// グローバル変数
+			if (valueTag->global_) {		// グローバル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushGlobalArrayRef(tag->address);
+					c->PushGlobalArrayRef(valueTag->address);
 				}
 				else {
-					c->PushGlobalValueRef(tag->address);
+					c->PushGlobalValueRef(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushLocalArrayRef(tag->address);
+					c->PushLocalArrayRef(valueTag->address);
 				}
 				else {
-					c->PushLocalRef(tag->address);
+					c->PushLocalRef(valueTag->address);
 				}
 			}
-			return tag->valueType & ~TYPE_REF;
+			return valueTag->valueType & ~TYPE_REF;
+		}
+		const auto funcTag = GetFunctionType(c, *this);
+
+		if (!funcTag) {
+			c->error(GetString() + "は未定義です");
+			return -1;
+		}
+		else {
+			c->OpPushFunctionAddress(funcTag->GetIndex());
+			return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
@@ -1244,27 +1336,39 @@ int Node_value::PushClone(Compiler* c) const{
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* tag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(c);
+		if(valueTag)
 		{
-			if (tag->global_) {		// グローバル変数
+			if (valueTag->global_) {		// グローバル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushGlobalArray(tag->address);
+					c->PushGlobalArray(valueTag->address);
 				}
 				else {
-					c->PushGlobalValue(tag->address);
+					c->PushGlobalValue(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PushLocalArray(tag->address);
+					c->PushLocalArray(valueTag->address);
 				}
 				else {
-					c->PushLocal(tag->address);
+					c->PushLocal(valueTag->address);
 				}
 			}
-			return tag->valueType & ~TYPE_REF;
+			return valueTag->valueType & ~TYPE_REF;
+		}
+
+		const auto funcTag = GetFunctionType(c, *this);
+
+		if (!funcTag) {
+			c->error(GetString() + "は未定義です");
+			return -1;
+		}
+		else {
+			c->OpPushFunctionAddress (funcTag->GetIndex());
+			return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
@@ -1276,27 +1380,38 @@ int Node_value::Pop(Compiler* c) const{
 		c->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* tag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(c);
+		if(valueTag)
 		{
-			if (tag->global_) {		// グローバル変数
+			if (valueTag->global_) {		// グローバル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PopArray(tag->address);
+					c->PopArray(valueTag->address);
 				}
 				else {
-					c->PopValue(tag->address);
+					c->PopValue(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
 					left_->Push(c);
-					c->PopLocalArray(tag->address);
+					c->PopLocalArray(valueTag->address);
 				}
 				else {
-					c->PopLocal(tag->address);
+					c->PopLocal(valueTag->address);
 				}
 			}
-			return tag->valueType & ~TYPE_REF;
+			return valueTag->valueType & ~TYPE_REF;
+		}
+		const auto funcTag = GetFunctionType(c, *this);
+
+		if (!funcTag) {
+			c->error(GetString() + "は未定義です");
+			return -1;
+		}
+		else {
+			c->error(GetString() + "は定数です");
+			return -1;
 		}
 	}
 	return TYPE_INTEGER;
@@ -1305,15 +1420,14 @@ int Node_value::Pop(Compiler* c) const{
 // 関数呼び出し
 struct set_arg {
 	Compiler* comp_;
-	const FunctionTag* func_;
+	const std::vector<int>* argTypes_;
 	mutable int index_;
-	set_arg(Compiler* comp, const FunctionTag* func) : comp_(comp), func_(func), index_(0)
-	{
-	}
+	set_arg(Compiler* comp, const FunctionTag* func) : comp_(comp), argTypes_(&func->args_), index_(0) {}
+	set_arg(Compiler* comp, const std::vector<int>* arg_argTypes) : comp_(comp), argTypes_(arg_argTypes), index_(0){}
 
 	void operator()(Node_t node) const
 	{
-		int type = func_->GetArg(index_++);
+		int type = (*argTypes_)[index_++];
 		if ((type & TYPE_REF) != 0) {		// 参照
 			if (node->Op() != OP_IDENTIFIER) {
 				comp_->error("参照型引数に、変数以外は指定できません。");
@@ -1374,9 +1488,9 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	}
 
 	int argSize = argTypes.size();
-	const FunctionTag* tag=nullptr;
+	const FunctionTag* functionTag=nullptr;
 	
-	while (!tag)
+	while (!functionTag)
 	{
 		if (currentSerchNameSpace) {
 			functionName = currentSerchNameSpace->GetGlobalNameString() + name;
@@ -1385,9 +1499,9 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 			functionName = name;
 		}
 		
-		tag = c->GetFunctionTag(functionName, argTypes, true);
-		if (!tag) {
-			tag = c->GetFunctionTag(functionName, argTypes, false);
+		functionTag = c->GetFunctionTag(functionName, argTypes, true);
+		if (!functionTag) {
+			functionTag = c->GetFunctionTag(functionName, argTypes, false);
 		}
 		if (currentSerchNameSpace) {
 			currentSerchNameSpace = currentSerchNameSpace->GetParent();
@@ -1399,35 +1513,61 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	}
 
 
-	if (tag == nullptr) {
-		std::string message = "";
-		if (argSize) {
-			for (int i = 0; i < argSize; i++) {
-				message += c->GetTypeName(argTypes[i]) + " ";
-			}
-			message += "を引数にとる";
+	if (functionTag ) {
+		// 引数をpush
+		if (args && functionTag->ArgSize() == argSize) {
+			std::for_each(args->begin(), args->end(), set_arg(c, functionTag));
 		}
-		message += "関数" + functionName + "は未宣言です";
-		c->error(message);
-		return -1;
+
+		// 引数の数をpush
+		c->PushConstInt(argSize);
+
+		if (functionTag->IsSystem()) {
+			c->OpSysCall(functionTag->GetIndex());		// 組み込み関数
+		}
+		else {
+			c->OpCall(functionTag->GetIndex());			// スクリプト上の関数
+		}
+
+		return functionTag->valueType;
+	}
+	//関数型変数からの呼び出し
+	auto valueTag = GetValueTag(name, c);
+	if (valueTag) {
+		auto valueType=c->GetType(valueTag->valueType);
+		if (valueType->isFunctionObject) {
+			// 引数をpush
+			if (args && valueType->GetFunctionObjectArgSize() == argSize) {
+				auto valueArgTypes = valueType->GetFunctionObjectArgment();
+				std::for_each(args->begin(), args->end(), set_arg(c,&valueArgTypes ));
+			}
+
+			// 引数の数をpush
+			c->PushConstInt(argSize);
+			if (valueTag->global_) {		// グローバル変数
+
+				c->PushGlobalValue(valueTag->address);
+			}
+			else {		
+
+				c->PushLocal(valueTag->address);
+			}
+			c->OpCallByVariable();
+			return valueType->GetFunctionObjectReturnType();
+		}
 	}
 
-	// 引数をpush
-	if (args && tag->ArgSize() == argSize) {
-		std::for_each(args->begin(), args->end(), set_arg(c, tag));
-	}
 
-	// 引数の数をpush
-	c->PushConstInt(argSize);
-
-	if (tag->IsSystem()) {
-		c->OpSysCall(tag->GetIndex());		// 組み込み関数
+	std::string message = "";
+	if (argSize) {
+		for (int i = 0; i < argSize; i++) {
+			message += c->GetTypeName(argTypes[i]) + " ";
+		}
+		message += "を引数にとる";
 	}
-	else {
-		c->OpCall(tag->GetIndex());			// スクリプト上の関数
-	}
-
-	return tag->valueType;
+	message += "関数" + functionName + "は未宣言です";
+	c->error(message);
+	return -1;
 }
 
 int Node_function::Push(Compiler* c) const
@@ -1767,6 +1907,16 @@ int Declaration::Analyze(Compiler* c)
 					c->OpAllocStack_Ref(valueType);
 				}
 			}
+			else if (type->p_enumTag) {
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStack_Ref_EnumType(valueType);
+				}
+			}
+			else if (type->isFunctionObject) {
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStack_Ref_FunctionType(valueType);
+				}
+			}
 			else {
 				for (int i = 0; i < size; i++) {
 					c->OpAllocStack_Ref_ScriptType((valueType & ~TYPE_REF) - c->GetSystemTypeSize());
@@ -1782,6 +1932,11 @@ int Declaration::Analyze(Compiler* c)
 			else if (type->p_enumTag) {
 				for (int i = 0; i < size; i++) {
 					c->OpAllocStackEnumType(valueType);
+				}
+			}
+			else if (type->isFunctionObject) {
+				for (int i = 0; i < size; i++) {
+					c->OpAllocStackFunctionType(valueType);
 				}
 			}
 			else {
@@ -2024,6 +2179,34 @@ int Node_enum::EnumType(Compiler* c) const
 		return 0;
 	}
 	return type->typeIndex;
+}
+
+int Node_FunctionObject::Push(Compiler* c) const
+{
+	auto funcTag = GetFunctionType(c, *this);
+
+	if (!funcTag) {
+		c->error(GetString() + "は未定義です");
+		return -1;
+	}
+	c->PushConstInt(funcTag->GetIndex());
+	return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+}
+int Node_FunctionObject::Pop(Compiler* c) const
+{
+	c->error("内部エラー：関数型ノードをpop");
+	return -1;
+}
+int Node_FunctionObject::GetType(Compiler* c) const
+{
+	auto funcTag = GetFunctionType(c, *this);
+	
+	if (!funcTag) {
+		c->error(GetString() + "は未定義です");
+		return 0;
+	}
+
+	return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 }
 void Enum::SetIdentifer(const std::string& arg_name)
 {

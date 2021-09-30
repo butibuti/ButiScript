@@ -73,13 +73,13 @@ struct MemberValue {
 
 // 単項演算子ノードを生成する
 struct unary_node_impl {
-	template <typename Ty1, typename Ty2>
+	template <typename Ty1, typename Ty2 ,typename Ty3>
 	struct result { typedef Node_t type; };
 
-	template <typename Ty1, typename Ty2>
-	Node_t operator()(Ty1 Op, const Ty2& left) const
+	template <typename Ty1, typename Ty2, typename Ty3>
+	Node_t operator()(Ty1 Op, const Ty2& left,Ty3 driver) const
 	{
-		return Node::make_node(Op, left);
+		return Node::make_node(Op, left, driver);
 	}
 };
 
@@ -911,7 +911,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 
 			// 変数
 			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
-				identifier[Value.node = unary_node(OP_IDENTIFIER,  arg1)];
+				identifier[Value.node = unary_node(OP_IDENTIFIER,  arg1,self.driver_)];
 
 			// 関数の引数
 			argument = expr
@@ -1185,7 +1185,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 			// 変数
 			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
-				identifier[Value.node = unary_node(OP_IDENTIFIER, Value.name+ arg1)]
+				identifier[Value.node = unary_node(OP_IDENTIFIER, Value.name+ arg1, self.driver_)]
 				>> !('[' >> expr[Value.node = binary_node(OP_ARRAY, Value.node, arg1)] >> ']');
 
 			// 関数の引数
@@ -1194,17 +1194,17 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 			// 関数呼び出し
 			func_node = (*(nameSpace_call[func_node.name += functionCall_namespace(arg1) ]))>>
-				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1)] >>
+				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1, self.driver_)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
 
 			//メンバ呼び出し
 			callMember =Value[ callMember.valueNode=arg1]>>"."
 				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode,arg1, self.driver_)]
-				>>!(ch_p('(' )[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode)]>> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+				>>!(ch_p('(' )[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.driver_)]>> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 				>>* (".">> 
 					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.driver_)]  >>  
-					!(ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+					!(ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.driver_)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 					)
 				
 				;
@@ -1213,15 +1213,15 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 			prime = callMember[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
-				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1)]
-				| number[prime.node = unary_node(OP_INT, arg1)]
-				| string_node[prime.node = unary_node(OP_STRING, arg1)]
+				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1, self.driver_)]
+				| number[prime.node = unary_node(OP_INT, arg1, self.driver_)]
+				| string_node[prime.node = unary_node(OP_STRING, arg1, self.driver_)]
 				| '(' >> expr[prime.node = arg1] >> ')'
 				;
 
 			// 単項演算子
 			unary = prime[unary.node = arg1]
-				| '-' >> prime[unary.node = unary_node(OP_NEG, arg1)];
+				| '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.driver_)];
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
