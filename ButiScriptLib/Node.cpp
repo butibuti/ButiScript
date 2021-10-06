@@ -1867,9 +1867,8 @@ int Block::Analyze(Compiler* c)
 	auto ret = 0;
 	{
 
-		auto endItr = decl_.end();
 
-		for (auto itr = decl_.begin(); itr != endItr; itr++) {
+		for (auto itr = decl_.begin(), endItr = decl_.end(); itr != endItr; itr++) {
 			(*itr)->Define(c);
 		}
 	}
@@ -1878,9 +1877,9 @@ int Block::Analyze(Compiler* c)
 
 	{
 
-		auto endItr = state_.end();
+		
 
-		for (auto itr = state_.begin(); itr != endItr; itr++) {
+		for (auto itr = state_.begin(), endItr = state_.end(); itr != endItr; itr++) {
 			if ((ret = (*itr)->Analyze(c)) != 0) {
 				return ret;
 			}

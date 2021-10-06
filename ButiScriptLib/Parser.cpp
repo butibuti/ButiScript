@@ -421,6 +421,17 @@ struct pop_nameSpace_impl {
 	}
 };
 
+//std::cout ÉfÉoÉbÉOóp
+struct	cout_impl {
+	template <typename Ty1>
+	struct result { typedef void type; };
+
+	template <typename Ty1>
+	void operator()(const Ty1& message) const
+	{
+		 std::cout<< message<<std::endl;
+	}
+};
 //å^ÇÃì¡íË
 struct	specificType_impl {
 	template <typename Ty1, typename Ty2>
@@ -490,6 +501,7 @@ phoenix::function<registMethod_impl> const registMethod = registMethod_impl();
 phoenix::function<analyzeMethod_impl> const analyzeMethod = analyzeMethod_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
 phoenix::function<call_namespace_impl> const functionCall_namespace = call_namespace_impl();
+phoenix::function<cout_impl> const cout= cout_impl();
 
 real_parser<double, ureal_parser_policies<double> > const ureal_parser = real_parser<double, ureal_parser_policies<double> >();
 
@@ -602,7 +614,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		rule<ScannerT>	decl_value,decl_classMember,Value,function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
-			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident;
+			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,ramda;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -670,13 +682,15 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 					);
 
 			// åvéZÇÃprimeÉmÅ[Éh
-			prime = callMember
+			prime = ramda
+				|callMember
 				| func_node
 				| Value
 				| floatNumber
 				| number
 				| string_node
 				| '(' >> expr >> ')'
+			
 				;
 
 			// íPçÄââéZéq
@@ -735,7 +749,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				(">>=", OP_RSHIFT_ASSIGN);
 			assign = (callMember | Value)
 				>> assign_op
-				>> expr;
+				>> (expr);
 
 			// ïœêîêÈåæ
 			decl_value = !(str_p("private") | str_p("public")) >> "var" >> Value % ',' >> ':' >> type >> ';';
@@ -745,6 +759,8 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				| funcType;
 			//ä÷êîå^ñº
 			funcType = '(' >> !(arg % ',') >> ')' >> "=>" >> type;
+
+			ramda = funcType >> block;
 
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
@@ -810,6 +826,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				>> '}'
 				| func_node >> ';'
 				| callMember >> ';'
+				|ramda
 				| block
 				;
 
@@ -828,6 +845,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				| decl_func
 				| decl_value
 				| nameSpace[popNameSpace(self.driver_)]
+				|ramda
 				| syntax_error_p
 				);
 		}
@@ -863,7 +881,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
 		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,decl_func,callMember ,block,input,ident;
+			and_expr,expr,assign,argument,statement,decl_func,callMember ,block,input,ident,ramda;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -931,7 +949,8 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 					);
 
 			// åvéZÇÃprimeÉmÅ[Éh
-			prime =callMember
+			prime = ramda
+				| callMember
 				|func_node
 				| Value
 				| floatNumber
@@ -1008,6 +1027,10 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 
 			//ä÷êîå^ñº
 			funcType = '(' >> !(arg[vec_push_back(funcType.argments, arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = specificFunctionType(arg1,funcType.argments,self.driver_)];
+			
+
+			ramda = funcType >> block;
+			
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
 				>> type[arg.type = arg1]
@@ -1072,6 +1095,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 				>> '}'
 				| func_node >> ';'
 				| callMember >>';'
+				|ramda
 				| block
 				;
 
@@ -1140,7 +1164,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 		rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		rule<ScannerT>							input, Enum,decl_classMember;
+		rule<ScannerT>							input, Enum,decl_classMember, ramda;
 		rule<ScannerT>							ident;
 
 		symbols<> keywords;
@@ -1210,7 +1234,8 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				;
 
 			// åvéZÇÃprimeÉmÅ[Éh
-			prime = callMember[prime.node = arg1]
+			prime = ramda
+				| callMember[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1, self.driver_)]
@@ -1288,6 +1313,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 			//ä÷êîå^ñº
 			funcType = '(' >> !(arg[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type=specificFunctionType(arg1, funcType.argments ,self.driver_)];
 
+			ramda = funcType >> block;
 			// ä÷êîêÈåæÇÃà¯êî
 			arg = identifier >> ':'
 				>> type[arg.type = arg1]
@@ -1355,6 +1381,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				>> '}'
 				| callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
+				| ramda
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 

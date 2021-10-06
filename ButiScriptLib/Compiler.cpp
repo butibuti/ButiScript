@@ -527,22 +527,20 @@ struct copy_code {
 bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_size)
 {
 
-	auto itr = Data.map_entryPoints.begin();
 	for (int i = 0; i < functions.Size(); i++) {
 		auto func = functions[i];
 		if (func->IsSystem()) {
 			continue;
 		}
 		Data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index_].pos_);
-		if (i == 0) {
-			itr = Data.map_entryPoints.begin();
-		}
-		else {
-			itr++;
-		}
-		const std::string* p_str = &itr->first;
-		Data.map_functionJumpPointsTable.emplace(labels[functions[i]->index_].pos_,p_str);
 	}
+	
+	for (auto itr = Data.map_entryPoints.begin(), end = Data.map_entryPoints.end(); itr != end;itr++) {
+
+		const std::string* p_str = &itr->first;
+		Data.map_functionJumpPointsTable.emplace(itr->second, p_str);
+	}
+
 	Data.functions = functions;
 
 	Data.commandTable = new unsigned char[code_size];
@@ -776,7 +774,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 	int entryPointsSize = 0;
 	fIn.read((char*)&entryPointsSize, sizeof(entryPointsSize));
-	auto entryPointItr = arg_ref_data.map_entryPoints.begin();
+	
 	for (int i = 0; i < entryPointsSize;i++) {
 		
 
@@ -790,13 +788,11 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		fIn.read((char*)&entryPoint, sizeof(int));
 		int current = fIn.tellg();
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
-		if (i == 0) {
-			entryPointItr = arg_ref_data.map_entryPoints.begin();
-		}
-		else {
-			entryPointItr++;
-		}
-		arg_ref_data.map_functionJumpPointsTable.emplace(entryPoint, &entryPointItr->first);
+
+	}
+	for (auto entryPointItr = arg_ref_data.map_entryPoints.begin(), endItr = arg_ref_data.map_entryPoints.end(); entryPointItr != endItr; entryPointItr++) {
+
+		arg_ref_data.map_functionJumpPointsTable.emplace(entryPointItr->second, &entryPointItr->first);
 	}
 
 	int publicGlobalValue = 0;
@@ -1108,6 +1104,15 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec2");
 	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec3");
 	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec4");
+#ifdef IMPL_BUTIENGINE
+
+	DefineSystemFunction(&VirtualCPU::sys_registEventListner, TYPE_STRING, "RegistEvent", "s,s,s");
+	DefineSystemFunction(&VirtualCPU::sys_unregistEventListner, TYPE_VOID, "UnRegistEvent", "s,s");
+	DefineSystemFunction(&VirtualCPU::sys_addEventMessanger, TYPE_VOID, "AddEventMessanger", "s");
+	DefineSystemFunction(&VirtualCPU::sys_executeEvent, TYPE_VOID, "EventExecute", "s");
+	DefineSystemFunction(&VirtualCPU::sys_pushTask, TYPE_VOID, "PushTask", "s");
+#endif // IMPL_BUTIENGINE
+
 
 	DefineSystemMethod(&VirtualCPU::sys_method_retNo< Vector2, &Vector2::Normalize, &VirtualCPU::GetTypePtr >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
 	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");

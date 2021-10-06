@@ -3,7 +3,7 @@
 #define	__VM_H__
 
 #include <vector>
-
+#include<unordered_map>
 #include "vm_value.h"
 #include"Tags.h"
 namespace ButiScript {
@@ -40,7 +40,7 @@ namespace ButiScript {
 		std::vector<OperationFunction> vec_sysCalls;
 		std::vector<OperationFunction> vec_sysCallMethods;
 		std::vector<TypeTag> vec_types;
-		std::map<std::string, int> map_entryPoints;
+		std::unordered_map<std::string, int> map_entryPoints;
 		std::map< int,const std::string*> map_functionJumpPointsTable;
 		std::map<std::string, int>map_globalValueAddress;
 		std::map<int, EnumTag> map_enumTag;
@@ -899,6 +899,12 @@ namespace ButiScript {
 
 
 #ifdef IMPL_BUTIENGINE
+
+		void sys_addEventMessanger();
+		void sys_registEventListner();
+		void sys_unregistEventListner();
+		void sys_executeEvent();
+		void sys_pushTask();
 		void sys_translate() {
 
 			auto v = top().v_->Get<ButiEngine::Vector3>(); pop();

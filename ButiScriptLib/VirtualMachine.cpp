@@ -1,6 +1,11 @@
 #include "stdafx.h"
 #include <exception>
 #include "VirtualMachine.h"
+#ifdef IMPL_BUTIENGINE
+#include"ButiEventSystem/ButiEventSystem/EventSystem.h"
+#include"ButiEventSystem/ButiEventSystem/TaskSystem.h"
+
+#endif // IMPL_BUTIENGINE
 
 
 void ButiScript::VirtualCPU::AllocGlobalValue()
@@ -81,7 +86,50 @@ void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
 }
 
 
+
 #ifdef IMPL_BUTIENGINE
+
+void ButiScript::VirtualCPU::sys_addEventMessanger()
+{
+	std::string eventName = top().v_->GetRef<std::string>(); pop();
+	ButiEventSystem::AddEventMessenger<void>(eventName);
+}
+
+void ButiScript::VirtualCPU::sys_registEventListner()
+{
+	std::string functionName = top().v_->GetRef<std::string>(); pop();
+	std::string keyName = top().v_->GetRef<std::string>(); pop();
+	std::string eventName = top().v_->GetRef<std::string>(); pop();
+	auto retKey= ButiEventSystem::RegistEventListner(eventName, keyName,
+		std::function<void()>([this,functionName]()->void {
+			this->Execute<void>(functionName);
+			}), false);
+
+	push(retKey);
+}
+void ButiScript::VirtualCPU::sys_unregistEventListner()
+{
+	std::string eventName = top().v_->GetRef<std::string>(); pop();
+	std::string keyName = top().v_->GetRef<std::string>(); pop();
+	ButiEventSystem::UnRegistEventListner<void>(eventName, keyName);
+
+}
+void ButiScript::VirtualCPU::sys_executeEvent()
+{
+	std::string eventName = top().v_->GetRef<std::string>(); pop();
+	ButiEventSystem::Execute(eventName);
+}
+
+void ButiScript::VirtualCPU::sys_pushTask()
+{
+	std::string taskName = top().v_->GetRef<std::string>(); pop();
+	ButiTaskSystem::PushTask(
+		std::function<void()>([this,taskName]()->void {
+			this->Execute(taskName);
+
+			})
+	);
+}
 
 void ButiScript::VirtualCPU::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	for (int i = 0; i < globalValue_size- globalValue_base; i++) {

@@ -1,17 +1,31 @@
-Function():void{
-	print("Function Called!\n");
+
+Function(function:(i: int ,f:float)=>void):void{
+	function(2,2.5);
 }
+
+namespace Functions {
+
 Function_withArg(i:int,f:float):void{
 	print("Function_withArg Called!\n");
 	print("int:"+ToString(i)+",float:"+ToString(f)+"\n");
 }
 
+Function_withArg2(i:int,f:float):void{
+	print("Function_withArg2 Called!\n");
+	print("int:"+ToString(i)+",float:"+ToString(f)+"\n");
+}
+}
 
+
+
+var funcObject:(i: int ,f:float)=>void;
 
 main():int
 {
-	var funcObject:(i: int ,f:float)=>void;
-	funcObject=Function_withArg;
-	funcObject(0,1.0);
+
+	funcObject=Functions::Function_withArg;
+	Function(funcObject);
+	funcObject=Functions::Function_withArg2;
+	Function(funcObject);
 	return 0;
 }
