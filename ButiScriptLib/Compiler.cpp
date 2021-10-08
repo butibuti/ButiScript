@@ -35,6 +35,7 @@ ButiScript:: Compiler::Compiler()
 
 ButiScript::Compiler::~Compiler()
 {
+	types.Release();
 }
 
 ButiScript::Compiler* p_instance;
@@ -1027,7 +1028,7 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 			else  if (type->p_enumTag) {
 				arg_comp->OpAllocStack_Ref_EnumType(*itr);
 			}
-			else  if (type->isFunctionObject) {
+			else  if (type->IsFunctionObjectType()) {
 				arg_comp->OpAllocStack_Ref_FunctionType(*itr);
 			}
 			else {
@@ -1042,7 +1043,7 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 			else  if (type->p_enumTag) {
 				arg_comp->OpAllocStackEnumType(*itr);
 			}
-			else  if (type->isFunctionObject) {
+			else  if (type->IsFunctionObjectType()) {
 				arg_comp->OpAllocStackFunctionType(*itr);
 			}
 			else
@@ -1215,29 +1216,33 @@ bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_met
 }
 int ButiScript::TypeTag::GetFunctionObjectReturnType() const
 {
-	if (!isFunctionObject) {
+	if (!p_functionObjectData) {
 		return -1;
 	}
-	auto retTypeStr = StringHelper::Split(StringHelper::Split(typeName, ":")[1], ",")[0];
-	return std::stoi(retTypeStr);
+
+	return p_functionObjectData->returnType;
 }
 int ButiScript::TypeTag::GetFunctionObjectArgSize() const
 {
-	if (!isFunctionObject) {
+	if (!p_functionObjectData) {
 		return -1;
 	}
-	auto argTypeStrs = StringHelper::Split(StringHelper::Split(typeName, ":")[1], ",");
-	return argTypeStrs.size()-1;
+	return p_functionObjectData->vec_argTypes.size();
 }
 
-std::vector<int> ButiScript::TypeTag::GetFunctionObjectArgment() const
+const std::vector<int>& ButiScript::TypeTag::GetFunctionObjectArgment() const
 {
-	std::vector<int> output;
-	auto argTypeStrs = StringHelper::Split(StringHelper::Split(typeName, ":")[1], ",");
-	for (int i = 1,size= argTypeStrs.size(); i < size; i++) {
-		output.push_back(std::stoi(argTypeStrs[ i]));
+
+	return p_functionObjectData->vec_argTypes;
+}
+
+void ButiScript::TypeTable::Release() {
+	for (auto itr = map_types.begin(), end = map_types.end(); itr != end; itr++) {
+		itr->second.Release();
 	}
-	return output;
+	map_types.clear();
+	map_argmentChars.clear();
+	vec_types.clear();
 }
 
 #ifndef IMPL_BUTIENGINE

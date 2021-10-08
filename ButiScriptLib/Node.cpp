@@ -1535,7 +1535,7 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	auto valueTag = GetValueTag(name, c);
 	if (valueTag) {
 		auto valueType=c->GetType(valueTag->valueType);
-		if (valueType->isFunctionObject) {
+		if (valueType->IsFunctionObjectType()) {
 			// ˆø”‚ðpush
 			if (args && valueType->GetFunctionObjectArgSize() == argSize) {
 				auto valueArgTypes = valueType->GetFunctionObjectArgment();
@@ -1911,7 +1911,7 @@ int Declaration::Analyze(Compiler* c)
 					c->OpAllocStack_Ref_EnumType(valueType);
 				}
 			}
-			else if (type->isFunctionObject) {
+			else if (type->IsFunctionObjectType()) {
 				for (int i = 0; i < size; i++) {
 					c->OpAllocStack_Ref_FunctionType(valueType);
 				}
@@ -1933,7 +1933,7 @@ int Declaration::Analyze(Compiler* c)
 					c->OpAllocStackEnumType(valueType);
 				}
 			}
-			else if (type->isFunctionObject) {
+			else if (type->IsFunctionObjectType()) {
 				for (int i = 0; i < size; i++) {
 					c->OpAllocStackFunctionType(valueType);
 				}

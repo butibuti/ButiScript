@@ -796,10 +796,18 @@ namespace ButiScript {
 		int type;
 		AccessModifier access = AccessModifier::Public;
 	};
-
+	struct FunctionObjectTypeData {
+		FunctionObjectTypeData(const int arg_retType,const std::vector<int>& arg_argTypes):returnType(arg_retType),vec_argTypes(arg_argTypes){}
+		int returnType;
+		std::vector<int> vec_argTypes;
+	};
 	struct TypeTag {
 		TypeTag() {}
-
+		void Release() { 
+			if (p_functionObjectData){
+			delete p_functionObjectData; 
+			}
+		}
 		//生成用アドレス
 		OperationFunction typeFunc;
 		//参照型生成用アドレス
@@ -818,13 +826,15 @@ namespace ButiScript {
 		FunctionTag* AddMethod(const std::string& arg_methodName, const FunctionTag& arg_method) {
 			return methods.Add(arg_methodName, arg_method);
 		}
-		bool isSystem=false, isShared=false,isFunctionObject=false;
+		bool isSystem = false, isShared = false;
+		bool IsFunctionObjectType()const { return p_functionObjectData; }
 		EnumTag* p_enumTag = nullptr;
+		FunctionObjectTypeData* p_functionObjectData=nullptr;
 		int GetFunctionObjectReturnType()const;
 		int GetFunctionObjectArgSize()const;
-		std::vector<int> GetFunctionObjectArgment()const;
+		const std::vector<int>& GetFunctionObjectArgment()const;
 		ScriptClassInfo GetScriptTypeInfo()const {
-			if (isSystem||isFunctionObject) {
+			if (isSystem||p_functionObjectData) {
 				//組み込み型なのでスクリプト型定義は作れない
 				assert(0);
 				return ScriptClassInfo();
@@ -855,6 +865,7 @@ namespace ButiScript {
 
 	class TypeTable {
 	public:
+		void Release();
 		const TypeTag* GetType(const int index) const {
 			if (vec_types.size() <= index) {
 				return nullptr;
@@ -914,7 +925,7 @@ namespace ButiScript {
 			TypeTag functionType;
 			functionType.typeName = functionTypeName;
 			functionType.argName = functionTypeName;
-			functionType.isFunctionObject = true;
+
 			functionType.typeIndex = vec_types.size();
 			functionType.isSystem = false;
 			if (vec_types.size() <= functionType.typeIndex) {
@@ -923,6 +934,7 @@ namespace ButiScript {
 			map_argmentChars.emplace(functionTypeName, functionType.typeIndex);
 			map_types.emplace(functionTypeName, functionType);
 			vec_types[functionType.typeIndex] = &map_types.at(functionTypeName);
+			map_types.at(functionTypeName).p_functionObjectData = new FunctionObjectTypeData(arg_retType,arg_argmentTypes);
 
 			return &map_types.at(functionTypeName);
 		}
@@ -986,6 +998,7 @@ namespace ButiScript {
 			for (auto typeItr = map_types.begin(); typeItr != map_types.end(); ) {
 				if (!typeItr->second.isSystem) {
 					map_argmentChars.erase(typeItr->first);
+					typeItr->second.Release();
 					typeItr = map_types.erase(typeItr);
 				}
 				else {
@@ -1005,7 +1018,7 @@ namespace ButiScript {
 		std::vector<ScriptClassInfo> GetScriptClassInfo()const {
 			std::vector<ScriptClassInfo> output;
 			for (int i = 0; i < vec_types.size(); i++) {
-				if (vec_types[i]->isSystem|| vec_types[i]->isFunctionObject){ continue; }
+				if (vec_types[i]->isSystem|| vec_types[i]->p_functionObjectData){ continue; }
 					
 				output.push_back(vec_types[i]->GetScriptTypeInfo());
 
