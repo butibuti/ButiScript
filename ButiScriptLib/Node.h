@@ -601,8 +601,8 @@ namespace ButiScript {
 		void set_type(const int arg_type) {
 			valueType = arg_type;
 		}
-
-	private:
+	protected:
+		Function(){}
 		int valueType;
 		std::string name_;
 		std::vector<ArgDefine> args_;
@@ -610,6 +610,14 @@ namespace ButiScript {
 		Block_t block_;
 	};
 	using Function_t = std::shared_ptr<Function>;
+
+	class Ramda :public Function {
+	public:
+		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args);
+		int Analyze(Compiler* c, FunctionTable* funcTable = nullptr);
+		int Regist(Compiler* c, FunctionTable* funcTable = nullptr);
+	};
+	using Ramda_t = std::shared_ptr<Ramda>;
 
 	class Class {
 	public:
@@ -639,7 +647,7 @@ namespace ButiScript {
 
 		void SetIdentifer(const std::string& arg_name);
 		void SetIdentifer(const std::string& arg_name,const int value);
-		void Analyze(Compiler* c);
+		int Analyze(Compiler* c);
 	private:
 		std::string typeName;
 		std::map<std::string, int> map_identifer;

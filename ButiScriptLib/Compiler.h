@@ -190,9 +190,10 @@ public:
 
 	void ValueDefine(const int type, const std::vector<Node_t>& node,const AccessModifier arg_access);
 	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
-	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const AccessModifier access, FunctionTable* arg_funcTable = nullptr);
+	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access, FunctionTable* arg_funcTable = nullptr);
+	void AddRamda(const int type, const std::vector<ArgDefine>& args, Block_t block,FunctionTable* arg_funcTable = nullptr);
 	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable=nullptr);
-
+	void RegistRamda(const int type, const std::vector<ArgDefine>& args,FunctionTable* arg_functionTable);
 	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
 	void RegistEnumType(const std::string& arg_typeName);
 
@@ -203,7 +204,7 @@ public:
 		return enums.FindType(arg_name);
 	}
 
-	// 変数の検索、内側のブロックから検索する。
+	// 内側のブロックから変数検索
 	const ValueTag* GetValueTag(const std::string& name) const
 	{
 		int size = (int)variables.size();
@@ -239,7 +240,11 @@ public:
 		}
 		return -1;
 	}
+	int GetTypeIndex(const std::pair<int, std::vector<ArgDefine>>& arg_funcTypePair) {
+		return arg_funcTypePair.first;
+	}
 	//関数型の検索
+	int GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int retType);
 	int GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType);
 
 	TypeTag* GetType(const int index) {
@@ -318,7 +323,8 @@ public:
 	void ClearStatement();
 	std::string GetTypeName(const int type) const;
 
-
+	void RamdaCountReset();
+	int GetRamdaCount()const { return ramdaCount; }
 private:
 
 	FunctionTable functions;
@@ -343,7 +349,7 @@ private:
 
 	std::string current_function_name;
 	int current_function_type;
-
+	int ramdaCount;
 };
 template<typename T>
 struct CompilerSystemTypeRegister {

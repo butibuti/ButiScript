@@ -23,8 +23,9 @@ var funcObject:(i: int ,f:float)=>void;
 main():int
 {
 
-	funcObject=Functions::Function_withArg;
-	Function(funcObject);
+	funcObject=(i:int,f:float)=>void{
+	};
+	//Function(funcObject);
 	funcObject=Functions::Function_withArg2;
 	Function(funcObject);
 	return 0;

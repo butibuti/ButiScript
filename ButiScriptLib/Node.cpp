@@ -1948,21 +1948,6 @@ int Declaration::Analyze(Compiler* c)
 	return 0;
 }
 
-// ŠÖ”‚Ì‰ðÍ
-int Function::Analyze(Compiler* c, FunctionTable* funcTable)
-{
-
-	c->AddFunction(valueType, name_, args_, block_,accessType,funcTable);
-
-	return 0;
-}
-
-int Function::Regist(Compiler* c, FunctionTable* funcTable)
-{
-	c->RegistFunction(valueType, name_, args_, block_, accessType, funcTable);
-	return 0;
-}
-
 
 void Declaration::Define(Compiler* c)
 {
@@ -2215,7 +2200,7 @@ void Enum::SetIdentifer(const std::string& arg_name, const int value)
 {
 	map_identifer.emplace(arg_name, value);
 }
-void Enum::Analyze(Compiler* c)
+int Enum::Analyze(Compiler* c)
 {
 	c->RegistEnumType(typeName);
 	auto tag = c->GetEnumTag(c->GetCurrentNameSpace()->GetGlobalNameString()+ typeName);
@@ -2223,6 +2208,7 @@ void Enum::Analyze(Compiler* c)
 	for (auto itr = map_identifer.begin(); itr != end; itr++) {
 		tag->SetValue(itr->first, itr->second);
 	}
+	return 0;
 }
 int Class::Analyze(Compiler* c)
 {
@@ -2263,5 +2249,39 @@ void Class::SetValue(const std::string& arg_name, const int arg_type, const Acce
 {
 	std::pair<int, AccessModifier> v = { arg_type,accessType };
 	map_values.emplace(arg_name,v);
+}
+
+// ŠÖ”‚Ì‰ðÍ
+int Function::Analyze(Compiler* c, FunctionTable* funcTable)
+{
+
+	c->AddFunction(valueType, name_, args_, block_, accessType, funcTable);
+
+	return 0;
+}
+
+int Function::Regist(Compiler* c, FunctionTable* funcTable)
+{
+	c->RegistFunction(valueType, name_, args_, block_, accessType, funcTable);
+	return 0;
+}
+
+Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args)
+{
+	valueType = arg_type;
+	args_ = arg_args;
+}
+int Ramda::Analyze(Compiler* c, FunctionTable* funcTable)
+{
+	auto typeTag = c->GetType(valueType);
+	auto ramdaCount = c->GetRamdaCount();
+	c->AddRamda (typeTag->GetFunctionObjectReturnType(), args_, block_, funcTable);
+	return ramdaCount;
+}
+int Ramda::Regist(Compiler* c, FunctionTable* funcTable)
+{
+	auto typeTag = c->GetType(valueType);
+	c->RegistRamda(  typeTag->GetFunctionObjectReturnType(),  args_,funcTable);
+	return 0;
 }
 }

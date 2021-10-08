@@ -130,6 +130,11 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 	return output;
 }
 
+void ButiScript::Compiler::RamdaCountReset()
+{
+	ramdaCount = 0;
+}
+
 
 
 // 外部変数の定義
@@ -245,13 +250,8 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 {
 
 	std::string functionName = currentNameSpace->GetGlobalNameString()+ name;
-	FunctionTable* p_functable;
-	if (arg_funcTable) {
-		p_functable = arg_funcTable;
-	}
-	else {
-		p_functable = &functions;
-	}
+	FunctionTable* p_functable = arg_funcTable ? arg_funcTable : &functions;
+
 
 	FunctionTag* tag = p_functable->Find_strict(functionName,args);
 	if (tag) {
@@ -305,12 +305,12 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 	}
 
 	const VMCode& code = statement.back();
-	if (type == TYPE_VOID) {			// 戻り値無し
-		if (code.op_ != VM_RETURN)		// returnが無いならば
-			OpReturn();					// returnを追加
+	if (type == TYPE_VOID) {			
+		if (code.op_ != VM_RETURN)		// returnが無ければreturnを追加
+			OpReturn();					
 	}
 	else {
-		if (code.op_ != VM_RETURNV) {	// returnが無いならば
+		if (code.op_ != VM_RETURNV) {	
 			error("関数 " + functionName + " の最後にreturn文が有りません。");
 		}
 	}
@@ -319,6 +319,13 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 
 	current_function_name.clear();		// 処理中の関数名を消去
 
+}
+
+void ButiScript::Compiler::AddRamda(const int type, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable)
+{
+	AddFunction(type, "@ramda:" + std::to_string(ramdaCount), args, block, AccessModifier::Public, arg_funcTable);
+
+	ramdaCount++;
 }
 
 void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable )
@@ -347,6 +354,13 @@ void ButiScript::Compiler::RegistFunction(const int type, const std::string& nam
 	}
 }
 
+void ButiScript::Compiler::RegistRamda(const int type, const std::vector<ArgDefine>& args, FunctionTable* arg_functionTable)
+{
+	RegistFunction(type, "@ramda:" + std::to_string(ramdaCount), args, nullptr, AccessModifier::Public, arg_functionTable);
+
+	ramdaCount++;
+}
+
 void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value)
 {
 	auto enumType = GetEnumTag(arg_typeName);
@@ -366,9 +380,16 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 	types.RegistType(*enums.FindType(arg_typeName));
 }
 
-int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType) 
+int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int retType)
 {
-	auto type= types.GetFunctionType(arg_vec_argmentTypes, retType);
+	std::vector<int> vec_argTypes;
+	std::for_each(arg_vec_argmentTypes.begin(), arg_vec_argmentTypes.end(), [&](const ArgDefine& itr)->void {vec_argTypes.push_back(itr.type()); });
+	
+	return GetfunctionTypeIndex(vec_argTypes,retType);
+}
+int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType)
+{
+	auto type = types.GetFunctionType(arg_vec_argmentTypes, retType);
 	if (!type) {
 		type = types.CreateFunctionType(arg_vec_argmentTypes, retType);
 	}

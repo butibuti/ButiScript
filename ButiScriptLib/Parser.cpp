@@ -107,6 +107,18 @@ struct binary_node_impl_useDriver {
 	}
 };
 
+//ラムダ式を値として利用するノードを生成する
+struct ramda_node_impl {
+	template <typename Ty1, typename Ty2>
+	struct result { typedef Node_t type; };
+
+	template <typename Ty1, typename Ty2>
+	Node_t operator()(Ty1 ramdaIndex, Ty2 driver) const
+	{
+		return Node::make_node(OP_IDENTIFIER, "@ramda:" + std::to_string(ramdaIndex), driver);
+	}
+};
+
 // 値を追加
 struct push_back_impl {
 	template <typename Ty1, typename Ty2>
@@ -244,13 +256,24 @@ struct call_namespace_impl {
 
 // 関数の生成
 struct make_function_impl {
-	template < typename Ty2>
+	template < typename Ty1>
 	struct result { typedef Function_t type; };
 
-	template <typename Ty2>
-	Function_t operator()(const Ty2& name) const
+	template <typename Ty1>
+	Function_t operator()(const Ty1& name) const
 	{
 		return Function_t(new Function(name));
+	}
+};
+// ラムダ式の生成
+struct make_ramda_impl {
+	template < typename Ty1>
+	struct result { typedef Ramda_t type; };
+
+	template <typename Ty1>
+	Ramda_t operator()(const Ty1 typeIndex) const
+	{
+		return Ramda_t(new Ramda(typeIndex.first,typeIndex.second));
 	}
 };
 // 関数の生成
@@ -295,9 +318,9 @@ struct make_pair_impl {
 	struct result { typedef std::pair<Ty1,Ty2> type; };
 
 	template < typename Ty1, typename Ty2>
-	std::pair<Ty1, Ty2> operator()(const Ty1 index, const Ty2& name) const
+	std::pair<Ty1, Ty2> operator()(const Ty1 first, const Ty2& second) const
 	{
-		return {index,name};
+		return {first,second};
 	}
 };
 
@@ -459,12 +482,12 @@ struct	specificFunctionType_impl {
 // 最終登録
 struct analyze_impl {
 	template <typename Ty1, typename Ty2>
-	struct result { typedef void type; };
+	struct result { typedef int type; };
 
 	template <typename Ty1, typename Ty2>
-	void operator()(const Ty1& decl, Ty2 driver) const
+	int operator()(const Ty1& decl, Ty2 driver) const
 	{
-		decl->Analyze(driver);
+		return decl->Analyze(driver);
 	}
 };
 
@@ -472,6 +495,7 @@ struct analyze_impl {
 phoenix::function<binary_node_impl> const binary_node = binary_node_impl();
 phoenix::function<binary_node_impl_useDriver> const binary_node_comp = binary_node_impl_useDriver();
 phoenix::function<unary_node_impl> const unary_node = unary_node_impl();
+phoenix::function<ramda_node_impl> const ramda_node= ramda_node_impl();
 phoenix::function<push_back_impl> const push_back = push_back_impl();
 phoenix::function<vector_push_back_impl> const vec_push_back = vector_push_back_impl();
 phoenix::function<make_argument_impl> const make_argument = make_argument_impl();
@@ -483,6 +507,7 @@ phoenix::function<make_decl1_impl> const make_decl1 = make_decl1_impl();
 phoenix::function<arg_ref_impl> const arg_ref = arg_ref_impl();
 phoenix::function<arg_name_impl> const arg_name = arg_name_impl();
 phoenix::function<make_function_impl> const make_function = make_function_impl();
+phoenix::function<make_ramda_impl> const make_ramda = make_ramda_impl();
 phoenix::function<make_functionWithAccess_impl> const make_functionWithAccess = make_functionWithAccess_impl();
 phoenix::function<make_class_impl> const make_class = make_class_impl();
 phoenix::function<make_classMember_impl> const make_classMember = make_classMember_impl();
@@ -496,9 +521,9 @@ phoenix::function<specificType_impl> const specificType = specificType_impl();
 phoenix::function<specificFunctionType_impl> const specificFunctionType = specificFunctionType_impl();
 phoenix::function<accessModifier_impl> const specificAccessModifier = accessModifier_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
+phoenix::function<analyzeMethod_impl> const analyzeMethod = analyzeMethod_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<registMethod_impl> const registMethod = registMethod_impl();
-phoenix::function<analyzeMethod_impl> const analyzeMethod = analyzeMethod_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
 phoenix::function<call_namespace_impl> const functionCall_namespace = call_namespace_impl();
 phoenix::function<cout_impl> const cout= cout_impl();
@@ -552,9 +577,18 @@ namespace ButiClosure {
 		member1 type;
 	};
 	// 関数型のクロージャ
-	struct type_func_val : closure<type_func_val, int,std::vector<int>> {
+	struct type_func_val : closure<type_func_val, std::pair< int, std::vector<ArgDefine>>,std::vector<ArgDefine>> {
 		member1 type;
 		member2 argments;
+	};
+	//ラムダ式定義のクロージャ
+	struct ramda_val :closure<ramda_val, Ramda_t, int, std::vector<int>> {
+		member1 node;
+		member2 type;
+	};
+	//ラムダ式利用のクロージャ
+	struct ramda_prime_val :closure<ramda_prime_val, Node_t> {
+		member1 node;
 	};
 
 	// 変数定義のクロージャ
@@ -582,7 +616,7 @@ namespace ButiClosure {
 		member1 Class;
 		member2 name;
 	};
-
+	//列挙型定義のクロージャ
 	struct enum_val : closure<enum_val, Enum_t> {
 		member1 enum_t;
 	};
@@ -880,8 +914,9 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
 		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
+		rule<ScannerT, ButiClosure::ramda_val::context_t>		ramda;
 		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,decl_func,callMember ,block,input,ident,ramda;
+			and_expr,expr,assign,argument,statement,decl_func,callMember ,block,input,ident;
 
 		symbols<> keywords;
 		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -949,7 +984,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 					);
 
 			// 計算のprimeノード
-			prime = ramda
+			prime = ramda[regist(arg1, self.driver_)]
 				| callMember
 				|func_node
 				| Value
@@ -1023,13 +1058,13 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 
 			// 型名
 			type = identifier[type.type = specificType(arg1,self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF]
-				| funcType[type.type = arg1];
+				| funcType[type.type = specificType(arg1, self.driver_)];
 
 			//関数型名
-			funcType = '(' >> !(arg[vec_push_back(funcType.argments, arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = specificFunctionType(arg1,funcType.argments,self.driver_)];
+			funcType = '(' >> !(argdef[vec_push_back(funcType.argments, arg1)] % ',') >> ')' >> "=>" >> type[funcType.type =make_pair( specificFunctionType(arg1,funcType.argments,self.driver_),funcType.argments)];
 			
 
-			ramda = funcType >> block;
+			ramda = funcType[ramda.node=make_ramda(arg1)] >> block;
 			
 			// 関数宣言の引数
 			arg = identifier >> ':'
@@ -1095,7 +1130,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 				>> '}'
 				| func_node >> ';'
 				| callMember >>';'
-				|ramda
+				|ramda[regist(arg1, self.driver_)]
 				| block
 				;
 
@@ -1164,7 +1199,9 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 		rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		rule<ScannerT>							input, Enum,decl_classMember, ramda;
+		rule<ScannerT, ButiClosure::ramda_prime_val::context_t>	ramda_prime;
+		rule<ScannerT, ButiClosure::ramda_val::context_t>		ramda;
+		rule<ScannerT>							input, Enum,decl_classMember;
 		rule<ScannerT>							ident;
 
 		symbols<> keywords;
@@ -1234,7 +1271,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				;
 
 			// 計算のprimeノード
-			prime = ramda
+			prime = ramda_prime[prime.node=arg1]
 				| callMember[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
@@ -1309,11 +1346,14 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 			// 型名
 			type = (identifier[type.type = specificType(arg1, self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF])
-				|funcType[type.type=arg1];
+				|funcType[type.type= specificType(arg1,self.driver_)];
 			//関数型名
-			funcType = '(' >> !(arg[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type=specificFunctionType(arg1, funcType.argments ,self.driver_)];
+			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.driver_), funcType.argments)];
 
-			ramda = funcType >> block;
+			ramda = funcType[ramda.node = make_ramda(arg1)] >> block;
+
+			ramda_prime = ramda[ramda_prime.node= ramda_node( analyze(arg1, self.driver_),self.driver_)];
+
 			// 関数宣言の引数
 			arg = identifier >> ':'
 				>> type[arg.type = arg1]
@@ -1381,7 +1421,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				>> '}'
 				| callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
 				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
-				| ramda
+				| ramda[analyze(arg1, self.driver_)]
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 
@@ -1482,6 +1522,7 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 		return false;
 	}
 	driver-> OpHalt();
+	driver->RamdaCountReset();
 	info = parse(begin, end, gr, skip_p);
 
 	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
