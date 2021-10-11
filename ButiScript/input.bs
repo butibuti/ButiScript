@@ -16,17 +16,30 @@ Function_withArg2(i:int,f:float):void{
 }
 }
 
+class TestClass{
+	
+	Method():void{
+		print("Method Called!\n");
+	}
+}
 
 
 var funcObject:(i: int ,f:float)=>void;
 
 main():int
 {
-
+	var test:TestClass;
+	test.Method();
 	funcObject=(i:int,f:float)=>void{
 	};
 	//Function(funcObject);
 	funcObject=Functions::Function_withArg2;
+
+	SubFunction():int{
+		print("SubFunction Called\n");
+		return 0;
+	}
+	SubFunction();
 	Function(funcObject);
 	return 0;
 }

@@ -1616,6 +1616,11 @@ Statement_t Statement::make_statement(const int state)
 	return Statement_t(new Statement_nop());
 }
 
+Statement_t Statement::make_statement(const int state, const int)
+{
+	return make_statement(state);
+}
+
 Statement_t Statement::make_statement(const int state, Node_t node)
 {
 	switch (state) {
@@ -1876,9 +1881,6 @@ int Block::Analyze(Compiler* c)
 		c->AllocStack();	// スタックフレーム確保
 
 	{
-
-		
-
 		for (auto itr = state_.begin(), endItr = state_.end(); itr != endItr; itr++) {
 			if ((ret = (*itr)->Analyze(c)) != 0) {
 				return ret;
@@ -1887,6 +1889,11 @@ int Block::Analyze(Compiler* c)
 	}
 
 	return ret;
+}
+
+int Declaration::PushCompiler(Compiler* c)
+{
+	return Analyze(c);
 }
 
 // 宣言の解析
@@ -2235,6 +2242,11 @@ int Class::AnalyzeMethod(Compiler* c)
 	vec_methods.clear();
 	return 0;
 }
+int Class::PushCompiler(Compiler* c)
+{
+	c->PushAnalyzeClass(shared_from_this());
+	return 0;
+}
 int Class::Regist(Compiler* c)
 {
 	c->RegistScriptType(name_);
@@ -2249,6 +2261,12 @@ void Class::SetValue(const std::string& arg_name, const int arg_type, const Acce
 {
 	std::pair<int, AccessModifier> v = { arg_type,accessType };
 	map_values.emplace(arg_name,v);
+}
+
+int Function::PushCompiler(Compiler* c)
+{
+	c->PushAnalyzeFunction(shared_from_this());
+	return 0;
 }
 
 // 関数の解析
@@ -2270,6 +2288,14 @@ Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args)
 {
 	valueType = arg_type;
 	args_ = arg_args;
+}
+int Ramda::PushCompiler(Compiler* c)
+{
+	auto typeTag = c->GetType(valueType);
+	auto ramdaCount = c->GetRamdaCount();
+	c->IncreaseRamdaCount();
+	c->PushAnalyzeFunction(shared_from_this());
+	return ramdaCount;
 }
 int Ramda::Analyze(Compiler* c, FunctionTable* funcTable)
 {

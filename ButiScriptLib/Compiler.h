@@ -106,9 +106,16 @@ public:
 	void Regist(Compiler* arg_compiler);
 	void SetParent(std::shared_ptr<NameSpace>arg_parent);
 	std::shared_ptr<NameSpace> GetParent()const;
+	void PushFunction(Function_t arg_func);
+	void PushClass(Class_t arg_class);
+	
+	void AnalyzeFunctions(Compiler* c);
+	void AnalyzeClasses(Compiler* c);
 private:
 	std::string name;
 	std::shared_ptr<NameSpace> shp_parentNamespace;
+	std::vector<Function_t> vec_analyzeFunctionBuffer;
+	std::vector<Class_t> vec_analyzeClassBuffer;
 };
 
 using NameSpace_t = std::shared_ptr<NameSpace>;
@@ -196,7 +203,6 @@ public:
 	void RegistRamda(const int type, const std::vector<ArgDefine>& args,FunctionTable* arg_functionTable);
 	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
 	void RegistEnumType(const std::string& arg_typeName);
-
 	const EnumTag* GetEnumTag(const std::string& arg_name) const {
 		return enums.FindType(arg_name);
 	}
@@ -325,6 +331,11 @@ public:
 
 	void RamdaCountReset();
 	int GetRamdaCount()const { return ramdaCount; }
+	void PushAnalyzeFunction(Function_t arg_function);
+	void PushAnalyzeClass(Class_t arg_class);
+	void ClearNameSpace();
+	void FunctionAnalyze();
+	void IncreaseRamdaCount();
 private:
 
 	FunctionTable functions;
@@ -343,7 +354,10 @@ private:
 	std::map<long long int, int> map_sysMethodCallsIndex;
 	std::map<long long int, int> map_valueAllocCallsIndex;
 	std::map<long long int,int> map_refValueAllocCallsIndex;
+
 	NameSpace_t currentNameSpace = nullptr;
+	NameSpace_t globalNameSpace = nullptr;
+	std::vector<NameSpace_t> vec_namespaces;
 	int break_index;
 	int error_count;
 

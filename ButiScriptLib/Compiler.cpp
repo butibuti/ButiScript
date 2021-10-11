@@ -70,8 +70,8 @@ void ButiScript::Compiler::RegistDefaultSystems()
 
 
 	//グローバル名前空間の設定
-	currentNameSpace = std::make_shared<NameSpace>("");
-	
+	globalNameSpace = std::make_shared<NameSpace>("");
+	PushNameSpace(globalNameSpace);
 
 }
 
@@ -134,6 +134,36 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 void ButiScript::Compiler::RamdaCountReset()
 {
 	ramdaCount = 0;
+}
+
+void ButiScript::Compiler::PushAnalyzeFunction(Function_t arg_function)
+{
+	currentNameSpace->PushFunction(arg_function);
+}
+
+void ButiScript::Compiler::PushAnalyzeClass(Class_t arg_class)
+{
+	currentNameSpace->PushClass(arg_class);
+}
+
+void ButiScript::Compiler::ClearNameSpace()
+{
+	vec_namespaces.clear();
+	vec_namespaces.push_back(globalNameSpace);
+}
+
+void ButiScript::Compiler::FunctionAnalyze()
+{
+	for (auto namespaceItr = vec_namespaces.begin(), namespaceEnd = vec_namespaces.end(); namespaceItr != namespaceEnd; namespaceItr++) {
+		currentNameSpace = *namespaceItr;
+		(*namespaceItr)->AnalyzeFunctions(this);
+		(*namespaceItr)->AnalyzeClasses(this);
+	}
+}
+
+void ButiScript::Compiler::IncreaseRamdaCount()
+{
+	ramdaCount++;
 }
 
 
@@ -325,8 +355,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 void ButiScript::Compiler::AddRamda(const int type, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable)
 {
 	AddFunction(type, "@ramda:" + std::to_string(ramdaCount), args, block, AccessModifier::Public, arg_funcTable);
-
-	ramdaCount++;
+	IncreaseRamdaCount();
 }
 
 void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable )
@@ -604,6 +633,7 @@ void ButiScript::Compiler::PushNameSpace(NameSpace_t arg_namespace)
 		arg_namespace->SetParent(currentNameSpace);
 	}
 	currentNameSpace = arg_namespace;
+	vec_namespaces.push_back(arg_namespace);
 }
 
 void ButiScript::Compiler::PopNameSpace()
@@ -1013,6 +1043,33 @@ std::shared_ptr<ButiScript::NameSpace> ButiScript::NameSpace::GetParent() const
 {
 	return shp_parentNamespace;
 }
+
+void ButiScript::NameSpace::PushFunction(Function_t arg_func)
+{
+	vec_analyzeFunctionBuffer.push_back(arg_func);
+}
+
+void ButiScript::NameSpace::PushClass(Class_t arg_class)
+{
+	vec_analyzeClassBuffer.push_back(arg_class);
+}
+
+
+
+void ButiScript::NameSpace::AnalyzeFunctions(Compiler* c)
+{
+	for (auto itr = vec_analyzeFunctionBuffer.begin(), end = vec_analyzeFunctionBuffer.end(); itr != end; itr++) {
+		(*itr)->Analyze(c, nullptr);
+	}
+}
+
+void ButiScript::NameSpace::AnalyzeClasses(Compiler* c)
+{
+	for (auto itr = vec_analyzeClassBuffer.begin(), end = vec_analyzeClassBuffer.end(); itr != end; itr++) {
+		(*itr)->AnalyzeMethod(c);
+	}
+}
+
 
 void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 {

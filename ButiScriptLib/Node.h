@@ -313,8 +313,10 @@ namespace ButiScript {
 		}
 
 		static Statement_t make_statement(const int state);
+		static Statement_t make_statement(const int state,const int );
 		static Statement_t make_statement(const int state, Node_t node);
 		static Statement_t make_statement(const int state, Block_t block);
+
 	};
 
 	// nop
@@ -532,6 +534,7 @@ namespace ButiScript {
 			args.push_back(arg_type);
 		}
 
+		int PushCompiler(Compiler* c);
 		int Analyze(Compiler* c);
 
 		void Define(Compiler* c);
@@ -573,7 +576,7 @@ namespace ButiScript {
 
 
 	// ä÷êî
-	class Function {
+	class Function :public std::enable_shared_from_this<Function>{
 	public:
 		Function(const std::string& arg_name)
 			: name_(arg_name)
@@ -595,8 +598,8 @@ namespace ButiScript {
 		{
 			block_ = block;
 		}
-
-		int Analyze(Compiler* c,FunctionTable* funcTable=nullptr);
+		int PushCompiler(Compiler* c);
+		virtual int Analyze(Compiler* c,FunctionTable* funcTable=nullptr);
 		int Regist(Compiler* c, FunctionTable* funcTable = nullptr);
 		void set_type(const int arg_type) {
 			valueType = arg_type;
@@ -614,12 +617,13 @@ namespace ButiScript {
 	class Ramda :public Function {
 	public:
 		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args);
+		int PushCompiler(Compiler* c);
 		int Analyze(Compiler* c, FunctionTable* funcTable = nullptr);
 		int Regist(Compiler* c, FunctionTable* funcTable = nullptr);
 	};
 	using Ramda_t = std::shared_ptr<Ramda>;
 
-	class Class {
+	class Class:public std::enable_shared_from_this<Class> {
 	public:
 		Class(const std::string& arg_name)
 			: name_(arg_name)
@@ -628,6 +632,7 @@ namespace ButiScript {
 		int Analyze(Compiler* c);
 		int Regist(Compiler* c);
 		int AnalyzeMethod(Compiler* c);
+		int PushCompiler(Compiler* c);
 		void RegistMethod(Function_t method, Compiler* c);
 		void SetValue(const std::string& arg_name, const int arg_type,const AccessModifier accessType);
 	private:

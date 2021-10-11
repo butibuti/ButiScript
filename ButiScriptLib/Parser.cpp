@@ -420,17 +420,6 @@ struct registMethod_impl {
 		type->RegistMethod(decl, driver);
 	}
 };
-// メソッド解析
-struct analyzeMethod_impl {
-	template <typename Ty1, typename Ty2>
-	struct result { typedef void type; };
-
-	template <typename Ty1, typename Ty2>
-	void operator()( Ty1 type, Ty2 driver) const
-	{
-		type->AnalyzeMethod( driver);
-	}
-};
 
 //名前空間からの離脱
 struct pop_nameSpace_impl {
@@ -485,9 +474,20 @@ struct analyze_impl {
 	struct result { typedef int type; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(const Ty1& decl, Ty2 driver) const
+	int operator()(Ty1 decl, Ty2 driver) const
 	{
 		return decl->Analyze(driver);
+	}
+};
+// 関数、ラムダ最終登録
+struct pushConpiler_impl {
+	template <typename Ty1, typename Ty2>
+	struct result { typedef int type; };
+
+	template <typename Ty1, typename Ty2>
+	int operator()(Ty1 decl, Ty2 driver) const
+	{
+		return decl->PushCompiler(driver);
 	}
 };
 
@@ -521,7 +521,7 @@ phoenix::function<specificType_impl> const specificType = specificType_impl();
 phoenix::function<specificFunctionType_impl> const specificFunctionType = specificFunctionType_impl();
 phoenix::function<accessModifier_impl> const specificAccessModifier = accessModifier_impl();
 phoenix::function<analyze_impl> const analyze = analyze_impl();
-phoenix::function<analyzeMethod_impl> const analyzeMethod = analyzeMethod_impl();
+phoenix::function<pushConpiler_impl> const pushCompiler = pushConpiler_impl();
 phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<registMethod_impl> const registMethod = registMethod_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
@@ -861,6 +861,7 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				| func_node >> ';'
 				| callMember >> ';'
 				|ramda
+				| function
 				| block
 				;
 
@@ -1131,6 +1132,7 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 				| func_node >> ';'
 				| callMember >>';'
 				|ramda[regist(arg1, self.driver_)]
+				| function[regist(arg1, self.driver_)]
 				| block
 				;
 
@@ -1352,7 +1354,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 			ramda = funcType[ramda.node = make_ramda(arg1)] >> block;
 
-			ramda_prime = ramda[ramda_prime.node= ramda_node( analyze(arg1, self.driver_),self.driver_)];
+			ramda_prime = ramda[ramda_prime.node= ramda_node(pushCompiler(arg1, self.driver_),self.driver_)];
 
 			// 関数宣言の引数
 			arg = identifier >> ':'
@@ -1411,33 +1413,34 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				>> statement[statement.statement = push_back(statement.statement, arg1)]
 
 
-				| str_p("while")[statement.statement = make_statement(WHILE_STATE)] >> '('
-				>> expr[statement.statement = push_back(statement.statement, arg1)] >> ')'
+				| (str_p("while")[statement.statement = make_statement(WHILE_STATE)] >> '(')
+				>> (expr[statement.statement = push_back(statement.statement, arg1)] >> ')')
 				>> statement[statement.statement = push_back(statement.statement, arg1)]
 				| str_p("switch") >> '('
-				>> expr[statement.statement = make_statement1(SWITCH_STATE, arg1)] >> ')'
+				>> (expr[statement.statement = make_statement1(SWITCH_STATE, arg1)] >> ')')
 				>> '{'
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
-				| callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
-				| func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';'
-				| ramda[analyze(arg1, self.driver_)]
+				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
+				| ramda[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.driver_))]
+				| function[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.driver_))]
+				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 
 
 			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(define_class[analyzeMethod(arg1,self.driver_)]
+				>> *(define_class[pushCompiler(arg1,self.driver_)]
 					|Enum
-					|function[analyze(arg1, self.driver_)]
+					|function[pushCompiler(arg1, self.driver_)]
 					| decl_func[analyze(arg1, self.driver_)]
 					| decl_value
 					| nameSpace[popNameSpace(self.driver_)]) >> "}";
 
 			// 入力された構文
-			input = *(define_class[analyzeMethod(arg1, self.driver_)]
+			input = *(define_class[pushCompiler(arg1, self.driver_)]
 				|Enum
-				|function[analyze(arg1, self.driver_)]
+				|function[pushCompiler(arg1, self.driver_)]
 				| decl_func[analyze(arg1, self.driver_)]
 				| decl_value
 				| nameSpace[popNameSpace(self.driver_)]
@@ -1461,8 +1464,8 @@ struct skip_parser : public grammar<skip_parser> {
 		definition(skip_parser const& self)
 		{
 			skip_p = space_p
-				| comment_p("//")			// C++コメント用
-				| comment_p("/*", "*/")		// Cコメント用
+				| comment_p("//")			
+				| comment_p("/*", "*/")		
 				;
 		}
 		rule<ScannerT> const& start() const
@@ -1504,7 +1507,7 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 	// ポジションイテレータ
 	iterator_t begin(input.begin(), input.end(), path);
 	iterator_t end;
-	begin.set_tabchars(4);	// tab=4に設定
+	begin.set_tabchars(4);
 
 	funcAnalyze_grammer	gr(driver);
 	registFunc_classAnalyze_grammer	gr_regist(driver);
@@ -1515,6 +1518,7 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 		driver->error("構文解析失敗");
 		return false;
 	}
+	driver->ClearNameSpace();
 	
 	info = parse(begin, end, gr_regist, skip_p);
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
@@ -1523,8 +1527,11 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 	}
 	driver-> OpHalt();
 	driver->RamdaCountReset();
+	driver->ClearNameSpace();
 	info = parse(begin, end, gr, skip_p);
-
+	driver->RamdaCountReset();
+	driver->FunctionAnalyze();
+	driver->ClearNameSpace();
 	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
 		return true;
 	}

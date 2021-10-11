@@ -125,8 +125,8 @@ void ButiScript::VirtualCPU::sys_pushTask()
 	std::string taskName = top().v_->GetRef<std::string>(); pop();
 	ButiTaskSystem::PushTask(
 		std::function<void()>([this,taskName]()->void {
-			this->Execute(taskName);
-
+			this->Execute<void>(taskName);
+			
 			})
 	);
 }
