@@ -31,8 +31,9 @@ main():int
 	var test:TestClass;
 	test.Method();
 	funcObject=(i:int,f:float)=>void{
+		print("Ramda!!!!!!!!!!!\n");
 	};
-	//Function(funcObject);
+	Function(funcObject);
 	funcObject=Functions::Function_withArg2;
 
 	SubFunction():int{

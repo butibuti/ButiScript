@@ -2293,6 +2293,7 @@ int Ramda::PushCompiler(Compiler* c)
 {
 	auto typeTag = c->GetType(valueType);
 	auto ramdaCount = c->GetRamdaCount();
+	name_= "@ramda:" + std::to_string(ramdaCount);
 	c->IncreaseRamdaCount();
 	c->PushAnalyzeFunction(shared_from_this());
 	return ramdaCount;

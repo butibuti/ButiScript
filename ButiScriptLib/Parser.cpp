@@ -491,6 +491,16 @@ struct pushConpiler_impl {
 	}
 };
 
+struct make_block_impl {
+	template <typename Ty1>
+	struct result { typedef Block_t type; };
+	template<typename Ty1>
+	Block_t operator()(Ty1 driver)const {
+		//driver->PushNameSpace(nullptr);
+		return std::make_shared<Block>();
+	}
+};
+
 // phoenixが使用する無名関数用の関数
 phoenix::function<binary_node_impl> const binary_node = binary_node_impl();
 phoenix::function<binary_node_impl_useDriver> const binary_node_comp = binary_node_impl_useDriver();
@@ -526,7 +536,8 @@ phoenix::function<regist_impl> const regist = regist_impl();
 phoenix::function<registMethod_impl> const registMethod = registMethod_impl();
 phoenix::function<pop_nameSpace_impl> const popNameSpace = pop_nameSpace_impl();
 phoenix::function<call_namespace_impl> const functionCall_namespace = call_namespace_impl();
-phoenix::function<cout_impl> const cout= cout_impl();
+phoenix::function<cout_impl> const cout = cout_impl();
+phoenix::function<make_block_impl> const make_block= make_block_impl();
 
 real_parser<double, ureal_parser_policies<double> > const ureal_parser = real_parser<double, ureal_parser_policies<double> >();
 
@@ -1088,10 +1099,10 @@ struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_
 				>> block;
 
 			// 文ブロック
-			block = ch_p('{')
+			block = ch_p('{')[make_block(self.driver_)]
 				>> *(statement
 					| decl_value)
-				>> '}';
+				>> ch_p('}');
 			//クラスのメンバー定義
 			decl_classMember = identifier[decl_classMember.name = arg1]>> !identifier[decl_classMember.name= specificAccessModifier(decl_classMember.name,decl_classMember.accessModifier, arg1)]
 				>> ':' >> type[decl_classMember.memberValue= make_memberValue( arg1,decl_classMember.name,decl_classMember.accessModifier)] >> ';';
@@ -1352,7 +1363,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 			//関数型名
 			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.driver_), funcType.argments)];
 
-			ramda = funcType[ramda.node = make_ramda(arg1)] >> block;
+			ramda = funcType[ramda.node = make_ramda(arg1)] >> block[ramda.node=push_back(ramda.node,arg1)];
 
 			ramda_prime = ramda[ramda_prime.node= ramda_node(pushCompiler(arg1, self.driver_),self.driver_)];
 
@@ -1386,10 +1397,10 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				>>"}";
 
 			// 文ブロック
-			block = ch_p('{')[block.node = construct_<Block_t>(new_<Block>())]
+			block = ch_p('{')[block.node = make_block(self.driver_)]
 				>> *(statement[block.node = push_back(block.node, arg1)]
 					| decl_value[block.node = push_back(block.node, arg1)])
-				>> '}';
+				>> ch_p('}');
 
 			// 文
 			statement = ch_p(';')[statement.statement = make_statement(NOP_STATE)]

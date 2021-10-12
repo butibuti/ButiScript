@@ -629,6 +629,9 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_s
 
 void ButiScript::Compiler::PushNameSpace(NameSpace_t arg_namespace)
 {
+	if (!arg_namespace) {
+		arg_namespace = std::make_shared<NameSpace>("");
+	}
 	if (currentNameSpace) {
 		arg_namespace->SetParent(currentNameSpace);
 	}
@@ -723,7 +726,10 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 {
 	std::ifstream fIn;
 	fIn.open(arg_filePath,std::ios::binary);
-
+	if (!fIn.is_open()) {
+		fIn.close();
+		return 0;
+	}
 
 
 	int sourceFilePathStrSize = 0;
@@ -882,7 +888,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 	fIn.close();
 
-	return 0;
+	return 1;
 }
 
 int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
