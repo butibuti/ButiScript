@@ -83,7 +83,7 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Compiled
 	variables.push_back(ValueTable());
 	variables[0].set_global();
 	OpHalt();
-	bool result = ScriptParser(file, this);	// 構文解析
+	bool result = ScriptParse(file, this);	// 構文解析
 
 	if (!result)
 		return false;// パーサーエラー
@@ -156,8 +156,8 @@ void ButiScript::Compiler::FunctionAnalyze()
 {
 	for (auto namespaceItr = vec_namespaces.begin(), namespaceEnd = vec_namespaces.end(); namespaceItr != namespaceEnd; namespaceItr++) {
 		currentNameSpace = *namespaceItr;
-		(*namespaceItr)->AnalyzeFunctions(this);
 		(*namespaceItr)->AnalyzeClasses(this);
+		(*namespaceItr)->AnalyzeFunctions(this);
 	}
 }
 
@@ -388,7 +388,6 @@ void ButiScript::Compiler::RegistRamda(const int type, const std::vector<ArgDefi
 {
 	RegistFunction(type, "@ramda:" + std::to_string(ramdaCount), args, nullptr, AccessModifier::Public, arg_functionTable);
 
-	ramdaCount++;
 }
 
 void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value)
@@ -1072,7 +1071,7 @@ void ButiScript::NameSpace::AnalyzeFunctions(Compiler* c)
 void ButiScript::NameSpace::AnalyzeClasses(Compiler* c)
 {
 	for (auto itr = vec_analyzeClassBuffer.begin(), end = vec_analyzeClassBuffer.end(); itr != end; itr++) {
-		(*itr)->AnalyzeMethod(c);
+		(*itr)->Analyze(c);
 	}
 }
 

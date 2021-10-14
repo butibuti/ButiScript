@@ -23,16 +23,16 @@ bool CanTypeCast(const int arg_left, const int arg_right) {
 }
 
 
-const EnumTag* GetEnumType(const Compiler* c, Node& left_) {
+const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& left_) {
 
-	auto shp_namespace = c->GetCurrentNameSpace();
+	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string serchName;
 	const  EnumTag* enumType = nullptr;
 	while (!enumType)
 	{
 		serchName = shp_namespace->GetGlobalNameString() + left_.GetString();
 
-		enumType = c->GetEnumTag(serchName);
+		enumType = arg_compiler->GetEnumTag(serchName);
 
 		if (enumType) {
 			break;
@@ -46,16 +46,16 @@ const EnumTag* GetEnumType(const Compiler* c, Node& left_) {
 	}
 	return enumType;
 }
-const FunctionTag* GetFunctionType(const Compiler* c, const Node& left_) {
+const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& left_) {
 
-	auto shp_namespace = c->GetCurrentNameSpace();
+	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string serchName;
 	const  FunctionTag* tag = nullptr;
 	while (!tag)
 	{
 		serchName = shp_namespace->GetGlobalNameString() + left_.GetString();
 
-		tag = c->GetFunctionTag(serchName);
+		tag = arg_compiler->GetFunctionTag(serchName);
 
 		if (tag) {
 			break;
@@ -69,16 +69,16 @@ const FunctionTag* GetFunctionType(const Compiler* c, const Node& left_) {
 	}
 	return tag;
 }
-const FunctionTag* GetFunctionType(const Compiler* c, const std::string& str) {
+const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::string& str) {
 
-	auto shp_namespace = c->GetCurrentNameSpace();
+	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string serchName;
 	const  FunctionTag* tag = nullptr;
 	while (!tag)
 	{
 		serchName = shp_namespace->GetGlobalNameString() + str;
 
-		tag = c->GetFunctionTag(serchName);
+		tag = arg_compiler->GetFunctionTag(serchName);
 
 		if (tag) {
 			break;
@@ -94,7 +94,7 @@ const FunctionTag* GetFunctionType(const Compiler* c, const std::string& str) {
 }
 
 // 変数ノードを生成
-Node_t Node::make_node(const int Op, const std::string& str, const Compiler* c)
+Node_t Node::make_node(const int Op, const std::string& str, const Compiler* arg_compiler)
 {
 	if (Op == OP_IDENTIFIER)
 		return Node_t(new Node_value(str));
@@ -108,7 +108,7 @@ Node_t Node::make_node(const int Op, const std::string& str, const Compiler* c)
 }
 
 // 単項演算子のノードを生成
-Node_t Node::make_node(const int Op, Node_t left, const Compiler* c)
+Node_t Node::make_node(const int Op, Node_t left, const Compiler* arg_compiler)
 {
 	if (Op == OP_METHOD) {
 		return Node_t(new Node_Method(Op, left->GetLeft(), left->GetString()));
@@ -125,9 +125,9 @@ Node_t Node::make_node(const int Op, Node_t left, const Compiler* c)
 }
 
 
-Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName,const Compiler* c)
+Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName,const Compiler* arg_compiler)
 {
-	if (GetEnumType(c,*left)) {
+	if (GetEnumType(arg_compiler,*left)) {
 		return  Node_t(new Node_enum( left, arg_memberName));
 	}
 
@@ -562,22 +562,22 @@ Node_t Node::make_node(const int Op, Node_t left, NodeList_t right)
 
 
 template <typename T>
-bool SetDefaultOperator(const int op_, Compiler* c) {
+bool SetDefaultOperator(const int op_, Compiler* arg_compiler) {
 	switch (op_) {
 	case OP_ADD:
-		c->OpAdd<T>();
+		arg_compiler->OpAdd<T>();
 		break;
 
 	case OP_SUB:
-		c->OpSub<T>();
+		arg_compiler->OpSub<T>();
 		break;
 
 	case OP_MUL:
-		c->OpMul<T>();
+		arg_compiler->OpMul<T>();
 		break;
 
 	case OP_DIV:
-		c->OpDiv<T>();
+		arg_compiler->OpDiv<T>();
 		break;
 
 
@@ -588,80 +588,80 @@ bool SetDefaultOperator(const int op_, Compiler* c) {
 	return true;
 }
 template <typename T, typename U>
-bool SetDeferentTypeMulOperator(const int op_, Compiler* c) {
+bool SetDeferentTypeMulOperator(const int op_, Compiler* arg_compiler) {
 	if (op_ == OP_MUL) {
 
-		c->OpMul<T, U>();
+		arg_compiler->OpMul<T, U>();
 		return true;
 	}
 	return false;
 }
 template <typename T, typename U>
-bool SetDeferentTypeDivOperator(const int op_, Compiler* c) {
+bool SetDeferentTypeDivOperator(const int op_, Compiler* arg_compiler) {
 	if (op_ == OP_DIV) {
 
-		c->OpDiv<T, U>();
+		arg_compiler->OpDiv<T, U>();
 		return true;
 	}
 	return false;
 }
 
 template <typename T>
-bool SetModOperator(const int op_, Compiler* c) {
+bool SetModOperator(const int op_, Compiler* arg_compiler) {
 	if (op_ == OP_MOD) {
-		c->OpMod<T>();
+		arg_compiler->OpMod<T>();
 		return true;
 	}
 	return false;
 }
-bool SetLogicalOperator(const int op_, Compiler* c) {
+bool SetLogicalOperator(const int op_, Compiler* arg_compiler) {
 	switch (op_) {
 	case OP_LOGAND:
-		c->OpLogAnd();
+		arg_compiler->OpLogAnd();
 		break;
 
 	case OP_LOGOR:
-		c->OpLogOr();
+		arg_compiler->OpLogOr();
 		break;
 
 	case OP_EQ:
-		c->OpEq();
+		arg_compiler->OpEq();
 		break;
 
 	case OP_NE:
-		c->OpNe();
+		arg_compiler->OpNe();
 		break;
 
 	case OP_GT:
-		c->OpGt();
+		arg_compiler->OpGt();
 		break;
 
 	case OP_GE:
-		c->OpGe();
+		arg_compiler->OpGe();
 		break;
 
 	case OP_LT:
-		c->OpLt();
+		arg_compiler->OpLt();
 		break;
 
 	case OP_LE:
-		c->OpLe();
+		arg_compiler->OpLe();
 		break;
 
 	case OP_AND:
-		c->OpAnd();
+		arg_compiler->OpAnd();
 		break;
 
 	case OP_OR:
-		c->OpOr();
+		arg_compiler->OpOr();
 		break;
 
 	case OP_LSHIFT:
-		c->OpLeftShift();
+		arg_compiler->OpLeftShift();
 		break;
 
 	case OP_RSHIFT:
-		c->OpRightShift();
+		arg_compiler->OpRightShift();
 		break;
 
 	default:
@@ -674,22 +674,22 @@ bool SetLogicalOperator(const int op_, Compiler* c) {
 
 
 template <typename T>
-bool SetDefaultAssignOperator(const int op_, Compiler* c) {
+bool SetDefaultAssignOperator(const int op_, Compiler* arg_compiler) {
 	switch (op_) {
 	case OP_ADD_ASSIGN:
-		c->OpAdd<T>();
+		arg_compiler->OpAdd<T>();
 		break;
 
 	case OP_SUB_ASSIGN:
-		c->OpSub<T>();
+		arg_compiler->OpSub<T>();
 		break;
 
 	case OP_MUL_ASSIGN:
-		c->OpMul<T>();
+		arg_compiler->OpMul<T>();
 		break;
 
 	case OP_DIV_ASSIGN:
-		c->OpDiv<T>();
+		arg_compiler->OpDiv<T>();
 		break;
 
 	case OP_ASSIGN:
@@ -703,48 +703,48 @@ bool SetDefaultAssignOperator(const int op_, Compiler* c) {
 	return true;
 }
 template <typename T, typename U>
-bool SetDeferentTypeMulAssignOperator(const int op_, Compiler* c) {
+bool SetDeferentTypeMulAssignOperator(const int op_, Compiler* arg_compiler) {
 	if (op_ == OP_MUL_ASSIGN) {
 
-		c->OpMul<T, U>();
+		arg_compiler->OpMul<T, U>();
 		return true;
 	}
 	return false;
 }
 template <typename T, typename U>
-bool SetDeferentTypeDivAssignOperator(const int op_, Compiler* c) {
+bool SetDeferentTypeDivAssignOperator(const int op_, Compiler* arg_compiler) {
 	if (op_ == OP_DIV_ASSIGN) {
 
-		c->OpDiv<T, U>();
+		arg_compiler->OpDiv<T, U>();
 		return true;
 	}
 	return false;
 }
 
 template <typename T>
-bool SetModAssignOperator(const int op_, Compiler* c) {
+bool SetModAssignOperator(const int op_, Compiler* arg_compiler) {
 	if (op_ == OP_MOD_ASSIGN) {
-		c->OpMod<T>();
+		arg_compiler->OpMod<T>();
 		return true;
 	}
 	return false;
 }
-bool SetLogicalAssignOperator(const int op_, Compiler* c) {
+bool SetLogicalAssignOperator(const int op_, Compiler* arg_compiler) {
 	switch (op_) {
 	case OP_AND_ASSIGN:
-		c->OpAnd();
+		arg_compiler->OpAnd();
 		break;
 
 	case OP_OR_ASSIGN:
-		c->OpOr();
+		arg_compiler->OpOr();
 		break;
 
 	case OP_LSHIFT_ASSIGN:
-		c->OpLeftShift();
+		arg_compiler->OpLeftShift();
 		break;
 
 	case OP_RSHIFT_ASSIGN:
-		c->OpRightShift();
+		arg_compiler->OpRightShift();
 		break;
 
 	default:
@@ -757,35 +757,35 @@ bool SetLogicalAssignOperator(const int op_, Compiler* c) {
 
 
 // ノードのpush処理
-int Node::Push(Compiler* c) const{
+int Node::Push(Compiler* arg_compiler) const{
 	if (op_ >= OP_ASSIGN && op_ <= OP_RSHIFT_ASSIGN) {
-		return Assign(c);
+		return Assign(arg_compiler);
 	}
 
 	switch (op_) {
 	case OP_NEG:
-		if (left_->Push(c) == TYPE_STRING)
-			c->error("文字列には到底許されない計算です。");
-		c->OpNeg();
+		if (left_->Push(arg_compiler) == TYPE_STRING)
+			arg_compiler->error("文字列には到底許されない計算です。");
+		arg_compiler->OpNeg();
 		return TYPE_INTEGER;
 
 	case OP_INT:
-		c->PushConstInt(number_);
+		arg_compiler->PushConstInt(number_);
 		return TYPE_INTEGER;
 	case OP_FLOAT:
-		c->PushConstFloat(num_float);
+		arg_compiler->PushConstFloat(num_float);
 		return TYPE_FLOAT;
 
 	case OP_STRING:
-		c->PushString(string_);
+		arg_compiler->PushString(string_);
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return Call(c, string_, nullptr);
+		return Call(arg_compiler, string_, nullptr);
 	}
 
-	int left_type = left_->Push(c);
-	int right_type = right_->Push(c);
+	int left_type = left_->Push(arg_compiler);
+	int right_type = right_->Push(arg_compiler);
 
 	//右辺若しくは左辺が未定義関数
 	if (left_type <= -1 || right_type <= -1) {
@@ -794,8 +794,8 @@ int Node::Push(Compiler* c) const{
 
 	// float計算ノードの処理
 	if ((left_type == TYPE_FLOAT && right_type == TYPE_FLOAT ) || (left_type == TYPE_INTEGER && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_INTEGER)) {
-		if (!SetDefaultOperator<float>(op_, c) && (!SetModOperator<float>(op_, c)) && (!SetLogicalOperator(op_, c))) {
-				c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultOperator<float>(op_, arg_compiler) && (!SetModOperator<float>(op_, arg_compiler)) && (!SetLogicalOperator(op_, arg_compiler))) {
+				arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 
 		return TYPE_FLOAT;
@@ -803,116 +803,116 @@ int Node::Push(Compiler* c) const{
 
 	// 整数計算ノードの処理
 	if (left_type ==  TYPE_INTEGER && right_type==TYPE_INTEGER) {
-		if (!SetDefaultOperator<int>(op_, c)&&  (!SetModOperator<int>(op_, c))&& (!SetLogicalOperator(op_, c))) {
-			c->error("内部エラー：処理できない計算ノードがありました。");	
+		if (!SetDefaultOperator<int>(op_, arg_compiler)&&  (!SetModOperator<int>(op_, arg_compiler))&& (!SetLogicalOperator(op_, arg_compiler))) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");	
 		}
 		return TYPE_INTEGER;
 	}
 
 	//Vector2計算ノード
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_VOID + 1) {
-		if (!SetDefaultOperator<ButiEngine::Vector2>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultOperator<ButiEngine::Vector2>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 1;
 	}
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, float>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, float>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, float>(op_, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, float>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 1;
 	}
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_INTEGER) {
 
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, int>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, int>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, int>(op_, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, int>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 1;
 	}
 	if (left_type == TYPE_FLOAT && right_type == TYPE_VOID + 1) {
-		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector2>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector2>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 1;
 	}
 	if (left_type == TYPE_INTEGER && right_type == TYPE_VOID + 1) {
 
-		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector2>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector2>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 1;
 	}
 	//Vector3計算ノード
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_VOID + 2) {
-		if (!SetDefaultOperator<ButiEngine::Vector3>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultOperator<ButiEngine::Vector3>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 2;
 	}
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, float>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, float>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, float>(op_, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, float>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 2;
 	}
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_INTEGER) {
 
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, int>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, int>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, int>(op_, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, int>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 2;
 	}
 	if (left_type == TYPE_FLOAT && right_type == TYPE_VOID + 2) {
-		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector3>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector3>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 2;
 	}
 	if (left_type == TYPE_INTEGER && right_type == TYPE_VOID + 2) {
 
-		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector3>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector3>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 2;
 	}
 	//Vector4計算ノード
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_VOID + 3) {
-		if (!SetDefaultOperator<ButiEngine::Vector4>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultOperator<ButiEngine::Vector4>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 3;
 	}
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, float>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, float>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, float>(op_, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, float>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 3;
 	}
 	if (left_type == TYPE_VOID +3 && right_type == TYPE_INTEGER) {
 
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, int>(op_, c) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, int>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, int>(op_, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, int>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 3;
 	}
 	if (left_type == TYPE_FLOAT && right_type == TYPE_VOID + 3) {
-		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector4>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector4>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 3;
 	}
 	if (left_type == TYPE_INTEGER && right_type == TYPE_VOID + 3) {
 
-		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector4>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulOperator<int, ButiEngine::Vector4>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
 		return TYPE_VOID + 3;
 	}
 
-	if (c->GetType(left_type)->p_enumTag && right_type == TYPE_INTEGER) {
+	if (arg_compiler->GetType(left_type)->p_enumTag && right_type == TYPE_INTEGER) {
 		if (op_ == OP_EQ)
 		{
-			c->OpEq();
+			arg_compiler->OpEq();
 		}
 		return left_type;
 	}
@@ -920,35 +920,35 @@ int Node::Push(Compiler* c) const{
 	// 文字列計算ノードの処理
 	switch (op_) {
 	case OP_EQ:
-		c->OpStrEq();
+		arg_compiler->OpStrEq();
 		return TYPE_INTEGER;
 
 	case OP_NE:
-		c->OpStrNe();
+		arg_compiler->OpStrNe();
 		return TYPE_INTEGER;
 
 	case OP_GT:
-		c->OpStrGt();
+		arg_compiler->OpStrGt();
 		return TYPE_INTEGER;
 
 	case OP_GE:
-		c->OpStrGe();
+		arg_compiler->OpStrGe();
 		return TYPE_INTEGER;
 
 	case OP_LT:
-		c->OpStrLt();
+		arg_compiler->OpStrLt();
 		return TYPE_INTEGER;
 
 	case OP_LE:
-		c->OpStrLe();
+		arg_compiler->OpStrLe();
 		return TYPE_INTEGER;
 
 	case OP_ADD:
-		c->OpStrAdd();
+		arg_compiler->OpStrAdd();
 		break;
 
 	default:
-		c->error("文字列では計算できない式です。");
+		arg_compiler->error("文字列では計算できない式です。");
 		break;
 	}
 	return TYPE_STRING;
@@ -957,21 +957,21 @@ int Node::Push(Compiler* c) const{
 // ノードのpop
 // 計算ノードはpopできない
 
-int Node::Pop(Compiler* c) const{
-	c->error("内部エラー：計算ノードをpopしています。");
+int Node::Pop(Compiler* arg_compiler) const{
+	arg_compiler->error("内部エラー：計算ノードをpopしています。");
 	return TYPE_INTEGER;
 }
 
 //ノードの型チェック
-int Node::GetType(Compiler* c)const {
+int Node::GetType(Compiler* arg_compiler)const {
 	if (op_ >= OP_ASSIGN && op_ <= OP_RSHIFT_ASSIGN) {
 		return -1;
 	}
 
 	switch (op_) {
 	case OP_NEG:
-		if (left_->GetType(c) == TYPE_STRING)
-			c->error("文字列には許されない計算です。");
+		if (left_->GetType(arg_compiler) == TYPE_STRING)
+			arg_compiler->error("文字列には許されない計算です。");
 		return TYPE_INTEGER;
 
 	case OP_INT:
@@ -983,25 +983,25 @@ int Node::GetType(Compiler* c)const {
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return GetCallType(c, string_, nullptr);
+		return GetCallType(arg_compiler, string_, nullptr);
 	}
 	if (op_ == OP_IDENTIFIER) {
-		const ValueTag* valueTag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if (valueTag)  {
 			return valueTag->valueType;
 		}
-		auto funcTag = GetFunctionType(c, *this);
+		auto funcTag = GetFunctionType(arg_compiler, *this);
 
 		if (!funcTag) {
-			c->error(GetString() + "は未定義です");
+			arg_compiler->error(GetString() + "は未定義です");
 			return 0;
 		}
 
-		return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+		return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 
 	}
-	int left_type = left_->GetType(c);
-	int right_type = right_->GetType(c);
+	int left_type = left_->GetType(arg_compiler);
+	int right_type = right_->GetType(arg_compiler);
 
 	//右辺若しくは左辺が未定義関数
 	if (left_type <= -1 || right_type <= -1) {
@@ -1028,20 +1028,20 @@ int Node::GetType(Compiler* c)const {
 		break;
 
 	default:
-		c->error("文字列では計算できない式です。");
+		arg_compiler->error("文字列では計算できない式です。");
 		break;
 	}
 	return TYPE_STRING;
 }
-const ValueTag* Node::GetValueTag(Compiler* c) const
+const ValueTag* Node::GetValueTag(Compiler* arg_compiler) const
 {
-		c->error("変数ノード以外から変数を受け取ろうとしています");
+		arg_compiler->error("変数ノード以外から変数を受け取ろうとしています");
 		return nullptr;
 }
-const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* c) const
+const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_compiler) const
 {
 	std::string  valueName;
-	NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
 	const ValueTag* valueTag = nullptr;
 
 	while (!valueTag)
@@ -1053,7 +1053,7 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* c) cons
 			valueName = arg_name;
 		}
 
-		valueTag = c->GetValueTag(valueName);
+		valueTag = arg_compiler->GetValueTag(valueName);
 		if (currentSerchNameSpace) {
 			currentSerchNameSpace = currentSerchNameSpace->GetParent();
 		}
@@ -1063,25 +1063,25 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* c) cons
 
 	}
 	if (!valueTag) {
-		//c->error("変数 " + valueName + " は定義されていません。");
+		//arg_compiler->error("変数 " + valueName + " は定義されていません。");
 	}
 	return valueTag;
 }
-int  Node_function::GetType(Compiler* c)const {
-	return GetCallType(c, left_->GetString(), &node_list_->args_);
+int  Node_function::GetType(Compiler* arg_compiler)const {
+	return GetCallType(arg_compiler, left_->GetString(), &node_list_->args_);
 }
 //ノードの関数呼び出し型チェック
-int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const {
+int Node::GetCallType(Compiler* arg_compiler, const std::string& name, const std::vector<Node_t>* args)const {
 
 	std::vector<int> argTypes;
 	if (args) {
 		auto end = args->end();
 		for (auto itr = args->begin(); itr != end; itr++) {
-			argTypes.push_back((*itr)->GetType(c));
+			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
 	std::string  functionName;
-	NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
 	const FunctionTag* tag=nullptr;
 
 	while (!tag)
@@ -1093,9 +1093,9 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 			functionName = name;
 		}
 
-		tag = c->GetFunctionTag(functionName, argTypes, true);
+		tag = arg_compiler->GetFunctionTag(functionName, argTypes, true);
 		if (!tag) {
-			tag = c->GetFunctionTag(functionName, argTypes, false);
+			tag = arg_compiler->GetFunctionTag(functionName, argTypes, false);
 		}
 		if (currentSerchNameSpace) {
 			currentSerchNameSpace = currentSerchNameSpace->GetParent();
@@ -1113,154 +1113,154 @@ int Node::GetCallType(Compiler* c, const std::string& name, const std::vector<No
 }
 
 // 代入文
-int Node::Assign(Compiler* c) const{
+int Node::Assign(Compiler* arg_compiler) const{
 	int left_type = -1;
 	//代入のみのパターンではないので左辺をpush
 	if (op_ != OP_ASSIGN) {
-		left_type = left_->Push(c)&~TYPE_REF;
+		left_type = left_->Push(arg_compiler)&~TYPE_REF;
 	}
 	else {
-		left_type = left_->GetType(c) & ~TYPE_REF;
+		left_type = left_->GetType(arg_compiler) & ~TYPE_REF;
 	}
-	int right_type = right_->Push(c) & ~TYPE_REF;
+	int right_type = right_->Push(arg_compiler) & ~TYPE_REF;
 
 
 
 	// float計算ノードの処理
 	if ((left_type == TYPE_FLOAT && right_type == TYPE_FLOAT) || (left_type == TYPE_INTEGER && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_INTEGER)) {
-		if (!SetDefaultAssignOperator<float>(op_, c) && (!SetModAssignOperator<float>(op_, c)) && (!SetLogicalAssignOperator(op_, c))) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultAssignOperator<float>(op_, arg_compiler) && (!SetModAssignOperator<float>(op_, arg_compiler)) && (!SetLogicalAssignOperator(op_, arg_compiler))) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 
 	// 整数計算ノードの処理
 	if (left_type == TYPE_INTEGER && right_type == TYPE_INTEGER) {
-		if (!SetDefaultAssignOperator<int>(op_, c) && (!SetModAssignOperator<int>(op_, c)) && (!SetLogicalAssignOperator(op_, c))) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultAssignOperator<int>(op_, arg_compiler) && (!SetModAssignOperator<int>(op_, arg_compiler)) && (!SetLogicalAssignOperator(op_, arg_compiler))) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 
 
 	//Vector2計算ノード
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_VOID + 1) {
-		if (!SetDefaultAssignOperator<ButiEngine::Vector2>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultAssignOperator<ButiEngine::Vector2>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, float>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, float>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, float>(op_, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, float>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c); 
+		left_->Pop(arg_compiler); 
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_INTEGER) {
 
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, int>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, int>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, int>(op_, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, int>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	//Vector3計算ノード
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_VOID + 2) {
-		if (!SetDefaultAssignOperator<ButiEngine::Vector3>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultAssignOperator<ButiEngine::Vector3>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, float>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, float>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, float>(op_, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, float>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_INTEGER) {
 
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, int>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, int>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, int>(op_, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, int>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	//Vector4計算ノード
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_VOID + 3) {
-		if (!SetDefaultAssignOperator<ButiEngine::Vector4>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDefaultAssignOperator<ButiEngine::Vector4>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, float>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, float>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, float>(op_, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, float>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_INTEGER) {
 
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, int>(op_, c) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, int>(op_, c)) {
-			c->error("内部エラー：処理できない計算ノードがありました。");
+		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, int>(op_, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, int>(op_, arg_compiler)) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 
 	if (left_type == TYPE_STRING&& right_type == TYPE_STRING) {
 		switch (op_) {
 		case OP_ADD_ASSIGN:
-			c->OpStrAdd();
+			arg_compiler->OpStrAdd();
 			break;
 
 		case OP_ASSIGN:
 			break;
 
 		default:
-			c->error("文字列では許されない計算です。");
+			arg_compiler->error("文字列では許されない計算です。");
 			break;
 		}
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 
 		return 0;
 	}
 
 	if (left_type == right_type) {
 		//同じ型同士なので代入可能
-		left_->Pop(c);
+		left_->Pop(arg_compiler);
 		return 0;
 	}
-	else if (right_->EnumType(c) == left_type) {
-		left_->Pop(c);
+	else if (right_->EnumType(arg_compiler) == left_type) {
+		left_->Pop(arg_compiler);
 		return 0;
 	}
 	else
 	{
-		c->error("代入出来ない変数の組み合わせです");
+		arg_compiler->error("代入出来ない変数の組み合わせです");
 	}
 
 	return -1;
 }
 
-const ValueTag* Node_value::GetValueTag(Compiler* c) const{
+const ValueTag* Node_value::GetValueTag(Compiler* arg_compiler) const{
 
 	if (op_ != OP_IDENTIFIER) {
-		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
 		return nullptr;
 	}
 
 	else {
 
 		std::string  valueName;
-		NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+		NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
 		const ValueTag* valueTag = nullptr;
 
 		while (!valueTag)
@@ -1272,7 +1272,7 @@ const ValueTag* Node_value::GetValueTag(Compiler* c) const{
 				valueName = string_;
 			}
 
-			valueTag = c->GetValueTag(valueName);
+			valueTag = arg_compiler->GetValueTag(valueName);
 			if (currentSerchNameSpace) {
 				currentSerchNameSpace = currentSerchNameSpace->GetParent();
 			}
@@ -1282,135 +1282,135 @@ const ValueTag* Node_value::GetValueTag(Compiler* c) const{
 
 		}
 		if (!valueTag) {
-			//c->error("変数 " + valueName + " は定義されていません。");
+			//arg_compiler->error("変数 " + valueName + " は定義されていません。");
 		}
 		return valueTag;
 	}
 }
 
 // 変数ノードのpush
-int Node_value::Push(Compiler* c) const{
+int Node_value::Push(Compiler* arg_compiler) const{
 	if (op_ != OP_IDENTIFIER) {
-		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* valueTag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if(valueTag)
 		{
 			if (valueTag->global_) {		// グローバル変数
 				if (left_) {		// 配列
-					left_->Push(c);
-					c->PushGlobalArrayRef(valueTag->address);
+					left_->Push(arg_compiler);
+					arg_compiler->PushGlobalArrayRef(valueTag->address);
 				}
 				else {
-					c->PushGlobalValueRef(valueTag->address);
+					arg_compiler->PushGlobalValueRef(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
-					left_->Push(c);
-					c->PushLocalArrayRef(valueTag->address);
+					left_->Push(arg_compiler);
+					arg_compiler->PushLocalArrayRef(valueTag->address);
 				}
 				else {
-					c->PushLocalRef(valueTag->address);
+					arg_compiler->PushLocalRef(valueTag->address);
 				}
 			}
 			return valueTag->valueType & ~TYPE_REF;
 		}
-		const auto funcTag = GetFunctionType(c, *this);
+		const auto funcTag = GetFunctionType(arg_compiler, *this);
 
 		if (!funcTag) {
-			c->error(GetString() + "は未定義です");
+			arg_compiler->error(GetString() + "は未定義です");
 			return -1;
 		}
 		else {
-			c->OpPushFunctionAddress(funcTag->GetIndex());
-			return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+			arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
+			return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
 }
 
-int Node_value::PushClone(Compiler* c) const{
+int Node_value::PushClone(Compiler* arg_compiler) const{
 	if (op_ != OP_IDENTIFIER) {
-		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* valueTag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if(valueTag)
 		{
 			if (valueTag->global_) {		// グローバル変数
 				if (left_) {		// 配列
-					left_->Push(c);
-					c->PushGlobalArray(valueTag->address);
+					left_->Push(arg_compiler);
+					arg_compiler->PushGlobalArray(valueTag->address);
 				}
 				else {
-					c->PushGlobalValue(valueTag->address);
+					arg_compiler->PushGlobalValue(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
-					left_->Push(c);
-					c->PushLocalArray(valueTag->address);
+					left_->Push(arg_compiler);
+					arg_compiler->PushLocalArray(valueTag->address);
 				}
 				else {
-					c->PushLocal(valueTag->address);
+					arg_compiler->PushLocal(valueTag->address);
 				}
 			}
 			return valueTag->valueType & ~TYPE_REF;
 		}
 
-		const auto funcTag = GetFunctionType(c, *this);
+		const auto funcTag = GetFunctionType(arg_compiler, *this);
 
 		if (!funcTag) {
-			c->error(GetString() + "は未定義です");
+			arg_compiler->error(GetString() + "は未定義です");
 			return -1;
 		}
 		else {
-			c->OpPushFunctionAddress (funcTag->GetIndex());
-			return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+			arg_compiler->OpPushFunctionAddress (funcTag->GetIndex());
+			return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
 }
 
 // 変数ノードのpop
-int Node_value::Pop(Compiler* c) const{
+int Node_value::Pop(Compiler* arg_compiler) const{
 	if (op_ != OP_IDENTIFIER) {
-		c->error("内部エラー：変数ノードに変数以外が登録されています。");
+		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
 	}
 	else {
-		const ValueTag* valueTag = GetValueTag(c);
+		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if(valueTag)
 		{
 			if (valueTag->global_) {		// グローバル変数
 				if (left_) {		// 配列
-					left_->Push(c);
-					c->PopArray(valueTag->address);
+					left_->Push(arg_compiler);
+					arg_compiler->PopArray(valueTag->address);
 				}
 				else {
-					c->PopValue(valueTag->address);
+					arg_compiler->PopValue(valueTag->address);
 				}
 			}
 			else {					// ローカル変数
 				if (left_) {		// 配列
-					left_->Push(c);
-					c->PopLocalArray(valueTag->address);
+					left_->Push(arg_compiler);
+					arg_compiler->PopLocalArray(valueTag->address);
 				}
 				else {
-					c->PopLocal(valueTag->address);
+					arg_compiler->PopLocal(valueTag->address);
 				}
 			}
 			return valueTag->valueType & ~TYPE_REF;
 		}
-		const auto funcTag = GetFunctionType(c, *this);
+		const auto funcTag = GetFunctionType(arg_compiler, *this);
 
 		if (!funcTag) {
-			c->error(GetString() + "は未定義です");
+			arg_compiler->error(GetString() + "は未定義です");
 			return -1;
 		}
 		else {
-			c->error(GetString() + "は定数です");
+			arg_compiler->error(GetString() + "は定数です");
 			return -1;
 		}
 	}
@@ -1474,16 +1474,16 @@ struct set_arg {
 };
 
 // 関数呼び出し
-int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const
+int Node::Call(Compiler* arg_compiler, const std::string& name, const std::vector<Node_t>* args) const
 {
 	std::string  functionName;
-	NameSpace_t currentSerchNameSpace = c->GetCurrentNameSpace();
+	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
 
 	std::vector<int> argTypes;
 	if (args) {
 		auto end = args->end();
 		for (auto itr = args->begin(); itr != end; itr++) {
-			argTypes.push_back((*itr)->GetType(c));
+			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
 
@@ -1499,9 +1499,9 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 			functionName = name;
 		}
 		
-		functionTag = c->GetFunctionTag(functionName, argTypes, true);
+		functionTag = arg_compiler->GetFunctionTag(functionName, argTypes, true);
 		if (!functionTag) {
-			functionTag = c->GetFunctionTag(functionName, argTypes, false);
+			functionTag = arg_compiler->GetFunctionTag(functionName, argTypes, false);
 		}
 		if (currentSerchNameSpace) {
 			currentSerchNameSpace = currentSerchNameSpace->GetParent();
@@ -1516,43 +1516,43 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	if (functionTag ) {
 		// 引数をpush
 		if (args && functionTag->ArgSize() == argSize) {
-			std::for_each(args->begin(), args->end(), set_arg(c, functionTag));
+			std::for_each(args->begin(), args->end(), set_arg(arg_compiler, functionTag));
 		}
 
 		// 引数の数をpush
-		c->PushConstInt(argSize);
+		arg_compiler->PushConstInt(argSize);
 
 		if (functionTag->IsSystem()) {
-			c->OpSysCall(functionTag->GetIndex());		// 組み込み関数
+			arg_compiler->OpSysCall(functionTag->GetIndex());		// 組み込み関数
 		}
 		else {
-			c->OpCall(functionTag->GetIndex());			// スクリプト上の関数
+			arg_compiler->OpCall(functionTag->GetIndex());			// スクリプト上の関数
 		}
 
 		return functionTag->valueType;
 	}
 	//関数型変数からの呼び出し
-	auto valueTag = GetValueTag(name, c);
+	auto valueTag = GetValueTag(name, arg_compiler);
 	if (valueTag) {
-		auto valueType=c->GetType(valueTag->valueType);
+		auto valueType=arg_compiler->GetType(valueTag->valueType);
 		if (valueType->IsFunctionObjectType()) {
 			// 引数をpush
 			if (args && valueType->GetFunctionObjectArgSize() == argSize) {
 				auto valueArgTypes = valueType->GetFunctionObjectArgment();
-				std::for_each(args->begin(), args->end(), set_arg(c,&valueArgTypes ));
+				std::for_each(args->begin(), args->end(), set_arg(arg_compiler,&valueArgTypes ));
 			}
 
 			// 引数の数をpush
-			c->PushConstInt(argSize);
+			arg_compiler->PushConstInt(argSize);
 			if (valueTag->global_) {		// グローバル変数
 
-				c->PushGlobalValue(valueTag->address);
+				arg_compiler->PushGlobalValue(valueTag->address);
 			}
 			else {		
 
-				c->PushLocal(valueTag->address);
+				arg_compiler->PushLocal(valueTag->address);
 			}
-			c->OpCallByVariable();
+			arg_compiler->OpCallByVariable();
 			return valueType->GetFunctionObjectReturnType();
 		}
 	}
@@ -1561,31 +1561,31 @@ int Node::Call(Compiler* c, const std::string& name, const std::vector<Node_t>* 
 	std::string message = "";
 	if (argSize) {
 		for (int i = 0; i < argSize; i++) {
-			message += c->GetTypeName(argTypes[i]) + " ";
+			message += arg_compiler->GetTypeName(argTypes[i]) + " ";
 		}
 		message += "を引数にとる";
 	}
 	message += "関数" + functionName + "は未宣言です";
-	c->error(message);
+	arg_compiler->error(message);
 	return -1;
 }
 
-int Node_function::Push(Compiler* c) const
+int Node_function::Push(Compiler* arg_compiler) const
 {
-	return Call(c, left_->GetString(), &node_list_->args_);
+	return Call(arg_compiler, left_->GetString(), &node_list_->args_);
 }
 
 // 関数にpopはできないのでエラーメッセージを出す
-int Node_function::Pop(Compiler* c) const
+int Node_function::Pop(Compiler* arg_compiler) const
 {
-	c->error("内部エラー：関数ノードをpopした");
+	arg_compiler->error("内部エラー：関数ノードをpopした");
 	return TYPE_INTEGER;
 }
 
 // 文ノード生成
-Statement_t Statement::make_statement(const int state)
+Statement_t Statement::make_statement(const int vec_state)
 {
-	switch (state) {
+	switch (vec_state) {
 	case NOP_STATE:
 		return Statement_t(new Statement_nop());
 
@@ -1616,14 +1616,14 @@ Statement_t Statement::make_statement(const int state)
 	return Statement_t(new Statement_nop());
 }
 
-Statement_t Statement::make_statement(const int state, const int)
+Statement_t Statement::make_statement(const int vec_state, const int)
 {
-	return make_statement(state);
+	return make_statement(vec_state);
 }
 
-Statement_t Statement::make_statement(const int state, Node_t node)
+Statement_t Statement::make_statement(const int vec_state, Node_t node)
 {
-	switch (state) {
+	switch (vec_state) {
 	case ASSIGN_STATE:
 		return Statement_t(new Statement_assign(node));
 
@@ -1641,9 +1641,9 @@ Statement_t Statement::make_statement(const int state, Node_t node)
 	return Statement_t(new Statement_nop());
 }
 
-Statement_t Statement::make_statement(const int state, Block_t block)
+Statement_t Statement::make_statement(const int vec_state, Block_t block)
 {
-	switch (state) {
+	switch (vec_state) {
 	case BLOCK_STATE:
 		return Statement_t(new Statement_block(block));
 	}
@@ -1653,28 +1653,28 @@ Statement_t Statement::make_statement(const int state, Block_t block)
 }
 
 // nop文
-int Statement_nop::Analyze(Compiler* c) 
+int Statement_nop::Analyze(Compiler* arg_compiler) 
 {
 	return 0;
 }
 
 // 代入文
-int Statement_assign::Analyze(Compiler* c) 
+int Statement_assign::Analyze(Compiler* arg_compiler) 
 {
-	return vec_node->Assign(c);
+	return vec_node->Assign(arg_compiler);
 	
 }
 
-int Statement_assign::ReAnalyze(Compiler* c)
+int Statement_assign::ReAnalyze(Compiler* arg_compiler)
 {
-	return vec_node->Assign(c);
+	return vec_node->Assign(arg_compiler);
 	
 }
 
 // 関数呼び出し文
-int ccall_statement::Analyze(Compiler* c) 
+int ccall_statement::Analyze(Compiler* arg_compiler) 
 {
-	int type = vec_node->Push(c);
+	int type = vec_node->Push(arg_compiler);
 
 	if (type == -1) {
 
@@ -1682,207 +1682,207 @@ int ccall_statement::Analyze(Compiler* c)
 	}
 
 	if (type != TYPE_VOID)
-		c->OpPop();			// 戻り値を捨てるためのpop
+		arg_compiler->OpPop();			// 戻り値を捨てるためのpop
 
 	return 0;
 }
 
-void ccall_statement::ReAnalyze(Compiler* c) 
+void ccall_statement::ReAnalyze(Compiler* arg_compiler) 
 {
-	int type = vec_node->Push(c);
+	int type = vec_node->Push(arg_compiler);
 
 	if (type == -1) {
 
-		c->error("定義されていない関数を参照しています");
+		arg_compiler->error("定義されていない関数を参照しています");
 	}
 
 	if (type != TYPE_VOID)
-		c->OpPop();
+		arg_compiler->OpPop();
 }
 
 // case文
-int Statement_case::Analyze(Compiler* c) 
+int Statement_case::Analyze(Compiler* arg_compiler) 
 {
-	c->SetLabel(label_);
+	arg_compiler->SetLabel(label_);
 	return 0;
 }
 
 // case文の前処理
-int Statement_case::case_Analyze(Compiler* c, int* default_label)
+int Statement_case::case_Analyze(Compiler* arg_compiler, int* default_label)
 {
-	label_ = c->MakeLabel();
+	label_ = arg_compiler->MakeLabel();
 	if (vec_node->Op() != OP_INT)
-		c->error("case 文には定数のみ指定できます。");
-	vec_node->Push(c);
-	c->OpTest(label_);
+		arg_compiler->error("case 文には定数のみ指定できます。");
+	vec_node->Push(arg_compiler);
+	arg_compiler->OpTest(label_);
 	return 0;
 }
 
 // default文
-int Statement_default::Analyze(Compiler* c) 
+int Statement_default::Analyze(Compiler* arg_compiler) 
 {
-	c->SetLabel(label_);
+	arg_compiler->SetLabel(label_);
 	return 0;
 }
 
 // default文の前処理
-int Statement_default::case_Analyze(Compiler* c, int* default_label)
+int Statement_default::case_Analyze(Compiler* arg_compiler, int* default_label)
 {
-	label_ = c->MakeLabel();
+	label_ = arg_compiler->MakeLabel();
 	*default_label = label_;
 
 	return 0;
 }
 
 // break文
-int Statement_break::Analyze(Compiler* c) 
+int Statement_break::Analyze(Compiler* arg_compiler) 
 {
-	if (!c->JmpBreakLabel()) {
-		c->error("breakがswitch/for/while外に有ります");
+	if (!arg_compiler->JmpBreakLabel()) {
+		arg_compiler->error("breakがswitch/for/while外に有ります");
 	}
 	return 0;
 }
 
 
 // return文
-int Statement_return::Analyze(Compiler* c) 
+int Statement_return::Analyze(Compiler* arg_compiler) 
 {
 
-	if (c->GetFunctionType() == TYPE_VOID) {	// 戻り値無し
+	if (arg_compiler->GetFunctionType() == TYPE_VOID) {	// 戻り値無し
 		if (vec_node != 0) {
-			c->error("void関数に戻り値が設定されています");
+			arg_compiler->error("void関数に戻り値が設定されています");
 		}
-		c->OpReturn();
+		arg_compiler->OpReturn();
 	}
 	else {
 		if (vec_node == 0) {
-			c->error("関数の戻り値がありません");
+			arg_compiler->error("関数の戻り値がありません");
 		}
 		else {
-			int node_type = vec_node->Push(c);		// 戻り値をpush
+			int node_type = vec_node->Push(arg_compiler);		// 戻り値をpush
 
-			if (!CanTypeCast( node_type ,c->GetFunctionType())) {
-				c->error("戻り値の型が合いません");
+			if (!CanTypeCast( node_type ,arg_compiler->GetFunctionType())) {
+				arg_compiler->error("戻り値の型が合いません");
 			}
 		}
-		c->OpReturnV();
+		arg_compiler->OpReturnV();
 	}
 
 	return 0;
 }
 
 // if文
-int Statement_if::Analyze(Compiler* c) 
+int Statement_if::Analyze(Compiler* arg_compiler) 
 {
-	vec_node->Push(c);
-	int label1 = c->MakeLabel();
-	c->OpJmpNC(label1);
-	statement_[0]->Analyze(c);
+	vec_node->Push(arg_compiler);
+	int label1 = arg_compiler->MakeLabel();
+	arg_compiler->OpJmpNC(label1);
+	statement_[0]->Analyze(arg_compiler);
 
 	if (statement_[1]) {
-		int label2 = c->MakeLabel();
-		c->OpJmp(label2);
-		c->SetLabel(label1);
-		statement_[1]->Analyze(c);
-		c->SetLabel(label2);
+		int label2 = arg_compiler->MakeLabel();
+		arg_compiler->OpJmp(label2);
+		arg_compiler->SetLabel(label1);
+		statement_[1]->Analyze(arg_compiler);
+		arg_compiler->SetLabel(label2);
 	}
 	else {
-		c->SetLabel(label1);
+		arg_compiler->SetLabel(label1);
 	}
 	return 0;
 }
 
 // for文
-int Statement_for::Analyze(Compiler* c) 
+int Statement_for::Analyze(Compiler* arg_compiler) 
 {
-	int label1 = c->MakeLabel();
-	int label2 = c->MakeLabel();
+	int label1 = arg_compiler->MakeLabel();
+	int label2 = arg_compiler->MakeLabel();
 
-	int break_label = c->SetBreakLabel(label2);
+	int break_label = arg_compiler->SetBreakLabel(label2);
 	if(vec_node[0])
-		vec_node[0]->Push(c);
-	c->SetLabel(label1);
-	vec_node[1]->Push(c);
-	c->OpJmpNC(label2);
-	statement_->Analyze(c);
+		vec_node[0]->Push(arg_compiler);
+	arg_compiler->SetLabel(label1);
+	vec_node[1]->Push(arg_compiler);
+	arg_compiler->OpJmpNC(label2);
+	statement_->Analyze(arg_compiler);
 	if (vec_node[2])
-		vec_node[2]->Push(c);
-	c->OpJmp(label1);
-	c->SetLabel(label2);
+		vec_node[2]->Push(arg_compiler);
+	arg_compiler->OpJmp(label1);
+	arg_compiler->SetLabel(label2);
 
-	c->SetBreakLabel(break_label);
+	arg_compiler->SetBreakLabel(break_label);
 	return 0;
 }
 
 // while文
-int Statement_while::Analyze(Compiler* c) 
+int Statement_while::Analyze(Compiler* arg_compiler) 
 {
-	int label1 = c->MakeLabel();
-	int label2 = c->MakeLabel();
+	int label1 = arg_compiler->MakeLabel();
+	int label2 = arg_compiler->MakeLabel();
 
-	int break_label = c->SetBreakLabel(label2);
+	int break_label = arg_compiler->SetBreakLabel(label2);
 
-	c->SetLabel(label1);
-	vec_node->Push(c);
-	c->OpJmpNC(label2);
-	statement_->Analyze(c);
-	c->OpJmp(label1);
-	c->SetLabel(label2);
+	arg_compiler->SetLabel(label1);
+	vec_node->Push(arg_compiler);
+	arg_compiler->OpJmpNC(label2);
+	statement_->Analyze(arg_compiler);
+	arg_compiler->OpJmp(label1);
+	arg_compiler->SetLabel(label2);
 
-	c->SetBreakLabel(break_label);
+	arg_compiler->SetBreakLabel(break_label);
 	return 0;
 }
 
 // switch文
-int Statement_switch::Analyze(Compiler* c) 
+int Statement_switch::Analyze(Compiler* arg_compiler) 
 {
 	if (!statement_.empty()) {
-		vec_node->Push(c);
+		vec_node->Push(arg_compiler);
 
-		int label = c->MakeLabel();		// L0ラベル作成
-		int break_label = c->SetBreakLabel(label);
+		int label = arg_compiler->MakeLabel();		// L0ラベル作成
+		int break_label = arg_compiler->SetBreakLabel(label);
 		int default_label = label;
 
 		std::for_each(statement_.begin(), statement_.end(),
-			boost::bind(&Statement::Case_Analyze, _1, c, &default_label));
+			boost::bind(&Statement::Case_Analyze, _1, arg_compiler, &default_label));
 
-		c->OpPop();
-		c->OpJmp(default_label);
+		arg_compiler->OpPop();
+		arg_compiler->OpJmp(default_label);
 
-		std::for_each(statement_.begin(), statement_.end(), boost::bind(&Statement::Analyze, _1, c));
-		c->SetLabel(label);
+		std::for_each(statement_.begin(), statement_.end(), boost::bind(&Statement::Analyze, _1, arg_compiler));
+		arg_compiler->SetLabel(label);
 
-		c->SetBreakLabel(break_label);
+		arg_compiler->SetBreakLabel(break_label);
 	}
 	return 0;
 }
 
 // block文
-int Statement_block::Analyze(Compiler* c) 
+int Statement_block::Analyze(Compiler* arg_compiler) 
 {
-	c->BlockIn();
-	block_->Analyze(c);
-	c->BlockOut();
+	arg_compiler->BlockIn();
+	block_->Analyze(arg_compiler);
+	arg_compiler->BlockOut();
 	return 0;
 }
 
 // 文ブロック
-int Block::Analyze(Compiler* c) 
+int Block::Analyze(Compiler* arg_compiler) 
 {
 	auto ret = 0;
 	{
 
 
-		for (auto itr = decl_.begin(), endItr = decl_.end(); itr != endItr; itr++) {
-			(*itr)->Define(c);
+		for (auto itr = vec_decl.begin(), endItr = vec_decl.end(); itr != endItr; itr++) {
+			(*itr)->Define(arg_compiler);
 		}
 	}
-	if (!decl_.empty())
-		c->AllocStack();	// スタックフレーム確保
+	if (!vec_decl.empty())
+		arg_compiler->AllocStack();	// スタックフレーム確保
 
 	{
-		for (auto itr = state_.begin(), endItr = state_.end(); itr != endItr; itr++) {
-			if ((ret = (*itr)->Analyze(c)) != 0) {
+		for (auto itr = vec_state.begin(), endItr = vec_state.end(); itr != endItr; itr++) {
+			if ((ret = (*itr)->Analyze(arg_compiler)) != 0) {
 				return ret;
 			}
 		}
@@ -1891,63 +1891,63 @@ int Block::Analyze(Compiler* c)
 	return ret;
 }
 
-int Declaration::PushCompiler(Compiler* c)
+int Declaration::PushCompiler(Compiler* arg_compiler)
 {
-	return Analyze(c);
+	return Analyze(arg_compiler);
 }
 
 // 宣言の解析
-int Declaration::Analyze(Compiler* c) 
+int Declaration::Analyze(Compiler* arg_compiler) 
 {
 	if (isFunction) {		// 関数
-		c->FunctionDefine(valueType, name_, args);
+		arg_compiler->FunctionDefine(valueType, name_, args);
 	}
 	else {
-		c->ValueDefine(valueType, vec_node,accessType);
+		arg_compiler->ValueDefine(valueType, vec_node,accessType);
 
-		auto type = c->GetType(valueType&~TYPE_REF);
+		auto type = arg_compiler->GetType(valueType&~TYPE_REF);
 		int size = vec_node.size();
 		if (valueType & TYPE_REF) {
 			if (type->isSystem) {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStack_Ref(valueType);
+					arg_compiler->OpAllocStack_Ref(valueType);
 				}
 			}
 			else if (type->p_enumTag) {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStack_Ref_EnumType(valueType);
+					arg_compiler->OpAllocStack_Ref_EnumType(valueType);
 				}
 			}
 			else if (type->IsFunctionObjectType()) {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStack_Ref_FunctionType(valueType);
+					arg_compiler->OpAllocStack_Ref_FunctionType(valueType);
 				}
 			}
 			else {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStack_Ref_ScriptType((valueType & ~TYPE_REF) - c->GetSystemTypeSize());
+					arg_compiler->OpAllocStack_Ref_ScriptType((valueType & ~TYPE_REF) - arg_compiler->GetSystemTypeSize());
 				}
 			}
 		}
 		else {
 			if (type->isSystem) {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStack(valueType);
+					arg_compiler->OpAllocStack(valueType);
 				}
 			}
 			else if (type->p_enumTag) {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStackEnumType(valueType);
+					arg_compiler->OpAllocStackEnumType(valueType);
 				}
 			}
 			else if (type->IsFunctionObjectType()) {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStackFunctionType(valueType);
+					arg_compiler->OpAllocStackFunctionType(valueType);
 				}
 			}
 			else {
 				for (int i = 0; i < size; i++) {
-					c->OpAllocStack_ScriptType(valueType - c->GetSystemTypeSize());
+					arg_compiler->OpAllocStack_ScriptType(valueType - arg_compiler->GetSystemTypeSize());
 				}
 			}
 		}
@@ -1956,69 +1956,69 @@ int Declaration::Analyze(Compiler* c)
 }
 
 
-void Declaration::Define(Compiler* c)
+void Declaration::Define(Compiler* arg_compiler)
 {
 	if (isFunction) {		// 関数
-		c->FunctionDefine(valueType, name_, args);
+		arg_compiler->FunctionDefine(valueType, name_, args);
 	}
 	else {
-		c->ValueDefine(valueType, vec_node,accessType);
+		arg_compiler->ValueDefine(valueType, vec_node,accessType);
 	}
 }
-int Node_Member::Push(Compiler* c) const
+int Node_Member::Push(Compiler* arg_compiler) const
 {
 	if (op_ != OP_MEMBER) {
-		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		left_->Push(c);
-		auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
-		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
-			c->error(typeTag->typeName+"の" + string_ + "にアクセス出来ません");
+		left_->Push(arg_compiler);
+		auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName+"の" + string_ + "にアクセス出来ません");
 		}
 
-		c->PushMemberRef(typeTag->map_memberValue.at(string_).index);
+		arg_compiler->PushMemberRef(typeTag->map_memberValue.at(string_).index);
 		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
 	}
 	return -1;
 }
-int Node_Member::PushClone(Compiler* c) const
+int Node_Member::PushClone(Compiler* arg_compiler) const
 {
 	if (op_ != OP_MEMBER) {
-		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		left_->Push(c);
-		auto typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
-		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
-			c->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
+		left_->Push(arg_compiler);
+		auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
 		}
-		c->PushMember(typeTag->map_memberValue.at(string_).index);
+		arg_compiler->PushMember(typeTag->map_memberValue.at(string_).index);
 		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
 
 	}
 	return -1;
 }
-int Node_Member::Pop(Compiler* c) const
+int Node_Member::Pop(Compiler* arg_compiler) const
 {
 	if (op_ != OP_MEMBER) {
-		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
 
 		//型
-		auto typeTag = c->GetType(left_->GetType(c));
-		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && c->GetCurrentThisType() != typeTag) {
-			c->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
+		auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler));
+		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
 		}
 		
-		left_->Push(c);
+		left_->Push(arg_compiler);
 		auto type = typeTag->map_memberValue.at(string_).type;
 		if (type & TYPE_REF) {
-			c->PopMemberRef(typeTag->map_memberValue.at(string_).index);
+			arg_compiler->PopMemberRef(typeTag->map_memberValue.at(string_).index);
 		}
 		else {
-			c->PopMember(typeTag->map_memberValue.at(string_).index);
+			arg_compiler->PopMember(typeTag->map_memberValue.at(string_).index);
 		}
 
 		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
@@ -2026,10 +2026,10 @@ int Node_Member::Pop(Compiler* c) const
 	}
 	return TYPE_INTEGER;
 }
-int Node_Member::GetType(Compiler* c) const
+int Node_Member::GetType(Compiler* arg_compiler) const
 {
 	if (op_ != OP_MEMBER) {
-		c->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
+		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
 		//変数のメンバ変数
@@ -2037,9 +2037,9 @@ int Node_Member::GetType(Compiler* c) const
 			{
 
 				//型
-				auto typeTag = c->GetType(left_->GetType(c));
+				auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler));
 				if (!typeTag->map_memberValue.count(string_)) {
-					c->error("構文エラー："+typeTag->typeName+"にメンバ変数"+string_+"は存在しません");
+					arg_compiler->error("構文エラー："+typeTag->typeName+"にメンバ変数"+string_+"は存在しません");
 					return -1;
 				}
 				return typeTag->map_memberValue.at(string_).type;
@@ -2047,17 +2047,17 @@ int Node_Member::GetType(Compiler* c) const
 		}
 	}
 }
-int Node_Method::Push(Compiler* c) const
+int Node_Method::Push(Compiler* arg_compiler) const
 {
 	if (op_ != OP_METHOD) {
-		c->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
+		arg_compiler->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
 	}
 
 	std::vector<int> argTypes;
 	if (node_list_) {
 		auto end = node_list_->args_.end();
 		for (auto itr = node_list_->args_.begin(); itr != end; itr++) {
-			argTypes.push_back((*itr)->GetType(c));
+			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
 
@@ -2066,58 +2066,58 @@ int Node_Method::Push(Compiler* c) const
 	const FunctionTag* methodTag = nullptr;
 
 
-	typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+	typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
 	methodTag = typeTag->methods.Find(string_, argTypes);
-	if (methodTag->accessType != AccessModifier::Public&&c->GetCurrentThisType()!=typeTag) {
+	if (methodTag->accessType != AccessModifier::Public&&arg_compiler->GetCurrentThisType()!=typeTag) {
 
-		c->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
+		arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
 	}
 
 	if (methodTag == nullptr) {
 		std::string message = "";
 		if (argSize) {
 			for (int i = 0; i < argSize; i++) {
-				message += c->GetTypeName(argTypes[i]) + " ";
+				message += arg_compiler->GetTypeName(argTypes[i]) + " ";
 			}
 			message += "を引数にとる";
 		}
 		message += "関数" + string_ + "は未宣言です";
-		c->error(message);
+		arg_compiler->error(message);
 		return -1;
 	}
 
 	// 引数をpush
 	if (node_list_&& methodTag->ArgSize() == argSize) {
-		std::for_each(node_list_->args_.begin(), node_list_->args_.end(), set_arg(c, methodTag));
+		std::for_each(node_list_->args_.begin(), node_list_->args_.end(), set_arg(arg_compiler, methodTag));
 	}
 
 
-	left_->Push(c);
+	left_->Push(arg_compiler);
 
 
 	if (methodTag->IsSystem()) {
 		// 引数の数をpush
-		c->PushConstInt(argSize);
-		c->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
+		arg_compiler->PushConstInt(argSize);
+		arg_compiler->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
 	}
 	else {
 		// 引数の数+thisをpush
-		c->PushConstInt(argSize+1);
-		c->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
+		arg_compiler->PushConstInt(argSize+1);
+		arg_compiler->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
 	}
 
 
 	return methodTag->valueType;
 }
-int Node_Method::Pop(Compiler* c) const
+int Node_Method::Pop(Compiler* arg_compiler) const
 {
-	c->error("内部エラー：メンバ関数ノードをpop");
+	arg_compiler->error("内部エラー：メンバ関数ノードをpop");
 	return TYPE_INTEGER;
 }
-int Node_Method::GetType(Compiler* c) const
+int Node_Method::GetType(Compiler* arg_compiler) const
 {
 	if (op_ != OP_METHOD) {
-		c->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
+		arg_compiler->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
 	}
 
 	std::vector<int> argTypes;
@@ -2125,79 +2125,79 @@ int Node_Method::GetType(Compiler* c) const
 	if (node_list_) {
 		auto end = node_list_->args_.end();
 		for (auto itr = node_list_->args_.begin(); itr != end; itr++) {
-			argTypes.push_back((*itr)->GetType(c));
+			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
 
 
-	const TypeTag* typeTag = c->GetType(left_->GetType(c) & ~TYPE_REF);
+	const TypeTag* typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
 	const FunctionTag* tag = typeTag->methods.Find(string_, argTypes);
 
 	return tag->valueType;
 }
-int Node_enum::Push(Compiler* c) const
+int Node_enum::Push(Compiler* arg_compiler) const
 {
 
-	auto enumType = GetEnumType(c,*left_);
+	auto enumType = GetEnumType(arg_compiler,*left_);
 	if (enumType == nullptr) {
 
-		c->error("列挙型　" + left_->GetString() + "は未定義です");
+		arg_compiler->error("列挙型　" + left_->GetString() + "は未定義です");
 		return -1;
 	}
 	if (!enumType->ExistenceIdentifers(string_)) {
 
-		c->error("列挙型　" + left_->GetString()+"."+string_ + "は未定義です");
+		arg_compiler->error("列挙型　" + left_->GetString()+"."+string_ + "は未定義です");
 		return -1;
 	}
-	c->PushConstInt( enumType->GetValue(string_));
+	arg_compiler->PushConstInt( enumType->GetValue(string_));
 
 	return TYPE_INTEGER;
 }
-int Node_enum::Pop(Compiler* c) const
+int Node_enum::Pop(Compiler* arg_compiler) const
 {
-	c->error("内部エラー：列挙型ノードをpop");
+	arg_compiler->error("内部エラー：列挙型ノードをpop");
 	return -1;
 }
-int Node_enum::GetType(Compiler* c) const
+int Node_enum::GetType(Compiler* arg_compiler) const
 {
 	return TYPE_INTEGER;
 }
-int Node_enum::EnumType(Compiler* c) const
+int Node_enum::EnumType(Compiler* arg_compiler) const
 {
-	auto type=c->GetType(left_->GetString());
+	auto type=arg_compiler->GetType(left_->GetString());
 	if (!type) {
-		c->error("列挙型　" + left_->GetString() + "." + string_ + "は未定義です");
+		arg_compiler->error("列挙型　" + left_->GetString() + "." + string_ + "は未定義です");
 		return 0;
 	}
 	return type->typeIndex;
 }
 
-int Node_FunctionObject::Push(Compiler* c) const
+int Node_FunctionObject::Push(Compiler* arg_compiler) const
 {
-	auto funcTag = GetFunctionType(c, *this);
+	auto funcTag = GetFunctionType(arg_compiler, *this);
 
 	if (!funcTag) {
-		c->error(GetString() + "は未定義です");
+		arg_compiler->error(GetString() + "は未定義です");
 		return -1;
 	}
-	c->PushConstInt(funcTag->GetIndex());
-	return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+	arg_compiler->PushConstInt(funcTag->GetIndex());
+	return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 }
-int Node_FunctionObject::Pop(Compiler* c) const
+int Node_FunctionObject::Pop(Compiler* arg_compiler) const
 {
-	c->error("内部エラー：関数型ノードをpop");
+	arg_compiler->error("内部エラー：関数型ノードをpop");
 	return -1;
 }
-int Node_FunctionObject::GetType(Compiler* c) const
+int Node_FunctionObject::GetType(Compiler* arg_compiler) const
 {
-	auto funcTag = GetFunctionType(c, *this);
+	auto funcTag = GetFunctionType(arg_compiler, *this);
 	
 	if (!funcTag) {
-		c->error(GetString() + "は未定義です");
+		arg_compiler->error(GetString() + "は未定義です");
 		return 0;
 	}
 
-	return c->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+	return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
 }
 void Enum::SetIdentifer(const std::string& arg_name)
 {
@@ -2207,52 +2207,42 @@ void Enum::SetIdentifer(const std::string& arg_name, const int value)
 {
 	map_identifer.emplace(arg_name, value);
 }
-int Enum::Analyze(Compiler* c)
+int Enum::Analyze(Compiler* arg_compiler)
 {
-	c->RegistEnumType(typeName);
-	auto tag = c->GetEnumTag(c->GetCurrentNameSpace()->GetGlobalNameString()+ typeName);
+	arg_compiler->RegistEnumType(typeName);
+	auto tag = arg_compiler->GetEnumTag(arg_compiler->GetCurrentNameSpace()->GetGlobalNameString()+ typeName);
 	auto end = map_identifer.end();
 	for (auto itr = map_identifer.begin(); itr != end; itr++) {
 		tag->SetValue(itr->first, itr->second);
 	}
 	return 0;
 }
-int Class::Analyze(Compiler* c)
+int Class::Analyze(Compiler* arg_compiler)
 {
-	c->AnalyzeScriptType(name_, map_values);
-	auto typeTag = c->GetType(name_);
+	arg_compiler->AnalyzeScriptType(name_, map_values);
+	auto typeTag = arg_compiler->GetType(name_);
 	auto methodTable = &typeTag->methods;
-	auto end = vec_methods.end();
-	for (auto itr = vec_methods.begin(); itr != end; itr++) {
-		(*itr)->Regist(c, methodTable);
+
+	arg_compiler->PushCurrentThisType(typeTag);
+	for (auto itr = vec_methods.begin(), end = vec_methods.end(); itr != end; itr++) {
+		(*itr)->Analyze(arg_compiler, methodTable);
 	}
+	arg_compiler->PopCurrentThisType();
 	vec_methods.clear();
 	return 0;
 }
-int Class::AnalyzeMethod(Compiler* c)
+
+int Class::PushCompiler(Compiler* arg_compiler)
 {
-	auto typeTag = c->GetType(name_);
-	auto methodTable = &typeTag->methods;
-	auto end = vec_methods.end();
-	c->PushCurrentThisType(typeTag);
-	for (auto itr = vec_methods.begin(); itr != end; itr++) {
-		(*itr)->Analyze(c,methodTable);
-	}
-	c->PopCurrentThisType();
-	vec_methods.clear();
+	arg_compiler->PushAnalyzeClass(shared_from_this());
 	return 0;
 }
-int Class::PushCompiler(Compiler* c)
+int Class::Regist(Compiler* arg_compiler)
 {
-	c->PushAnalyzeClass(shared_from_this());
+	arg_compiler->RegistScriptType(name_);
 	return 0;
 }
-int Class::Regist(Compiler* c)
-{
-	c->RegistScriptType(name_);
-	return 0;
-}
-void Class::RegistMethod(Function_t method, Compiler* c)
+void Class::RegistMethod(Function_t method, Compiler* arg_compiler)
 {
 	vec_methods.push_back(method);
 	
@@ -2263,52 +2253,43 @@ void Class::SetValue(const std::string& arg_name, const int arg_type, const Acce
 	map_values.emplace(arg_name,v);
 }
 
-int Function::PushCompiler(Compiler* c)
+int Function::PushCompiler(Compiler* arg_compiler)
 {
-	c->PushAnalyzeFunction(shared_from_this());
+	arg_compiler->PushAnalyzeFunction(shared_from_this());
+	arg_compiler->RegistFunction(valueType, name_, args_, block_, accessType);
 	return 0;
 }
 
 // 関数の解析
-int Function::Analyze(Compiler* c, FunctionTable* funcTable)
+int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 
-	c->AddFunction(valueType, name_, args_, block_, accessType, funcTable);
+	arg_compiler->AddFunction(valueType, name_, args_, block_, accessType, arg_p_funcTable);
 
 	return 0;
 }
 
-int Function::Regist(Compiler* c, FunctionTable* funcTable)
-{
-	c->RegistFunction(valueType, name_, args_, block_, accessType, funcTable);
-	return 0;
-}
 
 Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args)
 {
 	valueType = arg_type;
 	args_ = arg_args;
 }
-int Ramda::PushCompiler(Compiler* c)
+int Ramda::PushCompiler(Compiler* arg_compiler)
 {
-	auto typeTag = c->GetType(valueType);
-	auto ramdaCount = c->GetRamdaCount();
+	auto typeTag = arg_compiler->GetType(valueType);
+	auto ramdaCount = arg_compiler->GetRamdaCount();
 	name_= "@ramda:" + std::to_string(ramdaCount);
-	c->IncreaseRamdaCount();
-	c->PushAnalyzeFunction(shared_from_this());
+	arg_compiler->RegistRamda(typeTag->GetFunctionObjectReturnType(), args_,nullptr);
+	arg_compiler->IncreaseRamdaCount();
+	arg_compiler->PushAnalyzeFunction(shared_from_this());
 	return ramdaCount;
 }
-int Ramda::Analyze(Compiler* c, FunctionTable* funcTable)
+int Ramda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
-	auto typeTag = c->GetType(valueType);
-	auto ramdaCount = c->GetRamdaCount();
-	c->AddRamda (typeTag->GetFunctionObjectReturnType(), args_, block_, funcTable);
+	auto typeTag = arg_compiler->GetType(valueType);
+	auto ramdaCount = arg_compiler->GetRamdaCount();
+	arg_compiler->AddRamda (typeTag->GetFunctionObjectReturnType(), args_, block_, arg_p_funcTable);
 	return ramdaCount;
-}
-int Ramda::Regist(Compiler* c, FunctionTable* funcTable)
-{
-	auto typeTag = c->GetType(valueType);
-	c->RegistRamda(  typeTag->GetFunctionObjectReturnType(),  args_,funcTable);
-	return 0;
 }
 }

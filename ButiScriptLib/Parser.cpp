@@ -77,9 +77,9 @@ struct unary_node_impl {
 	struct result { typedef Node_t type; };
 
 	template <typename Ty1, typename Ty2, typename Ty3>
-	Node_t operator()(Ty1 Op, const Ty2& left,Ty3 driver) const
+	Node_t operator()(Ty1 Op, const Ty2& left,Ty3 compiler) const
 	{
-		return Node::make_node(Op, left, driver);
+		return Node::make_node(Op, left, compiler);
 	}
 };
 
@@ -101,9 +101,9 @@ struct binary_node_impl_useDriver {
 	struct result { typedef Node_t type; };
 
 	template <typename Ty1, typename Ty2, typename Ty3, typename Ty4>
-	Node_t operator()(Ty1 Op, const Ty2& left, const Ty3& right,const Ty4 driver) const
+	Node_t operator()(Ty1 Op, const Ty2& left, const Ty3& right,const Ty4 compiler) const
 	{
-		return Node::make_node(Op, left, right,driver);
+		return Node::make_node(Op, left, right,compiler);
 	}
 };
 
@@ -113,9 +113,9 @@ struct ramda_node_impl {
 	struct result { typedef Node_t type; };
 
 	template <typename Ty1, typename Ty2>
-	Node_t operator()(Ty1 ramdaIndex, Ty2 driver) const
+	Node_t operator()(Ty1 ramdaIndex, Ty2 compiler) const
 	{
-		return Node::make_node(OP_IDENTIFIER, "@ramda:" + std::to_string(ramdaIndex), driver);
+		return Node::make_node(OP_IDENTIFIER, "@ramda:" + std::to_string(ramdaIndex), compiler);
 	}
 };
 
@@ -161,9 +161,9 @@ struct make_statement_impl {
 	struct result { typedef Statement_t type; };
 
 	template <typename Ty>
-	Statement_t operator()(Ty state) const
+	Statement_t operator()(Ty vec_state) const
 	{
-		return Statement::make_statement(state);
+		return Statement::make_statement(vec_state);
 	}
 };
 
@@ -173,9 +173,9 @@ struct make_statement1_impl {
 	struct result { typedef Statement_t type; };
 
 	template <typename Ty1, typename Ty2>
-	Statement_t operator()(Ty1 state, const Ty2& node) const
+	Statement_t operator()(Ty1 vec_state, const Ty2& node) const
 	{
-		return Statement::make_statement(state, node);
+		return Statement::make_statement(vec_state, node);
 	}
 };
 
@@ -222,10 +222,10 @@ struct arg_ref_impl {
 	struct result { typedef ArgDefine type; };
 
 	template <typename Ty1>
-	ArgDefine operator()(Ty1& decl) const
+	ArgDefine operator()(Ty1& vec_decl) const
 	{
-		decl.set_ref();
-		return decl;
+		vec_decl.set_ref();
+		return vec_decl;
 	}
 };
 
@@ -235,10 +235,10 @@ struct arg_name_impl {
 	struct result { typedef ArgDefine type; };
 
 	template <typename Ty1, typename Ty2>
-	ArgDefine operator()(Ty1& decl, const Ty2& name) const
+	ArgDefine operator()(Ty1& vec_decl, const Ty2& name) const
 	{
-		decl.set_name(name);
-		return decl;
+		vec_decl.set_name(name);
+		return vec_decl;
 	}
 };
 
@@ -377,10 +377,10 @@ struct setFunctionType_impl {
 	struct result { typedef Function_t type; };
 
 	template <typename Ty1, typename Ty2>
-	Function_t operator()(Ty1& decl, Ty2 type) const
+	Function_t operator()(Ty1& vec_decl, Ty2 type) const
 	{
-		decl->set_type(type);
-		return decl;
+		vec_decl->set_type(type);
+		return vec_decl;
 	}
 };
 
@@ -390,9 +390,9 @@ struct regist_impl {
 	struct result { typedef void type; };
 
 	template <typename Ty1, typename Ty2>
-	void operator()(const Ty1& decl, Ty2 driver) const
+	void operator()(const Ty1& vec_decl, Ty2 compiler) const
 	{
-		decl->Regist(driver);
+		vec_decl->Regist(compiler);
 	}
 };
 
@@ -415,9 +415,9 @@ struct registMethod_impl {
 	struct result { typedef void type; };
 
 	template <typename Ty1, typename Ty2, typename Ty3>
-	void operator()(const Ty1& decl, Ty2 type, Ty3 driver) const
+	void operator()(const Ty1& vec_decl, Ty2 type, Ty3 compiler) const
 	{
-		type->RegistMethod(decl, driver);
+		type->RegistMethod(vec_decl, compiler);
 	}
 };
 
@@ -427,9 +427,9 @@ struct pop_nameSpace_impl {
 	struct result { typedef void type; };
 
 	template < typename Ty2>
-	void operator()(Ty2 driver) const
+	void operator()(Ty2 compiler) const
 	{
-		driver->PopNameSpace();
+		compiler->PopNameSpace();
 	}
 };
 
@@ -450,9 +450,9 @@ struct	specificType_impl {
 	struct result { typedef int type; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(const Ty1& key, Ty2 driver) const
+	int operator()(const Ty1& key, Ty2 compiler) const
 	{
-		return  driver->GetTypeIndex(key);
+		return  compiler->GetTypeIndex(key);
 	}
 };
 //型の特定
@@ -461,9 +461,9 @@ struct	specificFunctionType_impl {
 	struct result { typedef int type; };
 
 	template <typename Ty1, typename Ty2, typename Ty3>
-	int operator()(const Ty1& ret,const Ty2& args ,Ty3 driver) const
+	int operator()(const Ty1& ret,const Ty2& args ,Ty3 compiler) const
 	{
-		return  driver->GetfunctionTypeIndex(args, ret);
+		return  compiler->GetfunctionTypeIndex(args, ret);
 	}
 };
 
@@ -474,9 +474,9 @@ struct analyze_impl {
 	struct result { typedef int type; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(Ty1 decl, Ty2 driver) const
+	int operator()(Ty1 vec_decl, Ty2 compiler) const
 	{
-		return decl->Analyze(driver);
+		return vec_decl->Analyze(compiler);
 	}
 };
 // 関数、ラムダ最終登録
@@ -485,9 +485,9 @@ struct pushConpiler_impl {
 	struct result { typedef int type; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(Ty1 decl, Ty2 driver) const
+	int operator()(Ty1 vec_decl, Ty2 compiler) const
 	{
-		return decl->PushCompiler(driver);
+		return vec_decl->PushCompiler(compiler);
 	}
 };
 
@@ -495,8 +495,8 @@ struct make_block_impl {
 	template <typename Ty1>
 	struct result { typedef Block_t type; };
 	template<typename Ty1>
-	Block_t operator()(Ty1 driver)const {
-		//driver->PushNameSpace(nullptr);
+	Block_t operator()(Ty1 compiler)const {
+		//compiler->PushNameSpace(nullptr);
 		return std::make_shared<Block>();
 	}
 };
@@ -646,11 +646,11 @@ namespace ButiClosure {
 
 //型登録
 struct typeRegist_grammer : public grammar<typeRegist_grammer> {
-	typeRegist_grammer(Compiler* driver)
-		:driver_(driver)
+	typeRegist_grammer(Compiler* arg_compiler)
+		:compiler(arg_compiler)
 	{
 	}
-	Compiler* driver_;
+	Compiler* compiler;
 	template <typename ScannerT>
 	struct definition {
 		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
@@ -876,21 +876,21 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 				| block
 				;
 
-			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(define_class[regist(arg1, self.driver_)]
-					| Enum[analyze(arg1, self.driver_)]
+			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.compiler)] >> "{"
+				>> *(define_class[regist(arg1, self.compiler)]
+					| Enum[analyze(arg1, self.compiler)]
 					| function
 					| decl_func
 					| decl_value
-					| nameSpace[popNameSpace(self.driver_)]) >> "}";
+					| nameSpace[popNameSpace(self.compiler)]) >> "}";
 
 			// 入力された構文
-			input = *(define_class[regist(arg1, self.driver_)]
-				| Enum[analyze(arg1, self.driver_)]
+			input = *(define_class[regist(arg1, self.compiler)]
+				| Enum[analyze(arg1, self.compiler)]
 				| function
 				| decl_func
 				| decl_value
-				| nameSpace[popNameSpace(self.driver_)]
+				| nameSpace[popNameSpace(self.compiler)]
 				|ramda
 				| syntax_error_p
 				);
@@ -904,282 +904,13 @@ struct typeRegist_grammer : public grammar<typeRegist_grammer> {
 };
 
 
-// 関数、グローバル変数登録、クラス解析
-struct registFunc_classAnalyze_grammer : public grammar<registFunc_classAnalyze_grammer> {
-	registFunc_classAnalyze_grammer(Compiler* driver)
-		:driver_(driver)
-	{
-	}
-	Compiler* driver_;	
-	template <typename ScannerT>
-	struct definition {
-		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
-		rule<ScannerT, ButiClosure::type_val::context_t>		type;
-		rule<ScannerT, ButiClosure::type_val::context_t>		arg;
-		rule<ScannerT, ButiClosure::type_func_val::context_t>		funcType;
-		rule<ScannerT, ButiClosure::func_val::context_t>		function;
-		rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
-		rule<ScannerT, ButiClosure::namespace_val ::context_t>	nameSpace;
-		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		rule<ScannerT, ButiClosure::node_val::context_t>		Value;
-		rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
-		rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
-		rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
-		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
-		rule<ScannerT, ButiClosure::ramda_val::context_t>		ramda;
-		rule<ScannerT>	string_node,number,floatNumber,	func_node,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,	
-			and_expr,expr,assign,argument,statement,decl_func,callMember ,block,input,ident;
-
-		symbols<> keywords;
-		symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
-		dynamic_distinct_parser<ScannerT> keyword_p;
-
-		definition(registFunc_classAnalyze_grammer const& self)
-			:keyword_p(alnum_p | '_')
-		{
-			using phoenix::arg1;
-			using phoenix::arg2;
-			using phoenix::var;
-			using phoenix::new_;
-			using phoenix::construct_;
-
-			keywords = "if", "for", "while", "switch", "case", "default", "break", "return","namespace";
-
-
-			// 識別子
-			ident = lexeme_d[
-				((alpha_p | '_') >> *(alnum_p | '_')) - (keywords >> anychar_p - (alnum_p | '_'))
-			];
-			// 識別子（クロージャに登録）
-			identifier = ident[identifier.str = construct_<string>(arg1, arg2)];
-
-
-			Enum = "enum">>identifier >> "{" >>
-				!identifier
-				>> *(',' >> identifier)>>
-				"}";
-
-			//整数
-			number = uint_p;
-
-			//浮動小数
-			floatNumber = strict_real_p;
-
-			// 文字列
-			string_node = lexeme_d[
-				confix_p(ch_p('"'), *c_escape_ch_p, '"')
-			];
-
-
-			//名前空間からの呼び出し
-			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
-
-			// 変数
-			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
-				identifier[Value.node = unary_node(OP_IDENTIFIER,  arg1,self.driver_)];
-
-			// 関数の引数
-			argument = expr
-				>> *(',' >> expr);
-
-			// 関数呼び出し
-			func_node = *(identifier >> "::") >> identifier>>
-				'(' >> !argument >> ')';
-
-			//メンバ変数呼び出し
-			callMember = Value >> "."
-				>> identifier
-				>> !('(' >> !argument >> ')')
-				>> *("." >>
-					identifier >>
-					!('(' >> !argument >> ')')
-					);
-
-			// 計算のprimeノード
-			prime = ramda[regist(arg1, self.driver_)]
-				| callMember
-				|func_node
-				| Value
-				| floatNumber
-				| number
-				| string_node
-				| '(' >> expr >> ')'
-				;
-
-			// 単項演算子
-			unary = prime
-				| '-' >> prime;
-
-			// 二項演算子（*, /, %）
-			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
-			mul_expr = unary
-				>> *(mul_op
-					>> unary);
-
-			// 二項演算子（+, -）
-			add_op.add("+", OP_ADD)("-", OP_SUB);
-			add_expr = mul_expr
-				>> *(add_op
-					>> mul_expr);
-
-			// 二項演算子（<<, >>）
-			shift_op.add("<<", OP_LSHIFT)(">>", OP_RSHIFT);
-			shift_expr = add_expr
-				>> *(shift_op
-					>> add_expr);
-
-			// 二項演算子（&, |）
-			bit_op.add("&", OP_AND)("|", OP_OR);
-			bit_expr = shift_expr
-				>> *(bit_op
-					>> shift_expr);
-
-			// 二項演算子（比較）
-			equ_op.add("==", OP_EQ)("!=", OP_NE)(">=", OP_GE)(">", OP_GT)("<=", OP_LE)("<", OP_LT);
-			equ_expr = bit_expr
-				>> !(equ_op
-					>> bit_expr);
-
-			// 二項演算子（&&）
-			and_expr = equ_expr
-				>> *("&&" >> equ_expr);
-
-			// 二項演算子（||）
-			expr = and_expr
-				>> *("||" >> and_expr);
-
-			// 代入
-			assign_op.add
-			("=", OP_ASSIGN)
-				("+=", OP_ADD_ASSIGN)
-				("-=", OP_SUB_ASSIGN)
-				("*=", OP_MUL_ASSIGN)
-				("/=", OP_DIV_ASSIGN)
-				("%=", OP_MOD_ASSIGN)
-				("&=", OP_AND_ASSIGN)
-				("|=", OP_OR_ASSIGN)
-				("<<=", OP_LSHIFT_ASSIGN)
-				(">>=", OP_RSHIFT_ASSIGN);
-			assign = (callMember|Value)
-				>> assign_op
-				>> expr;
-
-			// 変数宣言
-			decl_value = !(str_p("private")[decl_value.access=AccessModifier::Private] | str_p("public")[decl_value.access = AccessModifier::Public]) 
-				>> "var" >> Value[vec_push_back (decl_value.value ,arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.access), decl_value.value)] >> ';';
-
-			// 型名
-			type = identifier[type.type = specificType(arg1,self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF]
-				| funcType[type.type = specificType(arg1, self.driver_)];
-
-			//関数型名
-			funcType = '(' >> !(argdef[vec_push_back(funcType.argments, arg1)] % ',') >> ')' >> "=>" >> type[funcType.type =make_pair( specificFunctionType(arg1,funcType.argments,self.driver_),funcType.argments)];
-			
-
-			ramda = funcType[ramda.node=make_ramda(arg1)] >> block;
-			
-			// 関数宣言の引数
-			arg = identifier >> ':'
-				>> type[arg.type = arg1]
-				>> !str_p("[]")[arg.type |= TYPE_REF];
-
-			// 関数宣言
-			decl_func = identifier
-				>> '(' >> !(arg % ',') >> ')'>>":" >>type >> ';';
-
-			// 関数定義の引数
-			argdef = identifier[argdef.name = arg1] >> ':'
-				>> type[argdef.node = construct_<ArgDefine>(arg1, argdef.name)]
-				>> !str_p("[]")[argdef.node = arg_ref(argdef.node)];
-
-			// 関数定義
-			function = identifier[function.node = make_function(arg1)]>>!identifier[function.node = make_functionWithAccess(function.node,arg1)]
-				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
-				':' >> type[function.node = set_functionType(function.node, arg1)]
-				>> block;
-
-			// 文ブロック
-			block = ch_p('{')[make_block(self.driver_)]
-				>> *(statement
-					| decl_value)
-				>> ch_p('}');
-			//クラスのメンバー定義
-			decl_classMember = identifier[decl_classMember.name = arg1]>> !identifier[decl_classMember.name= specificAccessModifier(decl_classMember.name,decl_classMember.accessModifier, arg1)]
-				>> ':' >> type[decl_classMember.memberValue= make_memberValue( arg1,decl_classMember.name,decl_classMember.accessModifier)] >> ';';
-
-			//クラス定義
-			define_class = "class" >> identifier[define_class.Class= make_class(arg1)] >> "{" >>
-				*(decl_classMember[make_classMember(define_class.Class,arg1)]
-					| function[registMethod(arg1,define_class.Class, self.driver_)])
-				>> "}";
-			// 文
-			statement = ch_p(';')
-				| assign >> ';'
-				| str_p("case") >> expr >> ':'
-				| str_p("default")>> ':'
-				| str_p("break") >> ';'
-				| str_p("return")
-				>> !expr>> ';'
-				| str_p("if")
-				>> '(' >> expr>> ')'
-				>> statement
-				>> !("else"
-					>> statement)
-
-				| str_p("for")>> '('
-				>> !(assign) >> ';'
-				>> expr >> ';'
-				>> !(assign|| func_node|| callMember) >> ')'
-				>> statement
-
-				| str_p("while") >> '('
-				>> expr >> ')'
-				>> statement
-				| str_p("switch") >> '('
-				>> expr >> ')'
-				>> '{'
-				>> *statement
-				>> '}'
-				| func_node >> ';'
-				| callMember >>';'
-				|ramda[regist(arg1, self.driver_)]
-				| function[regist(arg1, self.driver_)]
-				| block
-				;
-
-			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(define_class[analyze(arg1,self.driver_)]
-					|Enum
-					|function[regist(arg1, self.driver_)]
-					| decl_func
-					| decl_value[analyze(arg1, self.driver_)]
-					| nameSpace[popNameSpace(self.driver_)]) >> "}";
-
-			// 入力された構文
-			input = *(define_class[analyze(arg1, self.driver_)]
-				|Enum
-				|function[regist(arg1, self.driver_)]
-				| decl_func
-				| decl_value[analyze(arg1, self.driver_)]
-				| nameSpace[popNameSpace(self.driver_)]
-				| syntax_error_p
-				);
-		}
-
-		rule<ScannerT> const& start() const
-		{
-			return input;
-		}
-	};
-};
-
-// 関数解析
+// 関数、クラス解析
 struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
-	funcAnalyze_grammer(Compiler* driver)
-		:driver_(driver)
+	funcAnalyze_grammer(Compiler* arg_compiler)
+		:compiler(arg_compiler)
 	{
 	}
-	Compiler* driver_;
+	Compiler* compiler;
 	template <typename ScannerT>
 	struct definition {
 		rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
@@ -1214,7 +945,8 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 		rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		rule<ScannerT, ButiClosure::ramda_prime_val::context_t>	ramda_prime;
 		rule<ScannerT, ButiClosure::ramda_val::context_t>		ramda;
-		rule<ScannerT>							input, Enum,decl_classMember;
+		rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
+		rule<ScannerT>							input, Enum;
 		rule<ScannerT>							ident;
 
 		symbols<> keywords;
@@ -1259,7 +991,7 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 			// 変数
 			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
-				identifier[Value.node = unary_node(OP_IDENTIFIER, Value.name+ arg1, self.driver_)]
+				identifier[Value.node = unary_node(OP_IDENTIFIER, Value.name+ arg1, self.compiler)]
 				>> !('[' >> expr[Value.node = binary_node(OP_ARRAY, Value.node, arg1)] >> ']');
 
 			// 関数の引数
@@ -1268,17 +1000,17 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 			// 関数呼び出し
 			func_node = (*(nameSpace_call[func_node.name += functionCall_namespace(arg1) ]))>>
-				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1, self.driver_)] >>
+				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1, self.compiler)] >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
 
 			//メンバ呼び出し
 			callMember =Value[ callMember.valueNode=arg1]>>"."
-				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode,arg1, self.driver_)]
-				>>!(ch_p('(' )[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.driver_)]>> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode,arg1, self.compiler)]
+				>>!(ch_p('(' )[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)]>> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 				>>* (".">> 
-					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.driver_)]  >>  
-					!(ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.driver_)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)]  >>  
+					!(ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 					)
 				
 				;
@@ -1288,15 +1020,15 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				| callMember[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
-				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1, self.driver_)]
-				| number[prime.node = unary_node(OP_INT, arg1, self.driver_)]
-				| string_node[prime.node = unary_node(OP_STRING, arg1, self.driver_)]
+				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1, self.compiler)]
+				| number[prime.node = unary_node(OP_INT, arg1, self.compiler)]
+				| string_node[prime.node = unary_node(OP_STRING, arg1, self.compiler)]
 				| '(' >> expr[prime.node = arg1] >> ')'
 				;
 
 			// 単項演算子
 			unary = prime[unary.node = arg1]
-				| '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.driver_)];
+				| '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)];
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
@@ -1358,14 +1090,14 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 
 
 			// 型名
-			type = (identifier[type.type = specificType(arg1, self.driver_)] >> !ch_p('&')[type.type |= TYPE_REF])
-				|funcType[type.type= specificType(arg1,self.driver_)];
+			type = (identifier[type.type = specificType(arg1, self.compiler)] >> !ch_p('&')[type.type |= TYPE_REF])
+				|funcType[type.type= specificType(arg1,self.compiler)];
 			//関数型名
-			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.driver_), funcType.argments)];
+			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
 
 			ramda = funcType[ramda.node = make_ramda(arg1)] >> block[ramda.node=push_back(ramda.node,arg1)];
 
-			ramda_prime = ramda[ramda_prime.node= ramda_node(pushCompiler(arg1, self.driver_),self.driver_)];
+			ramda_prime = ramda[ramda_prime.node= ramda_node(pushCompiler(arg1, self.compiler),self.compiler)];
 
 			// 関数宣言の引数
 			arg = identifier >> ':'
@@ -1387,17 +1119,19 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				':' >> type[function.node = set_functionType(function.node, arg1)]
 				>> block[function.node = push_back(function.node, arg1)];
 
-
 			//クラスのメンバー定義
-			decl_classMember= identifier>> (!identifier) >> ':' >> type >> ';';
+			decl_classMember = identifier[decl_classMember.name = arg1] >> !identifier[decl_classMember.name = specificAccessModifier(decl_classMember.name, decl_classMember.accessModifier, arg1)]
+				>> ':' >> type[decl_classMember.memberValue = make_memberValue(arg1, decl_classMember.name, decl_classMember.accessModifier)] >> ';';
+
 
 			//クラス定義
 			define_class = "class" >> identifier[define_class.Class = make_class(arg1)]>> "{" >>
-				*(decl_classMember|  function[registMethod(arg1, define_class.Class, self.driver_)])
+				*(decl_classMember[make_classMember(define_class.Class, arg1)] 
+					|  function[registMethod(arg1, define_class.Class, self.compiler)])
 				>>"}";
 
 			// 文ブロック
-			block = ch_p('{')[block.node = make_block(self.driver_)]
+			block = ch_p('{')[block.node = make_block(self.compiler)]
 				>> *(statement[block.node = push_back(block.node, arg1)]
 					| decl_value[block.node = push_back(block.node, arg1)])
 				>> ch_p('}');
@@ -1433,28 +1167,28 @@ struct funcAnalyze_grammer : public grammar<funcAnalyze_grammer> {
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
 				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
-				| ramda[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.driver_))]
-				| function[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.driver_))]
+				| ramda[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.compiler))]
+				| function[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.compiler))]
 				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 
 
-			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.driver_)] >> "{"
-				>> *(define_class[pushCompiler(arg1,self.driver_)]
+			nameSpace = str_p("namespace") >> identifier[regist(make_namespace(arg1), self.compiler)] >> "{"
+				>> *(define_class[pushCompiler(arg1,self.compiler)]
 					|Enum
-					|function[pushCompiler(arg1, self.driver_)]
-					| decl_func[analyze(arg1, self.driver_)]
-					| decl_value
-					| nameSpace[popNameSpace(self.driver_)]) >> "}";
+					|function[pushCompiler(arg1, self.compiler)]
+					| decl_func[analyze(arg1, self.compiler)]
+					| decl_value[analyze(arg1, self.compiler)]
+					| nameSpace[popNameSpace(self.compiler)]) >> "}";
 
 			// 入力された構文
-			input = *(define_class[pushCompiler(arg1, self.driver_)]
+			input = *(define_class[pushCompiler(arg1, self.compiler)]
 				|Enum
-				|function[pushCompiler(arg1, self.driver_)]
-				| decl_func[analyze(arg1, self.driver_)]
-				| decl_value
-				| nameSpace[popNameSpace(self.driver_)]
+				|function[pushCompiler(arg1, self.compiler)]
+				| decl_func[analyze(arg1, self.compiler)]
+				| decl_value[analyze(arg1, self.compiler)]
+				| nameSpace[popNameSpace(self.compiler)]
 				| syntax_error_p
 				);
 		}
@@ -1500,13 +1234,12 @@ bool skip_all(IteratorT first, IteratorT last, parser<DerivedT> const& p)
 	}
 }
 }
-// 構文解析
-bool ButiScript::ScriptParser(const string& path, Compiler* driver)
+bool ButiScript::ScriptParse(const string& path, Compiler* arg_compiler)
 {
 	ifstream fin(path.c_str());
 
 	if (!fin) {
-		driver->error("ファイル" + path + "がオープンできません。");
+		arg_compiler->error("ファイル" + path + "がオープンできません。");
 		return false;
 	}
 
@@ -1520,33 +1253,24 @@ bool ButiScript::ScriptParser(const string& path, Compiler* driver)
 	iterator_t end;
 	begin.set_tabchars(4);
 
-	funcAnalyze_grammer	gr(driver);
-	registFunc_classAnalyze_grammer	gr_regist(driver);
-	typeRegist_grammer	gr_typeRegist(driver);
+	funcAnalyze_grammer	gr(arg_compiler);
+	typeRegist_grammer	gr_typeRegist(arg_compiler);
 	skip_parser skip_p;
 	parse_info<iterator_t> info = parse(begin, end, gr_typeRegist, skip_p);
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
-		driver->error("構文解析失敗");
+		arg_compiler->error("構文解析失敗");
 		return false;
 	}
-	driver->ClearNameSpace();
-	
-	info = parse(begin, end, gr_regist, skip_p);
-	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
-		driver->error("構文解析失敗");
-		return false;
-	}
-	driver-> OpHalt();
-	driver->RamdaCountReset();
-	driver->ClearNameSpace();
+	arg_compiler->ClearNameSpace();
 	info = parse(begin, end, gr, skip_p);
-	driver->RamdaCountReset();
-	driver->FunctionAnalyze();
-	driver->ClearNameSpace();
+	arg_compiler->OpHalt();
+	arg_compiler->RamdaCountReset();
+	arg_compiler->FunctionAnalyze();
+	arg_compiler->ClearNameSpace();
 	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
 		return true;
 	}
 
-	driver->error("構文解析失敗");
+	arg_compiler->error("構文解析失敗");
 	return false;
 }

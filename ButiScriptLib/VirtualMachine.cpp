@@ -4,7 +4,7 @@
 #ifdef IMPL_BUTIENGINE
 #include"ButiEventSystem/ButiEventSystem/EventSystem.h"
 #include"ButiEventSystem/ButiEventSystem/TaskSystem.h"
-
+#include<filesystem>
 #endif // IMPL_BUTIENGINE
 
 
@@ -131,6 +131,91 @@ void ButiScript::VirtualCPU::sys_pushTask()
 	);
 }
 
+void ButiScript::VirtualCPU::sys_LoadTextureAsync()
+{
+	std::string fileName = top().v_->GetRef<std::string>(); pop();
+	ButiEngine::GUI::PushMessage(fileName + "を読み込みます");
+	ButiTaskSystem::PushTask(
+		std::function<void()>([this, fileName]()->void {
+			this->GetGameObject()->GetResourceContainer()->LoadTexture(fileName);
+
+			})
+	);
+}
+void ButiScript::VirtualCPU::sys_LoadWaveAsync()
+{
+	std::string dirName = top().v_->GetRef<std::string>(); pop();
+	if (*(dirName.end() - 1) == '/') {
+
+		std::vector< std::string> vec_filePathes;
+
+		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
+
+		std::error_code err;
+
+		for (; itr != end && !err; itr.increment(err)) {
+			const std::filesystem::directory_entry entry = *itr;
+			ButiEngine::GUI::PushMessage(entry.path().string() + u8"を読み込みます");
+			vec_filePathes.push_back (StringHelper::Remove(  entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory() ));
+
+		}
+		ButiTaskSystem::PushTask(
+			std::function<void()>([this, vec_filePathes]()->void {
+				this->GetGameObject()->GetResourceContainer()->LoadSound(vec_filePathes);
+
+				ButiEngine::GUI::PushMessage(std::to_string(vec_filePathes.size())+ u8"個のwave読み込み終了");
+				}
+				)
+		);
+	}
+	else {
+		ButiEngine::GUI::PushMessage(dirName + u8"を読み込みます");
+		ButiTaskSystem::PushTask(
+			std::function<void()>([this, dirName]()->void {
+
+				this->GetGameObject()->GetResourceContainer()->LoadSound(dirName);
+
+				ButiEngine::GUI::PushMessage(dirName + u8"の読み込み終了");
+				}
+				)
+		);
+	}
+}
+void ButiScript::VirtualCPU::sys_LoadTexture()
+{
+	std::string fileName = top().v_->GetRef<std::string>(); pop();
+	this->GetGameObject()->GetResourceContainer()->LoadTexture(fileName);
+}
+void ButiScript::VirtualCPU::sys_LoadWave()
+{
+	std::string dirName = top().v_->GetRef<std::string>(); pop();
+	if (*(dirName.end() - 1) == '/') {
+
+		std::vector< std::string> vec_filePathes;
+
+		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
+
+		std::error_code err;
+
+		for (; itr != end && !err; itr.increment(err)) {
+			const std::filesystem::directory_entry entry = *itr;
+			ButiEngine::GUI::PushMessage(entry.path().string() + u8"を読み込みます");
+			vec_filePathes.push_back(StringHelper::Remove(entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory()));
+
+		}
+
+		this->GetGameObject()->GetResourceContainer()->LoadSound(vec_filePathes);
+
+		ButiEngine::GUI::PushMessage(std::to_string(vec_filePathes.size()) + u8"個のwave読み込み終了");
+	}
+	else {
+		ButiEngine::GUI::PushMessage(dirName + u8"を読み込みます");
+
+		this->GetGameObject()->GetResourceContainer()->LoadSound(dirName);
+
+		ButiEngine::GUI::PushMessage(dirName + u8"の読み込み終了");
+	}
+}
 void ButiScript::VirtualCPU::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	for (int i = 0; i < globalValue_size- globalValue_base; i++) {
 		arg_ref_vec_saveObject.push_back(valueStack[globalValue_base+i].v_->GetSaveObject());
@@ -156,8 +241,8 @@ void ButiScript::VirtualCPU::RestoreGlobalValue(std::vector<std::shared_ptr< But
 	}
 }
 void ButiScript::VirtualCPU::ShowGUI() {
-	auto end = data_->map_globalValueAddress.end();
-	for (auto itr = data_->map_globalValueAddress.begin(); itr != end;itr++) {
+	
+	for (auto itr = data_->map_globalValueAddress.begin(), end = data_->map_globalValueAddress.end(); itr != end;itr++) {
 		valueStack[globalValue_base + itr->second].v_->ShowGUI(itr->first);
 	}
 }

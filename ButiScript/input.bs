@@ -20,6 +20,12 @@ class TestClass{
 	
 	Method():void{
 		print("Method Called!\n");
+
+		FunctionInMethod():void{
+			print("FunctionInMethod Called!\n");
+
+		}
+
 	}
 }
 
@@ -31,7 +37,7 @@ main():int
 	var test:TestClass;
 	test.Method();
 	funcObject=(i:int,f:float)=>void{
-		print("Ramda!!!!!!!!!!!\n");
+		FunctionInMethod();
 	};
 	Function(funcObject);
 	funcObject=Functions::Function_withArg2;

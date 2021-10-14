@@ -101,23 +101,23 @@ namespace ButiScript {
 		Node_t GetLeft() const { return left_; }
 		Node_t GetRight() const { return right_; }
 
-		virtual int Push(Compiler* c) const;
-		virtual int PushClone(Compiler* c) const {
-			return Push(c);
+		virtual int Push(Compiler* arg_compiler) const;
+		virtual int PushClone(Compiler* arg_compiler) const {
+			return Push(arg_compiler);
 		}
-		virtual int Pop(Compiler* c) const;
+		virtual int Pop(Compiler* arg_compiler) const;
 
-		virtual int GetType(Compiler* c)const;
+		virtual int GetType(Compiler* arg_compiler)const;
 
-		virtual const ValueTag* GetValueTag(Compiler* c)const;
-		virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* c)const;
-		virtual int EnumType(Compiler* c)const {return TYPE_INTEGER;}
-		int GetCallType(Compiler* c, const std::string& name, const std::vector<Node_t>* args)const;
+		virtual const ValueTag* GetValueTag(Compiler* arg_compiler)const;
+		virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* arg_compiler)const;
+		virtual int EnumType(Compiler* arg_compiler)const {return TYPE_INTEGER;}
+		int GetCallType(Compiler* arg_compiler, const std::string& name, const std::vector<Node_t>* args)const;
 
-		int Assign(Compiler* c) const;
-		int Call(Compiler* c, const std::string& name, const std::vector<Node_t>* args) const;
+		int Assign(Compiler* arg_compiler) const;
+		int Call(Compiler* arg_compiler, const std::string& name, const std::vector<Node_t>* args) const;
 
-		static Node_t make_node(const int Op, const float arg_number, const Compiler* c)
+		static Node_t make_node(const int Op, const float arg_number, const Compiler* arg_compiler)
 		{
 			if (Op == OP_FLOAT)
 				return Node_t(new Node(Op, arg_number));
@@ -125,9 +125,9 @@ namespace ButiScript {
 			return Node_t(new Node(Op, (int)arg_number));
 		}
 
-		static Node_t make_node(const int Op, const std::string& str, const Compiler* c);
-		static Node_t make_node(const int Op, Node_t left, const Compiler* c);
-		static Node_t make_node(const int Op, Node_t left,const std::string arg_memberName,const Compiler* c);
+		static Node_t make_node(const int Op, const std::string& str, const Compiler* arg_compiler);
+		static Node_t make_node(const int Op, Node_t left, const Compiler* arg_compiler);
+		static Node_t make_node(const int Op, Node_t left,const std::string arg_memberName,const Compiler* arg_compiler);
 		static Node_t make_node(const int Op, Node_t left, Node_t right);
 		static Node_t make_node(const int Op, Node_t left, NodeList_t right);
 
@@ -148,10 +148,10 @@ namespace ButiScript {
 			: Node(OP_IDENTIFIER, name)
 		{
 		};
-		const ValueTag* GetValueTag(Compiler* c)const override;
-		int Push(Compiler* c) const;
-		int PushClone(Compiler* c) const;
-		int Pop(Compiler* c) const;
+		const ValueTag* GetValueTag(Compiler* arg_compiler)const override;
+		int Push(Compiler* arg_compiler) const;
+		int PushClone(Compiler* arg_compiler) const;
+		int Pop(Compiler* arg_compiler) const;
 	};
 
 	// ノードリスト
@@ -185,9 +185,9 @@ namespace ButiScript {
 		{
 		}
 
-		virtual int Push(Compiler* c) const;
-		virtual int Pop(Compiler* c) const;
-		int GetType(Compiler* c)const override;
+		virtual int Push(Compiler* arg_compiler) const;
+		virtual int Pop(Compiler* arg_compiler) const;
+		int GetType(Compiler* arg_compiler)const override;
 
 	private:
 		NodeList_t node_list_;
@@ -201,10 +201,10 @@ namespace ButiScript {
 		{
 			string_ = (arg_memberName);
 		}
-		virtual int Push(Compiler* c) const;
-		int PushClone(Compiler* c) const;
-		virtual int Pop(Compiler* c) const;
-		int GetType(Compiler* c)const override;
+		virtual int Push(Compiler* arg_compiler) const;
+		int PushClone(Compiler* arg_compiler) const;
+		virtual int Pop(Compiler* arg_compiler) const;
+		int GetType(Compiler* arg_compiler)const override;
 	private:
 	};
 
@@ -222,9 +222,9 @@ namespace ButiScript {
 		{
 			string_ = (arg_memberName);
 		}
-		virtual int Push(Compiler* c) const;
-		virtual int Pop(Compiler* c) const;
-		int GetType(Compiler* c)const override;
+		virtual int Push(Compiler* arg_compiler) const;
+		virtual int Pop(Compiler* arg_compiler) const;
+		int GetType(Compiler* arg_compiler)const override;
 	private:
 		NodeList_t node_list_;
 	};
@@ -236,10 +236,10 @@ namespace ButiScript {
 			string_ = arg_identiferName;
 		}
 
-		virtual int Push(Compiler* c) const;
-		virtual int Pop(Compiler* c) const;
-		int GetType(Compiler* c)const override;
-		int EnumType(Compiler* c)const override;
+		virtual int Push(Compiler* arg_compiler) const;
+		virtual int Pop(Compiler* arg_compiler) const;
+		int GetType(Compiler* arg_compiler)const override;
+		int EnumType(Compiler* arg_compiler)const override;
 	};
 
 	//関数オブジェクトのノード
@@ -248,9 +248,9 @@ namespace ButiScript {
 		Node_FunctionObject(const std::string& arg_identiferName) : Node(OP_INT,arg_identiferName) {
 			string_ = arg_identiferName;
 		}
-		virtual int Push(Compiler* c) const;
-		virtual int Pop(Compiler* c) const;
-		int GetType(Compiler* c)const override;
+		virtual int Push(Compiler* arg_compiler) const;
+		virtual int Pop(Compiler* arg_compiler) const;
+		int GetType(Compiler* arg_compiler)const override;
 	};
 
 	// ステートメント
@@ -304,25 +304,25 @@ namespace ButiScript {
 			std::cerr << "内部エラー：Add(index, node)が呼ばれました" << std::endl;
 		}
 
-		virtual int Analyze(Compiler* c) = 0;
-		virtual int Regist(Compiler* c) { return 0; };
+		virtual int Analyze(Compiler* arg_compiler) = 0;
+		virtual int Regist(Compiler* arg_compiler) { return 0; };
 
-		virtual int Case_Analyze(Compiler* c, int* default_label)
+		virtual int Case_Analyze(Compiler* arg_compiler, int* default_label)
 		{
 			return 0;
 		}
 
-		static Statement_t make_statement(const int state);
-		static Statement_t make_statement(const int state,const int );
-		static Statement_t make_statement(const int state, Node_t node);
-		static Statement_t make_statement(const int state, Block_t block);
+		static Statement_t make_statement(const int vec_state);
+		static Statement_t make_statement(const int vec_state,const int );
+		static Statement_t make_statement(const int vec_state, Node_t node);
+		static Statement_t make_statement(const int vec_state, Block_t block);
 
 	};
 
 	// nop
 	class Statement_nop : public Statement {
 	public:
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 	};
 
 	// 代入
@@ -333,9 +333,9 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
-		int ReAnalyze(Compiler* c);
+		int ReAnalyze(Compiler* arg_compiler);
 
 	private:
 		Node_t vec_node;
@@ -349,8 +349,8 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* c);
-		void ReAnalyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
+		void ReAnalyze(Compiler* arg_compiler);
 	private:
 		Node_t vec_node;
 	};
@@ -363,8 +363,8 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* c);
-		int case_Analyze(Compiler* c, int* default_label);
+		int Analyze(Compiler* arg_compiler);
+		int case_Analyze(Compiler* arg_compiler, int* default_label);
 
 	private:
 		Node_t vec_node;
@@ -374,8 +374,8 @@ namespace ButiScript {
 	// default
 	class Statement_default : public Statement {
 	public:
-		int Analyze(Compiler* c);
-		int case_Analyze(Compiler* c, int* default_label);
+		int Analyze(Compiler* arg_compiler);
+		int case_Analyze(Compiler* arg_compiler, int* default_label);
 
 	private:
 		int label_;
@@ -384,7 +384,7 @@ namespace ButiScript {
 	// break
 	class Statement_break : public Statement {
 	public:
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 	};
 
 	// return
@@ -395,7 +395,7 @@ namespace ButiScript {
 			vec_node = node;
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
 		Node_t vec_node;
@@ -418,7 +418,7 @@ namespace ButiScript {
 			statement_[index] = statement;
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
 		Node_t vec_node;
@@ -438,7 +438,7 @@ namespace ButiScript {
 			vec_node[index] = node;
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
 		Statement_t statement_;
@@ -458,7 +458,7 @@ namespace ButiScript {
 			vec_node = node;
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
 		Node_t vec_node;
@@ -478,7 +478,7 @@ namespace ButiScript {
 			statement_.push_back(statement);
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
 		Node_t vec_node;
@@ -493,7 +493,7 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
 		Block_t block_;
@@ -534,10 +534,10 @@ namespace ButiScript {
 			args.push_back(arg_type);
 		}
 
-		int PushCompiler(Compiler* c);
-		int Analyze(Compiler* c);
+		int PushCompiler(Compiler* arg_compiler);
+		int Analyze(Compiler* arg_compiler);
 
-		void Define(Compiler* c);
+		void Define(Compiler* arg_compiler);
 		bool IsFunction()const {
 			return isFunction;
 		}
@@ -556,20 +556,20 @@ namespace ButiScript {
 
 	class Block {
 	public:
-		void Add(const Declaration_t& decl)
+		void Add(const Declaration_t& arg_decl)
 		{
-			decl_.push_back(decl);
+			vec_decl.push_back(arg_decl);
 		}
-		void Add(const Statement_t& state)
+		void Add(const Statement_t& arg_state)
 		{
-			state_.push_back(state);
+			vec_state.push_back(arg_state);
 		}
 
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 
 	private:
-		std::vector<Declaration_t> decl_;
-		std::vector<Statement_t> state_;
+		std::vector<Declaration_t> vec_decl;
+		std::vector<Statement_t> vec_state;
 	};
 
 	// 引数
@@ -583,24 +583,23 @@ namespace ButiScript {
 		{
 			accessType = AccessModifier::Public;
 		}
-		Function(std::shared_ptr<Function> access,const std::string& arg_name)
+		Function(std::shared_ptr<Function> arg_access,const std::string& arg_name)
 			: name_(arg_name)
 		{
-			accessType = StringToAccessModifier(access->name_);
+			accessType = StringToAccessModifier(arg_access->name_);
 		}
 
-		void Add(ArgDefine arg)
+		void Add(ArgDefine arg_argDefine)
 		{
-			args_.push_back(arg);
+			args_.push_back(arg_argDefine);
 		}
 
-		void Add(Block_t block)
+		void Add(Block_t arg_block)
 		{
-			block_ = block;
+			block_ = arg_block;
 		}
-		int PushCompiler(Compiler* c);
-		virtual int Analyze(Compiler* c,FunctionTable* funcTable=nullptr);
-		int Regist(Compiler* c, FunctionTable* funcTable = nullptr);
+		int PushCompiler(Compiler* arg_compiler);
+		virtual int Analyze(Compiler* arg_compiler,FunctionTable* arg_p_funcTable =nullptr);
 		void set_type(const int arg_type) {
 			valueType = arg_type;
 		}
@@ -617,9 +616,8 @@ namespace ButiScript {
 	class Ramda :public Function {
 	public:
 		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args);
-		int PushCompiler(Compiler* c);
-		int Analyze(Compiler* c, FunctionTable* funcTable = nullptr);
-		int Regist(Compiler* c, FunctionTable* funcTable = nullptr);
+		int PushCompiler(Compiler* arg_compiler);
+		int Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
 	};
 	using Ramda_t = std::shared_ptr<Ramda>;
 
@@ -629,11 +627,10 @@ namespace ButiScript {
 			: name_(arg_name)
 		{
 		}
-		int Analyze(Compiler* c);
-		int Regist(Compiler* c);
-		int AnalyzeMethod(Compiler* c);
-		int PushCompiler(Compiler* c);
-		void RegistMethod(Function_t method, Compiler* c);
+		int Analyze(Compiler* arg_compiler);
+		int Regist(Compiler* arg_compiler);
+		int PushCompiler(Compiler* arg_compiler);
+		void RegistMethod(Function_t method, Compiler* arg_compiler);
 		void SetValue(const std::string& arg_name, const int arg_type,const AccessModifier accessType);
 	private:
 		std::map < std::string, std::pair< int,AccessModifier>> map_values;
@@ -652,7 +649,7 @@ namespace ButiScript {
 
 		void SetIdentifer(const std::string& arg_name);
 		void SetIdentifer(const std::string& arg_name,const int value);
-		int Analyze(Compiler* c);
+		int Analyze(Compiler* arg_compiler);
 	private:
 		std::string typeName;
 		std::map<std::string, int> map_identifer;

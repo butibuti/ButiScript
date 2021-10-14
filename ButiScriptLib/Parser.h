@@ -6,7 +6,8 @@
 namespace ButiScript {
 
 	class Compiler;
-	bool ScriptParser(const std::string& path, Compiler* driver);
+	// \•¶‰ğÍ
+	bool ScriptParse(const std::string& path, Compiler* driver);
 }
 
 

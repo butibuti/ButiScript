@@ -158,6 +158,9 @@ namespace ButiScript {
 		void SetGameObject(std::shared_ptr<ButiEngine::GameObject> arg_gameObject) {
 			shp_gameObject = arg_gameObject;
 		}
+		std::shared_ptr<ButiEngine::GameObject>GetGameObject()const {
+			return shp_gameObject;
+		}
 
 		void RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
 		void SaveGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
@@ -905,6 +908,11 @@ namespace ButiScript {
 		void sys_unregistEventListner();
 		void sys_executeEvent();
 		void sys_pushTask();
+		void sys_LoadTextureAsync();
+		void sys_LoadWaveAsync();
+		void sys_LoadWavesAsync();
+		void sys_LoadTexture();
+		void sys_LoadWave();
 		void sys_translate() {
 
 			auto v = top().v_->Get<ButiEngine::Vector3>(); pop();
