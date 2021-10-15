@@ -76,22 +76,22 @@ void ButiScript::Compiler::RegistDefaultSystems()
 }
 
 // コンパイル
-bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::CompiledData& Data)
+bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
 {
 
 	//変数テーブルをセット
 	variables.push_back(ValueTable());
 	variables[0].set_global();
 	OpHalt();
-	bool result = ScriptParse(file, this);	// 構文解析
+	bool result = ScriptParse(arg_filePath, this);	// 構文解析
 
 	if (!result)
 		return false;// パーサーエラー
 
 	int code_size = LabelSetting();				// ラベルにアドレスを設定
-	CreateData(Data, code_size);				// バイナリ生成
+	CreateData(arg_ref_data, code_size);				// バイナリ生成
 
-	Data.sourceFilePath = file;
+	arg_ref_data.sourceFilePath = arg_filePath;
 
 	labels.clear();
 	statement.clear();
@@ -106,9 +106,9 @@ bool ButiScript::Compiler::Compile(const std::string& file, ButiScript::Compiled
 
 
 // エラーメッセージを出力
-void ButiScript::Compiler::error(const std::string& m)
+void ButiScript::Compiler::error(const std::string& arg_message)
 {
-	std::cerr << m << std::endl;
+	std::cerr << arg_message << std::endl;
 	error_count++;
 }
 
@@ -152,7 +152,7 @@ void ButiScript::Compiler::ClearNameSpace()
 	vec_namespaces.push_back(globalNameSpace);
 }
 
-void ButiScript::Compiler::FunctionAnalyze()
+void ButiScript::Compiler::Analyze()
 {
 	for (auto namespaceItr = vec_namespaces.begin(), namespaceEnd = vec_namespaces.end(); namespaceItr != namespaceEnd; namespaceItr++) {
 		currentNameSpace = *namespaceItr;
@@ -170,16 +170,16 @@ void ButiScript::Compiler::IncreaseRamdaCount()
 
 // 外部変数の定義
 struct Define_value {
-	ButiScript::Compiler* comp_;
+	ButiScript::Compiler* p_compiler;
 	int valueType;
-	ButiScript::AccessModifier access;
-	Define_value(ButiScript::Compiler* comp, const int type,ButiScript::AccessModifier arg_access ) : comp_(comp), valueType(type),access(arg_access)
+	ButiScript::AccessModifier arg_access;
+	Define_value(ButiScript::Compiler* arg_p_comp, const int arg_type,ButiScript::AccessModifier arg_access ) : p_compiler(arg_p_comp), valueType(arg_type),arg_access(arg_access)
 	{
 	}
 
 	void operator()(ButiScript::Node_t node) const
 	{
-		comp_->AddValue(valueType, node->GetString(), node->GetLeft(),access);
+		p_compiler->AddValue(valueType, node->GetString(), node->GetLeft(),arg_access);
 	}
 };
 
@@ -216,89 +216,72 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 	types.RegistType(type);
 }
 
-void ButiScript::Compiler::ValueDefine(int type, const std::vector<Node_t>& node, const AccessModifier arg_access)
+void ButiScript::Compiler::ValueDefine(int arg_type, const std::vector<Node_t>& arg_node, const AccessModifier arg_access)
 {
-	std::for_each(node.begin(), node.end(), Define_value(this, type,arg_access));
+	std::for_each(arg_node.begin(), arg_node.end(), Define_value(this, arg_type,arg_access));
 }
 
 // 関数宣言
-void ButiScript::Compiler::FunctionDefine(int type, const std::string& name, const std::vector<int>& args)
+void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_name, const std::vector<int>& arg_vec_argIndex)
 {
-	const FunctionTag* tag = functions.Find_strict(name,args);
+	const FunctionTag* tag = functions.Find_strict(arg_name,arg_vec_argIndex);
 	if (tag) {			// 既に宣言済み
-		if (!tag->CheckArgList_strict(args)) {
-			error("関数 " + name + " に異なる型の引数が指定されています");
+		if (!tag->CheckArgList_strict(arg_vec_argIndex)) {
+			error("関数 " + arg_name + " に異なる型の引数が指定されています");
 			return;
 		}
 	}
 	else {
-		FunctionTag func(type, name);
-		func.SetArgs(args);				// 引数を設定
+		FunctionTag func(arg_type, arg_name);
+		func.SetArgs(arg_vec_argIndex);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		if (functions.Add(name, func) == 0) {
+		if (functions.Add(arg_name, func) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
 }
 
-// 関数定義
-//
-//	関数が呼ばれた時点のスタック
-//
-//	+--------------+
-//	|     arg2     | -5
-//	+--------------+
-//	|     arg1     | -4
-//	+--------------+
-//	|  arg count   | -3
-//	+--------------+
-//	| base_pointer | -2
-//	+--------------+
-//	| return addr  | -1
-//	+--------------+
-//
-//	
 
 // 引数の変数名を登録
 struct add_value {
-	ButiScript::Compiler* comp_;
-	ButiScript::ValueTable& values_;
-	int addr_;
-	add_value(ButiScript::Compiler* comp, ButiScript::ValueTable& values,const int arg_addres=-4) : comp_(comp), values_(values), addr_(arg_addres)
+	ButiScript::Compiler* p_compiler;
+	ButiScript::ValueTable& values;
+	int addr;
+	add_value(ButiScript::Compiler* arg_p_comp, ButiScript::ValueTable& arg_values,const int arg_addres=-4) : p_compiler(arg_p_comp), values(arg_values), addr(arg_addres)
 	{
 	}
 
-	void operator()(const ButiScript::ArgDefine& arg) const
+	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
 	{
-		if (!values_.add_arg(arg.type(), arg.name(), addr_)) {
-			comp_->error("引数 " + arg.name() + " は既に登録されています。");
+		if (!values.add_arg(arg_argDefine.type(), arg_argDefine.name(), addr)) {
+			p_compiler->error("引数 " + arg_argDefine.name() + " は既に登録されています。");
 		}
 	}
 };
 
-void ButiScript::Compiler::AddFunction(int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block,const AccessModifier access, FunctionTable* arg_funcTable )
+void ButiScript::Compiler::AddFunction(int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,const AccessModifier arg_access, FunctionTable* arg_funcTable )
 {
 
-	std::string functionName = currentNameSpace->GetGlobalNameString()+ name;
+	std::string functionName = currentNameSpace->GetGlobalNameString()+ arg_name;
 	FunctionTable* p_functable = arg_funcTable ? arg_funcTable : &functions;
 
 
-	FunctionTag* tag = p_functable->Find_strict(functionName,args);
+	FunctionTag* tag = p_functable->Find_strict(functionName,arg_vec_argDefine);
 	if (tag) {
 		if (tag->IsDefinition()) {
 			error("関数 " + functionName + " は既に定義されています");
 			return;
 		}
-		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
+		if (tag->IsDeclaration() && !tag->CheckArgList_strict(arg_vec_argDefine)) {
 			error("関数 " + functionName + " に異なる型の引数が指定されています");
 			return;
 		}
 		tag->SetDefinition();	// 定義済みに設定
 	}
 	else {
-		FunctionTag func(type,functionName);
-		func.SetArgs(args);				// 引数を設定
+		FunctionTag func(arg_type,functionName);
+		func.SetArgs(arg_vec_argDefine);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(MakeLabel());		// ラベル登録
 		tag = p_functable->Add(functionName, func);
@@ -307,7 +290,7 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 	}
 
 	current_function_name = functionName;		// 処理中の関数名を登録
-	current_function_type = type;		// 処理中の関数型を登録
+	current_function_type = arg_type;		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
 
@@ -323,25 +306,25 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 		add_value(this, variables.back(), address)(argDef);
 		address--;
 	}
-	auto endItr = args.rend();
-	for (auto itr = args.rbegin(); itr != endItr; itr++) {
+	auto endItr = arg_vec_argDefine.rend();
+	for (auto itr = arg_vec_argDefine.rbegin(); itr != endItr; itr++) {
 		add_value(this, variables.back(),address)(*itr);
 		address--;
 	}
 
 
 	// 文があれば、文を登録
-	if (block) {
-		int ret=block->Analyze(this);
+	if (arg_block) {
+		int ret=arg_block->Analyze(this);
 	}
 
 	const VMCode& code = statement.back();
-	if (type == TYPE_VOID) {			
-		if (code.op_ != VM_RETURN)		// returnが無ければreturnを追加
+	if (arg_type == TYPE_VOID) {			
+		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
 			OpReturn();					
 	}
 	else {
-		if (code.op_ != VM_RETURNV) {	
+		if (code.op != VM_RETURNV) {	
 			error("関数 " + functionName + " の最後にreturn文が有りません。");
 		}
 	}
@@ -352,45 +335,45 @@ void ButiScript::Compiler::AddFunction(int type, const std::string& name, const 
 
 }
 
-void ButiScript::Compiler::AddRamda(const int type, const std::vector<ArgDefine>& args, Block_t block, FunctionTable* arg_funcTable)
+void ButiScript::Compiler::AddRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, FunctionTable* arg_funcTable)
 {
-	AddFunction(type, "@ramda:" + std::to_string(ramdaCount), args, block, AccessModifier::Public, arg_funcTable);
+	AddFunction(arg_type, "@ramda:" + std::to_string(ramdaCount), arg_vec_argDefine, arg_block, AccessModifier::Public, arg_funcTable);
 	IncreaseRamdaCount();
 }
 
-void ButiScript::Compiler::RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable )
+void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
 {
-	std::string functionName = currentNameSpace->GetGlobalNameString() + name;
+	std::string functionName = currentNameSpace->GetGlobalNameString() + arg_name;
 	if (!arg_funcTable) {
 		arg_funcTable = &functions;
 	}
 
-	const FunctionTag* tag = arg_funcTable->Find_strict(functionName,args);
+	const FunctionTag* tag = arg_funcTable->Find_strict(functionName,arg_vec_argDefines);
 	if (tag) {			// 既に宣言済み
-		if (!tag->CheckArgList_strict(args)) {
+		if (!tag->CheckArgList_strict(arg_vec_argDefines)) {
 			error("関数 " + functionName + " に異なる型の引数が指定されています");
 			return;
 		}
 	}
 	else {
-		FunctionTag func(type, functionName);
-		func.SetArgs(args);				// 引数を設定
+		FunctionTag func(arg_type, functionName);
+		func.SetArgs(arg_vec_argDefines);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		func.SetAccessType(access);
+		func.SetAccessType(arg_access);
 		if (arg_funcTable->Add(functionName, func) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
 }
 
-void ButiScript::Compiler::RegistRamda(const int type, const std::vector<ArgDefine>& args, FunctionTable* arg_functionTable)
+void ButiScript::Compiler::RegistRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
 {
-	RegistFunction(type, "@ramda:" + std::to_string(ramdaCount), args, nullptr, AccessModifier::Public, arg_functionTable);
+	RegistFunction(arg_type, "@ramda:" + std::to_string(ramdaCount), arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
 
 }
 
-void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value)
+void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value)
 {
 	auto enumType = GetEnumTag(arg_typeName);
 	if (!enumType) {
@@ -398,7 +381,7 @@ void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std
 		enumType = enums.FindType(arg_typeName);
 	}
 
-	enumType->SetValue(identiferName, value);
+	enumType->SetValue(arg_identiferName, arg_value);
 }
 
 void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
@@ -409,40 +392,40 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 	types.RegistType(*enums.FindType(arg_typeName));
 }
 
-int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int retType)
+int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int arg_retType)
 {
 	std::vector<int> vec_argTypes;
 	std::for_each(arg_vec_argmentTypes.begin(), arg_vec_argmentTypes.end(), [&](const ArgDefine& itr)->void {vec_argTypes.push_back(itr.type()); });
 	
-	return GetfunctionTypeIndex(vec_argTypes,retType);
+	return GetfunctionTypeIndex(vec_argTypes,arg_retType);
 }
-int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType)
+int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int arg_retType)
 {
-	auto type = types.GetFunctionType(arg_vec_argmentTypes, retType);
+	auto type = types.GetFunctionType(arg_vec_argmentTypes, arg_retType);
 	if (!type) {
-		type = types.CreateFunctionType(arg_vec_argmentTypes, retType);
+		type = types.CreateFunctionType(arg_vec_argmentTypes, arg_retType);
 	}
 	return type->typeIndex;
 }
 
 
 // 変数の登録
-void ButiScript::Compiler::AddValue(const int type, const std::string& name, Node_t node ,const AccessModifier access)
+void ButiScript::Compiler::AddValue(const int arg_typeIndex, const std::string& arg_name, Node_t arg_node ,const AccessModifier arg_access)
 {
-	std::string valueName = GetCurrentNameSpace()->GetGlobalNameString() + name;
+	std::string valueName = GetCurrentNameSpace()->GetGlobalNameString() + arg_name;
 	int size = 1;
-	if (node) {
-		if (node->Op() != OP_INT) {
+	if (arg_node) {
+		if (arg_node->Op() != OP_INT) {
 			error("配列のサイズは定数で指定してください。");
 		}
-		else if (node->GetNumber() <= 0) {
+		else if (arg_node->GetNumber() <= 0) {
 			error("配列のサイズは１以上の定数が必要です。");
 		}
-		size = node->GetNumber();
+		size = arg_node->GetNumber();
 	}
 
 	ValueTable& values = variables.back();
-	if (!values.Add(type, valueName, access,size)) {
+	if (!values.Add(arg_typeIndex, valueName, arg_access,size)) {
 		error("変数 " + valueName + " は既に登録されています。");
 	}
 }
@@ -456,16 +439,16 @@ int ButiScript::Compiler::MakeLabel()
 }
 
 // ラベルのダミーコマンドをステートメントリストに登録する
-void ButiScript::Compiler::SetLabel(int label)
+void ButiScript::Compiler::SetLabel(const int arg_label)
 {
-	statement.push_back(VMCode(VM_MAXCOMMAND, label));
+	statement.push_back(VMCode(VM_MAXCOMMAND, arg_label));
 }
 
 // 文字列定数をpush
-void ButiScript::Compiler::PushString(const std::string& str)
+void ButiScript::Compiler::PushString(const std::string& arg_str)
 {
 	PushString(((int)text_table.size()));
-	text_table.insert(text_table.end(), str.begin(), str.end());
+	text_table.insert(text_table.end(), arg_str.begin(), arg_str.end());
 	text_table.push_back('\0');
 }
 
@@ -505,46 +488,40 @@ void ButiScript::Compiler::AllocStack()
 	variables.back().Alloc(this);
 }
 
-// ラベル解決
-//
-// １．アドレスを生成する
-// ２．ダミーのラベルコマンドが有ったアドレスを、ラベルテーブルに登録する
-// ３．Jmpコマンドの飛び先をラベルテーブルに登録されたアドレスにする
-
 // アドレス計算
 struct calc_addr {
-	std::vector<ButiScript::Label>& labels_;
-	int& pos_;
-	calc_addr(std::vector<ButiScript::Label>& labels, int& pos) : labels_(labels), pos_(pos)
+	std::vector<ButiScript::Label>& vec_labels;
+	int& pos;
+	calc_addr(std::vector<ButiScript::Label>& arg_vec_labels, int& arg_pos) : vec_labels(arg_vec_labels), pos(arg_pos)
 	{
 	}
 	void operator()(const ButiScript::VMCode& code)
 	{
-		if (code.op_ == ButiScript::VM_MAXCOMMAND) {			// ラベルのダミーコマンド
-			labels_[code.GetConstValue<int>()].pos_ = pos_;
+		if (code.op == ButiScript::VM_MAXCOMMAND) {			// ラベルのダミーコマンド
+			vec_labels[code.GetConstValue<int>()].pos = pos;
 		}
 		else {
-			pos_ += code.size_;
+			pos += code.size;
 		}
 	}
 };
 
 // ジャンプアドレス設定
 struct set_addr {
-	std::vector<ButiScript::Label>& labels_;
-	set_addr(std::vector<ButiScript::Label>& labels) : labels_(labels)
+	std::vector<ButiScript::Label>& vec_labels;
+	set_addr(std::vector<ButiScript::Label>& labels) : vec_labels(labels)
 	{
 	}
-	void operator()(ButiScript::VMCode& code)
+	void operator()(ButiScript::VMCode& arg_code)
 	{
-		switch (code.op_) {
+		switch (arg_code.op) {
 		case ButiScript:: VM_JMP:
 		case ButiScript::VM_JMPC:
 		case ButiScript::VM_JMPNC:
 		case ButiScript::VM_TEST:
 		case ButiScript::VM_CALL:
 		case ButiScript::VM_PUSHFUNCTIONOBJECT:
-			code.SetConstValue( labels_[code.GetConstValue<int>()].pos_);
+			arg_code.SetConstValue( vec_labels[arg_code.GetConstValue<int>()].pos);
 			break;
 		}
 	}
@@ -564,17 +541,17 @@ int ButiScript::Compiler::LabelSetting()
 // バイナリデータ生成
 
 struct copy_code {
-	unsigned char* p;
-	copy_code(unsigned char* code) : p(code)
+	unsigned char* code;
+	copy_code(unsigned char* arg_code) : code(arg_code)
 	{
 	}
-	void operator()(const ButiScript::VMCode& code)
+	void operator()(const ButiScript::VMCode& arg_code)
 	{
-		p = code.Get(p);
+		code = arg_code.Get(code);
 	}
 };
 
-bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_size)
+bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, int arg_codeSize)
 {
 
 	for (int i = 0; i < functions.Size(); i++) {
@@ -582,42 +559,42 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& Data, int code_s
 		if (func->IsSystem()) {
 			continue;
 		}
-		Data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index_].pos_);
+		arg_ref_data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index_].pos);
 	}
 	
-	for (auto itr = Data.map_entryPoints.begin(), end = Data.map_entryPoints.end(); itr != end;itr++) {
+	for (auto itr = arg_ref_data.map_entryPoints.begin(), end = arg_ref_data.map_entryPoints.end(); itr != end;itr++) {
 
 		const std::string* p_str = &itr->first;
-		Data.map_functionJumpPointsTable.emplace(itr->second, p_str);
+		arg_ref_data.map_functionJumpPointsTable.emplace(itr->second, p_str);
 	}
 
-	Data.functions = functions;
+	arg_ref_data.functions = functions;
 
-	Data.commandTable = new unsigned char[code_size];
-	Data.textBuffer = new char[text_table.size()];
-	Data.commandSize = code_size;
-	Data.textSize = (int)text_table.size();
-	Data.valueSize = (int)variables[0].size();
+	arg_ref_data.commandTable = new unsigned char[arg_codeSize];
+	arg_ref_data.textBuffer = new char[text_table.size()];
+	arg_ref_data.commandSize = arg_codeSize;
+	arg_ref_data.textSize = (int)text_table.size();
+	arg_ref_data.valueSize = (int)variables[0].size();
 
-	Data.vec_sysCalls = vec_sysCalls;
-	Data.vec_sysCallMethods = vec_sysMethodCalls;
-	types.CreateTypeVec(Data.vec_types);
-	Data.vec_scriptClassInfo = types.GetScriptClassInfo();
+	arg_ref_data.vec_sysCalls = vec_sysCalls;
+	arg_ref_data.vec_sysCallMethods = vec_sysMethodCalls;
+	types.CreateTypeVec(arg_ref_data.vec_types);
+	arg_ref_data.vec_scriptClassInfo = types.GetScriptClassInfo();
 
-	for (int i = 0; i < Data.valueSize; i++) {
+	for (int i = 0; i < arg_ref_data.valueSize; i++) {
 		auto p_value = &variables[0][i];
 		if (p_value->access == AccessModifier::Public) {
-			Data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->address);
+			arg_ref_data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->address);
 		}
 	}
 	for (int i = 0; i < enums.Size();i++) {
-		Data.map_enumTag.emplace(enums[i]->typeIndex, *enums[i]);
+		arg_ref_data.map_enumTag.emplace(enums[i]->typeIndex, *enums[i]);
 	}
-	if (Data.textSize != 0) {
-		memcpy(Data.textBuffer, &text_table[0], Data.textSize);
+	if (arg_ref_data.textSize != 0) {
+		memcpy(arg_ref_data.textBuffer, &text_table[0], arg_ref_data.textSize);
 	}
 
-	std::for_each(statement.begin(), statement.end(), copy_code(Data.commandTable));
+	std::for_each(statement.begin(), statement.end(), copy_code(arg_ref_data.commandTable));
 
 	auto end = statement.end();
 	for (auto itr = statement.begin(); itr != end; itr++) {
@@ -648,7 +625,7 @@ void ButiScript::Compiler::PopNameSpace()
 // デバッグダンプ
 #ifdef	_DEBUG
 
-void ButiScript::Compiler::debug_dump()
+void ButiScript::Compiler::DebugDump()
 
 #ifdef BUTIGUI_H
 
@@ -706,14 +683,14 @@ void ButiScript::Compiler::debug_dump()
 	int	pos = 0;
 	size_t size = statement.size();
 	for (size_t i = 0; i < size; i++) {
-		std::cout << std::setw(6) << pos << ": " << op_name[statement[i].op_];
-		if (statement[i].size_ > 1) {
+		std::cout << std::setw(6) << pos << ": " << op_name[statement[i].op];
+		if (statement[i].size > 1) {
 			std::cout << ", " << statement[i].GetConstValue<int>();
 		}
 		std::cout << std::endl;
 
-		if (statement[i].op_ != VM_MAXCOMMAND) {
-			pos += statement[i].size_;
+		if (statement[i].op != VM_MAXCOMMAND) {
+			pos += statement[i].size;
 		}
 	}
 }
@@ -1061,17 +1038,17 @@ void ButiScript::NameSpace::PushClass(Class_t arg_class)
 
 
 
-void ButiScript::NameSpace::AnalyzeFunctions(Compiler* c)
+void ButiScript::NameSpace::AnalyzeFunctions(Compiler* arg_compiler)
 {
 	for (auto itr = vec_analyzeFunctionBuffer.begin(), end = vec_analyzeFunctionBuffer.end(); itr != end; itr++) {
-		(*itr)->Analyze(c, nullptr);
+		(*itr)->Analyze(arg_compiler, nullptr);
 	}
 }
 
-void ButiScript::NameSpace::AnalyzeClasses(Compiler* c)
+void ButiScript::NameSpace::AnalyzeClasses(Compiler* arg_compiler)
 {
 	for (auto itr = vec_analyzeClassBuffer.begin(), end = vec_analyzeClassBuffer.end(); itr != end; itr++) {
-		(*itr)->Analyze(c);
+		(*itr)->Analyze(arg_compiler);
 	}
 }
 
@@ -1148,7 +1125,7 @@ void ButiScript::SystemTypeRegister::RegistSystemEnumType(const std::string& arg
 	enums.SetEnum(tag);
 	types.RegistType(*enums.FindType(arg_typeName));
 }
-void ButiScript::SystemTypeRegister::RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value)
+void ButiScript::SystemTypeRegister::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value)
 {
 	auto enumType = enums.FindType(arg_typeName);
 	if (!enumType) {
@@ -1156,7 +1133,7 @@ void ButiScript::SystemTypeRegister::RegistEnum(const std::string& arg_typeName,
 		enumType = enums.FindType(arg_typeName);
 	}
 
-	enumType->SetValue(identiferName, value);
+	enumType->SetValue(arg_identiferName, arg_value);
 }
 int ButiScript::SystemTypeRegister::GetIndex(const std::string& arg_typeName)
 {
@@ -1237,10 +1214,10 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	
 }
 
-bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op, const int retType, const std::string& name, const std::string& args)
+bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op, const int arg_retType, const std::string& arg_name, const std::string& arg_vec_argDefines)
 {
-	FunctionTag func(retType, name);
-	if (!func.SetArgs(args, SystemTypeRegister::GetInstance()->types .GetArgmentKeyMap()))
+	FunctionTag func(arg_retType, arg_name);
+	if (!func.SetArgs(arg_vec_argDefines, SystemTypeRegister::GetInstance()->types .GetArgmentKeyMap()))
 		return false;
 
 	func.SetDeclaration();
@@ -1251,15 +1228,15 @@ bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op,
 	long long int address = *(long long int*) & arg_op;
 	map_sysCallsIndex.emplace(address, vec_sysCalls.size());
 	vec_sysCalls.push_back(arg_op);
-	if (functions.Add(name, func) == 0) {
+	if (functions.Add(arg_name, func) == 0) {
 		return false;
 	}
 	return true;
 }
 
-bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args)
+bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_method, const int arg_type, const int arg_retType, const std::string& arg_name, const std::string& arg_args)
 {
-	FunctionTag func(retType, name);
+	FunctionTag func(arg_retType, arg_name);
 	if (!func.SetArgs(arg_args, SystemTypeRegister::GetInstance()->types.GetArgmentKeyMap()))
 		return false;
 
@@ -1270,8 +1247,8 @@ bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_met
 	long long int address = *(long long int*) & arg_p_method;
 	map_sysMethodCallsIndex.emplace(address, vec_sysMethodCalls.size());
 	vec_sysMethodCalls.push_back(arg_p_method);
-	auto typeTag = SystemTypeRegister::GetInstance()->types.GetType(type);
-	if (typeTag->AddMethod(name, func) == 0) {
+	auto typeTag = SystemTypeRegister::GetInstance()->types.GetType(arg_type);
+	if (typeTag->AddMethod(arg_name, func) == 0) {
 		return false;
 	}
 	return true;

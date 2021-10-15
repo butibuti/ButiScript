@@ -68,34 +68,34 @@ namespace ButiScript {
 	class Node {
 	public:
 		Node(const int Op, const Node_t& left, const Node_t& right)
-			: op_(Op), left_(left), right_(right), number_(0), num_float(0)
+			: op(Op), left_(left), right_(right), number_(0), num_float(0)
 		{
 		}
 		Node(const int Op, const Node_t& left)
-			: op_(Op), left_(left), number_(0), num_float(0)
+			: op(Op), left_(left), number_(0), num_float(0)
 		{
 		}
 		Node(const int Op, const int arg_number)
-			: op_(Op), number_(arg_number)
+			: op(Op), number_(arg_number)
 		{
 		}
 		Node(const int Op, float arg_number)
-			: op_(Op), num_float(arg_number)
+			: op(Op), num_float(arg_number)
 		{
 		}
 		Node(const int Op, const std::string& str)
-			: op_(Op), number_(0), string_(str)
+			: op(Op), number_(0), string_(str)
 		{
 		}
 		Node(const int Op, const char* b, const char* e)
-			: op_(Op), string_(b, e)
+			: op(Op), string_(b, e)
 		{
 		}
 		virtual ~Node()
 		{
 		}
 
-		int Op() const { return op_; }
+		int Op() const { return op; }
 		int GetNumber() const { return number_; }
 		const std::string& GetString() const { return string_; }
 		Node_t GetLeft() const { return left_; }
@@ -132,7 +132,7 @@ namespace ButiScript {
 		static Node_t make_node(const int Op, Node_t left, NodeList_t right);
 
 	protected:
-		int op_;
+		int op;
 		int number_;
 		float num_float;
 		std::string string_;

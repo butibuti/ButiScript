@@ -4,9 +4,9 @@
 
 
 #ifdef IMPL_BUTIENGINE
-void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValue** arg_v) const
+void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::Value_wrap<Type_Enum>(data, 1,&shp_compiledData->map_enumTag.at(type));
+	*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1,&shp_compiledData->map_enumTag.at(type));
 }
 std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction=nullptr;
 std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
@@ -18,10 +18,10 @@ std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFu
 
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #endif
-ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
+ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 
 #ifdef IMPL_BUTIENGINE
-	std::vector<ButiScript::IValue*> vec_members;
+	std::vector<ButiScript::IValueData*> vec_members;
 	int memberSize = arg_info.GetMemberSize();
 	for (int i = 0; i < memberSize; i++) {
 		auto typeIndex = arg_info.GetMemberTypeIndex(i);
@@ -40,7 +40,7 @@ ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::
 			vec_members.push_back(nullptr);
 		}
 	}
-	return new ButiScript::Value_wrap<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
+	return new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
 #else
 	return nullptr;
 #endif
@@ -48,16 +48,16 @@ ButiScript::IValue* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::
 
 #ifdef IMPL_BUTIENGINE
 
-void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValue** arg_v) const
+void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_v) const
 {
-	std::vector<ButiScript::IValue*> vec_members;
+	std::vector<ButiScript::IValueData*> vec_members;
 	auto end = vec_data.end();
 	for (auto itr = vec_data.begin(); itr != end; itr++) {
-		IValue* member;
+		IValueData* member;
 		(*itr)->RestoreValue(&member);
 		vec_members.push_back(member);
 	}
-	*arg_v = new ButiScript::Value_wrap<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
+	*arg_v = new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
 
 }
 #endif

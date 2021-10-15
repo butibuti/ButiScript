@@ -83,8 +83,8 @@ namespace ButiScript {
 			free(p_pushRefValues );
 		}
 		template<typename T>
-		T Execute(const std::string& entryPoint = "main") {
-			if (!data_->map_entryPoints.count(entryPoint)) {
+		T Execute(const std::string& arg_entryPoint = "main") {
+			if (!data_->map_entryPoints.count(arg_entryPoint)) {
 				return T();
 			}
 			stack_base = valueStack.size();					// スタック参照位置初期化
@@ -92,15 +92,15 @@ namespace ButiScript {
 			push(stack_base);								// stack_baseの初期値をpush
 			push(0);										// プログラム終了位置をpush
 
-			Execute_(entryPoint);
+			Execute_(arg_entryPoint);
 
 			auto ret = top().v_->Get<T>();
 			valueStack.resize(globalValue_size);
 			return ret;
 		}
 		template<>
-		void Execute(const std::string& entryPoint ) {
-			if (!data_->map_entryPoints.count(entryPoint)) {
+		void Execute(const std::string& arg_entryPoint ) {
+			if (!data_->map_entryPoints.count(arg_entryPoint)) {
 				return;
 			}
 			stack_base = valueStack.size();					// スタック参照位置初期化
@@ -108,20 +108,20 @@ namespace ButiScript {
 			push(stack_base);								// stack_baseの初期値をpush
 			push(0);										// プログラム終了位置をpush
 
-			Execute_(entryPoint);
+			Execute_(arg_entryPoint);
 
 			valueStack.resize(globalValue_size);
 		}
 
 		template<typename T, typename U>
-		int Execute(const std::string& entryPoint, U argment) {
+		int Execute(const std::string& arg_entryPoint, U argmentValue) {
 
 			stack_base = valueStack.size();						// スタック参照位置初期化
-			push(argment);									//引数push
+			push(argmentValue);									//引数push
 			push(1);										// mainへの引数カウントをpush
 			push(stack_base);										// stack_baseの初期値をpush
 			push(0);										// プログラム終了位置をpush
-			Execute_(entryPoint);
+			Execute_(arg_entryPoint);
 
 			auto ret = top().v_->Get<T>();
 			valueStack.resize(globalValue_size);
@@ -169,7 +169,7 @@ namespace ButiScript {
 
 		void Initialize();
 	private:
-		void Execute_(const std::string& entryPoint );
+		void Execute_(const std::string& arg_entryPoint );
 
 		/////////////定数Push定義////////////////
 		// 定数Push
@@ -864,8 +864,8 @@ namespace ButiScript {
 		}
 
 		//関数オブジェクトのアドレスをPush
-		inline void OpPushFunctionAddress(const int address) {
-			push(address);
+		inline void OpPushFunctionAddress(const int arg_address) {
+			push(arg_address);
 		}
 		//関数オブジェクトのアドレスをPush
 		void OpPushFunctionAddress() {
@@ -878,10 +878,10 @@ namespace ButiScript {
 		{
 		}
 		// 組み込み関数
-		inline void OpSysCall(const int val)
+		inline void OpSysCall(const int arg_val)
 		{
 			pop();	// arg_count
-			(this->*p_syscall[val])();
+			(this->*p_syscall[arg_val])();
 		}
 
 		void OpSysCall() {
@@ -889,10 +889,10 @@ namespace ButiScript {
 		}
 
 		//組み込みメソッド
-		inline void OpSysMethodCall(const int val)
+		inline void OpSysMethodCall(const int arg_val)
 		{
 			pop();	// arg_count
-			(this->*p_sysMethodCall[val])();
+			(this->*p_sysMethodCall[arg_val])();
 		}
 		void OpSysMethodCall() {
 			OpSysMethodCall(Value_Int());
@@ -1332,31 +1332,31 @@ namespace ButiScript {
 		float Value_Float() { float v = *(float*)command_ptr_; command_ptr_ += 4; return v; }
 		int addr() const { return (int)(command_ptr_ - commandTable); }
 		void jmp(int addr) { command_ptr_ = commandTable + addr; }
-		void push(int v) { 
-			valueStack.push(ButiScript::Value(v));
+		void push(int arg_v) {
+			valueStack.push(ButiScript::Value(arg_v));
 		}
-		void push(float v) { 
-			valueStack.push(ButiScript::Value(v)); 
+		void push(float arg_v) {
+			valueStack.push(ButiScript::Value(arg_v));
 		}
-		void push(const std::string& v) {
-			valueStack.push(ButiScript::Value(v));
+		void push(const std::string& arg_v) {
+			valueStack.push(ButiScript::Value(arg_v));
 		}
 		template <typename T>
-		void push(std::shared_ptr<T> v) {
-			valueStack.push(ButiScript::Value(v));
+		void push(std::shared_ptr<T> arg_v) {
+			valueStack.push(ButiScript::Value(arg_v));
 
 			auto ptr = &VirtualCPU::pushSharedValue<T>;
 			auto address = *(long long int*) & (ptr);
 			top().SetTypeIndex(address);
 		}
-		void push(IValue* arg_p_ivalue,const int arg_type) {
+		void push(IValueData* arg_p_ivalue,const int arg_type) {
 			valueStack.push(ButiScript::Value(arg_p_ivalue, arg_type));
 		}
-		void push_clone(IValue* arg_p_ivalue,const int arg_type) {
+		void push_clone(IValueData* arg_p_ivalue,const int arg_type) {
 			valueStack.push(ButiScript::Value(arg_p_ivalue->Clone(), arg_type));
 		}
-		void push(const ButiScript::Value& v) { 
-			valueStack.push(v); 
+		void push(const ButiScript::Value& arg_v) {
+			valueStack.push(arg_v);
 		}
 
 		void pop() { 
@@ -1368,20 +1368,20 @@ namespace ButiScript {
 		ButiScript::Value& top() { 
 			return valueStack.top(); 
 		}
-		std::string text(const ButiScript::Value& v) { return v.v_->Get<std::string>(); }
-		const ButiScript::Value& ref_to_value(const int addr) const
+		std::string text(const ButiScript::Value& arg_v) { return arg_v.v_->Get<std::string>(); }
+		const ButiScript::Value& ref_to_value(const int arg_addr) const
 		{
-			if (addr & global_flag) {
-				return valueStack[addr & global_mask];
+			if (arg_addr & global_flag) {
+				return valueStack[arg_addr & global_mask];
 			}
-			return valueStack[addr];
+			return valueStack[arg_addr];
 		}
-		void set_ref(const int addr, const ButiScript::Value& v)
+		void set_ref(const int arg_addr, const ButiScript::Value& arg_v)
 		{
-			if (addr & global_flag)
-				PopLocal(addr-1);
+			if (arg_addr & global_flag)
+				PopLocal(arg_addr-1);
 			else
-				valueStack[addr] = v;
+				valueStack[arg_addr] = arg_v;
 		}
 
 	private:

@@ -19,37 +19,37 @@ static std::string to_string(const T&) {
 ////テンプレート継承の実装用マクロ////
 ////////////////////////////////
 #define RegistGet(T) \
-virtual T operator()(const IValue* b, const T * p_dummy) const {\
+virtual T operator()(const IValueData* b, const T * p_dummy) const {\
 return static_cast<const Class*>(b)->get_value_stub< T >();\
 }\
 
 #define RegistGetRef(T) \
-virtual T& operator()(IValue* b, const T * p_dummy) const {\
+virtual T& operator()(IValueData* b, const T * p_dummy) const {\
 return static_cast<Class*>(b)->get_ref_stub< T >();\
 }\
 
 #define RegistSet(T) \
-virtual void operator()(IValue* b,const T v) const {\
+virtual void operator()(IValueData* b,const T v) const {\
 static_cast<Class*>(b)->set_value_stub<T>(v);\
 }\
 
 #define RegistSetRef(T) \
-virtual void operator()(IValue* b,const T & v) const {\
+virtual void operator()(IValueData* b,const T & v) const {\
 static_cast<Class*>(b)->set_value_stub<T>(v);\
 }\
 
 #define RegistEq(T) \
-virtual bool operator()(const IValue* b,const T & v) const {\
+virtual bool operator()(const IValueData* b,const T & v) const {\
 return static_cast<const Class*>(b)->eq_stub<T>(v);\
 }\
 
 #define RegistGt(T) \
-virtual bool operator()(const IValue* b,const T & v) const {\
+virtual bool operator()(const IValueData* b,const T & v) const {\
  return static_cast<const Class*>(b)->gt_stub<T>(v);\
 }\
 
 #define RegistGe(T) \
-virtual bool operator()(const IValue* b,const T & v) const {\
+virtual bool operator()(const IValueData* b,const T & v) const {\
 return static_cast<const Class*>(b)->ge_stub<T>(v);\
 }\
 
@@ -58,46 +58,46 @@ return static_cast<const Class*>(b)->ge_stub<T>(v);\
 ////変数の中身の明示的特殊化用マクロ////
 //////////////////////////////////
 #define RegistSpecialization(Type)\
-bool Eq(IValue* p_other)const override {\
+bool Eq(IValueData* p_other)const override {\
 	return p_other->Equal(*( Type *)p_instance);\
 }\
-bool Gt(IValue* p_other)const override {\
+bool Gt(IValueData* p_other)const override {\
 	return false;\
 }\
-bool Ge(IValue* p_other)const override {\
+bool Ge(IValueData* p_other)const override {\
 	return false;\
 }\
-void ValueCopy(IValue* p_other) const override {\
+void ValueCopy(IValueData* p_other) const override {\
 	p_other->Set< Type >(*( Type *)p_instance);\
 }\
-IValue* Clone()const {\
-	return new Value_wrap< Type >(*( Type *)p_instance, 1);\
+IValueData* Clone()const {\
+	return new ValueData< Type >(*( Type *)p_instance, 1);\
 }\
 void Nagative()override {\
 	*( Type *)p_instance = -1 * (*( Type *)p_instance);\
 }\
-virtual const IValue::get_value_base_t& get_value() const {\
-	static const IValue::get_value_t<Value_wrap< Type >> s;\
+virtual const IValueData::get_value_base_t& get_value() const {\
+	static const IValueData::get_value_t<ValueData< Type >> s;\
 	return s;\
 }\
-virtual const IValue::get_ref_base_t& get_ref() const {\
-	static const IValue::get_ref_t<Value_wrap< Type >> s;\
+virtual const IValueData::get_ref_base_t& get_ref() const {\
+	static const IValueData::get_ref_t<ValueData< Type >> s;\
 	return s;\
 }\
-virtual const IValue::set_value_base_t& set_value() const {\
-	static const IValue::set_value_t<Value_wrap< Type >> s;\
+virtual const IValueData::set_value_base_t& set_value() const {\
+	static const IValueData::set_value_t<ValueData< Type >> s;\
 	return s;\
 }\
-virtual const IValue::eq_base_t& eq() const {\
-	static const IValue::eq_t<Value_wrap< Type >> s;\
+virtual const IValueData::eq_base_t& eq() const {\
+	static const IValueData::eq_t<ValueData< Type >> s;\
 	return s;\
 }\
-virtual const IValue::gt_base_t& gt() const {\
-	static const IValue::gt_t<Value_wrap< Type >> s;\
+virtual const IValueData::gt_base_t& gt() const {\
+	static const IValueData::gt_t<ValueData< Type >> s;\
 	return s;\
 }\
-virtual const IValue::ge_base_t& ge() const {\
-	static const IValue::ge_t<Value_wrap< Type >> s;\
+virtual const IValueData::ge_base_t& ge() const {\
+	static const IValueData::ge_t<ValueData< Type >> s;\
 	return s;\
 }\
 template <typename U> U get_value_stub()const {\
@@ -152,13 +152,13 @@ long long int TypeSpecific() {
 	return (long long int) output;
 }
 #ifdef IMPL_BUTIENGINE
-class IValue;
+class IValueData;
 #ifndef IGLOBALVALUESAVEOBJECT_DEFINE
 #define IGLOBALVALUESAVEOBJECT_DEFINE
 class IGlobalValueSaveObject {
 public:
 
-	virtual void RestoreValue(IValue** arg_v)const = 0;
+	virtual void RestoreValue(IValueData** arg_v)const = 0;
 	virtual void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) {}
 	virtual int GetTypeIndex()const = 0;
 	virtual void SetTypeIndex(const int arg_index) = 0;
@@ -169,7 +169,7 @@ class GlobalScriptTypeValueSaveObject :public IGlobalValueSaveObject {
 public:
 	GlobalScriptTypeValueSaveObject() {}
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
-	void RestoreValue(IValue** arg_v)const override;
+	void RestoreValue(IValueData** arg_v)const override;
 	void Push(std::shared_ptr<IGlobalValueSaveObject> shp_value, int index) {
 		shp_value->SetTypeIndex(index);
 		vec_data.push_back(shp_value);
@@ -199,7 +199,7 @@ public:
 	}
 	GlobalValueSaveObject() {
 	}
-	void RestoreValue(IValue** arg_v)const override;
+	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
 		return type;
 	}
@@ -225,7 +225,7 @@ public:
 	GlobalValueSaveObject() {
 	}
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override{ shp_compiledData = arg_shp_data; }
-	void RestoreValue(IValue** arg_v)const override;
+	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
 		return type;
 	}
@@ -251,7 +251,7 @@ public:
 	}
 	GlobalSharedPtrValueSaveObject() {
 	}
-	void RestoreValue(IValue** arg_v)const override;
+	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
 		return type;
 	}
@@ -270,13 +270,13 @@ private:
 };
 
 #endif //IMPL_BUTIENGINE
-class IValue {
+class IValueData {
 public:
-	IValue(const int arg_ref) {
+	IValueData(const int arg_ref) {
 		ref_ = arg_ref;
 	}
 
-	virtual ~IValue() {
+	virtual ~IValueData() {
 	}
 
 	template <typename T> T Get()const {
@@ -290,19 +290,19 @@ public:
 	template <typename T> void Set(const T& arg_v) {
 		return set_value()(this, arg_v);
 	}
-	template <> void Set(const IValue& arg_v) {
+	template <> void Set(const IValueData& arg_v) {
 		arg_v.ValueCopy(this);
 	}
 
 
-	IValue* GetMember(const int index)const {
+	IValueData* GetMember(const int index)const {
 		return ary_p_member[index];
 	}
 	int GetMemberType(const int index)const {
 		return ary_memberType[index];
 	}
 
-	void SetMember(IValue* arg_v,const int index) {
+	void SetMember(IValueData* arg_v,const int index) {
 		if (ary_p_member[index]) {
 			ary_p_member[index]->release();
 		}
@@ -321,15 +321,15 @@ public:
 	}
 
 	//比較
-	virtual bool Eq(IValue* p_other)const = 0;
-	virtual bool Gt(IValue* p_other)const = 0;
-	virtual bool Ge(IValue* p_other)const = 0;
+	virtual bool Eq(IValueData* p_other)const = 0;
+	virtual bool Gt(IValueData* p_other)const = 0;
+	virtual bool Ge(IValueData* p_other)const = 0;
 
 	//値のコピー
-	virtual void ValueCopy(IValue* p_other) const = 0;
+	virtual void ValueCopy(IValueData* p_other) const = 0;
 
 	//変数そのもののコピー
-	virtual IValue* Clone()const = 0;
+	virtual IValueData* Clone()const = 0;
 
 	//単項マイナス
 	virtual void Nagative() = 0;
@@ -351,7 +351,7 @@ public:
 #endif // IMPL_BUTIENGINE
 
 protected:
-	template <typename Class, typename Super = IValue>
+	template <typename Class, typename Super = IValueData>
 	struct get_value_t : public Super::get_value_base_t {
 			virtual ~get_value_t() {}
 			RegistGet(int);
@@ -369,7 +369,7 @@ protected:
 			RegistGet(Type_Enum);
 			RegistGet(Type_Func);
 		};
-	template <typename Class, typename Super = IValue>
+	template <typename Class, typename Super = IValueData>
 	struct get_ref_t : public Super::get_ref_base_t {
 			virtual ~get_ref_t() {}
 			RegistGetRef(int);
@@ -387,7 +387,7 @@ protected:
 			RegistGetRef(Type_Enum);
 			RegistGetRef(Type_Func);
 		};
-	template <typename Class, typename Super = IValue>
+	template <typename Class, typename Super = IValueData>
 	struct set_value_t : public Super::set_value_base_t {
 			virtual ~set_value_t() {}
 			RegistSet(int);
@@ -405,7 +405,7 @@ protected:
 			RegistSetRef(Type_Enum);
 			RegistSetRef(Type_Func);
 		};
-	template <typename Class, typename Super = IValue>
+	template <typename Class, typename Super = IValueData>
 	struct eq_t : public Super::eq_base_t {
 			virtual ~eq_t() {}
 			RegistEq(int);
@@ -424,7 +424,7 @@ protected:
 			RegistEq(Type_Func);
 
 		};
-	template <typename Class, typename Super = IValue>
+	template <typename Class, typename Super = IValueData>
 	struct gt_t : public Super::gt_base_t {
 			virtual ~gt_t() {}
 			RegistGt(int);
@@ -442,7 +442,7 @@ protected:
 			RegistGt(Type_Enum);
 			RegistGt(Type_Func);
 		};
-	template <typename Class, typename Super = IValue>
+	template <typename Class, typename Super = IValueData>
 	struct ge_t : public Super::ge_base_t {
 			virtual ~ge_t() {}
 			RegistGe(int);
@@ -464,12 +464,12 @@ protected:
 
 
 	struct empty_class { struct get_value_base_t {}; struct get_ref_base_t {}; struct set_value_base_t {}; struct eq_base_t {}; struct gt_base_t {}; struct ge_base_t {}; };
-	typedef get_value_t<const IValue, empty_class> get_value_base_t;
-	typedef get_ref_t<IValue, empty_class> get_ref_base_t;
-	typedef set_value_t<IValue, empty_class> set_value_base_t;
-	typedef eq_t<const IValue, empty_class> eq_base_t;
-	typedef gt_t<const IValue, empty_class> gt_base_t;
-	typedef ge_t<const IValue, empty_class> ge_base_t;
+	using get_value_base_t=get_value_t<const IValueData, empty_class> ;
+	using get_ref_base_t=get_ref_t<IValueData, empty_class> ;
+	using set_value_base_t=set_value_t<IValueData, empty_class> ;
+	using eq_base_t=eq_t<const IValueData, empty_class> ;
+	using gt_base_t=gt_t<const IValueData, empty_class> ;
+	using ge_base_t=ge_t<const IValueData, empty_class> ;
 	virtual const get_value_base_t& get_value() const = 0;
 	virtual const get_ref_base_t& get_ref() const = 0;
 	virtual const set_value_base_t& set_value() const = 0;
@@ -502,7 +502,7 @@ protected:
 	//実体
 	void* p_instance=nullptr;
 	//メンバ変数
-	IValue** ary_p_member=nullptr;
+	IValueData** ary_p_member=nullptr;
 	//メンバ変数の型
 	int* ary_memberType=nullptr;
 	bool isOuterMemoryRef = false;
@@ -515,19 +515,19 @@ private:
 
 
 template <typename T>
-class Value_wrap : public IValue {
+class ValueData : public IValueData {
 	public:
-		Value_wrap(const T v, const int ref) :IValue(ref) {
+		ValueData(const T v, const int ref) :IValueData(ref) {
 			p_instance = new T(v);
 		}
-		Value_wrap(T* v, const int ref) :IValue(ref) {
+		ValueData(T* v, const int ref) :IValueData(ref) {
 			p_instance = v;
 			isOuterMemoryRef = true;
 		}
-		Value_wrap(const int ref) :IValue(ref) {
+		ValueData(const int ref) :IValueData(ref) {
 			p_instance = new T();
 		}
-		~Value_wrap() {
+		~ValueData() {
 			if (!isOuterMemoryRef) {
 				delete ((T*)p_instance);
 			}
@@ -535,21 +535,21 @@ class Value_wrap : public IValue {
 				delete ary_memberType;
 			}
 		}
-		IValue* Clone()const override {
-			return new Value_wrap<T>(*(T*)p_instance, 1);
+		IValueData* Clone()const override {
+			return new ValueData<T>(*(T*)p_instance, 1);
 		}
 
-		bool Eq(IValue* p_other)const override {
+		bool Eq(IValueData* p_other)const override {
 			return p_other->Equal(*(T*)p_instance);
 		}
-		bool Gt(IValue* p_other)const override {
+		bool Gt(IValueData* p_other)const override {
 			return !p_other->GreaterThan(*(T*)p_instance);
 		}
-		bool Ge(IValue* p_other)const override {
+		bool Ge(IValueData* p_other)const override {
 			return !p_other->GreaterEq(*(T*)p_instance);
 		}
 
-		void ValueCopy(IValue* p_other) const override {
+		void ValueCopy(IValueData* p_other) const override {
 			p_other->Set<T>(*(T*)p_instance);
 		}
 
@@ -561,29 +561,29 @@ class Value_wrap : public IValue {
 		}
 
 
-		virtual const IValue::get_value_base_t& get_value() const {
-			static const IValue::get_value_t<Value_wrap<T>> s;
+		virtual const IValueData::get_value_base_t& get_value() const {
+			static const IValueData::get_value_t<ValueData<T>> s;
 			return s;
 		}
-		virtual const IValue::get_ref_base_t& get_ref() const {
-			static const IValue::get_ref_t<Value_wrap<T>> s;
+		virtual const IValueData::get_ref_base_t& get_ref() const {
+			static const IValueData::get_ref_t<ValueData<T>> s;
 			return s;
 		}
-		virtual const IValue::set_value_base_t& set_value() const {
-			static const IValue::set_value_t<Value_wrap<T>> s;
+		virtual const IValueData::set_value_base_t& set_value() const {
+			static const IValueData::set_value_t<ValueData<T>> s;
 			return s;
 		}
 
-		virtual const IValue::eq_base_t& eq() const {
-			static const IValue::eq_t<Value_wrap<T>> s;
+		virtual const IValueData::eq_base_t& eq() const {
+			static const IValueData::eq_t<ValueData<T>> s;
 			return s;
 		}
-		virtual const IValue::gt_base_t& gt() const {
-			static const IValue::gt_t<Value_wrap<T>> s;
+		virtual const IValueData::gt_base_t& gt() const {
+			static const IValueData::gt_t<ValueData<T>> s;
 			return s;
 		}
-		virtual const IValue::ge_base_t& ge() const {
-			static const IValue::ge_t<Value_wrap<T>> s;
+		virtual const IValueData::ge_base_t& ge() const {
+			static const IValueData::ge_t<ValueData<T>> s;
 			return s;
 		}
 
@@ -631,12 +631,12 @@ class Value_wrap : public IValue {
 	};
 
 template <>
-class Value_wrap<ScriptClassInfo> :public IValue {
+class ValueData<ScriptClassInfo> :public IValueData {
 public:
-	Value_wrap(ScriptClassInfo* v,std::vector<IValue*> vec_member, const int ref) :IValue(ref) {
+	ValueData(ScriptClassInfo* v,std::vector<IValueData*> vec_member, const int ref) :IValueData(ref) {
 		p_instance = v; 
 		int memberSize = vec_member.size();
-		ary_p_member = (IValue**)malloc(sizeof(IValue*) * memberSize);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * memberSize);
 		ary_memberType = (int*)malloc(sizeof(int) * memberSize);
 		for (int i = 0; i < memberSize; i++) {
 			ary_p_member[i] = vec_member[i];
@@ -644,7 +644,7 @@ public:
 		}
 
 	}
-	~Value_wrap() override {
+	~ValueData() override {
 		if (ary_memberType) {
 			delete ary_memberType;
 		}
@@ -658,23 +658,23 @@ public:
 	}
 
 
-	bool Eq(IValue* p_other)const override {
+	bool Eq(IValueData* p_other)const override {
 		return false;
 	}
-	bool Gt(IValue* p_other)const override {
+	bool Gt(IValueData* p_other)const override {
 		return false;
 	}
-	bool Ge(IValue* p_other)const override {
+	bool Ge(IValueData* p_other)const override {
 		return false;
 	}
 
-	void ValueCopy(IValue* p_other) const override {
+	void ValueCopy(IValueData* p_other) const override {
 
 		*p_other =* Clone();
 	}
 
-	IValue* Clone()const {
-		std::vector<IValue*> vec_clonedMember;
+	IValueData* Clone()const {
+		std::vector<IValueData*> vec_clonedMember;
 		auto memberSize = ((ScriptClassInfo*)p_instance)->GetMemberSize();
 		for (int i = 0; i < memberSize; i++) {
 			if (ary_memberType[i] & TYPE_REF) {
@@ -685,7 +685,7 @@ public:
 			}
 		}
 
-		return new Value_wrap<ScriptClassInfo>((ScriptClassInfo*)p_instance, vec_clonedMember,1);
+		return new ValueData<ScriptClassInfo>((ScriptClassInfo*)p_instance, vec_clonedMember,1);
 	}
 
 	void Nagative()override {
@@ -695,29 +695,29 @@ public:
 	}
 
 
-	virtual const IValue::get_value_base_t& get_value() const {
-		static const IValue::get_value_t<Value_wrap<ScriptClassInfo>> s;
+	virtual const IValueData::get_value_base_t& get_value() const {
+		static const IValueData::get_value_t<ValueData<ScriptClassInfo>> s;
 		return s;
 	}
-	virtual const IValue::get_ref_base_t& get_ref() const {
-		static const IValue::get_ref_t<Value_wrap<ScriptClassInfo>> s;
+	virtual const IValueData::get_ref_base_t& get_ref() const {
+		static const IValueData::get_ref_t<ValueData<ScriptClassInfo>> s;
 		return s;
 	}
-	virtual const IValue::set_value_base_t& set_value() const {
-		static const IValue::set_value_t<Value_wrap<ScriptClassInfo>> s;
+	virtual const IValueData::set_value_base_t& set_value() const {
+		static const IValueData::set_value_t<ValueData<ScriptClassInfo>> s;
 		return s;
 	}
 
-	virtual const IValue::eq_base_t& eq() const {
-		static const IValue::eq_t<Value_wrap<ScriptClassInfo>> s;
+	virtual const IValueData::eq_base_t& eq() const {
+		static const IValueData::eq_t<ValueData<ScriptClassInfo>> s;
 		return s;
 	}
-	virtual const IValue::gt_base_t& gt() const {
-		static const IValue::gt_t<Value_wrap<ScriptClassInfo>> s;
+	virtual const IValueData::gt_base_t& gt() const {
+		static const IValueData::gt_t<ValueData<ScriptClassInfo>> s;
 		return s;
 	}
-	virtual const IValue::ge_base_t& ge() const {
-		static const IValue::ge_t<Value_wrap<ScriptClassInfo>> s;
+	virtual const IValueData::ge_base_t& ge() const {
+		static const IValueData::ge_t<ValueData<ScriptClassInfo>> s;
 		return s;
 	}
 
@@ -767,15 +767,15 @@ public:
 };
 
 template<>
-class Value_wrap<int> :public IValue {
+class ValueData<int> :public IValueData {
 public:
-	Value_wrap(const int v, const int ref) :IValue(ref) {
+	ValueData(const int v, const int ref) :IValueData(ref) {
 		p_instance = new int(v);
 	}
-	Value_wrap(const int ref) :IValue(ref) {
+	ValueData(const int ref) :IValueData(ref) {
 		p_instance = new int();
 	}
-	~Value_wrap() override {
+	~ValueData() override {
 		if (!isOuterMemoryRef) {
 			delete ((int*)p_instance);
 		}
@@ -784,22 +784,22 @@ public:
 		}
 	}
 
-	bool Eq(IValue* p_other)const override {
+	bool Eq(IValueData* p_other)const override {
 		return p_other->Equal(*(int*)p_instance);
 	}
-	bool Gt(IValue* p_other)const override {
+	bool Gt(IValueData* p_other)const override {
 		return !p_other->GreaterThan(*(int*)p_instance);
 	}
-	bool Ge(IValue* p_other)const override {
+	bool Ge(IValueData* p_other)const override {
 		return !p_other->GreaterEq(*(int*)p_instance);
 	}
 
-	void ValueCopy(IValue* p_other) const override {
+	void ValueCopy(IValueData* p_other) const override {
 		p_other->Set<int>(*(int*)p_instance);
 	}
 
-	IValue* Clone()const {
-		return new Value_wrap<int>(*(int*)p_instance, 1);
+	IValueData* Clone()const {
+		return new ValueData<int>(*(int*)p_instance, 1);
 	}
 
 	void Nagative()override {
@@ -807,29 +807,29 @@ public:
 	}
 
 
-	virtual const IValue::get_value_base_t& get_value() const {
-		static const IValue::get_value_t<Value_wrap<int>> s;
+	virtual const IValueData::get_value_base_t& get_value() const {
+		static const IValueData::get_value_t<ValueData<int>> s;
 		return s;
 	}
-	virtual const IValue::get_ref_base_t& get_ref() const {
-		static const IValue::get_ref_t<Value_wrap<int>> s;
+	virtual const IValueData::get_ref_base_t& get_ref() const {
+		static const IValueData::get_ref_t<ValueData<int>> s;
 		return s;
 	}
-	virtual const IValue::set_value_base_t& set_value() const {
-		static const IValue::set_value_t<Value_wrap<int>> s;
+	virtual const IValueData::set_value_base_t& set_value() const {
+		static const IValueData::set_value_t<ValueData<int>> s;
 		return s;
 	}
 
-	virtual const IValue::eq_base_t& eq() const {
-		static const IValue::eq_t<Value_wrap<int>> s;
+	virtual const IValueData::eq_base_t& eq() const {
+		static const IValueData::eq_t<ValueData<int>> s;
 		return s;
 	}
-	virtual const IValue::gt_base_t& gt() const {
-		static const IValue::gt_t<Value_wrap<int>> s;
+	virtual const IValueData::gt_base_t& gt() const {
+		static const IValueData::gt_t<ValueData<int>> s;
 		return s;
 	}
-	virtual const IValue::ge_base_t& ge() const {
-		static const IValue::ge_t<Value_wrap<int>> s;
+	virtual const IValueData::ge_base_t& ge() const {
+		static const IValueData::ge_t<ValueData<int>> s;
 		return s;
 	}
 
@@ -910,15 +910,15 @@ public:
 #endif // IMPL_BUTIENGINE
 };
 template<>
-class Value_wrap<Type_Func> :public IValue {
+class ValueData<Type_Func> :public IValueData {
 public:
-	Value_wrap(const int v, const int ref, std::map <  int,const std::string*> * arg_p_funcEntryTable) :IValue(ref), p_functionJumpTable(arg_p_funcEntryTable) {
+	ValueData(const int v, const int ref, std::map <  int,const std::string*> * arg_p_funcEntryTable) :IValueData(ref), p_functionJumpTable(arg_p_funcEntryTable) {
 		p_instance = new int(v);
 	}
-	Value_wrap(const int ref, std::map <  int, std::string*>* arg_p_funcTag) :IValue(ref) {
+	ValueData(const int ref, std::map <  int, std::string*>* arg_p_funcTag) :IValueData(ref) {
 		p_instance = new int();
 	}
-	~Value_wrap() override {
+	~ValueData() override {
 		if (!isOuterMemoryRef) {
 			delete ((int*)p_instance);
 		}
@@ -927,22 +927,22 @@ public:
 		}
 	}
 
-	bool Eq(IValue* p_other)const override {
+	bool Eq(IValueData* p_other)const override {
 		return p_other->Equal(*(int*)p_instance);
 	}
-	bool Gt(IValue* p_other)const override {
+	bool Gt(IValueData* p_other)const override {
 		return !p_other->GreaterThan(*(int*)p_instance);
 	}
-	bool Ge(IValue* p_other)const override {
+	bool Ge(IValueData* p_other)const override {
 		return !p_other->GreaterEq(*(int*)p_instance);
 	}
 
-	void ValueCopy(IValue* p_other) const override {
+	void ValueCopy(IValueData* p_other) const override {
 		p_other->Set<int>(*(int*)p_instance);
 	}
 
-	IValue* Clone()const {
-		return new Value_wrap<Type_Func>(*(int*)p_instance, 1, p_functionJumpTable);
+	IValueData* Clone()const {
+		return new ValueData<Type_Func>(*(int*)p_instance, 1, p_functionJumpTable);
 	}
 
 	void Nagative()override {
@@ -951,29 +951,29 @@ public:
 	}
 
 
-	virtual const IValue::get_value_base_t& get_value() const {
-		static const IValue::get_value_t<Value_wrap<Type_Func>> s;
+	virtual const IValueData::get_value_base_t& get_value() const {
+		static const IValueData::get_value_t<ValueData<Type_Func>> s;
 		return s;
 	}
-	virtual const IValue::get_ref_base_t& get_ref() const {
-		static const IValue::get_ref_t<Value_wrap<Type_Func>> s;
+	virtual const IValueData::get_ref_base_t& get_ref() const {
+		static const IValueData::get_ref_t<ValueData<Type_Func>> s;
 		return s;
 	}
-	virtual const IValue::set_value_base_t& set_value() const {
-		static const IValue::set_value_t<Value_wrap<Type_Func>> s;
+	virtual const IValueData::set_value_base_t& set_value() const {
+		static const IValueData::set_value_t<ValueData<Type_Func>> s;
 		return s;
 	}
 
-	virtual const IValue::eq_base_t& eq() const {
-		static const IValue::eq_t<Value_wrap<Type_Func>> s;
+	virtual const IValueData::eq_base_t& eq() const {
+		static const IValueData::eq_t<ValueData<Type_Func>> s;
 		return s;
 	}
-	virtual const IValue::gt_base_t& gt() const {
-		static const IValue::gt_t<Value_wrap<Type_Func>> s;
+	virtual const IValueData::gt_base_t& gt() const {
+		static const IValueData::gt_t<ValueData<Type_Func>> s;
 		return s;
 	}
-	virtual const IValue::ge_base_t& ge() const {
-		static const IValue::ge_t<Value_wrap<Type_Func>> s;
+	virtual const IValueData::ge_base_t& ge() const {
+		static const IValueData::ge_t<ValueData<Type_Func>> s;
 		return s;
 	}
 
@@ -1049,15 +1049,15 @@ public:
 };
 
 template<>
-class Value_wrap<Type_Enum> :public IValue {
+class ValueData<Type_Enum> :public IValueData {
 public:
-	Value_wrap(const int v, const int ref, EnumTag* arg_p_enumTag) :IValue(ref), p_enumTag(arg_p_enumTag) {
+	ValueData(const int v, const int ref, EnumTag* arg_p_enumTag) :IValueData(ref), p_enumTag(arg_p_enumTag) {
 		p_instance = new int(v);
 	}
-	Value_wrap(const int ref, EnumTag* arg_p_enumTag) :IValue(ref) {
+	ValueData(const int ref, EnumTag* arg_p_enumTag) :IValueData(ref) {
 		p_instance = new int();
 	}
-	~Value_wrap() override {
+	~ValueData() override {
 		if (!isOuterMemoryRef) {
 			delete ((int*)p_instance);
 		}
@@ -1066,22 +1066,22 @@ public:
 		}
 	}
 
-	bool Eq(IValue* p_other)const override {
+	bool Eq(IValueData* p_other)const override {
 		return p_other->Equal(*(int*)p_instance);
 	}
-	bool Gt(IValue* p_other)const override {
+	bool Gt(IValueData* p_other)const override {
 		return !p_other->GreaterThan(*(int*)p_instance);
 	}
-	bool Ge(IValue* p_other)const override {
+	bool Ge(IValueData* p_other)const override {
 		return !p_other->GreaterEq(*(int*)p_instance);
 	}
 
-	void ValueCopy(IValue* p_other) const override {
+	void ValueCopy(IValueData* p_other) const override {
 		p_other->Set<int>(*(int*)p_instance);
 	}
 
-	IValue* Clone()const {
-		return new Value_wrap<Type_Enum>(*(int*)p_instance, 1, p_enumTag);
+	IValueData* Clone()const {
+		return new ValueData<Type_Enum>(*(int*)p_instance, 1, p_enumTag);
 	}
 
 	void Nagative()override {
@@ -1090,29 +1090,29 @@ public:
 	}
 
 
-	virtual const IValue::get_value_base_t& get_value() const {
-		static const IValue::get_value_t<Value_wrap<Type_Enum>> s;
+	virtual const IValueData::get_value_base_t& get_value() const {
+		static const IValueData::get_value_t<ValueData<Type_Enum>> s;
 		return s;
 	}
-	virtual const IValue::get_ref_base_t& get_ref() const {
-		static const IValue::get_ref_t<Value_wrap<Type_Enum>> s;
+	virtual const IValueData::get_ref_base_t& get_ref() const {
+		static const IValueData::get_ref_t<ValueData<Type_Enum>> s;
 		return s;
 	}
-	virtual const IValue::set_value_base_t& set_value() const {
-		static const IValue::set_value_t<Value_wrap<Type_Enum>> s;
+	virtual const IValueData::set_value_base_t& set_value() const {
+		static const IValueData::set_value_t<ValueData<Type_Enum>> s;
 		return s;
 	}
 
-	virtual const IValue::eq_base_t& eq() const {
-		static const IValue::eq_t<Value_wrap<Type_Enum>> s;
+	virtual const IValueData::eq_base_t& eq() const {
+		static const IValueData::eq_t<ValueData<Type_Enum>> s;
 		return s;
 	}
-	virtual const IValue::gt_base_t& gt() const {
-		static const IValue::gt_t<Value_wrap<Type_Enum>> s;
+	virtual const IValueData::gt_base_t& gt() const {
+		static const IValueData::gt_t<ValueData<Type_Enum>> s;
 		return s;
 	}
-	virtual const IValue::ge_base_t& ge() const {
-		static const IValue::ge_t<Value_wrap<Type_Enum>> s;
+	virtual const IValueData::ge_base_t& ge() const {
+		static const IValueData::ge_t<ValueData<Type_Enum>> s;
 		return s;
 	}
 
@@ -1191,19 +1191,19 @@ public:
 };
 
 template<>
-class Value_wrap<float> :public IValue {
+class ValueData<float> :public IValueData {
 	public:
-		Value_wrap(const float v, const int ref) :IValue(ref) {
+		ValueData(const float v, const int ref) :IValueData(ref) {
 			p_instance = new float(v);
 		}
-		Value_wrap(const float ref) :IValue(ref) {
+		ValueData(const float ref) :IValueData(ref) {
 			p_instance = new float();
 		}
-		Value_wrap(float* v, const int ref,const bool arg_isOuterMemoryRef) :IValue(ref) {
+		ValueData(float* v, const int ref,const bool arg_isOuterMemoryRef) :IValueData(ref) {
 			p_instance = v;
 			isOuterMemoryRef = arg_isOuterMemoryRef;
 		}
-		~Value_wrap() override {
+		~ValueData() override {
 			if (!isOuterMemoryRef) {
 				delete ((float*)p_instance);
 			}
@@ -1212,51 +1212,51 @@ class Value_wrap<float> :public IValue {
 			}
 		}
 
-		bool Eq(IValue* p_other)const override {
+		bool Eq(IValueData* p_other)const override {
 			return p_other->Equal(*(float*)p_instance);
 		}
-		bool Gt(IValue* p_other)const override {
+		bool Gt(IValueData* p_other)const override {
 			return !p_other->GreaterThan(*(float*)p_instance);
 		}
-		bool Ge(IValue* p_other)const override {
+		bool Ge(IValueData* p_other)const override {
 			return !p_other->GreaterEq(*(float*)p_instance);
 		}
 
-		void ValueCopy(IValue* p_other) const override {
+		void ValueCopy(IValueData* p_other) const override {
 			p_other->Set<float>(*(float*)p_instance);
 		}
 
-		IValue* Clone()const {
-			return new Value_wrap<float>(*(float*)p_instance, 1);
+		IValueData* Clone()const {
+			return new ValueData<float>(*(float*)p_instance, 1);
 		}
 
 		void Nagative()override {
 			*(float*)p_instance = -1 * (*(float*)p_instance);
 		}
 
-		virtual const IValue::get_value_base_t& get_value() const {
-			static const IValue::get_value_t<Value_wrap<float>> s;
+		virtual const IValueData::get_value_base_t& get_value() const {
+			static const IValueData::get_value_t<ValueData<float>> s;
 			return s;
 		}
-		virtual const IValue::get_ref_base_t& get_ref() const {
-			static const IValue::get_ref_t<Value_wrap<float>> s;
+		virtual const IValueData::get_ref_base_t& get_ref() const {
+			static const IValueData::get_ref_t<ValueData<float>> s;
 			return s;
 		}
-		virtual const IValue::set_value_base_t& set_value() const {
-			static const IValue::set_value_t<Value_wrap<float>> s;
+		virtual const IValueData::set_value_base_t& set_value() const {
+			static const IValueData::set_value_t<ValueData<float>> s;
 			return s;
 		}
 
-		virtual const IValue::eq_base_t& eq() const {
-			static const IValue::eq_t<Value_wrap<float>> s;
+		virtual const IValueData::eq_base_t& eq() const {
+			static const IValueData::eq_t<ValueData<float>> s;
 			return s;
 		}
-		virtual const IValue::gt_base_t& gt() const {
-			static const IValue::gt_t<Value_wrap<float>> s;
+		virtual const IValueData::gt_base_t& gt() const {
+			static const IValueData::gt_t<ValueData<float>> s;
 			return s;
 		}
-		virtual const IValue::ge_base_t& ge() const {
-			static const IValue::ge_t<Value_wrap<float>> s;
+		virtual const IValueData::ge_base_t& ge() const {
+			static const IValueData::ge_t<ValueData<float>> s;
 			return s;
 		}
 
@@ -1337,37 +1337,37 @@ class Value_wrap<float> :public IValue {
 	};
 
 template<>
-class Value_wrap<Type_Null> : public IValue {
+class ValueData<Type_Null> : public IValueData {
 	public:
-		Value_wrap(const Type_Null& v, const int ref) :IValue(ref) {
+		ValueData(const Type_Null& v, const int ref) :IValueData(ref) {
 			p_instance = new Type_Null(v);
 			assert(0);
 			//void型のオブジェクトが生成されています
 		}
-		Value_wrap(const int ref) :IValue(ref) {
+		ValueData(const int ref) :IValueData(ref) {
 			p_instance = new Type_Null();
 			//void型のオブジェクトが生成されています
 		}
-		~Value_wrap() override{
+		~ValueData() override{
 			delete ((Type_Null*)p_instance);
 		}
 
-		bool Eq(IValue* p_other)const override {
+		bool Eq(IValueData* p_other)const override {
 			return p_other->Equal(*(Type_Null*)p_instance);
 		}
-		bool Gt(IValue* p_other)const override {
+		bool Gt(IValueData* p_other)const override {
 			return !p_other->GreaterThan(*(Type_Null*)p_instance);
 		}
-		bool Ge(IValue* p_other)const override {
+		bool Ge(IValueData* p_other)const override {
 			return !p_other->GreaterEq(*(Type_Null*)p_instance);
 		}
 
-		void ValueCopy(IValue* p_other) const override {
+		void ValueCopy(IValueData* p_other) const override {
 			p_other->Set<Type_Null>(*(Type_Null*)p_instance);
 		}
 
-		IValue* Clone()const {
-			return new Value_wrap<Type_Null>(*(Type_Null*)p_instance, 1);
+		IValueData* Clone()const {
+			return new ValueData<Type_Null>(*(Type_Null*)p_instance, 1);
 		}
 
 		void Nagative()override {
@@ -1377,29 +1377,29 @@ class Value_wrap<Type_Null> : public IValue {
 		}
 
 
-		virtual const IValue::get_value_base_t& get_value() const {
-			static const IValue::get_value_t<Value_wrap<Type_Null>> s;
+		virtual const IValueData::get_value_base_t& get_value() const {
+			static const IValueData::get_value_t<ValueData<Type_Null>> s;
 			return s;
 		}
-		virtual const IValue::get_ref_base_t& get_ref() const {
-			static const IValue::get_ref_t<Value_wrap<Type_Null>> s;
+		virtual const IValueData::get_ref_base_t& get_ref() const {
+			static const IValueData::get_ref_t<ValueData<Type_Null>> s;
 			return s;
 		}
-		virtual const IValue::set_value_base_t& set_value() const {
-			static const IValue::set_value_t<Value_wrap<Type_Null>> s;
+		virtual const IValueData::set_value_base_t& set_value() const {
+			static const IValueData::set_value_t<ValueData<Type_Null>> s;
 			return s;
 		}
 
-		virtual const IValue::eq_base_t& eq() const {
-			static const IValue::eq_t<Value_wrap<Type_Null>> s;
+		virtual const IValueData::eq_base_t& eq() const {
+			static const IValueData::eq_t<ValueData<Type_Null>> s;
 			return s;
 		}
-		virtual const IValue::gt_base_t& gt() const {
-			static const IValue::gt_t<Value_wrap<Type_Null>> s;
+		virtual const IValueData::gt_base_t& gt() const {
+			static const IValueData::gt_t<ValueData<Type_Null>> s;
 			return s;
 		}
-		virtual const IValue::ge_base_t& ge() const {
-			static const IValue::ge_t<Value_wrap<Type_Null>> s;
+		virtual const IValueData::ge_base_t& ge() const {
+			static const IValueData::ge_t<ValueData<Type_Null>> s;
 			return s;
 		}
 
@@ -1433,34 +1433,34 @@ class Value_wrap<Type_Null> : public IValue {
 	};
 
 template<>
-class Value_wrap<std::string> : public IValue {
+class ValueData<std::string> : public IValueData {
 public:
-	Value_wrap(const std::string& v, const int ref) :IValue(ref) {
+	ValueData(const std::string& v, const int ref) :IValueData(ref) {
 		p_instance = new std::string(v);
 	}
-	Value_wrap(const int ref) :IValue(ref) {
+	ValueData(const int ref) :IValueData(ref) {
 		p_instance = new std::string();
 	}
-	~Value_wrap() override {
+	~ValueData() override {
 		delete ((std::string*)p_instance);
 	}
 
-	bool Eq(IValue* p_other)const override {
+	bool Eq(IValueData* p_other)const override {
 		return p_other->Equal(*(std::string*)p_instance);
 	}
-	bool Gt(IValue* p_other)const override {
+	bool Gt(IValueData* p_other)const override {
 		return !p_other->GreaterThan(*(std::string*)p_instance);
 	}
-	bool Ge(IValue* p_other)const override {
+	bool Ge(IValueData* p_other)const override {
 		return !p_other->GreaterEq(*(std::string*)p_instance);
 	}
 
-	void ValueCopy(IValue* p_other) const override {
+	void ValueCopy(IValueData* p_other) const override {
 		p_other->Set<std::string>(*(std::string*)p_instance);
 	}
 
-	IValue* Clone()const {
-		return new Value_wrap<std::string>(*(std::string*)p_instance, 1);
+	IValueData* Clone()const {
+		return new ValueData<std::string>(*(std::string*)p_instance, 1);
 	}
 
 	void Nagative()override {
@@ -1470,29 +1470,29 @@ public:
 	}
 
 
-	virtual const IValue::get_value_base_t& get_value() const {
-		static const IValue::get_value_t<Value_wrap<std::string>> s;
+	virtual const IValueData::get_value_base_t& get_value() const {
+		static const IValueData::get_value_t<ValueData<std::string>> s;
 		return s;
 	}
-	virtual const IValue::get_ref_base_t& get_ref() const {
-		static const IValue::get_ref_t<Value_wrap<std::string>> s;
+	virtual const IValueData::get_ref_base_t& get_ref() const {
+		static const IValueData::get_ref_t<ValueData<std::string>> s;
 		return s;
 	}
-	virtual const IValue::set_value_base_t& set_value() const {
-		static const IValue::set_value_t<Value_wrap<std::string>> s;
+	virtual const IValueData::set_value_base_t& set_value() const {
+		static const IValueData::set_value_t<ValueData<std::string>> s;
 		return s;
 	}
 
-	virtual const IValue::eq_base_t& eq() const {
-		static const IValue::eq_t<Value_wrap<std::string>> s;
+	virtual const IValueData::eq_base_t& eq() const {
+		static const IValueData::eq_t<ValueData<std::string>> s;
 		return s;
 	}
-	virtual const IValue::gt_base_t& gt() const {
-		static const IValue::gt_t<Value_wrap<std::string>> s;
+	virtual const IValueData::gt_base_t& gt() const {
+		static const IValueData::gt_t<ValueData<std::string>> s;
 		return s;
 	}
-	virtual const IValue::ge_base_t& ge() const {
-		static const IValue::ge_t<Value_wrap<std::string>> s;
+	virtual const IValueData::ge_base_t& ge() const {
+		static const IValueData::ge_t<ValueData<std::string>> s;
 		return s;
 	}
 
@@ -1535,28 +1535,28 @@ public:
 #endif // IMPL_BUTIENGINE
 };
 template<>
-class Value_wrap<ButiEngine::Vector2> : public IValue {
+class ValueData<ButiEngine::Vector2> : public IValueData {
 	public:
-		Value_wrap(const ButiEngine::Vector2& v, const int ref) :IValue(ref) {
+		ValueData(const ButiEngine::Vector2& v, const int ref) :IValueData(ref) {
 			p_instance = new ButiEngine::Vector2(v);
-			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 2);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 2);
 			ary_memberType = (int*)malloc(sizeof(int) * 2);
-			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->x, 1,true);
-			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->y, 1, true);
+			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->x, 1,true);
+			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->y, 1, true);
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 		}
-		Value_wrap(const int ref) :IValue(ref) {
+		ValueData(const int ref) :IValueData(ref) {
 			p_instance = new ButiEngine::Vector2();
-			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 2);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 2);
 			ary_memberType = (int*)malloc(sizeof(int) * 2);
-			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->x, 1, true);
-			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector2*)p_instance)->y, 1, true);
+			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->x, 1, true);
+			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->y, 1, true);
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 		}
 
-		~Value_wrap() {
+		~ValueData() {
 			for (int i = 0; i < 2; i++) {
 				ary_p_member[i]->release();
 			}
@@ -1581,33 +1581,33 @@ class Value_wrap<ButiEngine::Vector2> : public IValue {
 #endif // IMPL_BUTIENGINE
 	};
 template<>
-class Value_wrap<ButiEngine::Vector3> : public IValue {
+class ValueData<ButiEngine::Vector3> : public IValueData {
 	public:
-		Value_wrap(const ButiEngine::Vector3& v, const int ref) :IValue(ref) {
+		ValueData(const ButiEngine::Vector3& v, const int ref) :IValueData(ref) {
 			p_instance = new ButiEngine::Vector3(v);
 
-			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 3);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 3);
 			ary_memberType = (int*)malloc(sizeof(int) * 3);
 
-			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->x, 1, true);
-			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->y, 1, true);
-			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->z, 1, true);
+			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->x, 1, true);
+			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->y, 1, true);
+			ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->z, 1, true);
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 			ary_memberType[2] = TYPE_FLOAT;
 		}
-		Value_wrap(const int ref) :IValue(ref) {
+		ValueData(const int ref) :IValueData(ref) {
 			p_instance = new ButiEngine::Vector3();
-			ary_p_member = (IValue**)malloc(sizeof(IValue*) * 3);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 3);
 			ary_memberType = (int*)malloc(sizeof(int) * 3);
-			ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->x, 1, true);
-			ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->y, 1,true);
-			ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector3*)p_instance)->z, 1,true);
+			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->x, 1, true);
+			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->y, 1,true);
+			ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->z, 1,true);
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 			ary_memberType[2] = TYPE_FLOAT;
 		}
-		~Value_wrap() {
+		~ValueData() {
 			for (int i = 0; i < 3; i++) {
 				ary_p_member[i]->release();
 			}
@@ -1632,35 +1632,35 @@ class Value_wrap<ButiEngine::Vector3> : public IValue {
 #endif // IMPL_BUTIENGINE
 	};
 template<>
-class Value_wrap<ButiEngine::Vector4> : public IValue {
+class ValueData<ButiEngine::Vector4> : public IValueData {
 public:
-	Value_wrap(const ButiEngine::Vector4& v, const int ref) :IValue(ref) {
+	ValueData(const ButiEngine::Vector4& v, const int ref) :IValueData(ref) {
 		p_instance = new ButiEngine::Vector4(v);
-		ary_p_member = (IValue**)malloc(sizeof(IValue*) * 4);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 4);
 		ary_memberType = (int*)malloc(sizeof(int) * 4);
-		ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->x, 1, true);
-		ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->y, 1, true);
-		ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->z, 1, true);
-		ary_p_member[3] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->w, 1, true);
+		ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->x, 1, true);
+		ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->y, 1, true);
+		ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->z, 1, true);
+		ary_p_member[3] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->w, 1, true);
 		ary_memberType[0] = TYPE_FLOAT;
 		ary_memberType[1] = TYPE_FLOAT;
 		ary_memberType[2] = TYPE_FLOAT;
 		ary_memberType[3] = TYPE_FLOAT;
 	}
-	Value_wrap(const int ref) :IValue(ref) {
+	ValueData(const int ref) :IValueData(ref) {
 		p_instance = new ButiEngine::Vector4();
-		ary_p_member = (IValue**)malloc(sizeof(IValue*) * 4);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 4);
 		ary_memberType = (int*)malloc(sizeof(int) * 4);
-		ary_p_member[0] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->x, 1, true);
-		ary_p_member[1] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->y, 1, true);
-		ary_p_member[2] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->z, 1, true);
-		ary_p_member[3] = new Value_wrap<float>(&((ButiEngine::Vector4*)p_instance)->w, 1, true);
+		ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->x, 1, true);
+		ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->y, 1, true);
+		ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->z, 1, true);
+		ary_p_member[3] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->w, 1, true);
 		ary_memberType[0] = TYPE_FLOAT;
 		ary_memberType[1] = TYPE_FLOAT;
 		ary_memberType[2] = TYPE_FLOAT;
 		ary_memberType[3] = TYPE_FLOAT;
 	}
-	~Value_wrap() {
+	~ValueData() {
 		for (int i = 0; i < 4; i++) {
 			ary_p_member[i]->release();
 		}
@@ -1687,27 +1687,27 @@ public:
 };
 
 template<>
-class Value_wrap<ButiEngine::Matrix4x4> : public IValue {
+class ValueData<ButiEngine::Matrix4x4> : public IValueData {
 public:
-	Value_wrap(const ButiEngine::Matrix4x4& v, const int ref) :IValue(ref) {
+	ValueData(const ButiEngine::Matrix4x4& v, const int ref) :IValueData(ref) {
 		p_instance = new ButiEngine::Matrix4x4(v);
-		ary_p_member = (IValue**)malloc(sizeof(IValue*) * 16);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 16);
 		ary_memberType = (int*)malloc(sizeof(int) * 16);
 		for (int i = 0; i < 16; i++) {
-			ary_p_member[i] = new Value_wrap<float>(&((ButiEngine::Matrix4x4*)p_instance)->m[i/4][i%4], 1, true);
+			ary_p_member[i] = new ValueData<float>(&((ButiEngine::Matrix4x4*)p_instance)->m[i/4][i%4], 1, true);
 			ary_memberType[i] = TYPE_FLOAT;
 		}
 	}
-	Value_wrap(const int ref) :IValue(ref) {
+	ValueData(const int ref) :IValueData(ref) {
 		p_instance = new ButiEngine::Matrix4x4();
-		ary_p_member = (IValue**)malloc(sizeof(IValue*) * 16);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 16);
 		ary_memberType = (int*)malloc(sizeof(int) * 16);
 		for (int i = 0; i < 16; i++) {
-			ary_p_member[i] = new Value_wrap<float>(&((ButiEngine::Matrix4x4*)p_instance)->m[i / 4][i % 4], 1, true);
+			ary_p_member[i] = new ValueData<float>(&((ButiEngine::Matrix4x4*)p_instance)->m[i / 4][i % 4], 1, true);
 			ary_memberType[i] = TYPE_FLOAT;
 		}
 	}
-	~Value_wrap() {
+	~ValueData() {
 		for (int i = 0; i < 16; i++) {
 			ary_p_member[i]->release();
 		}
@@ -1721,58 +1721,58 @@ public:
 		}
 	}
 
-	bool Eq(IValue* p_other)const override {
+	bool Eq(IValueData* p_other)const override {
 		
 			return p_other->Equal(*(ButiEngine::Matrix4x4*)p_instance); 
 	}
-	bool Gt(IValue* p_other)const override {
+	bool Gt(IValueData* p_other)const override {
 
 		return false;
 	}
-	bool Ge(IValue* p_other)const override {
+	bool Ge(IValueData* p_other)const override {
 
 		return false;
 	}
-	void ValueCopy(IValue* p_other) const override {
+	void ValueCopy(IValueData* p_other) const override {
 
 		p_other->Set< ButiEngine::Matrix4x4 >(*(ButiEngine::Matrix4x4*)p_instance);
 	}
-	IValue* Clone()const {
+	IValueData* Clone()const {
 
-		return new Value_wrap< ButiEngine::Matrix4x4 >(*(ButiEngine::Matrix4x4*)p_instance, 1);
+		return new ValueData< ButiEngine::Matrix4x4 >(*(ButiEngine::Matrix4x4*)p_instance, 1);
 	}
 	void Nagative()override {
 
 		*(ButiEngine::Matrix4x4*)p_instance = - (*(ButiEngine::Matrix4x4*)p_instance);
 	}
-	virtual const IValue::get_value_base_t& get_value() const {
+	virtual const IValueData::get_value_base_t& get_value() const {
 
-		static const IValue::get_value_t<Value_wrap< ButiEngine::Matrix4x4 >> s;
+		static const IValueData::get_value_t<ValueData< ButiEngine::Matrix4x4 >> s;
 		return s;
 	}
-	virtual const IValue::get_ref_base_t& get_ref() const {
+	virtual const IValueData::get_ref_base_t& get_ref() const {
 
-		static const IValue::get_ref_t<Value_wrap< ButiEngine::Matrix4x4 >> s;
+		static const IValueData::get_ref_t<ValueData< ButiEngine::Matrix4x4 >> s;
 		return s;
 	}
-	virtual const IValue::set_value_base_t& set_value() const {
+	virtual const IValueData::set_value_base_t& set_value() const {
 
-		static const IValue::set_value_t<Value_wrap< ButiEngine::Matrix4x4 >> s;
+		static const IValueData::set_value_t<ValueData< ButiEngine::Matrix4x4 >> s;
 		return s;
 	}
-	virtual const IValue::eq_base_t& eq() const {
+	virtual const IValueData::eq_base_t& eq() const {
 
-		static const IValue::eq_t<Value_wrap< ButiEngine::Matrix4x4 >> s;
+		static const IValueData::eq_t<ValueData< ButiEngine::Matrix4x4 >> s;
 		return s;
 	}
-	virtual const IValue::gt_base_t& gt() const {
+	virtual const IValueData::gt_base_t& gt() const {
 
-		static const IValue::gt_t<Value_wrap< ButiEngine::Matrix4x4 >> s;
+		static const IValueData::gt_t<ValueData< ButiEngine::Matrix4x4 >> s;
 		return s;
 	}
-	virtual const IValue::ge_base_t& ge() const {
+	virtual const IValueData::ge_base_t& ge() const {
 
-		static const IValue::ge_t<Value_wrap< ButiEngine::Matrix4x4 >> s;
+		static const IValueData::ge_t<ValueData< ButiEngine::Matrix4x4 >> s;
 		return s;
 	}
 	template <typename U> U get_value_stub()const {
@@ -1828,12 +1828,12 @@ public:
 };
 
 template<typename T>
-class Value_Shared :public IValue {
+class Value_Shared :public IValueData {
 public:
-	Value_Shared(const int ref) :IValue(ref) {
+	Value_Shared(const int ref) :IValueData(ref) {
 		int i = 0;
 	}
-	Value_Shared(std::shared_ptr<T> arg_instance, const int ref) :IValue(ref) {
+	Value_Shared(std::shared_ptr<T> arg_instance, const int ref) :IValueData(ref) {
 		shp = arg_instance;
 	}
 
@@ -1848,45 +1848,45 @@ public:
 	}
 
 	//比較
-	bool Eq(IValue* p_other)const {return ((Value_Shared<T>*)p_other)->shp == shp;}
-	bool Gt(IValue* p_other)const {return false;}
-	bool Ge(IValue* p_other)const {return false;}
+	bool Eq(IValueData* p_other)const {return ((Value_Shared<T>*)p_other)->shp == shp;}
+	bool Gt(IValueData* p_other)const {return false;}
+	bool Ge(IValueData* p_other)const {return false;}
 
 	//値のコピー
-	void ValueCopy(IValue* p_other) const {
+	void ValueCopy(IValueData* p_other) const {
 		((Value_Shared<T>*)p_other)->shp = shp;
 	}
 
 	//変数そのもののコピー
-	IValue* Clone()const {
+	IValueData* Clone()const {
 		return new Value_Shared(shp, 1);
 	}
 
 	//単項マイナス
 	void Nagative() {}
 	const get_value_base_t& get_value() const {
-		static const IValue::get_value_t<Value_wrap<int>> s;
+		static const IValueData::get_value_t<ValueData<int>> s;
 		return s;
 
 	}
 	const get_ref_base_t& get_ref() const {
-		static const IValue::get_ref_t<Value_wrap<int>> s;
+		static const IValueData::get_ref_t<ValueData<int>> s;
 		return s;
 	}
 	const set_value_base_t& set_value() const {
-		static const IValue::set_value_t<Value_wrap<int>> s;
+		static const IValueData::set_value_t<ValueData<int>> s;
 		return s;
 	}
 	const eq_base_t& eq() const {
-		static const IValue::eq_t<Value_wrap<int>> s;
+		static const IValueData::eq_t<ValueData<int>> s;
 		return s;
 	}
 	const gt_base_t& gt() const {
-		static const IValue::gt_t<Value_wrap<int>> s;
+		static const IValueData::gt_t<ValueData<int>> s;
 		return s;
 	}
 	const ge_base_t& ge() const {
-		static const IValue::ge_t<Value_wrap<int>> s;
+		static const IValueData::ge_t<ValueData<int>> s;
 		return s;
 	}
 #ifdef IMPL_BUTIENGINE
@@ -1904,16 +1904,16 @@ private:
 
 
 template<typename T>
-IValue* CreateMemberInstance() {
-	return new Value_wrap<T>(1);
+IValueData* CreateMemberInstance() {
+	return new ValueData<T>(1);
 }
 template<typename T>
-IValue* CreateSharedMemberInstance() {
+IValueData* CreateSharedMemberInstance() {
 	return new Value_Shared<T>(1);
 }
 
 
-using CreateMemberInstanceFunction = IValue* (*)();
+using CreateMemberInstanceFunction = IValueData* (*)();
 
 template<typename T>
 void PushCreateMemberInstance() {
@@ -1937,7 +1937,7 @@ public:
 
 	template<typename T>
 	Value(const T v) {
-		v_ = new Value_wrap<T>(v, 1);
+		v_ = new ValueData<T>(v, 1);
 		valueType = TYPE_VOID;
 	}
 	template<typename T>
@@ -1951,11 +1951,11 @@ public:
 		valueType = TYPE_VOID;
 	}
 	Value(const Type_Enum,EnumTag* arg_enumTag) {
-		v_ = new Value_wrap<Type_Enum>(0, 1,arg_enumTag);
+		v_ = new ValueData<Type_Enum>(0, 1,arg_enumTag);
 		valueType = TYPE_VOID;
 	}
 	Value(const Type_Func, std::map<int,const std::string*>* arg_entryPointTable) {
-		v_ = new Value_wrap<Type_Func>(0, 1, arg_entryPointTable);
+		v_ = new ValueData<Type_Func>(0, 1, arg_entryPointTable);
 		valueType = TYPE_VOID;
 	}
 
@@ -1963,7 +1963,7 @@ public:
 	Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* arg_p_vec_scriptClassInfo);
 
 	//変数を指定して初期化
-	Value(IValue* p,const int type)
+	Value(IValueData* p,const int type)
 	{
 		v_ = p;
 		v_->addref();
@@ -2058,7 +2058,7 @@ public:
 	void SetType(const int arg_type) {
 		valueType = arg_type;
 	}
-	IValue* v_ = nullptr;
+	IValueData* v_ = nullptr;
 	int valueType;
 };
 
@@ -2162,12 +2162,12 @@ private:
 
 #ifdef IMPL_BUTIENGINE
 template<typename T>
-void  ButiScript::GlobalValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
+void  ButiScript::GlobalValueSaveObject<T>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::Value_wrap<T>(data, 1);
+	*arg_v = new ButiScript::ValueData<T>(data, 1);
 }
 template<typename T>
-void ButiScript::GlobalSharedPtrValueSaveObject<T>::RestoreValue(ButiScript::IValue** arg_v) const
+void ButiScript::GlobalSharedPtrValueSaveObject<T>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
 	*arg_v = new ButiScript::Value_Shared<T>(data, 1);
 }

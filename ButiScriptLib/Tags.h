@@ -187,7 +187,7 @@ namespace ButiScript {
 		using const_iter = std::map<std::string, ValueTag>::const_iterator;
 
 	public:
-		ValueTable(const int start_addr = 0) : addr_(start_addr), global_(false)
+		ValueTable(const int start_addr = 0) : addr(start_addr), global_(false)
 		{
 		}
 
@@ -199,9 +199,9 @@ namespace ButiScript {
 		bool Add(const int type, const std::string& name,const AccessModifier access, const int size = 1)
 		{
 			if (!variables_.count(name)) {
-				variables_.emplace(name, ValueTag(addr_, type, size, global_,access));
+				variables_.emplace(name, ValueTag(addr, type, size, global_,access));
 				vec_variableTypes.push_back(type);
-				addr_ += size;
+				addr += size;
 				return true;
 			}
 			return false;
@@ -221,11 +221,11 @@ namespace ButiScript {
 			return result.second;
 		}
 
-		int size() const { return addr_; }
+		int size() const { return addr; }
 		void Clear()
 		{
 			variables_.clear();
-			addr_ = 0;
+			addr = 0;
 		}
 
 		void Alloc(Compiler* arg_comp)const;
@@ -275,7 +275,7 @@ namespace ButiScript {
 	private:
 		std::map <std::string, ValueTag> variables_;
 		std::vector < int> vec_variableTypes;
-		int		addr_;
+		int		addr;
 		bool	global_;
 	};
 

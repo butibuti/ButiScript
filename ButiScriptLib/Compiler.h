@@ -14,21 +14,21 @@ namespace ButiScript {
 
 class VMCode {
 public:
-	VMCode(const unsigned char Op)
-		: size_(1), op_(Op)
+	VMCode(const unsigned char arg_operation)
+		: size(sizeof(unsigned char)), op(arg_operation)
 	{
 	}
-	VMCode(const unsigned char Op, const int arg)
-		: size_(5), op_(Op)
+	VMCode(const unsigned char arg_operation, const int arg_constValue)
+		: size(sizeof(unsigned char)+sizeof(int)), op(arg_operation)
 	{
 		constType = TYPE_INTEGER;
-		p_constValue = new int(arg);
+		p_constValue = new int(arg_constValue);
 	}
-	VMCode(const unsigned char Op, const float arg)
-		: size_(5), op_(Op)
+	VMCode(const unsigned char arg_operation, const float arg_constValue)
+		: size(sizeof(unsigned char) + sizeof(float)), op(arg_operation)
 	{
 		constType = TYPE_FLOAT;
-		p_constValue = new float(arg);
+		p_constValue = new float(arg_constValue);
 	}
 
 	~VMCode() {
@@ -39,15 +39,12 @@ public:
 			delete p_constValue;
 		}
 	}
-	static VMCode GetCode(const char Op, const int arg1, const int arg2) {
-
-	}
 
 	unsigned char* Get(unsigned char* p) const
 	{
-		if (op_ != VM_MAXCOMMAND) {			// ラベルのダミーコマンド
-			*p++ = op_;
-			if (size_ > 1) {
+		if (op != VM_MAXCOMMAND) {			// ラベルのダミーコマンド
+			*p++ = op;
+			if (size > 1) {
 				if (p_constValue) {
 					switch (constType)
 					{
@@ -86,8 +83,8 @@ public:
 	}
 
 public:
-	unsigned char size_;
-	unsigned char op_;
+	unsigned char size;
+	unsigned char op;
 	int constType;
 	
 	
@@ -125,8 +122,8 @@ using NameSpace_t = std::shared_ptr<NameSpace>;
 
 class Label {
 public:
-	Label(const int index)
-		: index_(index), pos_(0)
+	Label(const int arg_index)
+		: index(arg_index), pos(0)
 	{
 	}
 	~Label()
@@ -134,8 +131,8 @@ public:
 	}
 
 public:
-	int index_;
-	int pos_;
+	int index;
+	int pos;
 };
 
 
@@ -184,7 +181,7 @@ public:
 	int InputCompiledData(const std::string& arg_filePath,ButiScript::CompiledData& arg_ref_data);
 
 #ifdef	_DEBUG
-	void debug_dump();
+	void DebugDump();
 #endif
 
 
@@ -195,13 +192,13 @@ public:
 		return types.GetSystemType();
 	}
 
-	void ValueDefine(const int type, const std::vector<Node_t>& node,const AccessModifier arg_access);
-	void FunctionDefine(const int type, const std::string& name, const std::vector<int>& args);
-	void AddFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access, FunctionTable* arg_funcTable = nullptr);
-	void AddRamda(const int type, const std::vector<ArgDefine>& args, Block_t block,FunctionTable* arg_funcTable = nullptr);
-	void RegistFunction(const int type, const std::string& name, const std::vector<ArgDefine>& args, Block_t block, const AccessModifier access,FunctionTable* arg_funcTable=nullptr);
-	void RegistRamda(const int type, const std::vector<ArgDefine>& args,FunctionTable* arg_functionTable);
-	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
+	void ValueDefine(const int arg_type, const std::vector<Node_t>& node,const AccessModifier arg_access);
+	void FunctionDefine(const int arg_type, const std::string& arg_name, const std::vector<int>& arg_vec_argIndex);
+	void AddFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access, FunctionTable* arg_funcTable = nullptr);
+	void AddRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,FunctionTable* arg_funcTable = nullptr);
+	void RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable=nullptr);
+	void RegistRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefine,FunctionTable* arg_functionTable);
+	void RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value);
 	void RegistEnumType(const std::string& arg_typeName);
 	const EnumTag* GetEnumTag(const std::string& arg_name) const {
 		return enums.FindType(arg_name);
@@ -211,11 +208,11 @@ public:
 	}
 
 	// 内側のブロックから変数検索
-	const ValueTag* GetValueTag(const std::string& name) const
+	const ValueTag* GetValueTag(const std::string& arg_name) const
 	{
 		int size = (int)variables.size();
 		for (int i = size - 1; i >= 0; i--) {
-			const ValueTag* tag = variables[i].find(name);
+			const ValueTag* tag = variables[i].find(arg_name);
 			if (tag)
 				return tag;
 		}
@@ -223,19 +220,19 @@ public:
 	}
 
 	// 関数の検索
-	const FunctionTag* GetFunctionTag(const std::string& name, const std::vector<int>& args, const bool isStrict) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<int>& arg_vec_argIndex, const bool arg_isStrict) const
 	{
-		if (isStrict) {
-			return functions.Find_strict(name, args);
+		if (arg_isStrict) {
+			return functions.Find_strict(arg_name, arg_vec_argIndex);
 		}
 		else {
-			return functions.Find(name, args);
+			return functions.Find(arg_name, arg_vec_argIndex);
 		}
 	}
 	// 関数の検索
-	const FunctionTag* GetFunctionTag(const std::string& name) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name) const
 	{
-		return functions.Find(name);
+		return functions.Find(arg_name);
 	}
 
 	//型の検索
@@ -250,21 +247,21 @@ public:
 		return arg_funcTypePair.first;
 	}
 	//関数型の検索
-	int GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int retType);
-	int GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int retType);
+	int GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int arg_retType);
+	int GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int arg_retType);
 
-	TypeTag* GetType(const int index) {
-		return types.GetType(index);
+	TypeTag* GetType(const int arg_index) {
+		return types.GetType(arg_index);
 	}
-	const TypeTag* GetType(const int index)const {
-		return types.GetType(index);
+	const TypeTag* GetType(const int arg_index)const {
+		return types.GetType(arg_index);
 	}
 
-	TypeTag* GetType(const std::string& index) {
-		return types.GetType(index);
+	TypeTag* GetType(const std::string& arg_name) {
+		return types.GetType(arg_name);
 	}
-	const TypeTag* GetType(const std::string& index)const {
-		return types.GetType(index);
+	const TypeTag* GetType(const std::string& arg_name)const {
+		return types.GetType(arg_name);
 	}
 	int GetSystemTypeSize()const {
 		return types.GetSystemTypeSize();
@@ -303,38 +300,38 @@ public:
 	void AllocStack();
 	int LabelSetting();
 
-	int SetBreakLabel(const int label)
+	int SetBreakLabel(const int arg_label)
 	{
 		int old_index = break_index;
-		break_index = label;
+		break_index = arg_label;
 		return old_index;
 	}
 	bool JmpBreakLabel();
 
 	int MakeLabel();
 
-	void AddValue(const int type, const std::string& name, Node_t node, const AccessModifier access);
+	void AddValue(const int arg_typeIndex, const std::string& arg_name, Node_t arg_node, const AccessModifier arg_access);
 
-	void SetLabel(const int label);
+	void SetLabel(const int arg_label);
 
-	void PushString(const std::string& name);
+	void PushString(const std::string& arg_str);
 	int GetFunctionType() const { return current_function_type; }
-	bool CreateData(ButiScript::CompiledData& Data,const int code_size);
+	bool CreateData(ButiScript::CompiledData& arg_ref_data,const int arg_codeSize);
 
 	void PushNameSpace(NameSpace_t arg_namespace);
 	void PopNameSpace();
 	// Error handling.
-	void error(const std::string& m);
+	void error(const std::string& arg_message);
 
 	void ClearStatement();
-	std::string GetTypeName(const int type) const;
+	std::string GetTypeName(const int arg_type) const;
 
 	void RamdaCountReset();
 	int GetRamdaCount()const { return ramdaCount; }
 	void PushAnalyzeFunction(Function_t arg_function);
 	void PushAnalyzeClass(Class_t arg_class);
 	void ClearNameSpace();
-	void FunctionAnalyze();
+	void Analyze();
 	void IncreaseRamdaCount();
 private:
 
