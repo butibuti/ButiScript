@@ -329,6 +329,8 @@ public:
 	void RamdaCountReset();
 	int GetRamdaCount()const { return ramdaCount; }
 	void PushAnalyzeFunction(Function_t arg_function);
+	void PopAnalyzeFunction();
+	void PushSubFunction(Function_t arg_function);
 	void PushAnalyzeClass(Class_t arg_class);
 	void ClearNameSpace();
 	void Analyze();
@@ -338,6 +340,7 @@ private:
 	FunctionTable functions;
 	TypeTable types;
 	EnumTable enums;
+	std::vector<Function_t> vec_parentFunction;
 	std::vector< TypeTag*> vec_thisType ;
 	std::vector<ValueTable> variables;
 	std::vector<VMCode> statement;

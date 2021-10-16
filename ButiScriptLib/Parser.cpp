@@ -372,13 +372,14 @@ struct make_namespace_func {
 
 // 関数の返り値設定
 struct setFunctionType_func {
-	template <typename Ty1, typename Ty2>
+	template <typename Ty1, typename Ty2,typename Ty3>
 	struct result { using type = Function_t; };
 
-	template <typename Ty1, typename Ty2>
-	Function_t operator()(Ty1& arg_decl, Ty2 arg_type) const
+	template <typename Ty1, typename Ty2,typename Ty3>
+	Function_t operator()(Ty1& arg_decl, Ty2 arg_type,Ty3 arg_compiler) const
 	{
 		arg_decl->set_type(arg_type);
+		arg_compiler->PushAnalyzeFunction(arg_decl);
 		return arg_decl;
 	}
 };
@@ -478,7 +479,7 @@ struct analyze_func {
 		return arg_decl->Analyze(arg_compiler);
 	}
 };
-// 関数、ラムダ最終登録
+// 関数、ラムダ登録
 struct pushConpiler_func {
 	template <typename Ty1, typename Ty2>
 	struct result { using type = int; };
@@ -487,6 +488,17 @@ struct pushConpiler_func {
 	int operator()(Ty1 arg_decl, Ty2 arg_compiler) const
 	{
 		return arg_decl->PushCompiler(arg_compiler);
+	}
+};
+// ブロック内関数登録
+struct pushConpiler_sub_func {
+	template <typename Ty1, typename Ty2>
+	struct result { using type = int; };
+
+	template <typename Ty1, typename Ty2>
+	int operator()(Ty1 arg_decl, Ty2 arg_compiler) const
+	{
+		return arg_decl->PushCompiler_sub(arg_compiler);
 	}
 };
 //ブロック作成
@@ -531,6 +543,7 @@ const phoenix::function<BindFunctionObject::specificType_func>  specificType =		
 const phoenix::function<BindFunctionObject::specificFunctionType_func>  specificFunctionType =		BindFunctionObject::specificFunctionType_func();
 const phoenix::function<BindFunctionObject::accessModifier_func>  specificAccessModifier =			BindFunctionObject::accessModifier_func();
 const phoenix::function<BindFunctionObject::analyze_func>  analyze =								BindFunctionObject::analyze_func();
+const phoenix::function<BindFunctionObject::pushConpiler_sub_func>  pushCompiler_sub =				BindFunctionObject::pushConpiler_sub_func();
 const phoenix::function<BindFunctionObject::pushConpiler_func>  pushCompiler =						BindFunctionObject::pushConpiler_func();
 const phoenix::function<BindFunctionObject::regist_func>  regist =									BindFunctionObject::regist_func();
 const phoenix::function<BindFunctionObject::registMethod_func>  registMethod =						BindFunctionObject::registMethod_func();
@@ -871,7 +884,6 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> '}'
 				| func_node >> ';'
 				| callMember >> ';'
-				|ramda
 				| function
 				| block
 				;
@@ -1117,7 +1129,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			// 関数定義
 			function = identifier[function.node = make_function(arg1)]>>!(identifier[function.node = make_functionWithAccess(function.node, arg1)])
 				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
-				':' >> type[function.node = set_functionType(function.node, arg1)]
+				':' >> type[function.node = set_functionType(function.node, arg1,self.compiler)]
 				>> block[function.node = push_back(function.node, arg1)];
 
 			//クラスのメンバー定義
@@ -1168,8 +1180,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
 				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
-				| ramda[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.compiler))]
-				| function[statement.statement = make_statement1(NOP_STATE, pushCompiler(arg1, self.compiler))]
+				| function[statement.statement = make_statement1(NOP_STATE, pushCompiler_sub(arg1, self.compiler))]
 				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;

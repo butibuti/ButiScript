@@ -62,6 +62,8 @@ namespace ButiScript {
 	class ValueTag;
 	class Node;
 	class NodeList;
+	class Function;
+	using Function_t = std::shared_ptr<Function>;
 	using Node_t = std::shared_ptr<Node>;
 	using NodeList_t = std::shared_ptr<NodeList>;
 
@@ -579,39 +581,44 @@ namespace ButiScript {
 	class Function :public std::enable_shared_from_this<Function>{
 	public:
 		Function(const std::string& arg_name)
-			: name_(arg_name)
+			: name(arg_name)
 		{
 			accessType = AccessModifier::Public;
 		}
 		Function(std::shared_ptr<Function> arg_access,const std::string& arg_name)
-			: name_(arg_name)
+			: name(arg_name)
 		{
-			accessType = StringToAccessModifier(arg_access->name_);
+			accessType = StringToAccessModifier(arg_access->name);
 		}
 
 		void Add(ArgDefine arg_argDefine)
 		{
-			args_.push_back(arg_argDefine);
+			args.push_back(arg_argDefine);
 		}
 
 		void Add(Block_t arg_block)
 		{
-			block_ = arg_block;
+			block = arg_block;
 		}
 		int PushCompiler(Compiler* arg_compiler);
+		int PushCompiler_sub(Compiler* arg_compiler);
 		virtual int Analyze(Compiler* arg_compiler,FunctionTable* arg_p_funcTable =nullptr);
 		void set_type(const int arg_type) {
 			valueType = arg_type;
 		}
+		void AddSubFunction(Function_t);
+		const std::string& GetName()const {
+			return name;
+		}
 	protected:
 		Function(){}
 		int valueType;
-		std::string name_;
-		std::vector<ArgDefine> args_;
+		std::string name;
+		std::vector<ArgDefine> args;
 		AccessModifier accessType=AccessModifier::Public;
-		Block_t block_;
+		Block_t block;
+		std::vector<Function_t> vec_subFunctions;
 	};
-	using Function_t = std::shared_ptr<Function>;
 
 	class Ramda :public Function {
 	public:
@@ -624,7 +631,7 @@ namespace ButiScript {
 	class Class:public std::enable_shared_from_this<Class> {
 	public:
 		Class(const std::string& arg_name)
-			: name_(arg_name)
+			: name(arg_name)
 		{
 		}
 		int Analyze(Compiler* arg_compiler);
@@ -635,7 +642,7 @@ namespace ButiScript {
 	private:
 		std::map < std::string, std::pair< int,AccessModifier>> map_values;
 		std::vector<Function_t> vec_methods;
-		std::string name_;
+		std::string name;
 	};
 	using Class_t = std::shared_ptr<Class>;
 

@@ -1,52 +1,19 @@
 
-Function(function:(i: int ,f:float)=>void):void{
-	function(2,2.5);
-}
-
-namespace Functions {
-
-Function_withArg(i:int,f:float):void{
-	print("Function_withArg Called!\n");
-	print("int:"+ToString(i)+",float:"+ToString(f)+"\n");
-}
-
-Function_withArg2(i:int,f:float):void{
-	print("Function_withArg2 Called!\n");
-	print("int:"+ToString(i)+",float:"+ToString(f)+"\n");
-}
-}
-
-class TestClass{
-	
-	Method():void{
-		print("Method Called!\n");
-
-		FunctionInMethod():void{
-			print("FunctionInMethod Called!\n");
-
+TestFunction():void{
+	SubFunction();
+	SubFunction():void{
+		print("SubFunction Called!!\n");
+		
+		SubSubFunction():void{
+			print("SubSubFunction Called!!\n");
 		}
-
 	}
+
 }
-
-
-var funcObject:(i: int ,f:float)=>void;
 
 main():int
 {
-	var test:TestClass;
-	test.Method();
-	funcObject=(i:int,f:float)=>void{
-		FunctionInMethod();
-	};
-	Function(funcObject);
-	funcObject=Functions::Function_withArg2;
 
-	SubFunction():int{
-		print("SubFunction Called\n");
-		return 0;
-	}
-	SubFunction();
-	Function(funcObject);
+	TestFunction();
 	return 0;
 }

@@ -1474,15 +1474,15 @@ struct set_arg {
 };
 
 // 関数呼び出し
-int Node::Call(Compiler* arg_compiler, const std::string& name, const std::vector<Node_t>* args) const
+int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* vec_argNodes) const
 {
 	std::string  functionName;
 	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
 
 	std::vector<int> argTypes;
-	if (args) {
-		auto end = args->end();
-		for (auto itr = args->begin(); itr != end; itr++) {
+	if (vec_argNodes) {
+		auto end = vec_argNodes->end();
+		for (auto itr = vec_argNodes->begin(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -1493,10 +1493,10 @@ int Node::Call(Compiler* arg_compiler, const std::string& name, const std::vecto
 	while (!functionTag)
 	{
 		if (currentSerchNameSpace) {
-			functionName = currentSerchNameSpace->GetGlobalNameString() + name;
+			functionName = currentSerchNameSpace->GetGlobalNameString() + arg_name;
 		}
 		else {
-			functionName = name;
+			functionName = arg_name;
 		}
 		
 		functionTag = arg_compiler->GetFunctionTag(functionName, argTypes, true);
@@ -1515,8 +1515,8 @@ int Node::Call(Compiler* arg_compiler, const std::string& name, const std::vecto
 
 	if (functionTag ) {
 		// 引数をpush
-		if (args && functionTag->ArgSize() == argSize) {
-			std::for_each(args->begin(), args->end(), set_arg(arg_compiler, functionTag));
+		if (vec_argNodes && functionTag->ArgSize() == argSize) {
+			std::for_each(vec_argNodes->begin(), vec_argNodes->end(), set_arg(arg_compiler, functionTag));
 		}
 
 		// 引数の数をpush
@@ -1532,14 +1532,14 @@ int Node::Call(Compiler* arg_compiler, const std::string& name, const std::vecto
 		return functionTag->valueType;
 	}
 	//関数型変数からの呼び出し
-	auto valueTag = GetValueTag(name, arg_compiler);
+	auto valueTag = GetValueTag(arg_name, arg_compiler);
 	if (valueTag) {
 		auto valueType=arg_compiler->GetType(valueTag->valueType);
 		if (valueType->IsFunctionObjectType()) {
 			// 引数をpush
-			if (args && valueType->GetFunctionObjectArgSize() == argSize) {
+			if (vec_argNodes && valueType->GetFunctionObjectArgSize() == argSize) {
 				auto valueArgTypes = valueType->GetFunctionObjectArgment();
-				std::for_each(args->begin(), args->end(), set_arg(arg_compiler,&valueArgTypes ));
+				std::for_each(vec_argNodes->begin(), vec_argNodes->end(), set_arg(arg_compiler,&valueArgTypes ));
 			}
 
 			// 引数の数をpush
@@ -1583,9 +1583,9 @@ int Node_function::Pop(Compiler* arg_compiler) const
 }
 
 // 文ノード生成
-Statement_t Statement::make_statement(const int vec_state)
+Statement_t Statement::make_statement(const int arg_vec_state)
 {
-	switch (vec_state) {
+	switch (arg_vec_state) {
 	case NOP_STATE:
 		return Statement_t(new Statement_nop());
 
@@ -1616,36 +1616,36 @@ Statement_t Statement::make_statement(const int vec_state)
 	return Statement_t(new Statement_nop());
 }
 
-Statement_t Statement::make_statement(const int vec_state, const int)
+Statement_t Statement::make_statement(const int arg_vec_state, const int)
 {
-	return make_statement(vec_state);
+	return make_statement(arg_vec_state);
 }
 
-Statement_t Statement::make_statement(const int vec_state, Node_t node)
+Statement_t Statement::make_statement(const int arg_vec_state, Node_t arg_node)
 {
-	switch (vec_state) {
+	switch (arg_vec_state) {
 	case ASSIGN_STATE:
-		return Statement_t(new Statement_assign(node));
+		return Statement_t(new Statement_assign(arg_node));
 
 	case CASE_STATE:
-		return Statement_t(new Statement_case(node));
+		return Statement_t(new Statement_case(arg_node));
 
 	case SWITCH_STATE:
-		return Statement_t(new Statement_switch(node));
+		return Statement_t(new Statement_switch(arg_node));
 
 	case CALL_STATE:
-		return Statement_t(new ccall_statement(node));
+		return Statement_t(new ccall_statement(arg_node));
 	}
 
 	std::cerr << "内部エラー：文ノードミス" << std::endl;
 	return Statement_t(new Statement_nop());
 }
 
-Statement_t Statement::make_statement(const int vec_state, Block_t block)
+Statement_t Statement::make_statement(const int arg_vec_state, Block_t arg_block)
 {
-	switch (vec_state) {
+	switch (arg_vec_state) {
 	case BLOCK_STATE:
-		return Statement_t(new Statement_block(block));
+		return Statement_t(new Statement_block(arg_block));
 	}
 
 	std::cerr << "内部エラー：文ノードミス" << std::endl;
@@ -1708,7 +1708,7 @@ int Statement_case::Analyze(Compiler* arg_compiler)
 }
 
 // case文の前処理
-int Statement_case::case_Analyze(Compiler* arg_compiler, int* default_label)
+int Statement_case::case_Analyze(Compiler* arg_compiler, int* arg_default_label)
 {
 	label_ = arg_compiler->MakeLabel();
 	if (vec_node->Op() != OP_INT)
@@ -1726,10 +1726,10 @@ int Statement_default::Analyze(Compiler* arg_compiler)
 }
 
 // default文の前処理
-int Statement_default::case_Analyze(Compiler* arg_compiler, int* default_label)
+int Statement_default::case_Analyze(Compiler* arg_compiler, int* arg_default_label)
 {
 	label_ = arg_compiler->MakeLabel();
-	*default_label = label_;
+	*arg_default_label = label_;
 
 	return 0;
 }
@@ -2203,9 +2203,9 @@ void Enum::SetIdentifer(const std::string& arg_name)
 {
 	map_identifer.emplace(arg_name, map_identifer.size());
 }
-void Enum::SetIdentifer(const std::string& arg_name, const int value)
+void Enum::SetIdentifer(const std::string& arg_name, const int arg_value)
 {
-	map_identifer.emplace(arg_name, value);
+	map_identifer.emplace(arg_name, arg_value);
 }
 int Enum::Analyze(Compiler* arg_compiler)
 {
@@ -2219,8 +2219,8 @@ int Enum::Analyze(Compiler* arg_compiler)
 }
 int Class::Analyze(Compiler* arg_compiler)
 {
-	arg_compiler->AnalyzeScriptType(name_, map_values);
-	auto typeTag = arg_compiler->GetType(name_);
+	arg_compiler->AnalyzeScriptType(name, map_values);
+	auto typeTag = arg_compiler->GetType(name);
 	auto methodTable = &typeTag->methods;
 
 	arg_compiler->PushCurrentThisType(typeTag);
@@ -2239,7 +2239,7 @@ int Class::PushCompiler(Compiler* arg_compiler)
 }
 int Class::Regist(Compiler* arg_compiler)
 {
-	arg_compiler->RegistScriptType(name_);
+	arg_compiler->RegistScriptType(name);
 	return 0;
 }
 void Class::RegistMethod(Function_t method, Compiler* arg_compiler)
@@ -2255,8 +2255,20 @@ void Class::SetValue(const std::string& arg_name, const int arg_type, const Acce
 
 int Function::PushCompiler(Compiler* arg_compiler)
 {
-	arg_compiler->PushAnalyzeFunction(shared_from_this());
-	arg_compiler->RegistFunction(valueType, name_, args_, block_, accessType);
+	arg_compiler->PopAnalyzeFunction();
+	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
+
+	for (auto itr = vec_subFunctions.begin(), end = vec_subFunctions.end(); itr != end; itr++) {
+		//(*itr)->PushCompiler(arg_compiler);
+	}
+	return 0;
+}
+
+int Function::PushCompiler_sub(Compiler* arg_compiler)
+{
+	arg_compiler->PopAnalyzeFunction();
+	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
+	arg_compiler->PushSubFunction(shared_from_this());
 	return 0;
 }
 
@@ -2264,32 +2276,38 @@ int Function::PushCompiler(Compiler* arg_compiler)
 int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 
-	arg_compiler->AddFunction(valueType, name_, args_, block_, accessType, arg_p_funcTable);
+	arg_compiler->AddFunction(valueType, name, args, block, accessType, arg_p_funcTable);
 
 	return 0;
 }
 
+void Function::AddSubFunction(Function_t arg_function)
+{
+	vec_subFunctions.push_back(arg_function);
+}
 
-Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args)
+
+Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_vec_argDefine)
 {
 	valueType = arg_type;
-	args_ = arg_args;
+	args = arg_vec_argDefine;
 }
 int Ramda::PushCompiler(Compiler* arg_compiler)
 {
 	auto typeTag = arg_compiler->GetType(valueType);
 	auto ramdaCount = arg_compiler->GetRamdaCount();
-	name_= "@ramda:" + std::to_string(ramdaCount);
-	arg_compiler->RegistRamda(typeTag->GetFunctionObjectReturnType(), args_,nullptr);
+	name= "@ramda:" + std::to_string(ramdaCount);
+	arg_compiler->RegistRamda(typeTag->GetFunctionObjectReturnType(), args,nullptr);
 	arg_compiler->IncreaseRamdaCount();
-	arg_compiler->PushAnalyzeFunction(shared_from_this());
+	arg_compiler->PopAnalyzeFunction();
+	//arg_compiler->PushAnalyzeFunction(shared_from_this());
 	return ramdaCount;
 }
 int Ramda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 	auto typeTag = arg_compiler->GetType(valueType);
 	auto ramdaCount = arg_compiler->GetRamdaCount();
-	arg_compiler->AddRamda (typeTag->GetFunctionObjectReturnType(), args_, block_, arg_p_funcTable);
+	arg_compiler->AddRamda (typeTag->GetFunctionObjectReturnType(), args, block, arg_p_funcTable);
 	return ramdaCount;
 }
 }

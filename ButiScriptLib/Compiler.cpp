@@ -138,7 +138,22 @@ void ButiScript::Compiler::RamdaCountReset()
 
 void ButiScript::Compiler::PushAnalyzeFunction(Function_t arg_function)
 {
+	PushNameSpace(std::make_shared<NameSpace>(arg_function->GetName()));
 	currentNameSpace->PushFunction(arg_function);
+	vec_parentFunction.push_back(arg_function);
+}
+
+void ButiScript::Compiler::PopAnalyzeFunction()
+{
+	if (vec_parentFunction.size()) {
+		vec_parentFunction.erase(vec_parentFunction.end() - 1);
+		PopNameSpace();
+	}
+}
+
+void ButiScript::Compiler::PushSubFunction(Function_t arg_function)
+{
+	vec_parentFunction.back()->AddSubFunction(arg_function);
 }
 
 void ButiScript::Compiler::PushAnalyzeClass(Class_t arg_class)
@@ -154,11 +169,13 @@ void ButiScript::Compiler::ClearNameSpace()
 
 void ButiScript::Compiler::Analyze()
 {
+	auto nameSpaceBuffer = currentNameSpace;
 	for (auto namespaceItr = vec_namespaces.begin(), namespaceEnd = vec_namespaces.end(); namespaceItr != namespaceEnd; namespaceItr++) {
-		currentNameSpace = *namespaceItr;
+		currentNameSpace = (*namespaceItr);
 		(*namespaceItr)->AnalyzeClasses(this);
 		(*namespaceItr)->AnalyzeFunctions(this);
 	}
+	currentNameSpace = nameSpaceBuffer;
 }
 
 void ButiScript::Compiler::IncreaseRamdaCount()
@@ -263,7 +280,7 @@ struct add_value {
 void ButiScript::Compiler::AddFunction(int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,const AccessModifier arg_access, FunctionTable* arg_funcTable )
 {
 
-	std::string functionName = currentNameSpace->GetGlobalNameString()+ arg_name;
+	std::string functionName=currentNameSpace->GetParent()? currentNameSpace->GetParent()->GetGlobalNameString()+arg_name:  currentNameSpace->GetGlobalNameString() + arg_name;
 	FunctionTable* p_functable = arg_funcTable ? arg_funcTable : &functions;
 
 
