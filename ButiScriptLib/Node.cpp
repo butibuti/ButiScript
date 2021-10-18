@@ -46,29 +46,6 @@ const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& left_) {
 	}
 	return enumType;
 }
-const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& left_) {
-
-	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
-	std::string serchName;
-	const  FunctionTag* tag = nullptr;
-	while (!tag)
-	{
-		serchName = shp_namespace->GetGlobalNameString() + left_.GetString();
-
-		tag = arg_compiler->GetFunctionTag(serchName);
-
-		if (tag) {
-			break;
-		}
-
-		shp_namespace = shp_namespace->GetParent();
-		if (!shp_namespace) {
-			break;
-		}
-
-	}
-	return tag;
-}
 const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::string& str) {
 
 	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
@@ -93,6 +70,9 @@ const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::stri
 	return tag;
 }
 
+const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& left_) {
+	return GetFunctionType(arg_compiler, left_.GetString());
+}
 // •Ï”ƒm[ƒh‚ğ¶¬
 Node_t Node::make_node(const int Op, const std::string& str, const Compiler* arg_compiler)
 {
@@ -2287,27 +2267,32 @@ void Function::AddSubFunction(Function_t arg_function)
 }
 
 
-Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_vec_argDefine)
+Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_vec_argDefine, Compiler* arg_compiler)
 {
 	valueType = arg_type;
 	args = arg_vec_argDefine;
+
+	ramdaIndex = arg_compiler->GetRamdaCount();
+	arg_compiler->IncreaseRamdaCount();
+	name = "@ramda:" + std::to_string(ramdaIndex);
 }
 int Ramda::PushCompiler(Compiler* arg_compiler)
 {
+
 	auto typeTag = arg_compiler->GetType(valueType);
-	auto ramdaCount = arg_compiler->GetRamdaCount();
-	name= "@ramda:" + std::to_string(ramdaCount);
-	arg_compiler->RegistRamda(typeTag->GetFunctionObjectReturnType(), args,nullptr);
-	arg_compiler->IncreaseRamdaCount();
+
 	arg_compiler->PopAnalyzeFunction();
-	//arg_compiler->PushAnalyzeFunction(shared_from_this());
-	return ramdaCount;
+	arg_compiler->RegistRamda(typeTag->GetFunctionObjectReturnType(),name, args, nullptr);
+
+	arg_compiler->PushSubFunction(shared_from_this());
+
+	return ramdaIndex;
 }
 int Ramda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 	auto typeTag = arg_compiler->GetType(valueType);
-	auto ramdaCount = arg_compiler->GetRamdaCount();
-	arg_compiler->AddRamda (typeTag->GetFunctionObjectReturnType(), args, block, arg_p_funcTable);
-	return ramdaCount;
+
+	arg_compiler->AddRamda (typeTag->GetFunctionObjectReturnType(),name, args, block, arg_p_funcTable);
+	return ramdaIndex;
 }
 }

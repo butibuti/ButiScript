@@ -1,19 +1,27 @@
-
-TestFunction():void{
-	SubFunction();
-	SubFunction():void{
-		print("SubFunction Called!!\n");
-		
-		SubSubFunction():void{
-			print("SubSubFunction Called!!\n");
-		}
-	}
-
+/*ラムダ式内部でラムダ式を使えない問題アリ*/
+SubFunction():void{
+	print("SubFunction!!!\n");
+	var subFunctionObj:()=>void;
+	subFunctionObj=()=>void{
+		print("SubRamdaFunction!!!\n");
+		var subsubFunctionObj:(i: int)=>void;
+		subsubFunctionObj=(i:int)=>void{
+			print("SubRamdaFunction!!!\n");
+			};
+		subsubFunctionObj(0);
+	};
+	subFunctionObj();
+	
 }
-
 main():int
 {
 
-	TestFunction();
+	var function:()=>void;
+	
+	function=SubFunction;
+	
+	function();
+
 	return 0;
+	
 }

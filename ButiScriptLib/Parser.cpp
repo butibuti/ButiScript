@@ -266,13 +266,15 @@ struct make_function_func {
 };
 // ƒ‰ƒ€ƒ_®‚Ì¶¬
 struct make_ramda_func {
-	template < typename Ty1>
+	template < typename Ty1,typename Ty2>
 	struct result { using type = Ramda_t; };
 
-	template <typename Ty1>
-	Ramda_t operator()(const Ty1 arg_typeIndex) const
+	template <typename Ty1,typename Ty2>
+	Ramda_t operator()(const Ty1 arg_typeIndex,Ty2 arg_compiler ) const
 	{
-		return Ramda_t(new Ramda(arg_typeIndex.first, arg_typeIndex.second));
+		auto output = Ramda_t(new Ramda(arg_typeIndex.first, arg_typeIndex.second,arg_compiler));
+		arg_compiler->PushAnalyzeFunction(output);
+		return output;
 	}
 };
 // ŠÖ”‚Ì¶¬
@@ -1108,7 +1110,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			//ŠÖ”Œ^–¼
 			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
 
-			ramda = funcType[ramda.node = make_ramda(arg1)] >> block[ramda.node=push_back(ramda.node,arg1)];
+			ramda = funcType[ramda.node = make_ramda(arg1,self.compiler)] >> block[ramda.node=push_back(ramda.node,arg1)];
 
 			ramda_prime = ramda[ramda_prime.node= ramda_node(pushCompiler(arg1, self.compiler),self.compiler)];
 

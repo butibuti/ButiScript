@@ -352,10 +352,9 @@ void ButiScript::Compiler::AddFunction(int arg_type, const std::string& arg_name
 
 }
 
-void ButiScript::Compiler::AddRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, FunctionTable* arg_funcTable)
+void ButiScript::Compiler::AddRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, FunctionTable* arg_funcTable)
 {
-	AddFunction(arg_type, "@ramda:" + std::to_string(ramdaCount), arg_vec_argDefine, arg_block, AccessModifier::Public, arg_funcTable);
-	IncreaseRamdaCount();
+	AddFunction(arg_type, arg_name, arg_vec_argDefine, arg_block, AccessModifier::Public, arg_funcTable);
 }
 
 void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
@@ -384,9 +383,9 @@ void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string&
 	}
 }
 
-void ButiScript::Compiler::RegistRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
+void ButiScript::Compiler::RegistRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
 {
-	RegistFunction(arg_type, "@ramda:" + std::to_string(ramdaCount), arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
+	RegistFunction(arg_type,arg_name , arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
 
 }
 

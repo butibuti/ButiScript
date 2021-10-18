@@ -622,9 +622,11 @@ namespace ButiScript {
 
 	class Ramda :public Function {
 	public:
-		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args);
+		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
 		int PushCompiler(Compiler* arg_compiler);
 		int Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
+	private:
+		int ramdaIndex;
 	};
 	using Ramda_t = std::shared_ptr<Ramda>;
 

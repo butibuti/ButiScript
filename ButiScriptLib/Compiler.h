@@ -195,9 +195,9 @@ public:
 	void ValueDefine(const int arg_type, const std::vector<Node_t>& node,const AccessModifier arg_access);
 	void FunctionDefine(const int arg_type, const std::string& arg_name, const std::vector<int>& arg_vec_argIndex);
 	void AddFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access, FunctionTable* arg_funcTable = nullptr);
-	void AddRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,FunctionTable* arg_funcTable = nullptr);
+	void AddRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,FunctionTable* arg_funcTable = nullptr);
 	void RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable=nullptr);
-	void RegistRamda(const int arg_type, const std::vector<ArgDefine>& arg_vec_argDefine,FunctionTable* arg_functionTable);
+	void RegistRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine,FunctionTable* arg_functionTable);
 	void RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value);
 	void RegistEnumType(const std::string& arg_typeName);
 	const EnumTag* GetEnumTag(const std::string& arg_name) const {
