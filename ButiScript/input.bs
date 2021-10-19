@@ -1,27 +1,16 @@
-/*ラムダ式内部でラムダ式を使えない問題アリ*/
-SubFunction():void{
-	print("SubFunction!!!\n");
-	var subFunctionObj:()=>void;
-	subFunctionObj=()=>void{
-		print("SubRamdaFunction!!!\n");
-		var subsubFunctionObj:(i: int)=>void;
-		subsubFunctionObj=(i:int)=>void{
-			print("SubRamdaFunction!!!\n");
-			};
-		subsubFunctionObj(0);
-	};
-	subFunctionObj();
-	
+class Test{
+	Method():void{
+		print("Method!\n");	
+	}
+
 }
+
 main():int
 {
 
-	var function:()=>void;
+	var test:Test;
 	
-	function=SubFunction;
-	
-	function();
-
+	test.Method();
 	return 0;
 	
 }
