@@ -7,13 +7,13 @@
 #undef VMCODE_T
 #undef VMCODE_T0
 
-#define	VMCODE0(code_, name_)	code_,
-#define	VMCODE1(code_, name_)	code_,
-#define	VMCODE2(code_, name_)	code_,
-#define	VMCODE3(code_, name_)	code_,
-#define	VMCODE_T(code_, name_)	code_,
-#define	VMCODE_T0(code_, name_, Type_)	code_,
-#define	VMCODE_TU(code_, name_)			code_,		
-#define	VMCODE_TU0(code_, name_, Type_T, Type_U)code_,
+#define	VMCODE0(code_, name)	code_,
+#define	VMCODE1(code_, name)	code_,
+#define	VMCODE2(code_, name)	code_,
+#define	VMCODE3(code_, name)	code_,
+#define	VMCODE_T(code_, name)	code_,
+#define	VMCODE_T0(code_, name, Type_)	code_,
+#define	VMCODE_TU(code_, name)			code_,		
+#define	VMCODE_TU0(code_, name, Type_T, Type_U)code_,
 
 #include"VM_code.h"

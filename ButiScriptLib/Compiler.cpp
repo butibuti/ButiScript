@@ -271,8 +271,8 @@ struct add_value {
 
 	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
 	{
-		if (!values.add_arg(arg_argDefine.type(), arg_argDefine.name(), addr)) {
-			p_compiler->error("à¯êî " + arg_argDefine.name() + " ÇÕä˘Ç…ìoò^Ç≥ÇÍÇƒÇ¢Ç‹Ç∑ÅB");
+		if (!values.add_arg(arg_argDefine.GetType(), arg_argDefine.GetName(), addr)) {
+			p_compiler->error("à¯êî " + arg_argDefine.GetName() + " ÇÕä˘Ç…ìoò^Ç≥ÇÍÇƒÇ¢Ç‹Ç∑ÅB");
 		}
 	}
 };
@@ -411,7 +411,7 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int arg_retType)
 {
 	std::vector<int> vec_argTypes;
-	std::for_each(arg_vec_argmentTypes.begin(), arg_vec_argmentTypes.end(), [&](const ArgDefine& itr)->void {vec_argTypes.push_back(itr.type()); });
+	std::for_each(arg_vec_argmentTypes.begin(), arg_vec_argmentTypes.end(), [&](const ArgDefine& itr)->void {vec_argTypes.push_back(itr.GetType()); });
 	
 	return GetfunctionTypeIndex(vec_argTypes,arg_retType);
 }
@@ -575,7 +575,7 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, in
 		if (func->IsSystem()) {
 			continue;
 		}
-		arg_ref_data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index_].pos);
+		arg_ref_data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index].pos);
 	}
 	
 	for (auto itr = arg_ref_data.map_entryPoints.begin(), end = arg_ref_data.map_entryPoints.end(); itr != end;itr++) {
@@ -666,13 +666,13 @@ void ButiScript::Compiler::DebugDump()
 	size_t size = statement.size();
 	for (size_t i = 0; i < size; i++) {
 		message += std::to_string(std::setw(6)) + std::to_string(pos) + ": " + op_name[statement[i].op_];
-		if (statement[i].size_ > 1) {
+		if (statement[i].currentSize > 1) {
 			message += ", " + std::to_string(statement[i].GetConstValue<int>());
 		}
 		message += '\n';
 
 		if (statement[i].op_ != VM_MAXCOMMAND) {
-			pos += statement[i].size_;
+			pos += statement[i].currentSize;
 		}
 	}
 	ButiEngine::GUI::Console(message);

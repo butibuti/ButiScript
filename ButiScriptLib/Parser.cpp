@@ -223,7 +223,7 @@ struct arg_ref_func {
 	template <typename Ty1>
 	ArgDefine operator()(Ty1& arg_decl) const
 	{
-		arg_decl.set_ref();
+		arg_decl.SetRef();
 		return arg_decl;
 	}
 };
@@ -236,7 +236,7 @@ struct arg_name_func {
 	template <typename Ty1, typename Ty2>
 	ArgDefine operator()(Ty1& arg_decl, const Ty2& arg_name) const
 	{
-		arg_decl.set_name(arg_name);
+		arg_decl.SetName(arg_name);
 		return arg_decl;
 	}
 };

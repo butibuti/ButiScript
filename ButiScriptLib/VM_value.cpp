@@ -63,7 +63,7 @@ void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_
 #endif
 ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
 	
-	v_ = GetScriptIValue(arg_info,p_vec_scriptClassInfo);
+	valueData = GetScriptIValue(arg_info,p_vec_scriptClassInfo);
 	valueType = arg_info.GetTypeIndex();
 }
 

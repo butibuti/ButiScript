@@ -23,14 +23,14 @@ bool CanTypeCast(const int arg_left, const int arg_right) {
 }
 
 
-const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& left_) {
+const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& arg_leftNode) {
 
 	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string serchName;
 	const  EnumTag* enumType = nullptr;
 	while (!enumType)
 	{
-		serchName = shp_namespace->GetGlobalNameString() + left_.GetString();
+		serchName = shp_namespace->GetGlobalNameString() + arg_leftNode.GetString();
 
 		enumType = arg_compiler->GetEnumTag(serchName);
 
@@ -46,14 +46,14 @@ const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& left_) {
 	}
 	return enumType;
 }
-const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::string& str) {
+const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::string& arg_str) {
 
 	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string serchName;
 	const  FunctionTag* tag = nullptr;
 	while (!tag)
 	{
-		serchName = shp_namespace->GetGlobalNameString() + str;
+		serchName = shp_namespace->GetGlobalNameString() + arg_str;
 
 		tag = arg_compiler->GetFunctionTag(serchName);
 
@@ -70,52 +70,52 @@ const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::stri
 	return tag;
 }
 
-const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& left_) {
-	return GetFunctionType(arg_compiler, left_.GetString());
+const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& leftNode) {
+	return GetFunctionType(arg_compiler, leftNode.GetString());
 }
 // 変数ノードを生成
-Node_t Node::make_node(const int Op, const std::string& str, const Compiler* arg_compiler)
+Node_t Node::make_node(const int arg_op, const std::string& arg_str, const Compiler* arg_compiler)
 {
-	if (Op == OP_IDENTIFIER)
-		return Node_t(new Node_value(str));
+	if (arg_op == OP_IDENTIFIER)
+		return Node_t(new Node_value(arg_str));
 
-	if (Op == OP_STRING) {
-		size_t pos = str.rfind('\"');
+	if (arg_op == OP_STRING) {
+		size_t pos = arg_str.rfind('\"');
 		if (pos != std::string::npos)
-			return Node_t(new Node(Op, str.substr(0, pos)));
+			return Node_t(new Node(arg_op, arg_str.substr(0, pos)));
 	}
-	return Node_t(new Node(Op, str));
+	return Node_t(new Node(arg_op, arg_str));
 }
 
 // 単項演算子のノードを生成
-Node_t Node::make_node(const int Op, Node_t left, const Compiler* arg_compiler)
+Node_t Node::make_node(const int arg_op, Node_t arg_left, const Compiler* arg_compiler)
 {
-	if (Op == OP_METHOD) {
-		return Node_t(new Node_Method(Op, left->GetLeft(), left->GetString()));
+	if (arg_op == OP_METHOD) {
+		return Node_t(new Node_Method(arg_op, arg_left->GetLeft(), arg_left->GetString()));
 	}
-	switch (Op) {
+	switch (arg_op) {
 	case OP_NEG:
-		if (left->op == OP_INT) {			// 定数演算を計算する
-			left->number_ = -left->number_;
-			return left;
+		if (arg_left->op == OP_INT) {			// 定数演算を計算する
+			arg_left->num_int = -arg_left->num_int;
+			return arg_left;
 		}
 		break;
 	}
-	return Node_t(new Node(Op, left));
+	return Node_t(new Node(arg_op, arg_left));
 }
 
 
-Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberName,const Compiler* arg_compiler)
+Node_t Node::make_node(const int arg_op, Node_t arg_left, const std::string arg_memberName,const Compiler* arg_compiler)
 {
-	if (GetEnumType(arg_compiler,*left)) {
-		return  Node_t(new Node_enum( left, arg_memberName));
+	if (GetEnumType(arg_compiler,*arg_left)) {
+		return  Node_t(new Node_enum( arg_left, arg_memberName));
 	}
 
-	if (Op == OP_MEMBER) {
-		return Node_t(new Node_Member(Op, left, arg_memberName));
+	if (arg_op == OP_MEMBER) {
+		return Node_t(new Node_Member(arg_op, arg_left, arg_memberName));
 	}
-	else if (Op == OP_METHOD) {
-		return Node_t(new Node_Method(Op, left, arg_memberName));
+	else if (arg_op == OP_METHOD) {
+		return Node_t(new Node_Method(arg_op, arg_left, arg_memberName));
 	}
 	return Node_t();
 }
@@ -124,400 +124,400 @@ Node_t Node::make_node(const int Op, Node_t left, const std::string arg_memberNa
 
 
 // 二項演算子のノードを生成
-Node_t Node::make_node(const int Op, Node_t left, Node_t right)
+Node_t Node::make_node(const int arg_op, Node_t arg_left, Node_t arg_right)
 {
 	// 配列ノードは、leftノードのleft_メンバに加える
-	if (Op == OP_ARRAY) {
-		left->left_ = right;
-		return left;
+	if (arg_op == OP_ARRAY) {
+		arg_left->leftNode = arg_right;
+		return arg_left;
 	}
-	auto leftOp = left->op;
-	auto rightOp = right->op;
+	auto leftOp = arg_left->op;
+	auto rightOp = arg_right->op;
 
 	// 定数演算を計算する
 	if (leftOp == OP_INT && rightOp == OP_INT) {
-		switch (Op) {
+		switch (arg_op) {
 		case OP_LOGAND:
-			left->number_ = (left->number_ && right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int && arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_LOGOR:
-			left->number_ = (left->number_ || right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int || arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_EQ:
-			left->number_ = (left->number_ == right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int == arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_NE:
-			left->number_ = (left->number_ != right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int != arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_GT:
-			left->number_ = (left->number_ > right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int > arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_GE:
-			left->number_ = (left->number_ >= right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int >= arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_LT:
-			left->number_ = (left->number_ < right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int < arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_LE:
-			left->number_ = (left->number_ <= right->number_) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int <= arg_right->num_int) ? 1 : 0;
 			break;
 
 		case OP_AND:
-			left->number_ &= right->number_;
+			arg_left->num_int &= arg_right->num_int;
 			break;
 
 		case OP_OR:
-			left->number_ |= right->number_;
+			arg_left->num_int |= arg_right->num_int;
 			break;
 
 		case OP_LSHIFT:
-			left->number_ <<= right->number_;
+			arg_left->num_int <<= arg_right->num_int;
 			break;
 
 		case OP_RSHIFT:
-			left->number_ >>= right->number_;
+			arg_left->num_int >>= arg_right->num_int;
 			break;
 
 		case OP_SUB:
-			left->number_ -= right->number_;
+			arg_left->num_int -= arg_right->num_int;
 			break;
 
 		case OP_ADD:
-			left->number_ += right->number_;
+			arg_left->num_int += arg_right->num_int;
 			break;
 
 		case OP_MUL:
-			left->number_ *= right->number_;
+			arg_left->num_int *= arg_right->num_int;
 			break;
 
 		case OP_DIV:
-			if (right->number_ == 0) {
+			if (arg_right->num_int == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->number_ /= right->number_;
+				arg_left->num_int /= arg_right->num_int;
 			}
 			break;
 
 		case OP_MOD:
-			if (right->number_ == 0) {
+			if (arg_right->num_int == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->number_ %= right->number_;
+				arg_left->num_int %= arg_right->num_int;
 			}
 			break;
 
 		default:
-			return Node_t(new Node(Op, left, right));
+			return Node_t(new Node(arg_op, arg_left, arg_right));
 		}
-		return left;
+		return arg_left;
 	}
 
 	// 定数浮動小数演算を計算する
 
 	if (leftOp == OP_FLOAT && rightOp == OP_FLOAT) {
-		switch (Op) {
+		switch (arg_op) {
 		case OP_LOGAND:
-			left->num_float =(float)( (left->num_float && right->num_float) ? 1 : 0);
+			arg_left->num_float =(float)( (arg_left->num_float && arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_LOGOR:
-			left->num_float = (float)((left->num_float || right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float || arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_EQ:
-			left->num_float = (float)((left->num_float == right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float == arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_NE:
-			left->num_float = (float)((left->num_float != right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float != arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_GT:
-			left->num_float = (float)((left->num_float > right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float > arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_GE:
-			left->num_float = (float)((left->num_float >= right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float >= arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_LT:
-			left->num_float = (float)((left->num_float < right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float < arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_LE:
-			left->num_float = (float)((left->num_float <= right->num_float) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float <= arg_right->num_float) ? 1 : 0);
 			break;
 
 		case OP_AND:
-			left->num_float =(float)( (int)left->num_float & (int)right->num_float);
+			arg_left->num_float =(float)( (int)arg_left->num_float & (int)arg_right->num_float);
 			break;
 
 		case OP_OR:
-			left->num_float = (float)((int)left->num_float | (int)right->num_float);
+			arg_left->num_float = (float)((int)arg_left->num_float | (int)arg_right->num_float);
 			break;
 
 		case OP_LSHIFT:
-			left->num_float = (float)((int)left->num_float << (int)right->num_float);
+			arg_left->num_float = (float)((int)arg_left->num_float << (int)arg_right->num_float);
 			break;
 
 		case OP_RSHIFT:
-			left->num_float = (float)((int)left->num_float >> (int)right->num_float);
+			arg_left->num_float = (float)((int)arg_left->num_float >> (int)arg_right->num_float);
 			break;
 
 		case OP_SUB:
-			left->num_float -= right->num_float;
+			arg_left->num_float -= arg_right->num_float;
 			break;
 
 		case OP_ADD:
-			left->num_float += right->num_float;
+			arg_left->num_float += arg_right->num_float;
 			break;
 
 		case OP_MUL:
-			left->num_float *= right->num_float;
+			arg_left->num_float *= arg_right->num_float;
 			break;
 
 		case OP_DIV:
-			if (right->num_float == 0) {
+			if (arg_right->num_float == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->num_float /= right->num_float;
+				arg_left->num_float /= arg_right->num_float;
 			}
 			break;
 
 		case OP_MOD:
-			if (right->num_float == 0) {
+			if (arg_right->num_float == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->num_float = (float)((int)left->num_float % (int)right->num_float);
+				arg_left->num_float = (float)((int)arg_left->num_float % (int)arg_right->num_float);
 			}
 			break;
 
 		default:
-			return Node_t(new Node(Op, left, right));
+			return Node_t(new Node(arg_op, arg_left, arg_right));
 		}
-		return left;
+		return arg_left;
 	}
 
 
 	if (leftOp == OP_INT&& rightOp == OP_FLOAT) {
-		switch (Op) {
+		switch (arg_op) {
 		case OP_LOGAND:
-			left->number_ = (left->number_ && (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int && (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_LOGOR:
-			left->number_ = (left->number_ || (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int || (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_EQ:
-			left->number_ = (left->number_ == (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int == (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_NE:
-			left->number_ = (left->number_ != (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int != (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_GT:
-			left->number_ = (left->number_ > (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int > (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_GE:
-			left->number_ = (left->number_ >= (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int >= (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_LT:
-			left->number_ = (left->number_ < (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int < (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_LE:
-			left->number_ = (left->number_ <= (int)right->num_float) ? 1 : 0;
+			arg_left->num_int = (arg_left->num_int <= (int)arg_right->num_float) ? 1 : 0;
 			break;
 
 		case OP_AND:
-			left->number_ = (int)left->number_ & (int)(int)right->num_float;
+			arg_left->num_int = (int)arg_left->num_int & (int)(int)arg_right->num_float;
 			break;
 
 		case OP_OR:
-			left->number_ = (int)left->number_ | (int)(int)right->num_float;
+			arg_left->num_int = (int)arg_left->num_int | (int)(int)arg_right->num_float;
 			break;
 
 		case OP_LSHIFT:
-			left->number_ = (int)left->number_ << (int)(int)right->num_float;
+			arg_left->num_int = (int)arg_left->num_int << (int)(int)arg_right->num_float;
 			break;
 
 		case OP_RSHIFT:
-			left->number_ = (int)left->number_ >> (int)(int)right->num_float;
+			arg_left->num_int = (int)arg_left->num_int >> (int)(int)arg_right->num_float;
 			break;
 
 		case OP_SUB:
-			left->number_ -= (int)right->num_float;
+			arg_left->num_int -= (int)arg_right->num_float;
 			break;
 
 		case OP_ADD:
-			left->number_ += (int)right->num_float;
+			arg_left->num_int += (int)arg_right->num_float;
 			break;
 
 		case OP_MUL:
-			left->number_ *= (int)right->num_float;
+			arg_left->num_int *= (int)arg_right->num_float;
 			break;
 
 		case OP_DIV:
-			if ((int)right->num_float == 0) {
+			if ((int)arg_right->num_float == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->number_ /= (int)right->num_float;
+				arg_left->num_int /= (int)arg_right->num_float;
 			}
 			break;
 
 		case OP_MOD:
-			if ((int)right->num_float == 0) {
+			if ((int)arg_right->num_float == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->number_ = (int)left->number_ % (int)right->num_float;
+				arg_left->num_int = (int)arg_left->num_int % (int)arg_right->num_float;
 			}
 			break;
 
 		default:
-			return Node_t(new Node(Op, left, right));
+			return Node_t(new Node(arg_op, arg_left, arg_right));
 		}
-		return left;
+		return arg_left;
 	}
 
 	if (leftOp == OP_FLOAT && rightOp == OP_INT) {
-		switch (Op) {
+		switch (arg_op) {
 		case OP_LOGAND:
-			left->num_float =(float)( (left->num_float && right->number_) ? 1 : 0);
+			arg_left->num_float =(float)( (arg_left->num_float && arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_LOGOR:
-			left->num_float = (float)((left->num_float || right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float || arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_EQ:
-			left->num_float = (float)((left->num_float == right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float == arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_NE:
-			left->num_float = (float)((left->num_float != right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float != arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_GT:
-			left->num_float = (float)((left->num_float > right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float > arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_GE:
-			left->num_float = (float)((left->num_float >= right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float >= arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_LT:
-			left->num_float = (float)((left->num_float < right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float < arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_LE:
-			left->num_float = (float)((left->num_float <= right->number_) ? 1 : 0);
+			arg_left->num_float = (float)((arg_left->num_float <= arg_right->num_int) ? 1 : 0);
 			break;
 
 		case OP_AND:
-			left->num_float = (float)((int)left->num_float & (int)right->number_);
+			arg_left->num_float = (float)((int)arg_left->num_float & (int)arg_right->num_int);
 			break;
 
 		case OP_OR:
-			left->num_float = (float)((int)left->num_float | (int)right->number_);
+			arg_left->num_float = (float)((int)arg_left->num_float | (int)arg_right->num_int);
 			break;
 
 		case OP_LSHIFT:
-			left->num_float = (float)((int)left->num_float << (int)right->number_);
+			arg_left->num_float = (float)((int)arg_left->num_float << (int)arg_right->num_int);
 			break;
 
 		case OP_RSHIFT:
-			left->num_float = (float)((int)left->num_float >> (int)right->number_);
+			arg_left->num_float = (float)((int)arg_left->num_float >> (int)arg_right->num_int);
 			break;
 
 		case OP_SUB:
-			left->num_float -= right->number_;
+			arg_left->num_float -= arg_right->num_int;
 			break;
 
 		case OP_ADD:
-			left->num_float += right->number_;
+			arg_left->num_float += arg_right->num_int;
 			break;
 
 		case OP_MUL:
-			left->num_float *= right->number_;
+			arg_left->num_float *= arg_right->num_int;
 			break;
 
 		case OP_DIV:
-			if (right->number_ == 0) {
+			if (arg_right->num_int == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->num_float /= right->number_;
+				arg_left->num_float /= arg_right->num_int;
 			}
 			break;
 
 		case OP_MOD:
-			if (right->number_ == 0) {
+			if (arg_right->num_int == 0) {
 				std::cerr << "定数計算を0で除算しました。" << std::endl;
 			}
 			else {
-				left->num_float = (float)((int)left->num_float % (int)right->number_);
+				arg_left->num_float = (float)((int)arg_left->num_float % (int)arg_right->num_int);
 			}
 			break;
 
 		default:
-			return Node_t(new Node(Op, left, right));
+			return Node_t(new Node(arg_op, arg_left, arg_right));
 		}
-		return left;
+		return arg_left;
 	}
 
 	// 文字列同士の定数計算
 	if (leftOp == OP_STRING && rightOp == OP_STRING) {
-		if (Op == OP_ADD) {
-			left->string_ += right->string_;
-			return left;
+		if (arg_op == OP_ADD) {
+			arg_left->strData += arg_right->strData;
+			return arg_left;
 		}
 
 		int Value = 0;
-		switch (Op) {
+		switch (arg_op) {
 		case OP_EQ:
-			if (left->string_ == right->string_)
+			if (arg_left->strData == arg_right->strData)
 				Value = 1;
 			break;
 
 		case OP_NE:
-			if (left->string_ != right->string_)
+			if (arg_left->strData != arg_right->strData)
 				Value = 1;
 			break;
 
 		case OP_GT:
-			if (left->string_ > right->string_)
+			if (arg_left->strData > arg_right->strData)
 				Value = 1;
 			break;
 
 		case OP_GE:
-			if (left->string_ >= right->string_)
+			if (arg_left->strData >= arg_right->strData)
 				Value = 1;
 			break;
 
 		case OP_LT:
-			if (left->string_ < right->string_)
+			if (arg_left->strData < arg_right->strData)
 				Value = 1;
 			break;
 
 		case OP_LE:
-			if (left->string_ <= right->string_)
+			if (arg_left->strData <= arg_right->strData)
 				Value = 1;
 			break;
 
@@ -527,23 +527,23 @@ Node_t Node::make_node(const int Op, Node_t left, Node_t right)
 		}
 		return Node_t(new Node(OP_INT, Value));
 	}
-	return Node_t(new Node(Op, left, right));
+	return Node_t(new Node(arg_op, arg_left, arg_right));
 }
 
 // 関数ノードの生成
-Node_t Node::make_node(const int Op, Node_t left, NodeList_t right)
+Node_t Node::make_node(const int arg_op, Node_t arg_left, NodeList_t arg_right)
 {
-	if (Op == OP_METHOD) {
-		return  Node_t(new Node_Method(Op, left, right));
+	if (arg_op == OP_METHOD) {
+		return  Node_t(new Node_Method(arg_op, arg_left, arg_right));
 	}
-	return Node_t(new Node_function(Op, left, right));
+	return Node_t(new Node_function(arg_op, arg_left, arg_right));
 }
 
 
 
 template <typename T>
-bool SetDefaultOperator(const int op, Compiler* arg_compiler) {
-	switch (op) {
+bool SetDefaultOperator(const int arg_op, Compiler* arg_compiler) {
+	switch (arg_op) {
 	case OP_ADD:
 		arg_compiler->OpAdd<T>();
 		break;
@@ -568,8 +568,8 @@ bool SetDefaultOperator(const int op, Compiler* arg_compiler) {
 	return true;
 }
 template <typename T, typename U>
-bool SetDeferentTypeMulOperator(const int op, Compiler* arg_compiler) {
-	if (op == OP_MUL) {
+bool SetDeferentTypeMulOperator(const int arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_MUL) {
 
 		arg_compiler->OpMul<T, U>();
 		return true;
@@ -577,8 +577,8 @@ bool SetDeferentTypeMulOperator(const int op, Compiler* arg_compiler) {
 	return false;
 }
 template <typename T, typename U>
-bool SetDeferentTypeDivOperator(const int op, Compiler* arg_compiler) {
-	if (op == OP_DIV) {
+bool SetDeferentTypeDivOperator(const int arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_DIV) {
 
 		arg_compiler->OpDiv<T, U>();
 		return true;
@@ -587,15 +587,15 @@ bool SetDeferentTypeDivOperator(const int op, Compiler* arg_compiler) {
 }
 
 template <typename T>
-bool SetModOperator(const int op, Compiler* arg_compiler) {
-	if (op == OP_MOD) {
+bool SetModOperator(const int arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_MOD) {
 		arg_compiler->OpMod<T>();
 		return true;
 	}
 	return false;
 }
-bool SetLogicalOperator(const int op, Compiler* arg_compiler) {
-	switch (op) {
+bool SetLogicalOperator(const int arg_op, Compiler* arg_compiler) {
+	switch (arg_op) {
 	case OP_LOGAND:
 		arg_compiler->OpLogAnd();
 		break;
@@ -654,8 +654,8 @@ bool SetLogicalOperator(const int op, Compiler* arg_compiler) {
 
 
 template <typename T>
-bool SetDefaultAssignOperator(const int op, Compiler* arg_compiler) {
-	switch (op) {
+bool SetDefaultAssignOperator(const int arg_op, Compiler* arg_compiler) {
+	switch (arg_op) {
 	case OP_ADD_ASSIGN:
 		arg_compiler->OpAdd<T>();
 		break;
@@ -683,8 +683,8 @@ bool SetDefaultAssignOperator(const int op, Compiler* arg_compiler) {
 	return true;
 }
 template <typename T, typename U>
-bool SetDeferentTypeMulAssignOperator(const int op, Compiler* arg_compiler) {
-	if (op == OP_MUL_ASSIGN) {
+bool SetDeferentTypeMulAssignOperator(const int arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_MUL_ASSIGN) {
 
 		arg_compiler->OpMul<T, U>();
 		return true;
@@ -692,8 +692,8 @@ bool SetDeferentTypeMulAssignOperator(const int op, Compiler* arg_compiler) {
 	return false;
 }
 template <typename T, typename U>
-bool SetDeferentTypeDivAssignOperator(const int op, Compiler* arg_compiler) {
-	if (op == OP_DIV_ASSIGN) {
+bool SetDeferentTypeDivAssignOperator(const int arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_DIV_ASSIGN) {
 
 		arg_compiler->OpDiv<T, U>();
 		return true;
@@ -702,15 +702,15 @@ bool SetDeferentTypeDivAssignOperator(const int op, Compiler* arg_compiler) {
 }
 
 template <typename T>
-bool SetModAssignOperator(const int op, Compiler* arg_compiler) {
-	if (op == OP_MOD_ASSIGN) {
+bool SetModAssignOperator(const int arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_MOD_ASSIGN) {
 		arg_compiler->OpMod<T>();
 		return true;
 	}
 	return false;
 }
-bool SetLogicalAssignOperator(const int op, Compiler* arg_compiler) {
-	switch (op) {
+bool SetLogicalAssignOperator(const int arg_op, Compiler* arg_compiler) {
+	switch (arg_op) {
 	case OP_AND_ASSIGN:
 		arg_compiler->OpAnd();
 		break;
@@ -744,28 +744,28 @@ int Node::Push(Compiler* arg_compiler) const{
 
 	switch (op) {
 	case OP_NEG:
-		if (left_->Push(arg_compiler) == TYPE_STRING)
+		if (leftNode->Push(arg_compiler) == TYPE_STRING)
 			arg_compiler->error("文字列には到底許されない計算です。");
 		arg_compiler->OpNeg();
 		return TYPE_INTEGER;
 
 	case OP_INT:
-		arg_compiler->PushConstInt(number_);
+		arg_compiler->PushConstInt(num_int);
 		return TYPE_INTEGER;
 	case OP_FLOAT:
 		arg_compiler->PushConstFloat(num_float);
 		return TYPE_FLOAT;
 
 	case OP_STRING:
-		arg_compiler->PushString(string_);
+		arg_compiler->PushString(strData);
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return Call(arg_compiler, string_, nullptr);
+		return Call(arg_compiler, strData, nullptr);
 	}
 
-	int left_type = left_->Push(arg_compiler);
-	int right_type = right_->Push(arg_compiler);
+	int left_type = leftNode->Push(arg_compiler);
+	int right_type = rightNode->Push(arg_compiler);
 
 	//右辺若しくは左辺が未定義関数
 	if (left_type <= -1 || right_type <= -1) {
@@ -950,7 +950,7 @@ int Node::GetType(Compiler* arg_compiler)const {
 
 	switch (op) {
 	case OP_NEG:
-		if (left_->GetType(arg_compiler) == TYPE_STRING)
+		if (leftNode->GetType(arg_compiler) == TYPE_STRING)
 			arg_compiler->error("文字列には許されない計算です。");
 		return TYPE_INTEGER;
 
@@ -963,7 +963,7 @@ int Node::GetType(Compiler* arg_compiler)const {
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return GetCallType(arg_compiler, string_, nullptr);
+		return GetCallType(arg_compiler, strData, nullptr);
 	}
 	if (op == OP_IDENTIFIER) {
 		const ValueTag* valueTag = GetValueTag(arg_compiler);
@@ -977,11 +977,11 @@ int Node::GetType(Compiler* arg_compiler)const {
 			return 0;
 		}
 
-		return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+		return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
 
 	}
-	int left_type = left_->GetType(arg_compiler);
-	int right_type = right_->GetType(arg_compiler);
+	int left_type = leftNode->GetType(arg_compiler);
+	int right_type = rightNode->GetType(arg_compiler);
 
 	//右辺若しくは左辺が未定義関数
 	if (left_type <= -1 || right_type <= -1) {
@@ -1048,15 +1048,15 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 	return valueTag;
 }
 int  Node_function::GetType(Compiler* arg_compiler)const {
-	return GetCallType(arg_compiler, left_->GetString(), &node_list_->args_);
+	return GetCallType(arg_compiler, leftNode->GetString(), &node_list_->vec_args);
 }
 //ノードの関数呼び出し型チェック
-int Node::GetCallType(Compiler* arg_compiler, const std::string& name, const std::vector<Node_t>* args)const {
+int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNode)const {
 
 	std::vector<int> argTypes;
-	if (args) {
-		auto end = args->end();
-		for (auto itr = args->begin(); itr != end; itr++) {
+	if (arg_vec_argNode) {
+		auto end = arg_vec_argNode->end();
+		for (auto itr = arg_vec_argNode->begin(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -1067,10 +1067,10 @@ int Node::GetCallType(Compiler* arg_compiler, const std::string& name, const std
 	while (!tag)
 	{
 		if (currentSerchNameSpace) {
-			functionName = currentSerchNameSpace->GetGlobalNameString() + name;
+			functionName = currentSerchNameSpace->GetGlobalNameString() + arg_name;
 		}
 		else {
-			functionName = name;
+			functionName = arg_name;
 		}
 
 		tag = arg_compiler->GetFunctionTag(functionName, argTypes, true);
@@ -1097,12 +1097,12 @@ int Node::Assign(Compiler* arg_compiler) const{
 	int left_type = -1;
 	//代入のみのパターンではないので左辺をpush
 	if (op != OP_ASSIGN) {
-		left_type = left_->Push(arg_compiler)&~TYPE_REF;
+		left_type = leftNode->Push(arg_compiler)&~TYPE_REF;
 	}
 	else {
-		left_type = left_->GetType(arg_compiler) & ~TYPE_REF;
+		left_type = leftNode->GetType(arg_compiler) & ~TYPE_REF;
 	}
-	int right_type = right_->Push(arg_compiler) & ~TYPE_REF;
+	int right_type = rightNode->Push(arg_compiler) & ~TYPE_REF;
 
 
 
@@ -1111,7 +1111,7 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDefaultAssignOperator<float>(op, arg_compiler) && (!SetModAssignOperator<float>(op, arg_compiler)) && (!SetLogicalAssignOperator(op, arg_compiler))) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 
@@ -1120,7 +1120,7 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDefaultAssignOperator<int>(op, arg_compiler) && (!SetModAssignOperator<int>(op, arg_compiler)) && (!SetLogicalAssignOperator(op, arg_compiler))) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 
@@ -1130,14 +1130,14 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDefaultAssignOperator<ButiEngine::Vector2>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_FLOAT) {
 		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, float>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, float>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler); 
+		leftNode->Pop(arg_compiler); 
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 1 && right_type == TYPE_INTEGER) {
@@ -1145,7 +1145,7 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, int>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, int>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	//Vector3計算ノード
@@ -1153,14 +1153,14 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDefaultAssignOperator<ButiEngine::Vector3>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_FLOAT) {
 		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, float>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, float>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 2 && right_type == TYPE_INTEGER) {
@@ -1168,7 +1168,7 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, int>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, int>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	//Vector4計算ノード
@@ -1176,14 +1176,14 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDefaultAssignOperator<ButiEngine::Vector4>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_FLOAT) {
 		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, float>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, float>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	if (left_type == TYPE_VOID + 3 && right_type == TYPE_INTEGER) {
@@ -1191,7 +1191,7 @@ int Node::Assign(Compiler* arg_compiler) const{
 		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, int>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, int>(op, arg_compiler)) {
 			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 
@@ -1208,18 +1208,18 @@ int Node::Assign(Compiler* arg_compiler) const{
 			arg_compiler->error("文字列では許されない計算です。");
 			break;
 		}
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 
 		return 0;
 	}
 
 	if (left_type == right_type) {
 		//同じ型同士なので代入可能
-		left_->Pop(arg_compiler);
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
-	else if (right_->EnumType(arg_compiler) == left_type) {
-		left_->Pop(arg_compiler);
+	else if (rightNode->EnumType(arg_compiler) == left_type) {
+		leftNode->Pop(arg_compiler);
 		return 0;
 	}
 	else
@@ -1246,10 +1246,10 @@ const ValueTag* Node_value::GetValueTag(Compiler* arg_compiler) const{
 		while (!valueTag)
 		{
 			if (currentSerchNameSpace) {
-				valueName = currentSerchNameSpace->GetGlobalNameString() + string_;
+				valueName = currentSerchNameSpace->GetGlobalNameString() + strData;
 			}
 			else {
-				valueName = string_;
+				valueName = strData;
 			}
 
 			valueTag = arg_compiler->GetValueTag(valueName);
@@ -1277,9 +1277,9 @@ int Node_value::Push(Compiler* arg_compiler) const{
 		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if(valueTag)
 		{
-			if (valueTag->global_) {		// グローバル変数
-				if (left_) {		// 配列
-					left_->Push(arg_compiler);
+			if (valueTag->isGlobal) {		// グローバル変数
+				if (leftNode) {		// 配列
+					leftNode->Push(arg_compiler);
 					arg_compiler->PushGlobalArrayRef(valueTag->address);
 				}
 				else {
@@ -1287,8 +1287,8 @@ int Node_value::Push(Compiler* arg_compiler) const{
 				}
 			}
 			else {					// ローカル変数
-				if (left_) {		// 配列
-					left_->Push(arg_compiler);
+				if (leftNode) {		// 配列
+					leftNode->Push(arg_compiler);
 					arg_compiler->PushLocalArrayRef(valueTag->address);
 				}
 				else {
@@ -1305,7 +1305,7 @@ int Node_value::Push(Compiler* arg_compiler) const{
 		}
 		else {
 			arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
-			return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+			return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
@@ -1319,9 +1319,9 @@ int Node_value::PushClone(Compiler* arg_compiler) const{
 		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if(valueTag)
 		{
-			if (valueTag->global_) {		// グローバル変数
-				if (left_) {		// 配列
-					left_->Push(arg_compiler);
+			if (valueTag->isGlobal) {		// グローバル変数
+				if (leftNode) {		// 配列
+					leftNode->Push(arg_compiler);
 					arg_compiler->PushGlobalArray(valueTag->address);
 				}
 				else {
@@ -1329,8 +1329,8 @@ int Node_value::PushClone(Compiler* arg_compiler) const{
 				}
 			}
 			else {					// ローカル変数
-				if (left_) {		// 配列
-					left_->Push(arg_compiler);
+				if (leftNode) {		// 配列
+					leftNode->Push(arg_compiler);
 					arg_compiler->PushLocalArray(valueTag->address);
 				}
 				else {
@@ -1348,7 +1348,7 @@ int Node_value::PushClone(Compiler* arg_compiler) const{
 		}
 		else {
 			arg_compiler->OpPushFunctionAddress (funcTag->GetIndex());
-			return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+			return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
@@ -1363,9 +1363,9 @@ int Node_value::Pop(Compiler* arg_compiler) const{
 		const ValueTag* valueTag = GetValueTag(arg_compiler);
 		if(valueTag)
 		{
-			if (valueTag->global_) {		// グローバル変数
-				if (left_) {		// 配列
-					left_->Push(arg_compiler);
+			if (valueTag->isGlobal) {		// グローバル変数
+				if (leftNode) {		// 配列
+					leftNode->Push(arg_compiler);
 					arg_compiler->PopArray(valueTag->address);
 				}
 				else {
@@ -1373,8 +1373,8 @@ int Node_value::Pop(Compiler* arg_compiler) const{
 				}
 			}
 			else {					// ローカル変数
-				if (left_) {		// 配列
-					left_->Push(arg_compiler);
+				if (leftNode) {		// 配列
+					leftNode->Push(arg_compiler);
 					arg_compiler->PopLocalArray(valueTag->address);
 				}
 				else {
@@ -1402,31 +1402,31 @@ struct set_arg {
 	Compiler* p_compiler;
 	const std::vector<int>* argTypes_;
 	mutable int index_;
-	set_arg(Compiler* comp, const FunctionTag* func) : p_compiler(comp), argTypes_(&func->args_), index_(0) {}
-	set_arg(Compiler* comp, const std::vector<int>* arg_argTypes) : p_compiler(comp), argTypes_(arg_argTypes), index_(0){}
+	set_arg(Compiler* arg_p_compiler, const FunctionTag* arg_function) : p_compiler(arg_p_compiler), argTypes_(&arg_function->vec_args), index_(0) {}
+	set_arg(Compiler* arg_p_compiler, const std::vector<int>* arg_argTypes) : p_compiler(arg_p_compiler), argTypes_(arg_argTypes), index_(0){}
 
-	void operator()(Node_t node) const
+	void operator()(Node_t arg_node) const
 	{
 		int type = (*argTypes_)[index_++];
 		if ((type & TYPE_REF) != 0) {		// 参照
-			if (node->Op() != OP_IDENTIFIER) {
+			if (arg_node->Op() != OP_IDENTIFIER) {
 				p_compiler->error("参照型引数に、変数以外は指定できません。");
 			}
 			else {
 				std::string  valueName;
 				NameSpace_t currentSerchNameSpace = p_compiler->GetCurrentNameSpace();
-				const ValueTag* tag = node->GetValueTag(p_compiler);
+				const ValueTag* tag = arg_node->GetValueTag(p_compiler);
 				if (tag == nullptr) {
-					p_compiler->error("変数 " + node->GetString() + " は定義されていません。");
+					p_compiler->error("変数 " + arg_node->GetString() + " は定義されていません。");
 				}
 				else {
 					if (!TypeCheck(tag->valueType ,type) ){
 						p_compiler->error("引数の型が合いません。");
 					}
 
-					if (tag->global_) {
-						if (node->GetLeft()) {
-							node->GetLeft()->Push(p_compiler);
+					if (tag->isGlobal) {
+						if (arg_node->GetLeft()) {
+							arg_node->GetLeft()->Push(p_compiler);
 							p_compiler->PushGlobalArrayRef(tag->address);
 						}
 						else {
@@ -1434,8 +1434,8 @@ struct set_arg {
 						}
 					}
 					else {
-						if (node->GetLeft()) {
-							node->GetLeft()->Push(p_compiler);
+						if (arg_node->GetLeft()) {
+							arg_node->GetLeft()->Push(p_compiler);
 							p_compiler->PushLocalArrayRef(tag->address);
 						}
 						else {
@@ -1446,7 +1446,7 @@ struct set_arg {
 			}
 		}
 		else {
-			if (!TypeCheck( node->PushClone(p_compiler), type)) {
+			if (!TypeCheck( arg_node->PushClone(p_compiler), type)) {
 				p_compiler->error("引数の型が合いません。");
 			}
 		}
@@ -1454,15 +1454,15 @@ struct set_arg {
 };
 
 // 関数呼び出し
-int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* vec_argNodes) const
+int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNodes) const
 {
 	std::string  functionName;
 	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
 
 	std::vector<int> argTypes;
-	if (vec_argNodes) {
-		auto end = vec_argNodes->end();
-		for (auto itr = vec_argNodes->begin(); itr != end; itr++) {
+	if (arg_vec_argNodes) {
+		auto end = arg_vec_argNodes->end();
+		for (auto itr = arg_vec_argNodes->begin(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -1495,8 +1495,8 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 
 	if (functionTag ) {
 		// 引数をpush
-		if (vec_argNodes && functionTag->ArgSize() == argSize) {
-			std::for_each(vec_argNodes->begin(), vec_argNodes->end(), set_arg(arg_compiler, functionTag));
+		if (arg_vec_argNodes && functionTag->ArgSize() == argSize) {
+			std::for_each(arg_vec_argNodes->begin(), arg_vec_argNodes->end(), set_arg(arg_compiler, functionTag));
 		}
 
 		// 引数の数をpush
@@ -1517,14 +1517,14 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 		auto valueType=arg_compiler->GetType(valueTag->valueType);
 		if (valueType->IsFunctionObjectType()) {
 			// 引数をpush
-			if (vec_argNodes && valueType->GetFunctionObjectArgSize() == argSize) {
+			if (arg_vec_argNodes && valueType->GetFunctionObjectArgSize() == argSize) {
 				auto valueArgTypes = valueType->GetFunctionObjectArgment();
-				std::for_each(vec_argNodes->begin(), vec_argNodes->end(), set_arg(arg_compiler,&valueArgTypes ));
+				std::for_each(arg_vec_argNodes->begin(), arg_vec_argNodes->end(), set_arg(arg_compiler,&valueArgTypes ));
 			}
 
 			// 引数の数をpush
 			arg_compiler->PushConstInt(argSize);
-			if (valueTag->global_) {		// グローバル変数
+			if (valueTag->isGlobal) {		// グローバル変数
 
 				arg_compiler->PushGlobalValue(valueTag->address);
 			}
@@ -1552,7 +1552,7 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 
 int Node_function::Push(Compiler* arg_compiler) const
 {
-	return Call(arg_compiler, left_->GetString(), &node_list_->args_);
+	return Call(arg_compiler, leftNode->GetString(), &node_list_->vec_args);
 }
 
 // 関数にpopはできないのでエラーメッセージを出す
@@ -1757,13 +1757,13 @@ int Statement_if::Analyze(Compiler* arg_compiler)
 	vec_node->Push(arg_compiler);
 	int label1 = arg_compiler->MakeLabel();
 	arg_compiler->OpJmpNC(label1);
-	statement_[0]->Analyze(arg_compiler);
+	vec_statement[0]->Analyze(arg_compiler);
 
-	if (statement_[1]) {
+	if (vec_statement[1]) {
 		int label2 = arg_compiler->MakeLabel();
 		arg_compiler->OpJmp(label2);
 		arg_compiler->SetLabel(label1);
-		statement_[1]->Analyze(arg_compiler);
+		vec_statement[1]->Analyze(arg_compiler);
 		arg_compiler->SetLabel(label2);
 	}
 	else {
@@ -1784,7 +1784,7 @@ int Statement_for::Analyze(Compiler* arg_compiler)
 	arg_compiler->SetLabel(label1);
 	vec_node[1]->Push(arg_compiler);
 	arg_compiler->OpJmpNC(label2);
-	statement_->Analyze(arg_compiler);
+	vec_statement->Analyze(arg_compiler);
 	if (vec_node[2])
 		vec_node[2]->Push(arg_compiler);
 	arg_compiler->OpJmp(label1);
@@ -1805,7 +1805,7 @@ int Statement_while::Analyze(Compiler* arg_compiler)
 	arg_compiler->SetLabel(label1);
 	vec_node->Push(arg_compiler);
 	arg_compiler->OpJmpNC(label2);
-	statement_->Analyze(arg_compiler);
+	vec_statement->Analyze(arg_compiler);
 	arg_compiler->OpJmp(label1);
 	arg_compiler->SetLabel(label2);
 
@@ -1816,20 +1816,20 @@ int Statement_while::Analyze(Compiler* arg_compiler)
 // switch文
 int Statement_switch::Analyze(Compiler* arg_compiler) 
 {
-	if (!statement_.empty()) {
+	if (!vec_statement.empty()) {
 		vec_node->Push(arg_compiler);
 
 		int label = arg_compiler->MakeLabel();		// L0ラベル作成
 		int break_label = arg_compiler->SetBreakLabel(label);
 		int default_label = label;
 
-		std::for_each(statement_.begin(), statement_.end(),
+		std::for_each(vec_statement.begin(), vec_statement.end(),
 			boost::bind(&Statement::Case_Analyze, _1, arg_compiler, &default_label));
 
 		arg_compiler->OpPop();
 		arg_compiler->OpJmp(default_label);
 
-		std::for_each(statement_.begin(), statement_.end(), boost::bind(&Statement::Analyze, _1, arg_compiler));
+		std::for_each(vec_statement.begin(), vec_statement.end(), boost::bind(&Statement::Analyze, _1, arg_compiler));
 		arg_compiler->SetLabel(label);
 
 		arg_compiler->SetBreakLabel(break_label);
@@ -1880,7 +1880,7 @@ int Declaration::PushCompiler(Compiler* arg_compiler)
 int Declaration::Analyze(Compiler* arg_compiler) 
 {
 	if (isFunction) {		// 関数
-		arg_compiler->FunctionDefine(valueType, name_, args);
+		arg_compiler->FunctionDefine(valueType, name, vec_argType);
 	}
 	else {
 		arg_compiler->ValueDefine(valueType, vec_node,accessType);
@@ -1939,7 +1939,7 @@ int Declaration::Analyze(Compiler* arg_compiler)
 void Declaration::Define(Compiler* arg_compiler)
 {
 	if (isFunction) {		// 関数
-		arg_compiler->FunctionDefine(valueType, name_, args);
+		arg_compiler->FunctionDefine(valueType, name, vec_argType);
 	}
 	else {
 		arg_compiler->ValueDefine(valueType, vec_node,accessType);
@@ -1951,14 +1951,14 @@ int Node_Member::Push(Compiler* arg_compiler) const
 		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		left_->Push(arg_compiler);
-		auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
-		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-			arg_compiler->error(typeTag->typeName+"の" + string_ + "にアクセス出来ません");
+		leftNode->Push(arg_compiler);
+		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName+"の" + strData + "にアクセス出来ません");
 		}
 
-		arg_compiler->PushMemberRef(typeTag->map_memberValue.at(string_).index);
-		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
+		arg_compiler->PushMemberRef(typeTag->map_memberValue.at(strData).index);
+		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
 	}
 	return -1;
 }
@@ -1968,13 +1968,13 @@ int Node_Member::PushClone(Compiler* arg_compiler) const
 		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
 	}
 	else {
-		left_->Push(arg_compiler);
-		auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
-		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-			arg_compiler->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
+		leftNode->Push(arg_compiler);
+		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
 		}
-		arg_compiler->PushMember(typeTag->map_memberValue.at(string_).index);
-		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
+		arg_compiler->PushMember(typeTag->map_memberValue.at(strData).index);
+		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
 
 	}
 	return -1;
@@ -1987,21 +1987,21 @@ int Node_Member::Pop(Compiler* arg_compiler) const
 	else {
 
 		//型
-		auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler));
-		if (typeTag->map_memberValue.at(string_).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-			arg_compiler->error(typeTag->typeName + "の" + string_ + "にアクセス出来ません");
+		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler));
+		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
 		}
 		
-		left_->Push(arg_compiler);
-		auto type = typeTag->map_memberValue.at(string_).type;
+		leftNode->Push(arg_compiler);
+		auto type = typeTag->map_memberValue.at(strData).type;
 		if (type & TYPE_REF) {
-			arg_compiler->PopMemberRef(typeTag->map_memberValue.at(string_).index);
+			arg_compiler->PopMemberRef(typeTag->map_memberValue.at(strData).index);
 		}
 		else {
-			arg_compiler->PopMember(typeTag->map_memberValue.at(string_).index);
+			arg_compiler->PopMember(typeTag->map_memberValue.at(strData).index);
 		}
 
-		return   typeTag->map_memberValue.at(string_).type & ~TYPE_REF;
+		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
 		
 	}
 	return TYPE_INTEGER;
@@ -2013,16 +2013,16 @@ int Node_Member::GetType(Compiler* arg_compiler) const
 	}
 	else {
 		//変数のメンバ変数
-		if (left_->Op() == OP_IDENTIFIER|| left_->Op() == OP_MEMBER) {
+		if (leftNode->Op() == OP_IDENTIFIER|| leftNode->Op() == OP_MEMBER) {
 			{
 
 				//型
-				auto typeTag = arg_compiler->GetType(left_->GetType(arg_compiler));
-				if (!typeTag->map_memberValue.count(string_)) {
-					arg_compiler->error("構文エラー："+typeTag->typeName+"にメンバ変数"+string_+"は存在しません");
+				auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler));
+				if (!typeTag->map_memberValue.count(strData)) {
+					arg_compiler->error("構文エラー："+typeTag->typeName+"にメンバ変数"+strData+"は存在しません");
 					return -1;
 				}
-				return typeTag->map_memberValue.at(string_).type;
+				return typeTag->map_memberValue.at(strData).type;
 			}
 		}
 	}
@@ -2035,8 +2035,8 @@ int Node_Method::Push(Compiler* arg_compiler) const
 
 	std::vector<int> argTypes;
 	if (node_list_) {
-		auto end = node_list_->args_.end();
-		for (auto itr = node_list_->args_.begin(); itr != end; itr++) {
+		auto end = node_list_->vec_args.end();
+		for (auto itr = node_list_->vec_args.begin(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -2046,8 +2046,8 @@ int Node_Method::Push(Compiler* arg_compiler) const
 	const FunctionTag* methodTag = nullptr;
 
 
-	typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
-	methodTag = typeTag->methods.Find(string_, argTypes);
+	typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
+	methodTag = typeTag->methods.Find(strData, argTypes);
 	if (methodTag->accessType != AccessModifier::Public&&arg_compiler->GetCurrentThisType()!=typeTag) {
 
 		arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
@@ -2061,18 +2061,18 @@ int Node_Method::Push(Compiler* arg_compiler) const
 			}
 			message += "を引数にとる";
 		}
-		message += "関数" + string_ + "は未宣言です";
+		message += "関数" + strData + "は未宣言です";
 		arg_compiler->error(message);
 		return -1;
 	}
 
 	// 引数をpush
 	if (node_list_&& methodTag->ArgSize() == argSize) {
-		std::for_each(node_list_->args_.begin(), node_list_->args_.end(), set_arg(arg_compiler, methodTag));
+		std::for_each(node_list_->vec_args.begin(), node_list_->vec_args.end(), set_arg(arg_compiler, methodTag));
 	}
 
 
-	left_->Push(arg_compiler);
+	leftNode->Push(arg_compiler);
 
 
 	if (methodTag->IsSystem()) {
@@ -2103,33 +2103,33 @@ int Node_Method::GetType(Compiler* arg_compiler) const
 	std::vector<int> argTypes;
 
 	if (node_list_) {
-		auto end = node_list_->args_.end();
-		for (auto itr = node_list_->args_.begin(); itr != end; itr++) {
+		auto end = node_list_->vec_args.end();
+		for (auto itr = node_list_->vec_args.begin(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
 
 
-	const TypeTag* typeTag = arg_compiler->GetType(left_->GetType(arg_compiler) & ~TYPE_REF);
-	const FunctionTag* tag = typeTag->methods.Find(string_, argTypes);
+	const TypeTag* typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
+	const FunctionTag* tag = typeTag->methods.Find(strData, argTypes);
 
 	return tag->valueType;
 }
 int Node_enum::Push(Compiler* arg_compiler) const
 {
 
-	auto enumType = GetEnumType(arg_compiler,*left_);
+	auto enumType = GetEnumType(arg_compiler,*leftNode);
 	if (enumType == nullptr) {
 
-		arg_compiler->error("列挙型　" + left_->GetString() + "は未定義です");
+		arg_compiler->error("列挙型　" + leftNode->GetString() + "は未定義です");
 		return -1;
 	}
-	if (!enumType->ExistenceIdentifers(string_)) {
+	if (!enumType->ExistenceIdentifers(strData)) {
 
-		arg_compiler->error("列挙型　" + left_->GetString()+"."+string_ + "は未定義です");
+		arg_compiler->error("列挙型　" + leftNode->GetString()+"."+strData + "は未定義です");
 		return -1;
 	}
-	arg_compiler->PushConstInt( enumType->GetValue(string_));
+	arg_compiler->PushConstInt( enumType->GetValue(strData));
 
 	return TYPE_INTEGER;
 }
@@ -2144,9 +2144,9 @@ int Node_enum::GetType(Compiler* arg_compiler) const
 }
 int Node_enum::EnumType(Compiler* arg_compiler) const
 {
-	auto type=arg_compiler->GetType(left_->GetString());
+	auto type=arg_compiler->GetType(leftNode->GetString());
 	if (!type) {
-		arg_compiler->error("列挙型　" + left_->GetString() + "." + string_ + "は未定義です");
+		arg_compiler->error("列挙型　" + leftNode->GetString() + "." + strData + "は未定義です");
 		return 0;
 	}
 	return type->typeIndex;
@@ -2161,7 +2161,7 @@ int Node_FunctionObject::Push(Compiler* arg_compiler) const
 		return -1;
 	}
 	arg_compiler->PushConstInt(funcTag->GetIndex());
-	return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+	return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
 }
 int Node_FunctionObject::Pop(Compiler* arg_compiler) const
 {
@@ -2177,7 +2177,7 @@ int Node_FunctionObject::GetType(Compiler* arg_compiler) const
 		return 0;
 	}
 
-	return arg_compiler->GetfunctionTypeIndex(funcTag->args_, funcTag->valueType);
+	return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
 }
 void Enum::SetIdentifer(const std::string& arg_name)
 {
@@ -2222,14 +2222,14 @@ int Class::Regist(Compiler* arg_compiler)
 	arg_compiler->RegistScriptType(name);
 	return 0;
 }
-void Class::RegistMethod(Function_t method, Compiler* arg_compiler)
+void Class::RegistMethod(Function_t arg_method, Compiler* arg_compiler)
 {
-	vec_methods.push_back(method);
+	vec_methods.push_back(arg_method);
 	
 }
-void Class::SetValue(const std::string& arg_name, const int arg_type, const AccessModifier accessType)
+void Class::SetValue(const std::string& arg_name, const int arg_type, const AccessModifier arg_accessType)
 {
-	std::pair<int, AccessModifier> v = { arg_type,accessType };
+	std::pair<int, AccessModifier> v = { arg_type,arg_accessType };
 	map_values.emplace(arg_name,v);
 }
 

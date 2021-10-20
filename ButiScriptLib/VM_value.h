@@ -29,28 +29,28 @@ return static_cast<Class*>(b)->get_ref_stub< T >();\
 }\
 
 #define RegistSet(T) \
-virtual void operator()(IValueData* b,const T v) const {\
-static_cast<Class*>(b)->set_value_stub<T>(v);\
+virtual void operator()(IValueData* b,const T arg_v) const {\
+static_cast<Class*>(b)->set_value_stub<T>(arg_v);\
 }\
 
 #define RegistSetRef(T) \
-virtual void operator()(IValueData* b,const T & v) const {\
-static_cast<Class*>(b)->set_value_stub<T>(v);\
+virtual void operator()(IValueData* b,const T & arg_v) const {\
+static_cast<Class*>(b)->set_value_stub<T>(arg_v);\
 }\
 
 #define RegistEq(T) \
-virtual bool operator()(const IValueData* b,const T & v) const {\
-return static_cast<const Class*>(b)->eq_stub<T>(v);\
+virtual bool operator()(const IValueData* b,const T & arg_v) const {\
+return static_cast<const Class*>(b)->eq_stub<T>(arg_v);\
 }\
 
 #define RegistGt(T) \
-virtual bool operator()(const IValueData* b,const T & v) const {\
- return static_cast<const Class*>(b)->gt_stub<T>(v);\
+virtual bool operator()(const IValueData* b,const T & arg_v) const {\
+ return static_cast<const Class*>(b)->gt_stub<T>(arg_v);\
 }\
 
 #define RegistGe(T) \
-virtual bool operator()(const IValueData* b,const T & v) const {\
-return static_cast<const Class*>(b)->ge_stub<T>(v);\
+virtual bool operator()(const IValueData* b,const T & arg_v) const {\
+return static_cast<const Class*>(b)->ge_stub<T>(arg_v);\
 }\
 
 
@@ -104,8 +104,8 @@ template <typename U> U get_value_stub()const {\
 	return U();\
 }\
 template <typename U> U& get_ref_stub() {\
-	auto v = U();\
-	return v;\
+	auto arg_v = U();\
+	return arg_v;\
 }\
 template <>  Type & get_ref_stub() {\
 	return *( Type *)p_instance;\
@@ -170,26 +170,26 @@ public:
 	GlobalScriptTypeValueSaveObject() {}
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
 	void RestoreValue(IValueData** arg_v)const override;
-	void Push(std::shared_ptr<IGlobalValueSaveObject> shp_value, int index) {
-		shp_value->SetTypeIndex(index);
+	void Push(std::shared_ptr<IGlobalValueSaveObject> shp_value, int arg_index) {
+		shp_value->SetTypeIndex(arg_index);
 		vec_data.push_back(shp_value);
 	}
 	int GetTypeIndex()const override {
-		return type;
+		return arg_type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		type = arg_index;
+		arg_type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(vec_data);
-		archive(type);
+		archive(arg_type);
 	}
 private:
 	std::vector<std::shared_ptr<IGlobalValueSaveObject>> vec_data;
 	std::shared_ptr<CompiledData>shp_compiledData;
-	int type;
+	int arg_type;
 };
 template<typename T>
 class GlobalValueSaveObject :public IGlobalValueSaveObject {
@@ -201,20 +201,20 @@ public:
 	}
 	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
-		return type;
+		return arg_type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		type = arg_index;
+		arg_type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(data);
-		archive(type);
+		archive(arg_type);
 	}
 private:
 	T data;
-	int type;
+	int arg_type;
 };
 template<>
 class GlobalValueSaveObject <Type_Enum>:public IGlobalValueSaveObject {
@@ -227,20 +227,20 @@ public:
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override{ shp_compiledData = arg_shp_data; }
 	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
-		return type;
+		return arg_type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		type = arg_index;
+		arg_type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(data);
-		archive(type);
+		archive(arg_type);
 	}
 private:
 	int data;
-	int type;
+	int arg_type;
 	std::shared_ptr<CompiledData>shp_compiledData;
 };
 template<typename T>
@@ -253,20 +253,20 @@ public:
 	}
 	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
-		return type;
+		return arg_type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		type = arg_index;
+		arg_type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(data);
-		archive(type);
+		archive(arg_type);
 	}
 private:
 	std::shared_ptr<T> data;
-	int type;
+	int arg_type;
 };
 
 #endif //IMPL_BUTIENGINE
@@ -295,19 +295,19 @@ public:
 	}
 
 
-	IValueData* GetMember(const int index)const {
-		return ary_p_member[index];
+	IValueData* GetMember(const int arg_index)const {
+		return ary_p_member[arg_index];
 	}
-	int GetMemberType(const int index)const {
-		return ary_memberType[index];
+	int GetMemberType(const int arg_index)const {
+		return ary_memberType[arg_index];
 	}
 
-	void SetMember(IValueData* arg_v,const int index) {
-		if (ary_p_member[index]) {
-			ary_p_member[index]->release();
+	void SetMember(IValueData* arg_v,const int arg_index) {
+		if (ary_p_member[arg_index]) {
+			ary_p_member[arg_index]->release();
 		}
-		ary_p_member[index] = arg_v;
-		ary_p_member[index]->addref();
+		ary_p_member[arg_index] = arg_v;
+		ary_p_member[arg_index]->addref();
 	}
 
 	template <typename T> bool Equal(const T& arg_v)const {
@@ -517,14 +517,14 @@ private:
 template <typename T>
 class ValueData : public IValueData {
 	public:
-		ValueData(const T v, const int ref) :IValueData(ref) {
-			p_instance = new T(v);
+		ValueData(const T arg_v, const int arg_ref) :IValueData(arg_ref) {
+			p_instance = new T(arg_v);
 		}
-		ValueData(T* v, const int ref) :IValueData(ref) {
-			p_instance = v;
+		ValueData(T* arg_v, const int arg_ref) :IValueData(arg_ref) {
+			p_instance = arg_v;
 			isOuterMemoryRef = true;
 		}
-		ValueData(const int ref) :IValueData(ref) {
+		ValueData(const int arg_ref) :IValueData(arg_ref) {
 			p_instance = new T();
 		}
 		~ValueData() {
@@ -633,14 +633,14 @@ class ValueData : public IValueData {
 template <>
 class ValueData<ScriptClassInfo> :public IValueData {
 public:
-	ValueData(ScriptClassInfo* v,std::vector<IValueData*> vec_member, const int ref) :IValueData(ref) {
-		p_instance = v; 
-		int memberSize = vec_member.size();
+	ValueData(ScriptClassInfo* arg_v,std::vector<IValueData*> arg_vec_member, const int arg_ref) :IValueData(arg_ref) {
+		p_instance = arg_v; 
+		int memberSize = arg_vec_member.size();
 		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * memberSize);
 		ary_memberType = (int*)malloc(sizeof(int) * memberSize);
 		for (int i = 0; i < memberSize; i++) {
-			ary_p_member[i] = vec_member[i];
-			ary_memberType[i] = v->GetMemberTypeIndex(i);
+			ary_p_member[i] = arg_vec_member[i];
+			ary_memberType[i] = arg_v->GetMemberTypeIndex(i);
 		}
 
 	}
@@ -769,10 +769,10 @@ public:
 template<>
 class ValueData<int> :public IValueData {
 public:
-	ValueData(const int v, const int ref) :IValueData(ref) {
-		p_instance = new int(v);
+	ValueData(const int arg_v, const int arg_ref) :IValueData(arg_ref) {
+		p_instance = new int(arg_v);
 	}
-	ValueData(const int ref) :IValueData(ref) {
+	ValueData(const int arg_ref) :IValueData(arg_ref) {
 		p_instance = new int();
 	}
 	~ValueData() override {
@@ -912,10 +912,10 @@ public:
 template<>
 class ValueData<Type_Func> :public IValueData {
 public:
-	ValueData(const int v, const int ref, std::map <  int,const std::string*> * arg_p_funcEntryTable) :IValueData(ref), p_functionJumpTable(arg_p_funcEntryTable) {
-		p_instance = new int(v);
+	ValueData(const int arg_v, const int arg_ref, std::map <  int,const std::string*> * arg_p_funcEntryTable) :IValueData(arg_ref), p_functionJumpTable(arg_p_funcEntryTable) {
+		p_instance = new int(arg_v);
 	}
-	ValueData(const int ref, std::map <  int, std::string*>* arg_p_funcTag) :IValueData(ref) {
+	ValueData(const int arg_ref, std::map <  int, std::string*>* arg_p_funcTag) :IValueData(arg_ref) {
 		p_instance = new int();
 	}
 	~ValueData() override {
@@ -1051,10 +1051,10 @@ public:
 template<>
 class ValueData<Type_Enum> :public IValueData {
 public:
-	ValueData(const int v, const int ref, EnumTag* arg_p_enumTag) :IValueData(ref), p_enumTag(arg_p_enumTag) {
-		p_instance = new int(v);
+	ValueData(const int arg_v, const int arg_ref, EnumTag* arg_p_enumTag) :IValueData(arg_ref), p_enumTag(arg_p_enumTag) {
+		p_instance = new int(arg_v);
 	}
-	ValueData(const int ref, EnumTag* arg_p_enumTag) :IValueData(ref) {
+	ValueData(const int arg_ref, EnumTag* arg_p_enumTag) :IValueData(arg_ref) {
 		p_instance = new int();
 	}
 	~ValueData() override {
@@ -1193,14 +1193,14 @@ public:
 template<>
 class ValueData<float> :public IValueData {
 	public:
-		ValueData(const float v, const int ref) :IValueData(ref) {
-			p_instance = new float(v);
+		ValueData(const float arg_v, const int arg_ref) :IValueData(arg_ref) {
+			p_instance = new float(arg_v);
 		}
-		ValueData(const float ref) :IValueData(ref) {
+		ValueData(const float arg_ref) :IValueData(arg_ref) {
 			p_instance = new float();
 		}
-		ValueData(float* v, const int ref,const bool arg_isOuterMemoryRef) :IValueData(ref) {
-			p_instance = v;
+		ValueData(float* arg_v, const int arg_ref,const bool arg_isOuterMemoryRef) :IValueData(arg_ref) {
+			p_instance = arg_v;
 			isOuterMemoryRef = arg_isOuterMemoryRef;
 		}
 		~ValueData() override {
@@ -1339,12 +1339,12 @@ class ValueData<float> :public IValueData {
 template<>
 class ValueData<Type_Null> : public IValueData {
 	public:
-		ValueData(const Type_Null& v, const int ref) :IValueData(ref) {
-			p_instance = new Type_Null(v);
+		ValueData(const Type_Null& arg_v, const int arg_ref) :IValueData(arg_ref) {
+			p_instance = new Type_Null(arg_v);
 			assert(0);
 			//void型のオブジェクトが生成されています
 		}
-		ValueData(const int ref) :IValueData(ref) {
+		ValueData(const int arg_ref) :IValueData(arg_ref) {
 			p_instance = new Type_Null();
 			//void型のオブジェクトが生成されています
 		}
@@ -1435,10 +1435,10 @@ class ValueData<Type_Null> : public IValueData {
 template<>
 class ValueData<std::string> : public IValueData {
 public:
-	ValueData(const std::string& v, const int ref) :IValueData(ref) {
-		p_instance = new std::string(v);
+	ValueData(const std::string& arg_v, const int arg_ref) :IValueData(arg_ref) {
+		p_instance = new std::string(arg_v);
 	}
-	ValueData(const int ref) :IValueData(ref) {
+	ValueData(const int arg_ref) :IValueData(arg_ref) {
 		p_instance = new std::string();
 	}
 	~ValueData() override {
@@ -1537,19 +1537,19 @@ public:
 template<>
 class ValueData<ButiEngine::Vector2> : public IValueData {
 	public:
-		ValueData(const ButiEngine::Vector2& v, const int ref) :IValueData(ref) {
-			p_instance = new ButiEngine::Vector2(v);
-			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 2);
-			ary_memberType = (int*)malloc(sizeof(int) * 2);
+		ValueData(const ButiEngine::Vector2& arg_v, const int arg_ref) :IValueData(arg_ref) {
+			p_instance = new ButiEngine::Vector2(arg_v);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Vector2) / sizeof(float));
+			ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Vector2) / sizeof(float));
 			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->x, 1,true);
 			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->y, 1, true);
 			ary_memberType[0] = TYPE_FLOAT;
 			ary_memberType[1] = TYPE_FLOAT;
 		}
-		ValueData(const int ref) :IValueData(ref) {
+		ValueData(const int arg_ref) :IValueData(arg_ref) {
 			p_instance = new ButiEngine::Vector2();
-			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 2);
-			ary_memberType = (int*)malloc(sizeof(int) * 2);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Vector2) / sizeof(float));
+			ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Vector2) / sizeof(float));
 			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->x, 1, true);
 			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector2*)p_instance)->y, 1, true);
 			ary_memberType[0] = TYPE_FLOAT;
@@ -1557,7 +1557,7 @@ class ValueData<ButiEngine::Vector2> : public IValueData {
 		}
 
 		~ValueData() {
-			for (int i = 0; i < 2; i++) {
+			for (int i = 0; i < sizeof(ButiEngine::Vector2) / sizeof(float); i++) {
 				ary_p_member[i]->release();
 			}
 
@@ -1583,11 +1583,11 @@ class ValueData<ButiEngine::Vector2> : public IValueData {
 template<>
 class ValueData<ButiEngine::Vector3> : public IValueData {
 	public:
-		ValueData(const ButiEngine::Vector3& v, const int ref) :IValueData(ref) {
-			p_instance = new ButiEngine::Vector3(v);
+		ValueData(const ButiEngine::Vector3& arg_v, const int arg_ref) :IValueData(arg_ref) {
+			p_instance = new ButiEngine::Vector3(arg_v);
 
-			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 3);
-			ary_memberType = (int*)malloc(sizeof(int) * 3);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Vector3) / sizeof(float));
+			ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Vector3) / sizeof(float));
 
 			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->x, 1, true);
 			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->y, 1, true);
@@ -1596,10 +1596,10 @@ class ValueData<ButiEngine::Vector3> : public IValueData {
 			ary_memberType[1] = TYPE_FLOAT;
 			ary_memberType[2] = TYPE_FLOAT;
 		}
-		ValueData(const int ref) :IValueData(ref) {
+		ValueData(const int arg_ref) :IValueData(arg_ref) {
 			p_instance = new ButiEngine::Vector3();
-			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 3);
-			ary_memberType = (int*)malloc(sizeof(int) * 3);
+			ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Vector3) / sizeof(float));
+			ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Vector3) / sizeof(float));
 			ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->x, 1, true);
 			ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->y, 1,true);
 			ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector3*)p_instance)->z, 1,true);
@@ -1608,7 +1608,7 @@ class ValueData<ButiEngine::Vector3> : public IValueData {
 			ary_memberType[2] = TYPE_FLOAT;
 		}
 		~ValueData() {
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < sizeof(ButiEngine::Vector3) / sizeof(float); i++) {
 				ary_p_member[i]->release();
 			}
 
@@ -1634,10 +1634,10 @@ class ValueData<ButiEngine::Vector3> : public IValueData {
 template<>
 class ValueData<ButiEngine::Vector4> : public IValueData {
 public:
-	ValueData(const ButiEngine::Vector4& v, const int ref) :IValueData(ref) {
-		p_instance = new ButiEngine::Vector4(v);
-		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 4);
-		ary_memberType = (int*)malloc(sizeof(int) * 4);
+	ValueData(const ButiEngine::Vector4& arg_v, const int arg_ref) :IValueData(arg_ref) {
+		p_instance = new ButiEngine::Vector4(arg_v);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Vector4) / sizeof(float));
+		ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Vector4) / sizeof(float));
 		ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->x, 1, true);
 		ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->y, 1, true);
 		ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->z, 1, true);
@@ -1647,10 +1647,10 @@ public:
 		ary_memberType[2] = TYPE_FLOAT;
 		ary_memberType[3] = TYPE_FLOAT;
 	}
-	ValueData(const int ref) :IValueData(ref) {
+	ValueData(const int arg_ref) :IValueData(arg_ref) {
 		p_instance = new ButiEngine::Vector4();
-		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 4);
-		ary_memberType = (int*)malloc(sizeof(int) * 4);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Vector4) / sizeof(float));
+		ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Vector4) / sizeof(float));
 		ary_p_member[0] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->x, 1, true);
 		ary_p_member[1] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->y, 1, true);
 		ary_p_member[2] = new ValueData<float>(&((ButiEngine::Vector4*)p_instance)->z, 1, true);
@@ -1661,7 +1661,7 @@ public:
 		ary_memberType[3] = TYPE_FLOAT;
 	}
 	~ValueData() {
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < sizeof(ButiEngine::Vector4) / sizeof(float); i++) {
 			ary_p_member[i]->release();
 		}
 
@@ -1689,26 +1689,26 @@ public:
 template<>
 class ValueData<ButiEngine::Matrix4x4> : public IValueData {
 public:
-	ValueData(const ButiEngine::Matrix4x4& v, const int ref) :IValueData(ref) {
-		p_instance = new ButiEngine::Matrix4x4(v);
-		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 16);
-		ary_memberType = (int*)malloc(sizeof(int) * 16);
-		for (int i = 0; i < 16; i++) {
+	ValueData(const ButiEngine::Matrix4x4& arg_v, const int arg_ref) :IValueData(arg_ref) {
+		p_instance = new ButiEngine::Matrix4x4(arg_v);
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Matrix4x4) / sizeof(float));
+		ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Matrix4x4) / sizeof(float));
+		for (int i = 0; i < sizeof(ButiEngine::Matrix4x4) / sizeof(float); i++) {
 			ary_p_member[i] = new ValueData<float>(&((ButiEngine::Matrix4x4*)p_instance)->m[i/4][i%4], 1, true);
 			ary_memberType[i] = TYPE_FLOAT;
 		}
 	}
-	ValueData(const int ref) :IValueData(ref) {
+	ValueData(const int arg_ref) :IValueData(arg_ref) {
 		p_instance = new ButiEngine::Matrix4x4();
-		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * 16);
-		ary_memberType = (int*)malloc(sizeof(int) * 16);
-		for (int i = 0; i < 16; i++) {
+		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * sizeof(ButiEngine::Matrix4x4) / sizeof(float));
+		ary_memberType = (int*)malloc(sizeof(int) * sizeof(ButiEngine::Matrix4x4) / sizeof(float));
+		for (int i = 0; i < sizeof(ButiEngine::Matrix4x4) / sizeof(float); i++) {
 			ary_p_member[i] = new ValueData<float>(&((ButiEngine::Matrix4x4*)p_instance)->m[i / 4][i % 4], 1, true);
 			ary_memberType[i] = TYPE_FLOAT;
 		}
 	}
 	~ValueData() {
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < sizeof(ButiEngine::Matrix4x4)/sizeof(float); i++) {
 			ary_p_member[i]->release();
 		}
 
@@ -1830,10 +1830,10 @@ public:
 template<typename T>
 class Value_Shared :public IValueData {
 public:
-	Value_Shared(const int ref) :IValueData(ref) {
+	Value_Shared(const int arg_ref) :IValueData(arg_ref) {
 		int i = 0;
 	}
-	Value_Shared(std::shared_ptr<T> arg_instance, const int ref) :IValueData(ref) {
+	Value_Shared(std::shared_ptr<T> arg_instance, const int arg_ref) :IValueData(arg_ref) {
 		shp = arg_instance;
 	}
 
@@ -1931,31 +1931,31 @@ class Value {
 public:
 	Value()
 	{
-		v_ = nullptr;
+		valueData = nullptr;
 		valueType = TYPE_VOID;
 	}
 
 	template<typename T>
-	Value(const T v) {
-		v_ = new ValueData<T>(v, 1);
+	Value(const T arg_v) {
+		valueData = new ValueData<T>(arg_v, 1);
 		valueType = TYPE_VOID;
 	}
 	template<typename T>
 	Value(std::shared_ptr<T> arg_instance) {
-		v_ = new Value_Shared<T>(arg_instance, 1);
+		valueData = new Value_Shared<T>(arg_instance, 1);
 		valueType = TYPE_VOID;
 	}
 
 	Value(const Type_Null) {
-		v_ = nullptr;
+		valueData = nullptr;
 		valueType = TYPE_VOID;
 	}
 	Value(const Type_Enum,EnumTag* arg_enumTag) {
-		v_ = new ValueData<Type_Enum>(0, 1,arg_enumTag);
+		valueData = new ValueData<Type_Enum>(0, 1,arg_enumTag);
 		valueType = TYPE_VOID;
 	}
 	Value(const Type_Func, std::map<int,const std::string*>* arg_entryPointTable) {
-		v_ = new ValueData<Type_Func>(0, 1, arg_entryPointTable);
+		valueData = new ValueData<Type_Func>(0, 1, arg_entryPointTable);
 		valueType = TYPE_VOID;
 	}
 
@@ -1963,11 +1963,11 @@ public:
 	Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* arg_p_vec_scriptClassInfo);
 
 	//変数を指定して初期化
-	Value(IValueData* p,const int type)
+	Value(IValueData* arg_p_data,const int arg_type)
 	{
-		v_ = p;
-		v_->addref();
-		valueType = type;
+		valueData = arg_p_data;
+		valueData->addref();
+		valueType = arg_type;
 	}
 
 	~Value()
@@ -1981,13 +1981,13 @@ public:
 		Copy(a);
 	}
 
-	Value& operator=(const Value& a)
+	Value& operator=(const Value& other)
 	{
-		if (this == &a)
+		if (this == &other)
 			return *this;
 
 
-		Assign(a);
+		Assign(other);
 
 		return *this;
 	}
@@ -1997,38 +1997,38 @@ public:
 
 	void clear()
 	{
-		if (v_) {
-			v_->release();
-			v_ = nullptr;
+		if (valueData) {
+			valueData->release();
+			valueData = nullptr;
 		}
 	}
 
 	template <typename T>
 	void SetSharedType() {
-		v_ = new Value_Shared<T>(1);
+		valueData = new Value_Shared<T>(1);
 	}
 
 	Value Clone() {
-		auto cloneV = v_->Clone();
+		auto cloneV = valueData->Clone();
 		auto output = Value(cloneV, valueType);
-		output.v_->release();
+		output.valueData->release();
 		return output;
 	}
 
-	void Copy(const Value& a)
+	void Copy(const Value& other)
 	{
-		valueType = a.valueType;
-		v_ = a.v_->Clone();
+		valueType = other.valueType;
+		valueData = other.valueData->Clone();
 	}
-	void Assign(const Value& a) {
-		if (!a.v_) {
+	void Assign(const Value& other) {
+		if (!other.valueData) {
 
-			valueType = a.valueType;
+			valueType = other.valueType;
 			return;
 		}
 
-		if (v_) {
-			v_->Set(*a.v_);
+		if (valueData) {
+			valueData->Set(*other.valueData);
 		}
 		else {
 			//自分が参照型の場合、相手の実体への参照を取得
@@ -2036,16 +2036,16 @@ public:
 
 				clear();
 
-				v_ = a.v_;
+				valueData = other.valueData;
 
-				v_->addref();
+				valueData->addref();
 
 				if (valueType == TYPE_VOID) {
-					valueType = a.valueType;
+					valueType = other.valueType;
 				}
 			}
 			else {
-				v_ = a.v_->Clone();
+				valueData = other.valueData->Clone();
 			}
 		}
 
@@ -2058,7 +2058,7 @@ public:
 	void SetType(const int arg_type) {
 		valueType = arg_type;
 	}
-	IValueData* v_ = nullptr;
+	IValueData* valueData = nullptr;
 	int valueType;
 };
 
@@ -2071,10 +2071,10 @@ public:
 };
 
 // 固定サイズスタック
-template< typename Ty, int Size >
+template< typename T, int Size >
 class Stack {
 public:
-	Stack() : size_(0)
+	Stack() : currentSize(0)
 	{
 	}
 
@@ -2083,62 +2083,62 @@ public:
 		resize(0);
 	}
 
-	void push(const Ty& arg_value)
+	void push(const T& arg_value)
 	{
-		if (Size <= size_) {
+		if (Size <= currentSize) {
 			throw StackOverflow();
 		}
-		*(::new(data_[size_++]) Ty) = arg_value;
+		*(::new(data_[currentSize++]) T) = arg_value;
 	}
 
 	void pop()
 	{
-		((Ty*)data_[--size_])->~Ty();
+		((T*)data_[--currentSize])->~T();
 	}
 
 	void pop(const int count)
 	{
-		resize(size_ - count);
+		resize(currentSize - count);
 	}
 
 	void resize(const int newsize)
 	{
-		int oldsize = size_;
+		int oldsize = currentSize;
 
 		if (oldsize > newsize) {
 			for (int i = newsize; i < oldsize; ++i)
-				((Ty*)data_[i])->~Ty();
+				((T*)data_[i])->~T();
 		}
 		if (oldsize < newsize) {
 			if (Size < newsize)
 				throw StackOverflow();
 			for (int i = oldsize; i < newsize; ++i)
-				::new(data_[i]) Ty;
+				::new(data_[i]) T;
 		}
-		size_ = newsize;
+		currentSize = newsize;
 	}
 
-	const Ty& top() const { return *(const Ty*)data_[size_ - 1]; }
-	Ty& top() {
-		return *(Ty*)data_[size_ - 1]; 
+	const T& top() const { return *(const T*)data_[currentSize - 1]; }
+	T& top() {
+		return *(T*)data_[currentSize - 1]; 
 	}
 
-	bool overflow() const { return size_ >= Size; }
-	bool empty() const { return size_ == 0; }
+	bool overflow() const { return currentSize >= Size; }
+	bool empty() const { return currentSize == 0; }
 	int size() const { 
-		return 	size_;
+		return 	currentSize;
 	}
 
-	const Ty& operator[](const int index) const { 
-		return *(const Ty*)data_[index]; 
+	const T& operator[](const int index) const { 
+		return *(const T*)data_[index]; 
 	}
-	Ty& operator[](const int index) { 
-		return *(Ty*)data_[index]; 
+	T& operator[](const int index) { 
+		return *(T*)data_[index]; 
 	}
 
 protected:
-	char data_[Size][sizeof(Ty)];
-	int size_;
+	char data_[Size][sizeof(T)];
+	int currentSize;
 };
 }
 namespace ButiScript {

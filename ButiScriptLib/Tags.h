@@ -27,37 +27,37 @@ namespace ButiScript {
 		{
 		}
 		ArgDefine(const int arg_type, const std::string& arg_name)
-			: valueType(arg_type), name_(arg_name)
+			: valueType(arg_type), name(arg_name)
 		{
 		}
 
-		void set_ref()
+		void SetRef()
 		{
 			valueType |= TYPE_REF;
 		}
 
-		void set_name(const std::string& arg_name)
+		void SetName(const std::string& arg_name)
 		{
-			name_ = arg_name;
+			name = arg_name;
 		}
 
-		int type() const { return valueType; }
-		const std::string& name() const { return name_; }
+		int GetType() const { return valueType; }
+		const std::string& GetName() const { return name; }
 
 	private:
 		int valueType;
-		std::string name_;
+		std::string name;
 	};
 	class EnumTag {
 	public:
 		EnumTag(){}
 		EnumTag(const std::string& arg_typeName):type_Name(arg_typeName){}
 
-		void SetValue(const std::string& arg_identiferName, const int value) {
+		void SetValue(const std::string& arg_identiferName, const int arg_value) {
 			if (map_identifers.count(arg_identiferName)) {
 				return;
 			}
-			map_identifers.emplace(arg_identiferName, value);
+			map_identifers.emplace(arg_identiferName, arg_value);
 		}
 		int GetValue(const std::string& arg_identiferName)const {
 			return map_identifers.at(arg_identiferName);
@@ -155,9 +155,9 @@ namespace ButiScript {
 		int Size()const {
 			return map_enumTag.size();
 		}
-		EnumTag* operator[](const int index) {
+		EnumTag* operator[](const int arg_index) {
 			auto itr = map_enumTag.begin();
-			for (int i = 0; i < index; i++) { itr++; }
+			for (int i = 0; i < arg_index; i++) { itr++; }
 			return &itr->second;
 		}
 	private:
@@ -166,19 +166,18 @@ namespace ButiScript {
 
 	class ValueTag {
 	public:
-		ValueTag() : address(-1), valueType(TYPE_INTEGER), size_(1), global_(false)
+		ValueTag() : address(-1), valueType(TYPE_INTEGER), currentSize(1), isGlobal(false)
 		{
 		}
-		ValueTag(const int addr, const int type, const int size, const bool global ,const AccessModifier arg_access)
-			: address(addr), valueType(type), size_(size), global_(global),access(arg_access)
+		ValueTag(const int arg_addr, const int arg_type, const int arg_size, const bool arg_global ,const AccessModifier arg_access)
+			: address(arg_addr), valueType(arg_type), currentSize(arg_size), isGlobal(arg_global),access(arg_access)
 		{
 		}
 
-	public:
 		int		address;
 		int		valueType;
-		int		size_;
-		bool	global_;
+		int		currentSize;
+		bool	isGlobal;
 		AccessModifier access=AccessModifier::Public;
 	};
 	class ValueTable {
@@ -187,60 +186,60 @@ namespace ButiScript {
 		using const_iter = std::map<std::string, ValueTag>::const_iterator;
 
 	public:
-		ValueTable(const int start_addr = 0) : addr(start_addr), global_(false)
+		ValueTable(const int arg_start_addr = 0) : addr(arg_start_addr), isGlobal(false)
 		{
 		}
 
 		void set_global()
 		{
-			global_ = true;
+			isGlobal = true;
 		}
 
-		bool Add(const int type, const std::string& name,const AccessModifier access, const int size = 1)
+		bool Add(const int arg_type, const std::string& arg_name,const AccessModifier arg_access, const int arg_size = 1)
 		{
-			if (!variables_.count(name)) {
-				variables_.emplace(name, ValueTag(addr, type, size, global_,access));
-				vec_variableTypes.push_back(type);
-				addr += size;
+			if (!map_variables.count(arg_name)) {
+				map_variables.emplace(arg_name, ValueTag(addr, arg_type, arg_size, isGlobal,arg_access));
+				vec_variableTypes.push_back(arg_type);
+				addr += arg_size;
 				return true;
 			}
 			return false;
 		}
 
-		const ValueTag* find(const std::string& name) const
+		const ValueTag* find(const std::string& arg_name) const
 		{
-			const_iter it = variables_.find(name);
-			if (it != variables_.end())
+			const_iter it = map_variables.find(arg_name);
+			if (it != map_variables.end())
 				return &it->second;
 			return nullptr;
 		}
 
-		bool add_arg(const int type, const std::string& name, const int addr)
+		bool add_arg(const int arg_type, const std::string& arg_name, const int arg_addr)
 		{
-			std::pair<iter, bool> result = variables_.insert(make_pair(name, ValueTag(addr, type, 1, false,AccessModifier::Public)));
+			std::pair<iter, bool> result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public)));
 			return result.second;
 		}
 
 		int size() const { return addr; }
 		void Clear()
 		{
-			variables_.clear();
+			map_variables.clear();
 			addr = 0;
 		}
 
 		void Alloc(Compiler* arg_comp)const;
-		ValueTag& operator[] (const int index) {
-			auto itr = variables_.begin();
-			for (int i = 0; i < index; i++) {
+		ValueTag& operator[] (const int arg_index) {
+			auto itr = map_variables.begin();
+			for (int i = 0; i < arg_index; i++) {
 				itr++;
 			}
 
 			return itr->second;
 		}
 
-		const std::string& GetVariableName(const int index)const {
-			auto itr = variables_.begin();
-			for (int i = 0; i < index; i++) {
+		const std::string& GetVariableName(const int arg_index)const {
+			auto itr = map_variables.begin();
+			for (int i = 0; i < arg_index; i++) {
 				itr++;
 			}
 
@@ -252,9 +251,9 @@ namespace ButiScript {
 			void operator()(const std::pair<std::string, ValueTag>& it)
 			{
 #ifdef BUTIGUI_H
-				ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.valueType )+ ", size = " +std::to_string( it.second.size_ )+ ", global = " + std::to_string( it.second.global_));
+				ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.valueType )+ ", size = " +std::to_string( it.second.currentSize )+ ", global = " + std::to_string( it.second.isGlobal));
 #else
-				std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.valueType << ", size = " << it.second.size_ << ", global = " << it.second.global_ << std::endl;
+				std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.valueType << ", size = " << it.second.currentSize << ", global = " << it.second.isGlobal << std::endl;
 
 #endif // BUTIGUI_H
 				}
@@ -268,15 +267,15 @@ namespace ButiScript {
 #else
 			std::cout << "-------- value --------" << std::endl;
 #endif // BUTIGUI_H
-			std::for_each(variables_.begin(), variables_.end(), DumpAction());
+			std::for_each(map_variables.begin(), map_variables.end(), DumpAction());
 		}
 #endif
 
 	private:
-		std::map <std::string, ValueTag> variables_;
+		std::map <std::string, ValueTag> map_variables;
 		std::vector < int> vec_variableTypes;
 		int		addr;
-		bool	global_;
+		bool	isGlobal;
 	};
 
 
@@ -321,28 +320,28 @@ namespace ButiScript {
 		FunctionTag(const std::string& arg_name):name(arg_name)
 		{
 		}
-		FunctionTag(const int type,const std::string &arg_name) 
-			: valueType(type), flags_(0), index_(0), name(arg_name)
+		FunctionTag(const int arg_type,const std::string &arg_name) 
+			: valueType(arg_type), flags(0), index(0), name(arg_name)
 		{
 		}
-		void SetArg(const int type)
+		void SetArg(const int arg_type)
 		{
-			args_.push_back(type);
+			vec_args.push_back(arg_type);
 		}
 
-		void SetArgs(const std::vector<ArgDefine>& args)
+		void SetArgs(const std::vector<ArgDefine>& arg_vec_args)
 		{
-			size_t size = args.size();
+			size_t size = arg_vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				args_.push_back(args[i].type());
+				vec_args.push_back(arg_vec_args[i].GetType());
 			}
 		}
 
-		void SetArgs(const std::vector<int>& args)
+		void SetArgs(const std::vector<int>& arg_vec_args)
 		{
-			size_t size = args.size();
+			size_t size = arg_vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				args_.push_back(args[i]);
+				vec_args.push_back(arg_vec_args[i]);
 			}
 		}
 
@@ -378,7 +377,7 @@ namespace ButiScript {
 				}
 				else {
 
-					args_.push_back(arg_map_argmentChars.at(splited[i]));
+					vec_args.push_back(arg_map_argmentChars.at(splited[i]));
 				}
 
 			}
@@ -386,86 +385,86 @@ namespace ButiScript {
 		}
 
 
-		bool CheckArgList(const std::vector<ArgDefine>& args) const
+		bool CheckArgList(const std::vector<ArgDefine>& arg_vec_args) const
 		{
 			// 引数が無い場合
-			if (args.empty())
-				return args_.empty();
+			if (arg_vec_args.empty())
+				return vec_args.empty();
 
 			// 引数の個数が異なる
-			if (args.size() != args_.size())
+			if (arg_vec_args.size() != vec_args.size())
 				return false;
 
 			// 全引数の型をチェック
 
 			//厳密チェック
-			size_t size = args_.size();
+			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck(args[i].type(), (int)args_[i]))
+				if (!TypeCheck(arg_vec_args[i].GetType(), (int)vec_args[i]))
 					return false;
 			}
 
 			return true;
 		}
 
-		bool CheckArgList(const std::vector<int>& args) const
+		bool CheckArgList(const std::vector<int>& arg_vec_args) const
 		{
 			// 引数が無い場合
-			if (args.empty())
-				return args_.empty();
+			if (arg_vec_args.empty())
+				return vec_args.empty();
 
 			// 引数の個数が異なる
-			if (args.size() != args_.size())
+			if (arg_vec_args.size() != vec_args.size())
 				return false;
 
 			// 全引数の型をチェック
 			//厳密チェック
-			size_t size = args_.size();
+			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck(args[i], (int)args_[i]))
+				if (!TypeCheck(arg_vec_args[i], (int)vec_args[i]))
 					return false;
 			}
 			return true;
 		}
 
 
-		bool CheckArgList_strict(const std::vector<ArgDefine>& args) const
+		bool CheckArgList_strict(const std::vector<ArgDefine>& arg_vec_args) const
 		{
 			// 引数が無い場合
-			if (args.empty())
-				return args_.empty();
+			if (arg_vec_args.empty())
+				return vec_args.empty();
 
 			// 引数の個数が異なる
-			if (args.size() != args_.size())
+			if (arg_vec_args.size() != vec_args.size())
 				return false;
 
 			// 全引数の型をチェック
 
 			//厳密チェック
-			size_t size = args_.size();
+			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck_strict(args[i].type(), (int)args_[i]))
+				if (!TypeCheck_strict(arg_vec_args[i].GetType(), (int)vec_args[i]))
 					return false;
 			}
 
 			return true;
 		}
 
-		bool CheckArgList_strict(const std::vector<int>& args) const
+		bool CheckArgList_strict(const std::vector<int>& arg_vec_args) const
 		{
 			// 引数が無い場合
-			if (args.empty())
-				return args_.empty();
+			if (arg_vec_args.empty())
+				return vec_args.empty();
 
 			// 引数の個数が異なる
-			if (args.size() != args_.size())
+			if (arg_vec_args.size() != vec_args.size())
 				return false;
 
 			// 全引数の型をチェック
 			//厳密チェック
-			size_t size = args_.size();
+			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck_strict(args[i], (int)args_[i]))
+				if (!TypeCheck_strict(arg_vec_args[i], (int)vec_args[i]))
 					return false;
 			}
 			return true;
@@ -473,22 +472,22 @@ namespace ButiScript {
 
 		// 指定の引数の型を得る
 
-		int GetArg(const int index) const
+		int GetArg(const int arg_index) const
 		{
-			return args_[index];
+			return vec_args[arg_index];
 		}
 
-		int ArgSize() const { return (int)args_.size(); }
+		int ArgSize() const { return (int)vec_args.size(); }
 
-		void SetIndex(const int index) { index_ = index; }
-		void SetDeclaration() { flags_ |= flag_declaration; }	// 宣言
-		void SetDefinition() { flags_ |= flag_definition; }		// 定義
-		void SetSystem() { flags_ |= flag_system; }
+		void SetIndex(const int arg_index) { index = arg_index; }
+		void SetDeclaration() { flags |= flag_declaration; }	// 宣言
+		void SetDefinition() { flags |= flag_definition; }		// 定義
+		void SetSystem() { flags |= flag_system; }
 
-		int GetIndex() const { return index_; }
-		bool IsDeclaration() const { return (flags_ & flag_declaration) != 0; }
-		bool IsDefinition() const { return (flags_ & flag_definition) != 0; }
-		bool IsSystem() const { return (flags_ & flag_system) != 0; }
+		int GetIndex() const { return index; }
+		bool IsDeclaration() const { return (flags & flag_declaration) != 0; }
+		bool IsDefinition() const { return (flags & flag_definition) != 0; }
+		bool IsSystem() const { return (flags & flag_system) != 0; }
 		const std::string& GetName() const{ return name; }
 		inline std::string GetNameWithArgment(const TypeTable& arg_typeTable)const;
 		AccessModifier GetAccessType()const {
@@ -499,12 +498,12 @@ namespace ButiScript {
 		}
 		void FileOutput(std::ofstream& arg_fOut)const {
 			arg_fOut.write((char*)&valueType, sizeof(valueType));
-			arg_fOut.write((char*)&flags_, sizeof(flags_));
-			arg_fOut.write((char*)&index_, sizeof(index_));
-			int argsSize = args_.size();
+			arg_fOut.write((char*)&flags, sizeof(flags));
+			arg_fOut.write((char*)&index, sizeof(index));
+			int argsSize = vec_args.size();
 			arg_fOut.write((char*)&argsSize, sizeof(argsSize));
 			for (int i = 0; i < argsSize; i++) {
-				arg_fOut.write((char*)&args_[i], sizeof(args_[i]));
+				arg_fOut.write((char*)&vec_args[i], sizeof(vec_args[i]));
 			}
 			int size = name.size();
 			arg_fOut.write((char*)&size, sizeof(size));
@@ -512,14 +511,14 @@ namespace ButiScript {
 		}
 		void FileInput(std::ifstream& arg_fIn) {
 			arg_fIn.read((char*)&valueType, sizeof(valueType));
-			arg_fIn.read((char*)&flags_, sizeof(flags_));
-			arg_fIn.read((char*)&index_, sizeof(index_));
+			arg_fIn.read((char*)&flags, sizeof(flags));
+			arg_fIn.read((char*)&index, sizeof(index));
 			int argsSize = 0;
 			arg_fIn.read((char*)&argsSize, sizeof(argsSize));
 			for (int i = 0; i < argsSize; i++) {
 				int arg;
 				arg_fIn.read((char*)&arg, sizeof(arg));
-				args_.push_back(arg);
+				vec_args.push_back(arg);
 			}
 			int size = 0;
 			arg_fIn.read((char*)&size, sizeof(size));
@@ -531,9 +530,9 @@ namespace ButiScript {
 
 	public:
 		int		valueType = 0;
-		int		flags_ = 0;
-		int		index_ = 0;
-		std::vector<int>	args_;
+		int		flags = 0;
+		int		index = 0;
+		std::vector<int>	vec_args;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
 	};
@@ -549,23 +548,23 @@ namespace ButiScript {
 		}
 
 
-		FunctionTag* Add(const std::string& name, const FunctionTag& tag)
+		FunctionTag* Add(const std::string& arg_name, const FunctionTag& arg_tag)
 		{
-			auto key = name;
-			auto result = map_functions.emplace(key, tag);
+			auto key = arg_name;
+			auto result = map_functions.emplace(key, arg_tag);
 
 			return &result->second;
 		}
 
-		const FunctionTag* Find_strict(const std::string& name, const std::vector<int>& args) const
+		const FunctionTag* Find_strict(const std::string& arg_name, const std::vector<int>& arg_vec_args) const
 		{
-			const_iter itr = map_functions.find(name);
+			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
 				return nullptr;
 			}
-			auto end = map_functions.upper_bound(name);
+			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList_strict(args)) {
+				if (itr->second.CheckArgList_strict(arg_vec_args)) {
 
 					return &itr->second;
 				}
@@ -573,17 +572,17 @@ namespace ButiScript {
 			return nullptr;
 		}
 
-		FunctionTag* Find_strict(const std::string& name, const std::vector<ArgDefine>& vec_args)
+		FunctionTag* Find_strict(const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_args)
 		{
-			iter itr = map_functions.find(name);
+			iter itr = map_functions.find(arg_name);
 
 			if (itr == map_functions.end()) {
 				return nullptr;
 			}
 
-			auto end = map_functions.upper_bound(name);
+			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList_strict(vec_args)) {
+				if (itr->second.CheckArgList_strict(arg_vec_args)) {
 
 					return &itr->second;
 				}
@@ -591,15 +590,15 @@ namespace ButiScript {
 			return nullptr;
 		}
 
-		const FunctionTag* Find(const std::string& name, const std::vector<int>& args) const
+		const FunctionTag* Find(const std::string& arg_name, const std::vector<int>& arg_vec_args) const
 		{
-			const_iter itr = map_functions.find(name);
+			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
 				return nullptr;
 			}
-			auto end = map_functions.upper_bound(name);
+			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList(args)) {
+				if (itr->second.CheckArgList(arg_vec_args)) {
 
 					return &itr->second;
 				}
@@ -607,17 +606,17 @@ namespace ButiScript {
 			return nullptr;
 		}
 
-		FunctionTag* Find(const std::string& name, const std::vector<ArgDefine>& vec_args)
+		FunctionTag* Find(const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_args)
 		{
-			iter itr = map_functions.find(name);
+			iter itr = map_functions.find(arg_name);
 
 			if (itr == map_functions.end()) {
 				return nullptr;
 			}
 
-			auto end = map_functions.upper_bound(name);
+			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList(vec_args)) {
+				if (itr->second.CheckArgList(arg_vec_args)) {
 
 					return &itr->second;
 				}
@@ -625,18 +624,18 @@ namespace ButiScript {
 			return nullptr;
 		}
 
-		const FunctionTag* Find(const std::string& name) const
+		const FunctionTag* Find(const std::string& arg_name) const
 		{
-			const_iter itr = map_functions.find(name);
+			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
 				return nullptr;
 			}
 			return &itr->second;
 		}
 
-		FunctionTag* Find(const std::string& name)
+		FunctionTag* Find(const std::string& arg_name)
 		{
-			iter itr = map_functions.find(name);
+			iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
 				return nullptr;
 			}
@@ -662,9 +661,9 @@ namespace ButiScript {
 			return map_functions.size();
 		}
 
-		FunctionTag* operator[](const int index) {
+		FunctionTag* operator[](const int arg_index) {
 			auto itr = map_functions.begin();
-			int maxCount = min(map_functions.size(),index);
+			int maxCount = min(map_functions.size(),arg_index);
 			for (int i = 0; i < maxCount; i++) {
 				itr++;
 			}
@@ -722,8 +721,8 @@ namespace ButiScript {
 		int GetTypeIndex()const {
 			return typeIndex;
 		}
-		int GetMemberTypeIndex(const int index)const {
-			return vec_memberTypes[index];
+		int GetMemberTypeIndex(const int arg_index)const {
+			return vec_memberTypes[arg_index];
 		}
 		int GetMemberSize()const {
 			return vec_memberTypes.size();
@@ -866,17 +865,17 @@ namespace ButiScript {
 	class TypeTable {
 	public:
 		void Release();
-		const TypeTag* GetType(const int index) const {
-			if (vec_types.size() <= index) {
+		const TypeTag* GetType(const int arg_index) const {
+			if (vec_types.size() <= arg_index) {
 				return nullptr;
 			}
-			return vec_types[index];
+			return vec_types[arg_index];
 		}
-		TypeTag* GetType(const int index) {
-			if (vec_types.size() <= index) {
+		TypeTag* GetType(const int arg_index) {
+			if (vec_types.size() <= arg_index) {
 				return nullptr;
 			}
-			return vec_types[index];
+			return vec_types[arg_index];
 		}
 		const std::map<std::string, int>& GetArgmentKeyMap()const {
 			return map_argmentChars;
@@ -1039,13 +1038,13 @@ inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& 
 {
 	std::string output = name;
 
-	if (args_.size()) {
+	if (vec_args.size()) {
 		output += ":";
 	}
 
-	for (int i = 0; i < args_.size(); i++) {
-		output += arg_typeTable.GetType(args_[i] & ~TYPE_REF)->argName;
-		if (i + 1 != args_.size()) {
+	for (int i = 0; i < vec_args.size(); i++) {
+		output += arg_typeTable.GetType(vec_args[i] & ~TYPE_REF)->argName;
+		if (i + 1 != vec_args.size()) {
 			output += ",";
 		}
 	}
