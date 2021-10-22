@@ -194,8 +194,6 @@ public:
 
 	void ValueDefine(const int arg_type, const std::vector<Node_t>& node,const AccessModifier arg_access);
 	void FunctionDefine(const int arg_type, const std::string& arg_name, const std::vector<int>& arg_vec_argIndex);
-	void AddFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access, FunctionTable* arg_funcTable = nullptr);
-	void AddRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,FunctionTable* arg_funcTable = nullptr);
 	void RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable=nullptr);
 	void RegistRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine,FunctionTable* arg_functionTable);
 	void RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value);
@@ -269,6 +267,9 @@ public:
 	NameSpace_t GetCurrentNameSpace()const {
 		return currentNameSpace;
 	}
+	void SetCurrentNameSpace(NameSpace_t arg_namespace) {
+		currentNameSpace = arg_namespace;
+	}
 
 	const TypeTag* GetCurrentThisType()const {
 		if (!vec_thisType.size()) {
@@ -295,8 +296,12 @@ public:
 #include "VM_create.h"
 #undef	VM_CREATE
 
-	void BlockIn();
+	void BlockIn(const bool arg_isFunctionBlock = false, const bool arg_isSubFunctionBlock = false);
 	void BlockOut();
+
+	void ValueAddressAddition(const int arg_difference);
+	void ValueAddressSubtract(const int arg_difference);
+
 	void AllocStack();
 	int LabelSetting();
 
@@ -315,7 +320,7 @@ public:
 	void SetLabel(const int arg_label);
 
 	void PushString(const std::string& arg_str);
-	int GetFunctionType() const { return current_function_type; }
+	int GetCurrentFunctionType() const { return vec_function_type.back(); }
 	bool CreateData(ButiScript::CompiledData& arg_ref_data,const int arg_codeSize);
 
 	void PushNameSpace(NameSpace_t arg_namespace);
@@ -335,6 +340,14 @@ public:
 	void ClearNameSpace();
 	void Analyze();
 	void IncreaseRamdaCount();
+	std::vector<ValueTable>& GetValueTable() { return variables; }
+	void PushCurrentFunctionType(const int arg_type) { vec_function_type.push_back(arg_type); }
+	void PushCurrentFunctionName(const std::string& arg_name) { vec_function_name.push_back( arg_name); }
+	void PopCurrentFunctionType();
+	void PopCurrentFunctionName();
+	FunctionTable& GetFunctions() { return functions; }
+	const std::vector<VMCode>& GetStatement()const { return statement; }
+	
 private:
 
 	FunctionTable functions;
@@ -361,8 +374,8 @@ private:
 	int break_index;
 	int error_count;
 
-	std::string current_function_name;
-	int current_function_type;
+	std::vector< std::string >vec_function_name;
+	std::vector<int> vec_function_type;
 	int ramdaCount;
 };
 template<typename T>

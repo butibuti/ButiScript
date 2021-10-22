@@ -576,12 +576,13 @@ namespace ButiScript {
 
 	// à¯êî
 
-
+	class NameSpace;
+	using NameSpace_t = std::shared_ptr<NameSpace>;
 	// ä÷êî
 	class Function :public std::enable_shared_from_this<Function>{
 	public:
 		Function(const std::string& arg_name)
-			: name(arg_name)
+			: name(arg_name),serchName(arg_name)
 		{
 			accessType = AccessModifier::Public;
 		}
@@ -610,14 +611,18 @@ namespace ButiScript {
 		const std::string& GetName()const {
 			return name;
 		}
+		void SetParent(Function_t arg_function) { parentFunction = arg_function; }
+		
 	protected:
 		Function(){}
 		int valueType;
-		std::string name;
+		std::string name,serchName;
 		std::vector<ArgDefine> args;
 		AccessModifier accessType=AccessModifier::Public;
 		Block_t block;
 		std::vector<Function_t> vec_subFunctions;
+		Function_t parentFunction;
+		NameSpace_t ownNameSpace;
 	};
 
 	class Ramda :public Function {

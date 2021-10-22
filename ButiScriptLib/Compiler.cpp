@@ -139,8 +139,11 @@ void ButiScript::Compiler::RamdaCountReset()
 void ButiScript::Compiler::PushAnalyzeFunction(Function_t arg_function)
 {
 	PushNameSpace(std::make_shared<NameSpace>(arg_function->GetName()));
-	currentNameSpace->PushFunction(arg_function);
+	if (vec_parentFunction.size()) {
+		arg_function->SetParent(vec_parentFunction.back());
+	}
 	vec_parentFunction.push_back(arg_function);
+
 }
 
 void ButiScript::Compiler::PopAnalyzeFunction()
@@ -181,6 +184,20 @@ void ButiScript::Compiler::Analyze()
 void ButiScript::Compiler::IncreaseRamdaCount()
 {
 	ramdaCount++;
+}
+
+void ButiScript::Compiler::PopCurrentFunctionType()
+{
+	if (vec_function_type.size()) {
+		vec_function_type.erase((vec_function_type.end()-1));
+	}
+}
+
+void ButiScript::Compiler::PopCurrentFunctionName()
+{
+	if (vec_function_name.size()) {
+		vec_function_name.erase((vec_function_name.end() - 1));
+	}
 }
 
 
@@ -260,102 +277,7 @@ void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_n
 }
 
 
-// 引数の変数名を登録
-struct add_value {
-	ButiScript::Compiler* p_compiler;
-	ButiScript::ValueTable& values;
-	int addr;
-	add_value(ButiScript::Compiler* arg_p_comp, ButiScript::ValueTable& arg_values,const int arg_addres=-4) : p_compiler(arg_p_comp), values(arg_values), addr(arg_addres)
-	{
-	}
 
-	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
-	{
-		if (!values.add_arg(arg_argDefine.GetType(), arg_argDefine.GetName(), addr)) {
-			p_compiler->error("引数 " + arg_argDefine.GetName() + " は既に登録されています。");
-		}
-	}
-};
-
-void ButiScript::Compiler::AddFunction(int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block,const AccessModifier arg_access, FunctionTable* arg_funcTable )
-{
-
-	std::string functionName=currentNameSpace->GetParent()? currentNameSpace->GetParent()->GetGlobalNameString()+arg_name:  currentNameSpace->GetGlobalNameString() + arg_name;
-	FunctionTable* p_functable = arg_funcTable ? arg_funcTable : &functions;
-
-
-	FunctionTag* tag = p_functable->Find_strict(functionName,arg_vec_argDefine);
-	if (tag) {
-		if (tag->IsDefinition()) {
-			error("関数 " + functionName + " は既に定義されています");
-			return;
-		}
-		if (tag->IsDeclaration() && !tag->CheckArgList_strict(arg_vec_argDefine)) {
-			error("関数 " + functionName + " に異なる型の引数が指定されています");
-			return;
-		}
-		tag->SetDefinition();	// 定義済みに設定
-	}
-	else {
-		FunctionTag func(arg_type,functionName);
-		func.SetArgs(arg_vec_argDefine);				// 引数を設定
-		func.SetDefinition();			// 定義済み
-		func.SetIndex(MakeLabel());		// ラベル登録
-		tag = p_functable->Add(functionName, func);
-		if (tag == nullptr)
-			error("内部エラー：関数テーブルに登録できません");
-	}
-
-	current_function_name = functionName;		// 処理中の関数名を登録
-	current_function_type = arg_type;		// 処理中の関数型を登録
-
-	// 関数のエントリーポイントにラベルを置く
-
-	SetLabel(tag->GetIndex());
-
-	BlockIn();		// 変数スタックを増やす
-
-	// 引数リストを登録
-	int address = -4;
-	//メンバ関数の場合thisを引数に追加
-	if (arg_funcTable) {
-		ArgDefine argDef(GetCurrentThisType()->typeIndex, thisPtrName);
-		add_value(this, variables.back(), address)(argDef);
-		address--;
-	}
-	auto endItr = arg_vec_argDefine.rend();
-	for (auto itr = arg_vec_argDefine.rbegin(); itr != endItr; itr++) {
-		add_value(this, variables.back(),address)(*itr);
-		address--;
-	}
-
-
-	// 文があれば、文を登録
-	if (arg_block) {
-		int ret=arg_block->Analyze(this);
-	}
-
-	const VMCode& code = statement.back();
-	if (arg_type == TYPE_VOID) {			
-		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
-			OpReturn();					
-	}
-	else {
-		if (code.op != VM_RETURNV) {	
-			error("関数 " + functionName + " の最後にreturn文が有りません。");
-		}
-	}
-
-	BlockOut();		// 変数スタックを減らす
-
-	current_function_name.clear();		// 処理中の関数名を消去
-
-}
-
-void ButiScript::Compiler::AddRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, FunctionTable* arg_funcTable)
-{
-	AddFunction(arg_type, arg_name, arg_vec_argDefine, arg_block, AccessModifier::Public, arg_funcTable);
-}
 
 void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
 {
@@ -479,26 +401,46 @@ bool ButiScript::Compiler::JmpBreakLabel()
 	return true;
 }
 
-// ブロック内では、新しい変数セットに変数を登録する
-
-void ButiScript::Compiler::BlockIn()
+// ブロック内では新しい変数セットに変数を登録する
+void ButiScript::Compiler::BlockIn(const bool arg_isFunctionBlock, const bool arg_isSubFunctionBlock)
 {
-	int start_addr = 0;					// 変数アドレスの開始位置
-	if (variables.size() >= 2) {			// ブロックの入れ子は、開始アドレスを続きからにする。最初のvariablesTableはグローバル変数用なので考慮しない
+	int start_addr = 0;					
+	if (variables.size() > 1&&!arg_isSubFunctionBlock) {			
 		start_addr = variables.back().size();
 	}
-	variables.push_back(ValueTable(start_addr));
+	variables.push_back(ValueTable(start_addr,arg_isFunctionBlock));
 }
-
-// ブロックの終了で、変数スコープが消える（変数セットを削除する）
 
 void ButiScript::Compiler::BlockOut()
 {
 	variables.pop_back();
 }
 
-// ローカル変数用にスタックを確保
+void ButiScript::Compiler::ValueAddressAddition(const int arg_difference)
+{
+	auto difference = arg_difference;
+	int endIndex = 1;
+	for (int i = variables.size() - 2; i >= endIndex; i--) {
+		difference=variables[i].AddressAdd(difference);
+		if (variables[i - 1].IsFunctionBlock()) {
+			difference += 4;
+		}
+	}
+}
 
+void ButiScript::Compiler::ValueAddressSubtract(const int arg_difference)
+{
+	auto difference = arg_difference;
+	int endIndex = 1;
+	for (int i = variables.size() - 2; i >= endIndex; i--) {
+		difference = variables[i].AddressSub(difference);
+		if (variables[i - 1].IsFunctionBlock()) {
+			difference -= 4;
+		}
+	}
+}
+
+// ローカル変数用にスタックを確保
 void ButiScript::Compiler::AllocStack()
 {
 	variables.back().Alloc(this);
@@ -600,7 +542,7 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, in
 	for (int i = 0; i < arg_ref_data.valueSize; i++) {
 		auto p_value = &variables[0][i];
 		if (p_value->access == AccessModifier::Public) {
-			arg_ref_data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->address);
+			arg_ref_data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->GetAddress());
 		}
 	}
 	for (int i = 0; i < enums.Size();i++) {

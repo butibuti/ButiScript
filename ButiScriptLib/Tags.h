@@ -166,19 +166,24 @@ namespace ButiScript {
 
 	class ValueTag {
 	public:
-		ValueTag() : address(-1), valueType(TYPE_INTEGER), currentSize(1), isGlobal(false)
+		friend class ValueTable;
+		ValueTag() : address(-1), originalAddress(-1), valueType(TYPE_INTEGER), currentSize(1), isGlobal(false)
 		{
 		}
 		ValueTag(const int arg_addr, const int arg_type, const int arg_size, const bool arg_global ,const AccessModifier arg_access)
-			: address(arg_addr), valueType(arg_type), currentSize(arg_size), isGlobal(arg_global),access(arg_access)
+			: address(arg_addr),originalAddress(arg_addr), valueType(arg_type), currentSize(arg_size), isGlobal(arg_global),access(arg_access)
 		{
 		}
 
-		int		address;
 		int		valueType;
 		int		currentSize;
 		bool	isGlobal;
 		AccessModifier access=AccessModifier::Public;
+		int GetAddress()const { return address; }
+		
+	private:
+
+		int		address,originalAddress;
 	};
 	class ValueTable {
 	private:
@@ -186,7 +191,7 @@ namespace ButiScript {
 		using const_iter = std::map<std::string, ValueTag>::const_iterator;
 
 	public:
-		ValueTable(const int arg_start_addr = 0) : addr(arg_start_addr), isGlobal(false)
+		ValueTable(const int arg_start_addr = 0, const bool arg_isFunctionBlockTable = false) : addr(arg_start_addr), isGlobal(false), isFunction(true)
 		{
 		}
 
@@ -217,10 +222,29 @@ namespace ButiScript {
 		bool add_arg(const int arg_type, const std::string& arg_name, const int arg_addr)
 		{
 			std::pair<iter, bool> result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public)));
+			argmentsCount++;
 			return result.second;
 		}
 
 		int size() const { return addr; }
+		int valueCount()const { return map_variables.size(); }
+
+		int AddressAdd(const int arg_v) {
+			auto difference = arg_v +( map_variables.size() - 1-argmentsCount);
+			for (auto itr = map_variables.begin(), end = map_variables.end(); itr != end; itr++) {
+				itr->second.address = itr->second.originalAddress+ difference;
+			}
+			return difference+argmentsCount;
+		}
+		int AddressSub(const int arg_v) {
+
+			auto difference = arg_v - (map_variables.size() - 1-argmentsCount);
+			for (auto itr = map_variables.begin(), end = map_variables.end(); itr != end; itr++) {
+				itr->second.address = itr->second.originalAddress + difference;
+			}
+			return difference-argmentsCount;
+		}
+
 		void Clear()
 		{
 			map_variables.clear();
@@ -253,12 +277,12 @@ namespace ButiScript {
 #ifdef BUTIGUI_H
 				ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.valueType )+ ", size = " +std::to_string( it.second.currentSize )+ ", global = " + std::to_string( it.second.isGlobal));
 #else
-				std::cout << it.first << ", addr = " << it.second.address << ", type = " << it.second.valueType << ", size = " << it.second.currentSize << ", global = " << it.second.isGlobal << std::endl;
+				std::cout << it.first << ", addr = " << it.second.GetAddress() << ", type = " << it.second.valueType << ", size = " << it.second.currentSize << ", global = " << it.second.isGlobal << std::endl;
 
 #endif // BUTIGUI_H
 				}
 		};
-
+		bool IsFunctionBlock()const { return isFunction; }
 		void dump() const
 		{
 
@@ -274,8 +298,8 @@ namespace ButiScript {
 	private:
 		std::map <std::string, ValueTag> map_variables;
 		std::vector < int> vec_variableTypes;
-		int		addr;
-		bool	isGlobal;
+		int		addr,argmentsCount=0;
+		bool	isGlobal,isFunction;
 	};
 
 

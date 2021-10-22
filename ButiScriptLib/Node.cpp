@@ -13,6 +13,8 @@
 
 
 namespace ButiScript {
+const char* thisPtrName = "this";
+const int argmentAddressStart=-4;
 bool CanTypeCast(const int arg_left, const int arg_right) {
 	if (arg_left == TYPE_STRING || arg_right == TYPE_STRING) {
 		if (arg_left != arg_right) {
@@ -1280,19 +1282,19 @@ int Node_value::Push(Compiler* arg_compiler) const{
 			if (valueTag->isGlobal) {		// グローバル変数
 				if (leftNode) {		// 配列
 					leftNode->Push(arg_compiler);
-					arg_compiler->PushGlobalArrayRef(valueTag->address);
+					arg_compiler->PushGlobalArrayRef(valueTag->GetAddress());
 				}
 				else {
-					arg_compiler->PushGlobalValueRef(valueTag->address);
+					arg_compiler->PushGlobalValueRef(valueTag->GetAddress());
 				}
 			}
 			else {					// ローカル変数
 				if (leftNode) {		// 配列
 					leftNode->Push(arg_compiler);
-					arg_compiler->PushLocalArrayRef(valueTag->address);
+					arg_compiler->PushLocalArrayRef(valueTag->GetAddress());
 				}
 				else {
-					arg_compiler->PushLocalRef(valueTag->address);
+					arg_compiler->PushLocalRef(valueTag->GetAddress());
 				}
 			}
 			return valueTag->valueType & ~TYPE_REF;
@@ -1322,19 +1324,19 @@ int Node_value::PushClone(Compiler* arg_compiler) const{
 			if (valueTag->isGlobal) {		// グローバル変数
 				if (leftNode) {		// 配列
 					leftNode->Push(arg_compiler);
-					arg_compiler->PushGlobalArray(valueTag->address);
+					arg_compiler->PushGlobalArray(valueTag->GetAddress());
 				}
 				else {
-					arg_compiler->PushGlobalValue(valueTag->address);
+					arg_compiler->PushGlobalValue(valueTag->GetAddress());
 				}
 			}
 			else {					// ローカル変数
 				if (leftNode) {		// 配列
 					leftNode->Push(arg_compiler);
-					arg_compiler->PushLocalArray(valueTag->address);
+					arg_compiler->PushLocalArray(valueTag->GetAddress());
 				}
 				else {
-					arg_compiler->PushLocal(valueTag->address);
+					arg_compiler->PushLocal(valueTag->GetAddress());
 				}
 			}
 			return valueTag->valueType & ~TYPE_REF;
@@ -1366,19 +1368,19 @@ int Node_value::Pop(Compiler* arg_compiler) const{
 			if (valueTag->isGlobal) {		// グローバル変数
 				if (leftNode) {		// 配列
 					leftNode->Push(arg_compiler);
-					arg_compiler->PopArray(valueTag->address);
+					arg_compiler->PopArray(valueTag->GetAddress());
 				}
 				else {
-					arg_compiler->PopValue(valueTag->address);
+					arg_compiler->PopValue(valueTag->GetAddress());
 				}
 			}
 			else {					// ローカル変数
 				if (leftNode) {		// 配列
 					leftNode->Push(arg_compiler);
-					arg_compiler->PopLocalArray(valueTag->address);
+					arg_compiler->PopLocalArray(valueTag->GetAddress());
 				}
 				else {
-					arg_compiler->PopLocal(valueTag->address);
+					arg_compiler->PopLocal(valueTag->GetAddress());
 				}
 			}
 			return valueTag->valueType & ~TYPE_REF;
@@ -1427,19 +1429,19 @@ struct set_arg {
 					if (tag->isGlobal) {
 						if (arg_node->GetLeft()) {
 							arg_node->GetLeft()->Push(p_compiler);
-							p_compiler->PushGlobalArrayRef(tag->address);
+							p_compiler->PushGlobalArrayRef(tag->GetAddress());
 						}
 						else {
-							p_compiler->PushGlobalValueRef(tag->address);
+							p_compiler->PushGlobalValueRef(tag->GetAddress());
 						}
 					}
 					else {
 						if (arg_node->GetLeft()) {
 							arg_node->GetLeft()->Push(p_compiler);
-							p_compiler->PushLocalArrayRef(tag->address);
+							p_compiler->PushLocalArrayRef(tag->GetAddress());
 						}
 						else {
-							p_compiler->PushLocalRef(tag->address);
+							p_compiler->PushLocalRef(tag->GetAddress());
 						}
 					}
 				}
@@ -1526,11 +1528,11 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 			arg_compiler->PushConstInt(argSize);
 			if (valueTag->isGlobal) {		// グローバル変数
 
-				arg_compiler->PushGlobalValue(valueTag->address);
+				arg_compiler->PushGlobalValue(valueTag->GetAddress());
 			}
 			else {		
 
-				arg_compiler->PushLocal(valueTag->address);
+				arg_compiler->PushLocal(valueTag->GetAddress());
 			}
 			arg_compiler->OpCallByVariable();
 			return valueType->GetFunctionObjectReturnType();
@@ -1728,7 +1730,7 @@ int Statement_break::Analyze(Compiler* arg_compiler)
 int Statement_return::Analyze(Compiler* arg_compiler) 
 {
 
-	if (arg_compiler->GetFunctionType() == TYPE_VOID) {	// 戻り値無し
+	if (arg_compiler->GetCurrentFunctionType() == TYPE_VOID) {	// 戻り値無し
 		if (vec_node != 0) {
 			arg_compiler->error("void関数に戻り値が設定されています");
 		}
@@ -1741,7 +1743,7 @@ int Statement_return::Analyze(Compiler* arg_compiler)
 		else {
 			int node_type = vec_node->Push(arg_compiler);		// 戻り値をpush
 
-			if (!CanTypeCast( node_type ,arg_compiler->GetFunctionType())) {
+			if (!CanTypeCast( node_type ,arg_compiler->GetCurrentFunctionType())) {
 				arg_compiler->error("戻り値の型が合いません");
 			}
 		}
@@ -2235,29 +2237,126 @@ void Class::SetValue(const std::string& arg_name, const int arg_type, const Acce
 
 int Function::PushCompiler(Compiler* arg_compiler)
 {
+	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
 
-	for (auto itr = vec_subFunctions.begin(), end = vec_subFunctions.end(); itr != end; itr++) {
-		//(*itr)->PushCompiler(arg_compiler);
-	}
+	arg_compiler->GetCurrentNameSpace()->PushFunction(shared_from_this());
+	serchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
+	
 	return 0;
 }
 
 int Function::PushCompiler_sub(Compiler* arg_compiler)
 {
+	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
+	serchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	arg_compiler->PushSubFunction(shared_from_this());
 	return 0;
 }
 
+
+// 引数の変数名を登録
+struct add_value {
+	ButiScript::Compiler* p_compiler;
+	ButiScript::ValueTable& values;
+	int addr;
+	add_value(ButiScript::Compiler* arg_p_comp, ButiScript::ValueTable& arg_values, const int arg_addres = argmentAddressStart) : p_compiler(arg_p_comp), values(arg_values), addr(arg_addres)
+	{
+	}
+
+	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
+	{
+		if (!values.add_arg(arg_argDefine.GetType(), arg_argDefine.GetName(), addr)) {
+			p_compiler->error("引数 " + arg_argDefine.GetName() + " は既に登録されています。");
+		}
+	}
+};
+
 // 関数の解析
 int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
+	auto currentNameSpace = arg_compiler->GetCurrentNameSpace();
+	if (!ownNameSpace) { ownNameSpace = currentNameSpace; }
+	arg_compiler->SetCurrentNameSpace(ownNameSpace);
+	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 
-	arg_compiler->AddFunction(valueType, name, args, block, accessType, arg_p_funcTable);
 
+	FunctionTag* tag = p_functable->Find_strict(serchName, args);
+	if (tag) {
+		if (tag->IsDefinition()) {
+			arg_compiler-> error("関数 " + serchName+ " は既に定義されています");
+			return 0;
+		}
+		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
+			arg_compiler-> error("関数 " + serchName + " に異なる型の引数が指定されています");
+			return 0;
+		}
+		tag->SetDefinition();	// 定義済みに設定
+	}
+	else {
+		FunctionTag func(valueType, serchName);
+		func.SetArgs(args);				// 引数を設定
+		func.SetDefinition();			// 定義済み
+		func.SetIndex(arg_compiler-> MakeLabel());		// ラベル登録
+		tag = p_functable->Add(serchName, func);
+		if (tag == nullptr)
+			arg_compiler->error("内部エラー：関数テーブルに登録できません");
+	}
+
+	arg_compiler->PushCurrentFunctionName(serchName);		// 処理中の関数名を登録
+	arg_compiler->PushCurrentFunctionType(  valueType);		// 処理中の関数型を登録
+
+	// 関数のエントリーポイントにラベルを置く
+
+	arg_compiler->SetLabel(tag->GetIndex());
+
+	arg_compiler-> BlockIn(false,true);		// 変数スタックを増やす
+
+	// 引数リストを登録
+	int address = argmentAddressStart;
+	//メンバ関数の場合thisを引数に追加
+	if (arg_p_funcTable) {
+		ArgDefine argDef(arg_compiler-> GetCurrentThisType()->typeIndex, thisPtrName);
+		add_value(arg_compiler, arg_compiler->GetValueTable() .back(), address)(argDef);
+		address--;
+	}
+	
+	for (auto itr = args.rbegin(), endItr = args.rend(); itr != endItr; itr++) {
+		add_value(arg_compiler, arg_compiler->GetValueTable().back(), address)(*itr);
+		address--;
+	}
+	arg_compiler->ValueAddressSubtract(address);
+
+	// 文があれば、文を登録
+	if (block) {
+		int ret = block->Analyze(arg_compiler);
+	}
+
+	const VMCode& code = arg_compiler->GetStatement() .back();
+	if (valueType == TYPE_VOID) {
+		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
+			arg_compiler-> OpReturn();
+	}
+	else {
+		if (code.op != VM_RETURNV) {
+			arg_compiler->error("関数 " + serchName + " の最後にreturn文が有りません。");
+		}
+	}
+
+
+	for (auto itr = vec_subFunctions.begin(), end = vec_subFunctions.end(); itr != end; itr++) {
+		(*itr)->Analyze(arg_compiler, arg_p_funcTable);
+	}
+	vec_subFunctions.clear();
+	arg_compiler->ValueAddressAddition(-address);
+	arg_compiler->BlockOut();		// 変数スタックを減らす
+
+	arg_compiler->PopCurrentFunctionName();		// 処理中の関数名を消去
+	arg_compiler->PopCurrentFunctionType();		
+	arg_compiler->SetCurrentNameSpace(currentNameSpace);
 	return 0;
 }
 
@@ -2283,6 +2382,7 @@ int Ramda::PushCompiler(Compiler* arg_compiler)
 
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistRamda(typeTag->GetFunctionObjectReturnType(),name, args, nullptr);
+	serchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 
 	arg_compiler->PushSubFunction(shared_from_this());
 
@@ -2291,8 +2391,8 @@ int Ramda::PushCompiler(Compiler* arg_compiler)
 int Ramda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 	auto typeTag = arg_compiler->GetType(valueType);
-
-	arg_compiler->AddRamda (typeTag->GetFunctionObjectReturnType(),name, args, block, arg_p_funcTable);
+	valueType = typeTag->GetFunctionObjectReturnType();
+	Function::Analyze(arg_compiler,arg_p_funcTable);
 	return ramdaIndex;
 }
 }
