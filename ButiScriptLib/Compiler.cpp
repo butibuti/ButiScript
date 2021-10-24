@@ -593,7 +593,7 @@ void ButiScript::Compiler::DebugDump()
 	size_t vsize = variables.size();
 	message += "value stack = " + std::to_string(vsize) + '\n';
 	for (size_t i = 0; i < vsize; i++) {
-		variables[i].dump();
+		variables[i].Dump();
 	}
 	message += "---code---" + '\n';
 
@@ -626,7 +626,7 @@ void ButiScript::Compiler::DebugDump()
 	size_t vsize = variables.size();
 	std::cout << "value stack = " << vsize << std::endl;
 	for (size_t i = 0; i < vsize; i++) {
-		variables[i].dump();
+		variables[i].Dump();
 	}
 	std::cout << "---code---" << std::endl;
 

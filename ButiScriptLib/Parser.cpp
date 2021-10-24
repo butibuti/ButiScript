@@ -420,7 +420,6 @@ struct registMethod_func {
 	void operator()(const Ty1& arg_vec_decl, Ty2 arg_type, Ty3 arg_compiler) const
 	{
 		arg_type->RegistMethod(arg_vec_decl, arg_compiler);
-		arg_compiler->PopAnalyzeFunction();
 	}
 };
 

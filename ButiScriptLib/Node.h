@@ -601,7 +601,7 @@ namespace ButiScript {
 		{
 			block = arg_block;
 		}
-		int PushCompiler(Compiler* arg_compiler);
+		int PushCompiler(Compiler* arg_compiler,const bool arg_isMethod=false);
 		int PushCompiler_sub(Compiler* arg_compiler);
 		virtual int Analyze(Compiler* arg_compiler,FunctionTable* arg_p_funcTable =nullptr);
 		void set_type(const int arg_type) {

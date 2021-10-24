@@ -1,22 +1,18 @@
-main():int
-{
-
-	var i:int;
-	var f:int;
-	SubFunction(6,5);
-	SubFunction2();
-	return f+i*2;
-	SubFunction(arg_i:int,arg_i2:int):void{
-		f=10;
-		var i2:int;
-		i2=arg_i;
-		SubSubFunction();
-		SubSubFunction():void{
-			f+=2;
-			print(ToString(i2)+"\n");
+class Test{
+	Method(): void{
+		print("Method\n");
+		SubFunction();
+		SubFunction():int{
+			print("SubFunction!\n");
+			return 0;
 		}
 	}
-	SubFunction2():void{
-		i=50;
-	}
+}
+
+
+main():int
+{
+	var t:Test;
+	t.Method();
+	return 0;
 }

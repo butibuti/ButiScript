@@ -179,7 +179,7 @@ namespace ButiScript {
 		}
 		void PushConstInt()
 		{
-			PushConstInt(Value_Int());
+			PushConstInt(Constant<int>());
 		}
 
 		// 定数Push
@@ -189,7 +189,7 @@ namespace ButiScript {
 		}
 		void PushConstFloat()
 		{
-			PushConstFloat(Value_Float());
+			PushConstFloat(Constant<float>());
 		}
 
 		// 文字定数Push
@@ -199,7 +199,7 @@ namespace ButiScript {
 		}
 		void PushString()
 		{
-			PushString(Value_Int());
+			PushString(Constant<int>());
 		}
 
 
@@ -212,7 +212,7 @@ namespace ButiScript {
 		}
 		void PushGlobalValue()
 		{
-			PushGlobalValue(Value_Int());
+			PushGlobalValue(Constant<int>());
 		}
 
 		// ローカル変数のコピーをPush
@@ -223,7 +223,7 @@ namespace ButiScript {
 
 		void PushLocal()
 		{
-			PushLocal(Value_Int());
+			PushLocal(Constant<int>());
 		}
 
 		// 配列からコピーをPush
@@ -235,7 +235,7 @@ namespace ButiScript {
 
 		void PushGlobalArray()
 		{
-			PushGlobalArray(Value_Int());
+			PushGlobalArray(Constant<int>());
 		}
 
 		// ローカルの配列からコピーをPush
@@ -247,7 +247,7 @@ namespace ButiScript {
 
 		void PushLocalArray()
 		{
-			PushLocalArray(Value_Int());
+			PushLocalArray(Constant<int>());
 		}
 
 		//グローバル変数のメンバ変数のコピーをpush
@@ -259,7 +259,7 @@ namespace ButiScript {
 		}
 
 		void PushMember() {
-			PushMember( Value_Int());
+			PushMember( Constant<int>());
 		}
 
 		/////////////グローバル変数の参照Push定義////////////////
@@ -271,7 +271,7 @@ namespace ButiScript {
 		}
 		void PushGlobalValueRef()
 		{
-			PushGlobalValueRef(Value_Int());
+			PushGlobalValueRef(Constant<int>());
 		}
 
 		// ローカル変数の参照をPush
@@ -282,7 +282,7 @@ namespace ButiScript {
 
 		void PushLocalRef()
 		{
-			PushLocalRef(Value_Int());
+			PushLocalRef(Constant<int>());
 		}
 
 		// 配列から参照をPush
@@ -294,7 +294,7 @@ namespace ButiScript {
 
 		void PushGlobalArrayRef()
 		{
-			PushGlobalArrayRef(Value_Int());
+			PushGlobalArrayRef(Constant<int>());
 		}
 
 		// ローカルの配列から参照をPush
@@ -306,7 +306,7 @@ namespace ButiScript {
 
 		void PushLocalArrayRef()
 		{
-			PushLocalArrayRef(Value_Int());
+			PushLocalArrayRef(Constant<int>());
 		}
 
 
@@ -318,7 +318,7 @@ namespace ButiScript {
 		}
 
 		void PushMemberRef() {
-			PushMemberRef( Value_Int());
+			PushMemberRef( Constant<int>());
 		}
 
 
@@ -333,7 +333,7 @@ namespace ButiScript {
 		}
 
 		void PushAddr() {
-			PushAddr(Value_Int());
+			PushAddr(Constant<int>());
 		}
 
 		// 配列のアドレスをPush
@@ -346,7 +346,7 @@ namespace ButiScript {
 			push(base + index);
 		}
 		void PushArrayAddr() {
-			PushArrayAddr(Value_Int());
+			PushArrayAddr(Constant<int>());
 		}
 
 
@@ -357,7 +357,7 @@ namespace ButiScript {
 			valueStack[globalValue_base+ arg_val] = top(); pop();
 		}
 		void PopValue() {
-			PopValue(Value_Int());
+			PopValue(Constant<int>());
 		}
 		// ローカル変数にPop
 		inline void PopLocal(const int arg_val)
@@ -365,7 +365,7 @@ namespace ButiScript {
 			valueStack[arg_val + stack_base] = top(); pop();
 		}
 		void PopLocal() {
-			PopLocal(Value_Int());
+			PopLocal(Constant<int>());
 		}
 
 		//メンバ変数にPop
@@ -376,7 +376,7 @@ namespace ButiScript {
 			v->GetMember(arg_index)->Set(*top().valueData); pop();
 		}
 		void PopMember() {
-			PopMember(Value_Int());
+			PopMember(Constant<int>());
 		}
 		//メンバ変数にPop(参照)
 		inline void PopMemberRef(const int arg_index)
@@ -386,7 +386,7 @@ namespace ButiScript {
 			v->SetMember(top().valueData, arg_index); pop();
 		}
 		void PopMemberRef() {
-			PopMemberRef(Value_Int());
+			PopMemberRef(Constant<int>());
 		}
 
 		// 配列変数にPop
@@ -396,7 +396,7 @@ namespace ButiScript {
 			valueStack[(int)(arg_val + index)] = top(); pop();
 		}
 		void PopArray() {
-			PopArray(Value_Int());
+			PopArray(Constant<int>());
 		}
 
 		// ローカルの配列変数にPop
@@ -407,7 +407,7 @@ namespace ButiScript {
 		}
 
 		void PopLocalArray() {
-			PopLocalArray(Value_Int());
+			PopLocalArray(Constant<int>());
 		}
 
 		// ローカル変数(参照)にPop
@@ -417,7 +417,7 @@ namespace ButiScript {
 			SetRef(addr, top()); pop();
 		}
 		void PopLocalRef() {
-			PopLocalRef(Value_Int());
+			PopLocalRef(Constant<int>());
 		}
 		// ローカルの配列変数(参照)にPop
 		inline void PopLocalArrayRef(const int arg_val)
@@ -428,7 +428,7 @@ namespace ButiScript {
 		}
 		void PopLocalArrayRef()
 		{
-			PopLocalArrayRef(Value_Int());
+			PopLocalArrayRef(Constant<int>());
 		}
 
 
@@ -446,17 +446,17 @@ namespace ButiScript {
 		}
 		void OpAllocStack()
 		{
-			OpAllocStack(Value_Int());
+			OpAllocStack(Constant<int>());
 		}
 
 		void OpAllocStackEnumType() {
-			int type = Value_Int();
+			int type = Constant<int>();
 			auto value = Value(Type_Enum(), &data_->map_enumTag.at(type));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
 		void OpAllocStackFunctionType() {
-			int type = Value_Int();
+			int type = Constant<int>();
 			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable);
 			value.SetType(type);
 			this->valueStack.push(value);
@@ -470,7 +470,7 @@ namespace ButiScript {
 		}
 		void OpAllocStack_Ref()
 		{
-			OpAllocStack_Ref(Value_Int());
+			OpAllocStack_Ref(Constant<int>());
 		}
 		// ローカル変数を確保(スクリプト定義)
 		inline void OpAllocStack_ScriptType(const int arg_val)
@@ -480,7 +480,7 @@ namespace ButiScript {
 		}
 		void OpAllocStack_ScriptType()
 		{
-			OpAllocStack_ScriptType(Value_Int());
+			OpAllocStack_ScriptType(Constant<int>());
 		}
 
 		// ローカル変数(参照型)を確保(スクリプト定義)
@@ -490,17 +490,17 @@ namespace ButiScript {
 		}
 		void OpAllocStack_Ref_ScriptType()
 		{
-			OpAllocStack_Ref_ScriptType(Value_Int());
+			OpAllocStack_Ref_ScriptType(Constant<int>());
 		}
 		// ローカル変数(参照型)を確保(列挙型)
 		void OpAllocStack_Ref_EnumType()
 		{
-			OpAllocStack_Ref(Value_Int());
+			OpAllocStack_Ref(Constant<int>());
 		}
 		// ローカル変数(参照型)を確保(関数型)
 		void OpAllocStack_Ref_FunctionType()
 		{
-			OpAllocStack_Ref(Value_Int());
+			OpAllocStack_Ref(Constant<int>());
 		}
 
 
@@ -781,7 +781,7 @@ namespace ButiScript {
 			jmp(arg_val);
 		}
 		void OpJmp() {
-			OpJmp(Value_Int());
+			OpJmp(Constant<int>());
 		}
 
 		// 真の時ジャンプ
@@ -792,7 +792,7 @@ namespace ButiScript {
 				jmp(arg_val);
 		}
 		void OpJmpC() {
-			OpJmpC(Value_Int());
+			OpJmpC(Constant<int>());
 		}
 
 		// 偽の時ジャンプ
@@ -803,7 +803,7 @@ namespace ButiScript {
 				jmp(arg_val);
 		}
 		void OpJmpNC() {
-			OpJmpNC(Value_Int());
+			OpJmpNC(Constant<int>());
 		}
 
 		// switch文用特殊判定
@@ -816,7 +816,7 @@ namespace ButiScript {
 			}
 		}
 		void OpTest() {
-			OpTest(Value_Int());
+			OpTest(Constant<int>());
 		}
 
 		/////////////関数呼び出し定義////////////////
@@ -830,7 +830,7 @@ namespace ButiScript {
 		}
 
 		void OpCall() {
-			OpCall(Value_Int());
+			OpCall(Constant<int>());
 		}
 
 		void OpCallByVariable() {
@@ -870,7 +870,7 @@ namespace ButiScript {
 		//関数オブジェクトのアドレスをPush
 		void OpPushFunctionAddress() {
 
-			OpPushFunctionAddress(Value_Int());
+			OpPushFunctionAddress(Constant<int>());
 		}
 
 		// 仮想CPU停止
@@ -885,7 +885,7 @@ namespace ButiScript {
 		}
 
 		void OpSysCall() {
-			OpSysCall(Value_Int());
+			OpSysCall(Constant<int>());
 		}
 
 		//組み込みメソッド
@@ -895,7 +895,7 @@ namespace ButiScript {
 			(this->*p_sysMethodCall[arg_val])();
 		}
 		void OpSysMethodCall() {
-			OpSysMethodCall(Value_Int());
+			OpSysMethodCall(Constant<int>());
 		}
 
 	public:
@@ -1328,8 +1328,10 @@ namespace ButiScript {
 		}
 
 	private:
-		int Value_Int() { int v = *(int*)command_ptr_; command_ptr_ += 4; return v; }
-		float Value_Float() { float v = *(float*)command_ptr_; command_ptr_ += 4; return v; }
+
+		template <typename T>
+		T Constant(){ T v = *(T*)command_ptr_; command_ptr_ += sizeof(T); return v; }
+
 		int addr() const { return (int)(command_ptr_ - commandTable); }
 		void jmp(int addr) { command_ptr_ = commandTable + addr; }
 		void push(int arg_v) {

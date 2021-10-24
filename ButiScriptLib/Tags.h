@@ -270,6 +270,7 @@ namespace ButiScript {
 			return itr->first;
 		}
 
+		bool IsFunctionBlock()const { return isFunction; }
 #ifdef	_DEBUG
 		struct DumpAction {
 			void operator()(const std::pair<std::string, ValueTag>& it)
@@ -282,8 +283,7 @@ namespace ButiScript {
 #endif // BUTIGUI_H
 				}
 		};
-		bool IsFunctionBlock()const { return isFunction; }
-		void dump() const
+		void Dump() const
 		{
 
 #ifdef BUTIGUI_H
