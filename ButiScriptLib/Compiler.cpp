@@ -281,10 +281,8 @@ void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_n
 
 void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
 {
-	std::string functionName = currentNameSpace->GetGlobalNameString() + arg_name;
-	if (!arg_funcTable) {
-		arg_funcTable = &functions;
-	}
+	std::string functionName =arg_funcTable? arg_name: currentNameSpace->GetGlobalNameString() + arg_name;
+	arg_funcTable = arg_funcTable ? arg_funcTable : &functions;
 
 	const FunctionTag* tag = arg_funcTable->Find_strict(functionName,arg_vec_argDefines);
 	if (tag) {			// Šù‚ÉéŒ¾Ï‚İ

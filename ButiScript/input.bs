@@ -1,11 +1,17 @@
 class Test{
 	Method(): void{
-		print("Method\n");
+		var v:int;
 		SubFunction();
+
+		
+		print("v:"+ToString(v)+ "\n");
+
 		SubFunction():int{
 			print("SubFunction!\n");
+			v=20;
 			return 0;
 		}
+
 	}
 }
 

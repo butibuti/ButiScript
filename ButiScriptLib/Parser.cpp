@@ -291,12 +291,13 @@ struct make_functionWithAccess_func {
 
 //クラスの生成
 struct make_class_func {
-	template < typename Ty2>
+	template <typename Ty1, typename Ty2>
 	struct result { using type = Class_t; };
 
-	template <typename Ty2>
-	Class_t operator()(const Ty2& arg_name) const
+	template <typename Ty1, typename Ty2>
+	Class_t operator()(const Ty1& arg_name,Ty2 arg_compiler) const
 	{
+		arg_compiler->PushNameSpace(NameSpace_t(new NameSpace(arg_name)));
 		return Class_t(new Class(arg_name));
 	}
 };
@@ -852,10 +853,10 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> ':' >> type >> ';';
 
 			//クラス定義
-			define_class = "class" >> identifier[define_class.Class = make_class(arg1)] >> "{" >>
+			define_class = "class" >> identifier[define_class.Class = make_class(arg1,self.compiler)] >> "{" >>
 				*(decl_classMember
 					| function)
-				>> "}";
+				>> boost::spirit::ch_p('}')[popNameSpace(self.compiler)];
 			// 文
 			statement = boost::spirit::ch_p(';')
 				| assign >> ';'
@@ -1140,10 +1141,10 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 
 			//クラス定義
-			define_class = "class" >> identifier[define_class.Class = make_class(arg1)]>> "{" >>
+			define_class = "class" >> identifier[define_class.Class = make_class(arg1, self.compiler)]>> "{" >>
 				*(decl_classMember[make_classMember(define_class.Class, arg1)] 
 					|  function[registMethod(arg1, define_class.Class, self.compiler)])
-				>>"}";
+				>>boost::spirit::ch_p( '}')[popNameSpace(self.compiler)];
 
 			// 文ブロック
 			block = boost::spirit::ch_p('{')[block.node = make_block(self.compiler)]

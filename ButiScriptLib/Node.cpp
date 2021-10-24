@@ -2226,7 +2226,9 @@ int Class::Regist(Compiler* arg_compiler)
 }
 void Class::RegistMethod(Function_t arg_method, Compiler* arg_compiler)
 {
-	arg_method->PushCompiler(arg_compiler,true);
+	auto typeTag = arg_compiler->GetType(name);
+	auto methodTable = &typeTag->methods;
+	arg_method->PushCompiler(arg_compiler,methodTable);
 	vec_methods.push_back(arg_method);
 	
 }
@@ -2236,15 +2238,15 @@ void Class::SetValue(const std::string& arg_name, const int arg_type, const Acce
 	map_values.emplace(arg_name,v);
 }
 
-int Function::PushCompiler(Compiler* arg_compiler, const bool arg_isMethod)
+int Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p_funcTable )
 {
 	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
-	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
-	if (!arg_isMethod) {
+	arg_compiler->RegistFunction(valueType, name, args, block, accessType,arg_p_funcTable);
+	if (!arg_p_funcTable) {
 		arg_compiler->GetCurrentNameSpace()->PushFunction(shared_from_this());
 	}
-	serchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
+	serchName =arg_p_funcTable?name:  arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	
 	return 0;
 }
@@ -2281,7 +2283,7 @@ struct add_value {
 int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 	auto currentNameSpace = arg_compiler->GetCurrentNameSpace();
-	if (!ownNameSpace) { ownNameSpace = currentNameSpace; }
+	ownNameSpace =ownNameSpace?ownNameSpace: currentNameSpace;
 	arg_compiler->SetCurrentNameSpace(ownNameSpace);
 	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 
