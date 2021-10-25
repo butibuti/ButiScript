@@ -912,10 +912,10 @@ public:
 template<>
 class ValueData<Type_Func> :public IValueData {
 public:
-	ValueData(const int arg_v, const int arg_ref, std::map <  int,const std::string*> * arg_p_funcEntryTable) :IValueData(arg_ref), p_functionJumpTable(arg_p_funcEntryTable) {
+	ValueData(const int arg_v, const int arg_ref, std::map <  int,const std::string*> * arg_p_funcEntryTable, const std::vector<IValueData*>& arg_vec_referenceValue) :IValueData(arg_ref), p_functionJumpTable(arg_p_funcEntryTable),vec_referenceValue(arg_vec_referenceValue) {
 		p_instance = new int(arg_v);
 	}
-	ValueData(const int arg_ref, std::map <  int, std::string*>* arg_p_funcTag) :IValueData(arg_ref) {
+	ValueData(const int arg_ref, std::map <  int, std::string*>* arg_p_funcTag, const std::vector<IValueData*>& arg_vec_referenceValue) :IValueData(arg_ref), vec_referenceValue(arg_vec_referenceValue) {
 		p_instance = new int();
 	}
 	~ValueData() override {
@@ -925,6 +925,10 @@ public:
 		if (ary_memberType) {
 			delete ary_memberType;
 		}
+		for (auto itr = vec_referenceValue.begin(), end = vec_referenceValue.end(); itr != end; itr++) {
+			(*itr)->release();
+		}
+		vec_referenceValue.clear();
 	}
 
 	bool Eq(IValueData* p_other)const override {
@@ -942,7 +946,7 @@ public:
 	}
 
 	IValueData* Clone()const {
-		return new ValueData<Type_Func>(*(int*)p_instance, 1, p_functionJumpTable);
+		return new ValueData<Type_Func>(*(int*)p_instance, 1, p_functionJumpTable,vec_referenceValue);
 	}
 
 	void Nagative()override {
@@ -1046,6 +1050,7 @@ public:
 #endif // IMPL_BUTIENGINE
 
 	std::map <  int,const std::string*>* p_functionJumpTable;
+	std::vector<IValueData*> vec_referenceValue;
 };
 
 template<>
@@ -1954,8 +1959,8 @@ public:
 		valueData = new ValueData<Type_Enum>(0, 1,arg_enumTag);
 		valueType = TYPE_VOID;
 	}
-	Value(const Type_Func, std::map<int,const std::string*>* arg_entryPointTable) {
-		valueData = new ValueData<Type_Func>(0, 1, arg_entryPointTable);
+	Value(const Type_Func, std::map<int,const std::string*>* arg_entryPointTable,const std::vector<IValueData*>& arg_vec_refData) {
+		valueData = new ValueData<Type_Func>(0, 1, arg_entryPointTable,arg_vec_refData);
 		valueType = TYPE_VOID;
 	}
 

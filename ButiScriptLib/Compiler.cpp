@@ -279,16 +279,16 @@ void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_n
 
 
 
-void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
+ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
 {
 	std::string functionName =arg_funcTable? arg_name: currentNameSpace->GetGlobalNameString() + arg_name;
 	arg_funcTable = arg_funcTable ? arg_funcTable : &functions;
 
-	const FunctionTag* tag = arg_funcTable->Find_strict(functionName,arg_vec_argDefines);
+	FunctionTag* tag = arg_funcTable->Find_strict(functionName,arg_vec_argDefines);
 	if (tag) {			// 既に宣言済み
 		if (!tag->CheckArgList_strict(arg_vec_argDefines)) {
 			error("関数 " + functionName + " に異なる型の引数が指定されています");
-			return;
+			return tag;
 		}
 	}
 	else {
@@ -301,12 +301,13 @@ void ButiScript::Compiler::RegistFunction(const int arg_type, const std::string&
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
+	return  arg_funcTable->Find_strict(functionName, arg_vec_argDefines);
 }
 
 void ButiScript::Compiler::RegistRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
 {
-	RegistFunction(arg_type,arg_name , arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
-
+	auto tag= RegistFunction(arg_type,arg_name , arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
+	tag->isRamda = true;
 }
 
 void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value)
@@ -477,6 +478,7 @@ struct set_addr {
 		case ButiScript::VM_TEST:
 		case ButiScript::VM_CALL:
 		case ButiScript::VM_PUSHFUNCTIONOBJECT:
+		case ButiScript::VM_PUSHRAMDA:
 			arg_code.SetConstValue( vec_labels[arg_code.GetConstValue<int>()].pos);
 			break;
 		}

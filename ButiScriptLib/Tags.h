@@ -508,7 +508,9 @@ namespace ButiScript {
 		void SetDefinition() { flags |= flag_definition; }		// ’è‹`
 		void SetSystem() { flags |= flag_system; }
 
-		int GetIndex() const { return index; }
+		int GetIndex() const { 
+			return index; 
+		}
 		bool IsDeclaration() const { return (flags & flag_declaration) != 0; }
 		bool IsDefinition() const { return (flags & flag_definition) != 0; }
 		bool IsSystem() const { return (flags & flag_system) != 0; }
@@ -552,13 +554,13 @@ namespace ButiScript {
 			free(buff);
 		}
 
-	public:
 		int		valueType = 0;
 		int		flags = 0;
 		int		index = 0;
 		std::vector<int>	vec_args;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
+		bool isRamda=false;
 	};
 
 	class FunctionTable {

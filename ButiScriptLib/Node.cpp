@@ -1306,7 +1306,13 @@ int Node_value::Push(Compiler* arg_compiler) const{
 			return -1;
 		}
 		else {
-			arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
+			if (funcTag->isRamda) {
+				arg_compiler->PushConstInt(funcTag->valueType);
+				arg_compiler->OpPushRamda(funcTag->GetIndex());
+			}
+			else {
+				arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
+			}
 			return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
 		}
 	}

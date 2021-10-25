@@ -455,9 +455,10 @@ namespace ButiScript {
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
+		//関数オブジェクト型の確保
 		void OpAllocStackFunctionType() {
 			int type = Constant<int>();
-			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable);
+			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<IValueData*>());
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
@@ -871,6 +872,17 @@ namespace ButiScript {
 		void OpPushFunctionAddress() {
 
 			OpPushFunctionAddress(Constant<int>());
+		}
+
+		void OpPushRamda() {
+
+			int type = top().valueData->Get<int>(); pop();
+			int address = Constant<int>();
+			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<IValueData*>());
+			value.valueData->Set(address);
+			//((ValueData<Type_Func>*)value.valueData)->
+			value.SetType(type);
+			this->valueStack.push(value);
 		}
 
 		// 仮想CPU停止
