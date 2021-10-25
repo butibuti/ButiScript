@@ -8,19 +8,19 @@ void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(But
 {
 	*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1,&shp_compiledData->map_enumTag.at(type));
 }
-std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction=nullptr;
+
+auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
+#endif
+
+std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
 std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
 	if (!p_vec_createMemberInstanceFunction) {
 		p_vec_createMemberInstanceFunction = new std::vector<ButiScript::CreateMemberInstanceFunction>();
 	}
 	return *p_vec_createMemberInstanceFunction;
 }
-
-auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
-#endif
 ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 
-#ifdef IMPL_BUTIENGINE
 	std::vector<ButiScript::IValueData*> vec_members;
 	int memberSize = arg_info.GetMemberSize();
 	for (int i = 0; i < memberSize; i++) {
@@ -41,9 +41,7 @@ ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, s
 		}
 	}
 	return new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
-#else
-	return nullptr;
-#endif
+	//return nullptr;
 }
 
 #ifdef IMPL_BUTIENGINE
@@ -92,9 +90,7 @@ int ButiScript::Value::GetTypeIndex(long long int arg_typeFunc)
 void ButiScript::PushCreateMemberInstance(CreateMemberInstanceFunction arg_function)
 {
 
-#ifdef IMPL_BUTIENGINE
 	GetCreateMemberInstanceFunction().push_back(arg_function);
-#endif
 }
 
 #ifdef IMPL_BUTIENGINE

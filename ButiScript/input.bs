@@ -1,14 +1,14 @@
 class Test{
+	i:int;
 	Method(): void{
-		var v:int;
-		SubFunction();
 
-		
-		print("v:"+ToString(v)+ "\n");
+		this.i=5;
+		SubFunction();
+		print("i:"+ToString(this.i)+ "\n");
 
 		SubFunction():int{
 			print("SubFunction!\n");
-			v=20;
+			this.i=15;
 			return 0;
 		}
 
@@ -19,6 +19,11 @@ class Test{
 main():int
 {
 	var t:Test;
-	t.Method();
+	var r:()=>void;
+	r=()=>void{
+		t.Method();
+		print("ramdaramda\n");
+	};
+	r();
 	return 0;
 }
