@@ -119,6 +119,7 @@ namespace ButiScript {
 		int Assign(Compiler* arg_compiler) const;
 		int Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg) const;
 
+		virtual void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const;
 		static Node_t make_node(const int arg_op, const float arg_number, const Compiler* arg_compiler)
 		{
 			if (arg_op == OP_FLOAT)
@@ -154,6 +155,7 @@ namespace ButiScript {
 		int Push(Compiler* arg_compiler) const;
 		int PushClone(Compiler* arg_compiler) const;
 		int Pop(Compiler* arg_compiler) const;
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	};
 
 	// ノードリスト
@@ -174,6 +176,7 @@ namespace ButiScript {
 		size_t size() const { return vec_args.size(); }
 		Node_t get(size_t arg_index) const { return vec_args[arg_index]; }
 
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const ;
 	public:
 		std::vector<Node_t> vec_args;
 	};
@@ -191,6 +194,7 @@ namespace ButiScript {
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
 
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 		NodeList_t node_list_;
 	};
@@ -207,6 +211,8 @@ namespace ButiScript {
 		int PushClone(Compiler* arg_compiler) const;
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
+
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 	};
 
@@ -227,6 +233,8 @@ namespace ButiScript {
 		virtual int Push(Compiler* arg_compiler) const;
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
+
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 		NodeList_t node_list_;
 	};
@@ -308,7 +316,7 @@ namespace ButiScript {
 
 		virtual int Analyze(Compiler* arg_compiler) = 0;
 		virtual int Regist(Compiler* arg_compiler) { return 0; };
-
+		virtual void RamdaCapture(std::map<std::string,const ValueTag*>& arg_captureList, Compiler* arg_compiler){}
 		virtual int Case_Analyze(Compiler* arg_compiler, int* arg_default_label)
 		{
 			return 0;
@@ -331,45 +339,46 @@ namespace ButiScript {
 	class Statement_assign : public Statement {
 	public:
 		Statement_assign(Node_t arg_node)
-			: vec_node(arg_node)
+			: node(arg_node)
 		{
 		}
 
 		int Analyze(Compiler* arg_compiler);
 
-		int ReAnalyze(Compiler* arg_compiler);
-
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
-		Node_t vec_node;
+		Node_t node;
 	};
 
 	// 関数呼び出し
 	class ccall_statement : public Statement, public  std::enable_shared_from_this<ccall_statement> {
 	public:
 		ccall_statement(Node_t arg_node)
-			: vec_node(arg_node)
+			:  node(arg_node)
 		{
 		}
 
 		int Analyze(Compiler* arg_compiler);
-		void ReAnalyze(Compiler* arg_compiler);
+
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
-		Node_t vec_node;
+		Node_t node;
 	};
 
 	// case
 	class Statement_case : public Statement {
 	public:
 		Statement_case(Node_t arg_node)
-			: vec_node(arg_node)
+			: node(arg_node)
 		{
 		}
 
 		int Analyze(Compiler* arg_compiler);
 		int case_Analyze(Compiler* arg_compiler, int* arg_default_label);
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
-		Node_t vec_node;
+		Node_t node;
 		int label_;
 	};
 
@@ -394,13 +403,14 @@ namespace ButiScript {
 	public:
 		void Add(Node_t arg_node)
 		{
-			vec_node = arg_node;
+			node = arg_node;
 		}
 
 		int Analyze(Compiler* arg_compiler);
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
-		Node_t vec_node;
+		Node_t node;
 	};
 
 	// if
@@ -412,7 +422,7 @@ namespace ButiScript {
 
 		void Add(Node_t arg_node)
 		{
-			vec_node = arg_node;
+			node = arg_node;
 		}
 
 		void Add(const int arg_index, Statement_t arg_statement)
@@ -421,9 +431,10 @@ namespace ButiScript {
 		}
 
 		int Analyze(Compiler* arg_compiler);
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
-		Node_t vec_node;
+		Node_t node;
 		Statement_t vec_statement[2];
 	};
 
@@ -437,14 +448,15 @@ namespace ButiScript {
 
 		void Add(const int arg_index, Node_t arg_node)
 		{
-			vec_node[arg_index] = arg_node;
+			node[arg_index] = arg_node;
 		}
 
 		int Analyze(Compiler* arg_compiler);
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Statement_t vec_statement;
-		Node_t vec_node[3];
+		Node_t node[3];
 	};
 
 	// while
@@ -457,13 +469,14 @@ namespace ButiScript {
 
 		void Add(Node_t arg_node)
 		{
-			vec_node = arg_node;
+			node = arg_node;
 		}
 
 		int Analyze(Compiler* arg_compiler);
 
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
-		Node_t vec_node;
+		Node_t node;
 		Statement_t vec_statement;
 	};
 
@@ -471,7 +484,7 @@ namespace ButiScript {
 	class Statement_switch : public Statement {
 	public:
 		Statement_switch(Node_t arg_node)
-			: vec_node(arg_node)
+			: node(arg_node)
 		{
 		}
 
@@ -482,8 +495,9 @@ namespace ButiScript {
 
 		int Analyze(Compiler* arg_compiler);
 
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
-		Node_t vec_node;
+		Node_t node;
 		std::vector<Statement_t> vec_statement;
 	};
 
@@ -496,6 +510,7 @@ namespace ButiScript {
 		}
 
 		int Analyze(Compiler* arg_compiler);
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Block_t block_;
@@ -567,8 +582,12 @@ namespace ButiScript {
 			vec_state.push_back(arg_state);
 		}
 
-		int Analyze(Compiler* arg_compiler);
-
+		int Analyze(Compiler* arg_compiler, std::vector<Function_t>& arg_captureCheck);
+		inline int Analyze(Compiler* arg_compiler) {
+			static std::vector<Function_t> captureCheckDummy;
+			return Analyze(arg_compiler, captureCheckDummy);
+		}
+		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) ;
 	private:
 		std::vector<Declaration_t> vec_decl;
 		std::vector<Statement_t> vec_state;
@@ -612,7 +631,7 @@ namespace ButiScript {
 			return name;
 		}
 		void SetParent(Function_t arg_function) { parentFunction = arg_function; }
-		
+		virtual void RamdaCapture( Compiler* arg_compiler){}
 	protected:
 		Function(){}
 		int valueType;
@@ -630,8 +649,10 @@ namespace ButiScript {
 		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
 		int PushCompiler(Compiler* arg_compiler);
 		int Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
+		void RamdaCapture(Compiler* arg_compiler)override;
 	private:
 		int ramdaIndex;
+		std::map<std::string, const ValueTag*> map_ramdaCapture;
 	};
 	using Ramda_t = std::shared_ptr<Ramda>;
 

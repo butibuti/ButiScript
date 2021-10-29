@@ -912,10 +912,10 @@ public:
 template<>
 class ValueData<Type_Func> :public IValueData {
 public:
-	ValueData(const int arg_v, const int arg_ref, std::map <  int,const std::string*> * arg_p_funcEntryTable, const std::vector<IValueData*>& arg_vec_referenceValue) :IValueData(arg_ref), p_functionJumpTable(arg_p_funcEntryTable),vec_referenceValue(arg_vec_referenceValue) {
+	ValueData(const int arg_v, const int arg_ref, std::map <  int,const std::string*> * arg_p_funcEntryTable, const std::vector<std::pair< IValueData*,int>>& arg_vec_referenceValue) :IValueData(arg_ref), p_functionJumpTable(arg_p_funcEntryTable),vec_referenceValue(arg_vec_referenceValue) {
 		p_instance = new int(arg_v);
 	}
-	ValueData(const int arg_ref, std::map <  int, std::string*>* arg_p_funcTag, const std::vector<IValueData*>& arg_vec_referenceValue) :IValueData(arg_ref), vec_referenceValue(arg_vec_referenceValue) {
+	ValueData(const int arg_ref, std::map <  int, std::string*>* arg_p_funcTag, const std::vector<std::pair< IValueData*,int>>& arg_vec_referenceValue) :IValueData(arg_ref), vec_referenceValue(arg_vec_referenceValue) {
 		p_instance = new int();
 	}
 	~ValueData() override {
@@ -926,7 +926,7 @@ public:
 			delete ary_memberType;
 		}
 		for (auto itr = vec_referenceValue.begin(), end = vec_referenceValue.end(); itr != end; itr++) {
-			(*itr)->release();
+			(*itr).first-> release();
 		}
 		vec_referenceValue.clear();
 	}
@@ -942,7 +942,19 @@ public:
 	}
 
 	void ValueCopy(IValueData* p_other) const override {
-		p_other->Set<int>(*(int*)p_instance);
+
+		for (auto itr = vec_referenceValue.begin(), end = vec_referenceValue.end(); itr != end; itr++) {
+			(*itr).first->addref();
+		}
+		((ValueData<Type_Func>*)p_other)->vec_referenceValue = vec_referenceValue;
+		((ValueData<Type_Func>*)p_other)->p_functionJumpTable = p_functionJumpTable;
+		*(int*)((ValueData<Type_Func>*)p_other)->p_instance  =*(int*) p_instance;
+	}
+
+	void AddCapture(IValueData* arg_captureValueData,const int arg_type) {
+		arg_captureValueData->addref();
+
+		vec_referenceValue.push_back({ arg_captureValueData,arg_type });
 	}
 
 	IValueData* Clone()const {
@@ -1039,6 +1051,7 @@ public:
 		return *(int*)p_instance >= (int)arg_v;
 	}
 
+
 #ifdef IMPL_BUTIENGINE
 	std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
 		return std::make_shared<GlobalValueSaveObject<Type_Enum>>(*(int*)p_instance);
@@ -1050,7 +1063,7 @@ public:
 #endif // IMPL_BUTIENGINE
 
 	std::map <  int,const std::string*>* p_functionJumpTable;
-	std::vector<IValueData*> vec_referenceValue;
+	std::vector<std::pair< IValueData*,int>> vec_referenceValue;
 };
 
 template<>
@@ -1959,7 +1972,7 @@ public:
 		valueData = new ValueData<Type_Enum>(0, 1,arg_enumTag);
 		valueType = TYPE_VOID;
 	}
-	Value(const Type_Func, std::map<int,const std::string*>* arg_entryPointTable,const std::vector<IValueData*>& arg_vec_refData) {
+	Value(const Type_Func, std::map<int,const std::string*>* arg_entryPointTable,const std::vector<std::pair< IValueData*,int>>& arg_vec_refData) {
 		valueData = new ValueData<Type_Func>(0, 1, arg_entryPointTable,arg_vec_refData);
 		valueType = TYPE_VOID;
 	}

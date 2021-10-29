@@ -458,7 +458,7 @@ namespace ButiScript {
 		//関数オブジェクト型の確保
 		void OpAllocStackFunctionType() {
 			int type = Constant<int>();
-			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<IValueData*>());
+			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,int>>());
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
@@ -835,8 +835,15 @@ namespace ButiScript {
 		}
 
 		void OpCallByVariable() {
-			int addr = top().valueData->Get<int>(); pop();
-			OpCall(addr);
+			auto functionObject = (ValueData<Type_Func>*)top().valueData; pop();
+			push(stack_base);
+			push(addr());					// リターンアドレスをPush
+			stack_base = valueStack.size();		// スタックベース更新
+			for (auto itr = functionObject->vec_referenceValue.begin(), end = functionObject->vec_referenceValue.end(); itr != end; itr++) {
+				push(itr->first,itr->second);
+			}
+			auto address = functionObject->Get<int>();
+			jmp(address);
 		}
 
 		// 引数なしリターン
@@ -876,11 +883,20 @@ namespace ButiScript {
 
 		void OpPushRamda() {
 
+			int captureListSize = top().valueData->Get<int>(); pop();
+			std::vector<int> captureList;
+			for (int i = 0; i < captureListSize; i++) {
+				captureList.push_back(top().valueData->Get<int>());
+				pop();
+			}
+
 			int type = top().valueData->Get<int>(); pop();
 			int address = Constant<int>();
-			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<IValueData*>());
-			value.valueData->Set(address);
-			//((ValueData<Type_Func>*)value.valueData)->
+			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,int>>());
+			value.valueData->Set(address); 
+			for (auto itr = captureList.rbegin(), end = captureList.rend(); itr != end;itr++) {
+				((ValueData<Type_Func>*)value.valueData)->AddCapture (valueStack[stack_base+ *itr].valueData, valueStack[stack_base + *itr].valueType);
+			}
 			value.SetType(type);
 			this->valueStack.push(value);
 		}

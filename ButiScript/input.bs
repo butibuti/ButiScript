@@ -1,14 +1,14 @@
 class Test{
-	i:int;
+	m_i:int;
 	Method(): void{
 
-		this.i=5;
+		this.m_i=5;
 		SubFunction();
-		print("i:"+ToString(this.i)+ "\n");
+		print("m_i:"+ToString(this.m_i)+ "\n");
 
 		SubFunction():int{
 			print("SubFunction!\n");
-			this.i=15;
+			this.m_i=15;
 			return 0;
 		}
 
@@ -16,18 +16,25 @@ class Test{
 }
 
 var r:()=>void;
-
+var i_g:int;
 main():int
 {
 	RamdaSet();
 	r();
-	return 0;
+	return i_g;
 }
 
 RamdaSet():void{
 	var t:Test;
+	var i:int;
+	i=20;
 	r=()=>void{
-		//t.Method();
+	
+		print("i:"+ToString(i)+"\n");
+		i=100;
+		print("i:"+ToString(i)+"\n");
+		i_g=210;
+		t.Method();
 		print("ramdaramda\n");
 	};
 }

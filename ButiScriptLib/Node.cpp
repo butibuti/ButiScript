@@ -1052,6 +1052,11 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 int  Node_function::GetType(Compiler* arg_compiler)const {
 	return GetCallType(arg_compiler, leftNode->GetString(), &node_list_->vec_args);
 }
+void Node_function::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	leftNode->RamdaCapture(arg_captureList, arg_compiler);
+	node_list_->RamdaCapture(arg_captureList, arg_compiler);
+}
 //ノードの関数呼び出し型チェック
 int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNode)const {
 
@@ -1308,6 +1313,13 @@ int Node_value::Push(Compiler* arg_compiler) const{
 		else {
 			if (funcTag->isRamda) {
 				arg_compiler->PushConstInt(funcTag->valueType);
+				
+				for (auto itr = funcTag->vec_captureList.begin(),end=funcTag->vec_captureList.end();itr!=end; itr++) {
+					arg_compiler->PushConstInt(*itr);
+				}
+
+				arg_compiler->PushConstInt(funcTag->vec_captureList.size());
+
 				arg_compiler->OpPushRamda(funcTag->GetIndex());
 			}
 			else {
@@ -1403,6 +1415,14 @@ int Node_value::Pop(Compiler* arg_compiler) const{
 		}
 	}
 	return TYPE_INTEGER;
+}
+
+void Node_value::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	if (valueTag && !valueTag->isGlobal) {
+		arg_captureList.emplace(GetString(), valueTag);
+	}
 }
 
 // 関数呼び出し
@@ -1534,11 +1554,11 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 			arg_compiler->PushConstInt(argSize);
 			if (valueTag->isGlobal) {		// グローバル変数
 
-				arg_compiler->PushGlobalValue(valueTag->GetAddress());
+				arg_compiler->PushGlobalValueRef(valueTag->GetAddress());
 			}
 			else {		
 
-				arg_compiler->PushLocal(valueTag->GetAddress());
+				arg_compiler->PushLocalRef(valueTag->GetAddress());
 			}
 			arg_compiler->OpCallByVariable();
 			return valueType->GetFunctionObjectReturnType();
@@ -1556,6 +1576,34 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 	message += "関数" + functionName + "は未宣言です";
 	arg_compiler->error(message);
 	return -1;
+}
+
+void Node::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const
+{
+	if (leftNode) {
+		leftNode->RamdaCapture(arg_captureList,arg_compiler);
+	}
+	if (rightNode) {
+		rightNode->RamdaCapture(arg_captureList,arg_compiler);
+	}
+	switch (op) {
+	case OP_NEG:
+	case OP_INT:
+	case OP_FLOAT:
+	case OP_STRING:
+		return ;
+
+	case OP_FUNCTION:
+
+		return;
+	}
+	if (op == OP_IDENTIFIER) {
+		const ValueTag* valueTag = GetValueTag(arg_compiler);
+		if (valueTag&&!valueTag->isGlobal) {
+			arg_captureList.emplace(GetString(), valueTag);
+		}
+	}
+
 }
 
 int Node_function::Push(Compiler* arg_compiler) const
@@ -1649,20 +1697,20 @@ int Statement_nop::Analyze(Compiler* arg_compiler)
 // 代入文
 int Statement_assign::Analyze(Compiler* arg_compiler) 
 {
-	return vec_node->Assign(arg_compiler);
+	return node->Assign(arg_compiler);
 	
 }
 
-int Statement_assign::ReAnalyze(Compiler* arg_compiler)
+
+void Statement_assign::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
 {
-	return vec_node->Assign(arg_compiler);
-	
+	node->RamdaCapture(arg_captureList, arg_compiler);
 }
 
 // 関数呼び出し文
 int ccall_statement::Analyze(Compiler* arg_compiler) 
 {
-	int type = vec_node->Push(arg_compiler);
+	int type = node->Push(arg_compiler);
 
 	if (type == -1) {
 
@@ -1675,17 +1723,10 @@ int ccall_statement::Analyze(Compiler* arg_compiler)
 	return 0;
 }
 
-void ccall_statement::ReAnalyze(Compiler* arg_compiler) 
+
+void ccall_statement::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
 {
-	int type = vec_node->Push(arg_compiler);
-
-	if (type == -1) {
-
-		arg_compiler->error("定義されていない関数を参照しています");
-	}
-
-	if (type != TYPE_VOID)
-		arg_compiler->OpPop();
+	node->RamdaCapture(arg_captureList, arg_compiler);
 }
 
 // case文
@@ -1699,11 +1740,16 @@ int Statement_case::Analyze(Compiler* arg_compiler)
 int Statement_case::case_Analyze(Compiler* arg_compiler, int* arg_default_label)
 {
 	label_ = arg_compiler->MakeLabel();
-	if (vec_node->Op() != OP_INT)
+	if (node->Op() != OP_INT)
 		arg_compiler->error("case 文には定数のみ指定できます。");
-	vec_node->Push(arg_compiler);
+	node->Push(arg_compiler);
 	arg_compiler->OpTest(label_);
 	return 0;
+}
+
+void Statement_case::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	node->RamdaCapture(arg_captureList, arg_compiler);
 }
 
 // default文
@@ -1737,17 +1783,17 @@ int Statement_return::Analyze(Compiler* arg_compiler)
 {
 
 	if (arg_compiler->GetCurrentFunctionType() == TYPE_VOID) {	// 戻り値無し
-		if (vec_node != 0) {
+		if (node != 0) {
 			arg_compiler->error("void関数に戻り値が設定されています");
 		}
 		arg_compiler->OpReturn();
 	}
 	else {
-		if (vec_node == 0) {
+		if (node == 0) {
 			arg_compiler->error("関数の戻り値がありません");
 		}
 		else {
-			int node_type = vec_node->Push(arg_compiler);		// 戻り値をpush
+			int node_type = node->Push(arg_compiler);		// 戻り値をpush
 
 			if (!CanTypeCast( node_type ,arg_compiler->GetCurrentFunctionType())) {
 				arg_compiler->error("戻り値の型が合いません");
@@ -1759,10 +1805,15 @@ int Statement_return::Analyze(Compiler* arg_compiler)
 	return 0;
 }
 
+void Statement_return::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	node->RamdaCapture(arg_captureList, arg_compiler);
+}
+
 // if文
 int Statement_if::Analyze(Compiler* arg_compiler) 
 {
-	vec_node->Push(arg_compiler);
+	node->Push(arg_compiler);
 	int label1 = arg_compiler->MakeLabel();
 	arg_compiler->OpJmpNC(label1);
 	vec_statement[0]->Analyze(arg_compiler);
@@ -1780,6 +1831,14 @@ int Statement_if::Analyze(Compiler* arg_compiler)
 	return 0;
 }
 
+void Statement_if::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	vec_statement[0]->RamdaCapture(arg_captureList, arg_compiler);
+	if (vec_statement[1]) {
+		vec_statement[1]->RamdaCapture(arg_captureList, arg_compiler);
+	}
+}
+
 // for文
 int Statement_for::Analyze(Compiler* arg_compiler) 
 {
@@ -1787,19 +1846,26 @@ int Statement_for::Analyze(Compiler* arg_compiler)
 	int label2 = arg_compiler->MakeLabel();
 
 	int break_label = arg_compiler->SetBreakLabel(label2);
-	if(vec_node[0])
-		vec_node[0]->Push(arg_compiler);
+	if(node[0])
+		node[0]->Push(arg_compiler);
 	arg_compiler->SetLabel(label1);
-	vec_node[1]->Push(arg_compiler);
+	node[1]->Push(arg_compiler);
 	arg_compiler->OpJmpNC(label2);
 	vec_statement->Analyze(arg_compiler);
-	if (vec_node[2])
-		vec_node[2]->Push(arg_compiler);
+	if (node[2])
+		node[2]->Push(arg_compiler);
 	arg_compiler->OpJmp(label1);
 	arg_compiler->SetLabel(label2);
 
 	arg_compiler->SetBreakLabel(break_label);
 	return 0;
+}
+
+void Statement_for::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	for (int i = 0; i < sizeof(node) / sizeof(node[0]); i++) {
+		node[i]->RamdaCapture(arg_captureList, arg_compiler);
+	}
 }
 
 // while文
@@ -1811,7 +1877,7 @@ int Statement_while::Analyze(Compiler* arg_compiler)
 	int break_label = arg_compiler->SetBreakLabel(label2);
 
 	arg_compiler->SetLabel(label1);
-	vec_node->Push(arg_compiler);
+	node->Push(arg_compiler);
 	arg_compiler->OpJmpNC(label2);
 	vec_statement->Analyze(arg_compiler);
 	arg_compiler->OpJmp(label1);
@@ -1821,11 +1887,16 @@ int Statement_while::Analyze(Compiler* arg_compiler)
 	return 0;
 }
 
+void Statement_while::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	node->RamdaCapture(arg_captureList, arg_compiler);
+}
+
 // switch文
 int Statement_switch::Analyze(Compiler* arg_compiler) 
 {
 	if (!vec_statement.empty()) {
-		vec_node->Push(arg_compiler);
+		node->Push(arg_compiler);
 
 		int label = arg_compiler->MakeLabel();		// L0ラベル作成
 		int break_label = arg_compiler->SetBreakLabel(label);
@@ -1845,6 +1916,11 @@ int Statement_switch::Analyze(Compiler* arg_compiler)
 	return 0;
 }
 
+void Statement_switch::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	node->RamdaCapture(arg_captureList, arg_compiler);
+}
+
 // block文
 int Statement_block::Analyze(Compiler* arg_compiler) 
 {
@@ -1854,8 +1930,13 @@ int Statement_block::Analyze(Compiler* arg_compiler)
 	return 0;
 }
 
+void Statement_block::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	block_->RamdaCapture(arg_captureList, arg_compiler);
+}
+
 // 文ブロック
-int Block::Analyze(Compiler* arg_compiler) 
+int Block::Analyze(Compiler* arg_compiler, std::vector<Function_t>& arg_captureCheck)
 {
 	auto ret = 0;
 	{
@@ -1865,6 +1946,11 @@ int Block::Analyze(Compiler* arg_compiler)
 			(*itr)->Define(arg_compiler);
 		}
 	}
+
+	for (auto itr = arg_captureCheck.begin(), end = arg_captureCheck.end(); itr != end;itr++) {
+		(*itr)->RamdaCapture(arg_compiler);
+	}
+
 	if (!vec_decl.empty())
 		arg_compiler->AllocStack();	// スタックフレーム確保
 
@@ -1877,6 +1963,14 @@ int Block::Analyze(Compiler* arg_compiler)
 	}
 
 	return ret;
+}
+
+
+void Block::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
+{
+	for (auto itr = vec_state.begin(), endItr = vec_state.end(); itr != endItr; itr++) {
+		(*itr)->RamdaCapture(arg_captureList, arg_compiler);
+	}
 }
 
 int Declaration::PushCompiler(Compiler* arg_compiler)
@@ -2035,6 +2129,10 @@ int Node_Member::GetType(Compiler* arg_compiler) const
 		}
 	}
 }
+void Node_Member::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	leftNode->RamdaCapture(arg_captureList, arg_compiler);
+}
 int Node_Method::Push(Compiler* arg_compiler) const
 {
 	if (op != OP_METHOD) {
@@ -2122,6 +2220,22 @@ int Node_Method::GetType(Compiler* arg_compiler) const
 	const FunctionTag* tag = typeTag->methods.Find(strData, argTypes);
 
 	return tag->valueType;
+}
+void Node_Method::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	if (node_list_ ) {
+		node_list_->RamdaCapture(arg_captureList, arg_compiler);
+	}
+
+
+	leftNode->RamdaCapture(arg_captureList, arg_compiler);
+}
+
+void NodeList::RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	for (auto itr = vec_args.begin(), end = vec_args.end(); itr != end; itr++) {
+		(*itr)->RamdaCapture(arg_captureList, arg_compiler);
+	}
 }
 int Node_enum::Push(Compiler* arg_compiler) const
 {
@@ -2284,6 +2398,22 @@ struct add_value {
 		}
 	}
 };
+// キャプチャ変数を登録
+struct add_capture {
+	ButiScript::Compiler* p_compiler;
+	ButiScript::ValueTable& values;
+	int addr;
+	add_capture(ButiScript::Compiler* arg_p_comp, ButiScript::ValueTable& arg_values, const int arg_addres = argmentAddressStart) : p_compiler(arg_p_comp), values(arg_values), addr(arg_addres)
+	{
+	}
+
+	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
+	{
+		if (!values.add_capture(arg_argDefine.GetType(), arg_argDefine.GetName(), addr)) {
+			p_compiler->error("キャプチャ変数 " + arg_argDefine.GetName() + " は既に登録されています。");
+		}
+	}
+};
 
 // 関数の解析
 int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
@@ -2342,7 +2472,7 @@ int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 
 	// 文があれば、文を登録
 	if (block) {
-		int ret = block->Analyze(arg_compiler);
+		int ret = block->Analyze(arg_compiler, vec_subFunctions);
 	}
 
 	const VMCode& code = arg_compiler->GetStatement() .back();
@@ -2387,7 +2517,6 @@ Ramda::Ramda(const int arg_type,const std::vector<ArgDefine>& arg_vec_argDefine,
 }
 int Ramda::PushCompiler(Compiler* arg_compiler)
 {
-
 	auto typeTag = arg_compiler->GetType(valueType);
 
 	arg_compiler->PopAnalyzeFunction();
@@ -2402,7 +2531,115 @@ int Ramda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
 	auto typeTag = arg_compiler->GetType(valueType);
 	valueType = typeTag->GetFunctionObjectReturnType();
-	Function::Analyze(arg_compiler,arg_p_funcTable);
+	auto currentNameSpace = arg_compiler->GetCurrentNameSpace();
+	ownNameSpace = ownNameSpace ? ownNameSpace : currentNameSpace;
+	arg_compiler->SetCurrentNameSpace(ownNameSpace);
+	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
+
+
+	FunctionTag* tag = p_functable->Find_strict(serchName, args);
+	if (tag) {
+		if (tag->IsDefinition()) {
+			arg_compiler->error("関数 " + serchName + " は既に定義されています");
+			return 0;
+		}
+		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
+			arg_compiler->error("関数 " + serchName + " に異なる型の引数が指定されています");
+			return 0;
+		}
+		tag->SetDefinition();	// 定義済みに設定
+	}
+	else {
+		FunctionTag func(valueType, serchName);
+		func.SetArgs(args);				// 引数を設定
+		func.SetDefinition();			// 定義済み
+		func.SetIndex(arg_compiler->MakeLabel());		// ラベル登録
+		tag = p_functable->Add(serchName, func);
+		if (tag == nullptr)
+			arg_compiler->error("内部エラー：関数テーブルに登録できません");
+	}
+
+	arg_compiler->PushCurrentFunctionName(serchName);		// 処理中の関数名を登録
+	arg_compiler->PushCurrentFunctionType(valueType);		// 処理中の関数型を登録
+
+	// 関数のエントリーポイントにラベルを置く
+
+	arg_compiler->SetLabel(tag->GetIndex());
+
+	arg_compiler->BlockIn(false, true);		// 変数スタックを増やす
+
+	// 引数リストを登録
+	int address = argmentAddressStart;
+	//メンバ関数の場合thisを引数に追加
+	if (arg_p_funcTable) {
+		ArgDefine argDef(arg_compiler->GetCurrentThisType()->typeIndex, thisPtrName);
+		add_value(arg_compiler, arg_compiler->GetValueTable().back(), address)(argDef);
+		address--;
+	}
+
+	for (auto itr = args.rbegin(), endItr = args.rend(); itr != endItr; itr++) {
+		add_value(arg_compiler, arg_compiler->GetValueTable().back(), address)(*itr);
+		address--;
+	}
+	arg_compiler->ValueAddressSubtract(address);
+
+	// 文があれば、文を登録
+	if (block) {
+
+		///キャプチャする変数を確保
+		int i = 0;
+		for (auto itr = map_ramdaCapture.begin(), end = map_ramdaCapture.end(); itr!= end;i++, itr++) {
+			add_capture(arg_compiler, arg_compiler->GetValueTable().back(), i)(ArgDefine(itr->second->valueType,arg_compiler->GetCurrentNameSpace()->GetGlobalNameString()+ itr->first));
+			//tag->vec_captureList.push_back(itr->second->GetAddress());
+		}
+
+		arg_compiler->BlockIn();
+		///
+		int ret = block->Analyze(arg_compiler,vec_subFunctions);
+		arg_compiler->BlockOut();
+	}
+
+	const VMCode& code = arg_compiler->GetStatement().back();
+	if (valueType == TYPE_VOID) {
+		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
+			arg_compiler->OpReturn();
+	}
+	else {
+		if (code.op != VM_RETURNV) {
+			arg_compiler->error("関数 " + serchName + " の最後にreturn文が有りません。");
+		}
+	}
+
+
+	for (auto itr = vec_subFunctions.begin(), end = vec_subFunctions.end(); itr != end; itr++) {
+		(*itr)->Analyze(arg_compiler, nullptr);
+	}
+	vec_subFunctions.clear();
+	arg_compiler->ValueAddressAddition(-address);
+	arg_compiler->BlockOut();		// 変数スタックを減らす
+
+	arg_compiler->PopCurrentFunctionName();		// 処理中の関数名を消去
+	arg_compiler->PopCurrentFunctionType();
+	arg_compiler->SetCurrentNameSpace(currentNameSpace);
+
 	return ramdaIndex;
+}
+void Ramda::RamdaCapture(Compiler* arg_compiler)
+{
+	if (block) {
+
+		FunctionTable* p_functable = &arg_compiler->GetFunctions();
+
+
+		FunctionTag* tag = p_functable->Find_strict(serchName, args);
+		block->RamdaCapture(map_ramdaCapture, arg_compiler);
+
+		///キャプチャする変数を確保
+		int i = 0;
+		for (auto itr = map_ramdaCapture.begin(), end = map_ramdaCapture.end(); itr != end; i++, itr++) {
+			tag->vec_captureList.push_back(itr->second->GetAddress());
+		}
+
+	}
 }
 }

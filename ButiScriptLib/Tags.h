@@ -221,8 +221,14 @@ namespace ButiScript {
 
 		bool add_arg(const int arg_type, const std::string& arg_name, const int arg_addr)
 		{
-			std::pair<iter, bool> result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public)));
+			auto result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public)));
 			argmentsCount++;
+			return result.second;
+		}
+		bool add_capture(const int arg_type, const std::string& arg_name, const int arg_addr) {
+
+			auto result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false, AccessModifier::Public)));
+			addr++;
 			return result.second;
 		}
 
@@ -561,6 +567,7 @@ namespace ButiScript {
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
 		bool isRamda=false;
+		std::vector<int> vec_captureList;
 	};
 
 	class FunctionTable {
