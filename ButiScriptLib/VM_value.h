@@ -170,26 +170,26 @@ public:
 	GlobalScriptTypeValueSaveObject() {}
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
 	void RestoreValue(IValueData** arg_v)const override;
-	void Push(std::shared_ptr<IGlobalValueSaveObject> shp_value, int arg_index) {
+	void Push(std::shared_ptr<IGlobalValueSaveObject> shp_value,const int arg_index) {
 		shp_value->SetTypeIndex(arg_index);
 		vec_data.push_back(shp_value);
 	}
 	int GetTypeIndex()const override {
-		return arg_type;
+		return type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		arg_type = arg_index;
+		type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(vec_data);
-		archive(arg_type);
+		archive(type);
 	}
 private:
 	std::vector<std::shared_ptr<IGlobalValueSaveObject>> vec_data;
 	std::shared_ptr<CompiledData>shp_compiledData;
-	int arg_type;
+	int type;
 };
 template<typename T>
 class GlobalValueSaveObject :public IGlobalValueSaveObject {
@@ -227,20 +227,20 @@ public:
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override{ shp_compiledData = arg_shp_data; }
 	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
-		return arg_type;
+		return type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		arg_type = arg_index;
+		type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(data);
-		archive(arg_type);
+		archive(type);
 	}
 private:
 	int data;
-	int arg_type;
+	int type;
 	std::shared_ptr<CompiledData>shp_compiledData;
 };
 template<typename T>
@@ -253,20 +253,20 @@ public:
 	}
 	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
-		return arg_type;
+		return type;
 	}
 	void SetTypeIndex(const int arg_index)override {
-		arg_type = arg_index;
+		type = arg_index;
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(data);
-		archive(arg_type);
+		archive(type);
 	}
 private:
 	std::shared_ptr<T> data;
-	int arg_type;
+	int type;
 };
 
 #endif //IMPL_BUTIENGINE
@@ -1548,7 +1548,9 @@ public:
 		return std::make_shared<GlobalValueSaveObject<std::string>>(*(std::string*)p_instance);
 	}
 	void ShowGUI(const std::string& arg_label)override {
-		ButiEngine::GUI::Input(arg_label, *(std::string*)p_instance);
+		if (ButiEngine::GUI::InputText(arg_label)) {
+			*(std::string*)p_instance=ButiEngine::GUI::GetTextBuffer(arg_label);
+		}
 	}
 #endif // IMPL_BUTIENGINE
 };

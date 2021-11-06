@@ -34,5 +34,6 @@
 *.zip
 
 .vs/
+ButiScriptExtension/
 Temp/
 output/

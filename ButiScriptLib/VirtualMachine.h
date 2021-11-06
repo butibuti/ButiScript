@@ -881,7 +881,7 @@ namespace ButiScript {
 			OpPushFunctionAddress(Constant<int>());
 		}
 
-		void OpPushRamda() {
+		void OpPushLambda() {
 
 			int captureListSize = top().valueData->Get<int>(); pop();
 			std::vector<int> captureList;

@@ -107,14 +107,14 @@ struct binary_node_func_useDriver {
 };
 
 //ラムダ式を値として利用するノードを生成する
-struct ramda_node_func {
+struct lambda_node_func {
 	template <typename Ty1, typename Ty2>
 	struct result { using type = Node_t; };
 
 	template <typename Ty1, typename Ty2>
-	Node_t operator()(Ty1 arg_ramdaIndex, Ty2 arg_compiler) const
+	Node_t operator()(Ty1 arg_lambdaIndex, Ty2 arg_compiler) const
 	{
-		return Node::make_node(OP_IDENTIFIER, "@ramda:" + std::to_string(arg_ramdaIndex), arg_compiler);
+		return Node::make_node(OP_IDENTIFIER, "@lambda:" + std::to_string(arg_lambdaIndex), arg_compiler);
 	}
 };
 
@@ -265,14 +265,14 @@ struct make_function_func {
 	}
 };
 // ラムダ式の生成
-struct make_ramda_func {
+struct make_lambda_func {
 	template < typename Ty1,typename Ty2>
-	struct result { using type = Ramda_t; };
+	struct result { using type = Lambda_t; };
 
 	template <typename Ty1,typename Ty2>
-	Ramda_t operator()(const Ty1 arg_typeIndex,Ty2 arg_compiler ) const
+	Lambda_t operator()(const Ty1 arg_typeIndex,Ty2 arg_compiler ) const
 	{
-		auto output = Ramda_t(new Ramda(arg_typeIndex.first, arg_typeIndex.second,arg_compiler));
+		auto output = Lambda_t(new Lambda(arg_typeIndex.first, arg_typeIndex.second,arg_compiler));
 		arg_compiler->PushAnalyzeFunction(output);
 		return output;
 	}
@@ -520,7 +520,7 @@ struct make_block_func {
 const phoenix::function<BindFunctionObject::binary_node_func>  binary_node =						BindFunctionObject::binary_node_func();
 const phoenix::function<BindFunctionObject::binary_node_func_useDriver>		binary_node_comp =		BindFunctionObject::binary_node_func_useDriver();
 const phoenix::function<BindFunctionObject::unary_node_func>  unary_node =							BindFunctionObject::unary_node_func();
-const phoenix::function<BindFunctionObject::ramda_node_func>  ramda_node=							BindFunctionObject::ramda_node_func();
+const phoenix::function<BindFunctionObject::lambda_node_func>  lambda_node=							BindFunctionObject::lambda_node_func();
 const phoenix::function<BindFunctionObject::push_back_func>  push_back =							BindFunctionObject::push_back_func();
 const phoenix::function<BindFunctionObject::vector_push_back_func>  vec_push_back =					BindFunctionObject::vector_push_back_func();
 const phoenix::function<BindFunctionObject::make_argument_func>  make_argument =					BindFunctionObject::make_argument_func();
@@ -532,7 +532,7 @@ const phoenix::function<BindFunctionObject::make_decl1_func>  make_decl1 =						
 const phoenix::function<BindFunctionObject::arg_ref_func>  arg_ref =								BindFunctionObject::arg_ref_func();
 const phoenix::function<BindFunctionObject::arg_name_func>	arg_name =								BindFunctionObject::arg_name_func();
 const phoenix::function<BindFunctionObject::make_function_func>	make_function =						BindFunctionObject::make_function_func();
-const phoenix::function<BindFunctionObject::make_ramda_func>  make_ramda =							BindFunctionObject::make_ramda_func();
+const phoenix::function<BindFunctionObject::make_lambda_func>  make_lambda =							BindFunctionObject::make_lambda_func();
 const phoenix::function<BindFunctionObject::make_functionWithAccess_func>make_functionWithAccess=	BindFunctionObject::make_functionWithAccess_func();
 const phoenix::function<BindFunctionObject::make_class_func>  make_class =							BindFunctionObject::make_class_func();
 const phoenix::function<BindFunctionObject::make_classMember_func>  make_classMember =				BindFunctionObject::make_classMember_func();
@@ -609,12 +609,12 @@ namespace ButiClosure {
 		member2 argments;
 	};
 	//ラムダ式定義のクロージャ
-	struct ramda_val :boost::spirit::closure<ramda_val, Ramda_t, int, std::vector<int>> {
+	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, int, std::vector<int>> {
 		member1 node;
 		member2 type;
 	};
 	//ラムダ式利用のクロージャ
-	struct ramda_prime_val :boost::spirit::closure<ramda_prime_val, Node_t> {
+	struct lambda_prime_val :boost::spirit::closure<lambda_prime_val, Node_t> {
 		member1 node;
 	};
 
@@ -676,7 +676,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 		boost::spirit::rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		boost::spirit::rule<ScannerT>	decl_value,decl_classMember,Value,function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
-			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,ramda;
+			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda;
 
 		boost::spirit::symbols<> keywords;
 		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -743,7 +743,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 					);
 
 			// 計算のprimeノード
-			prime = ramda
+			prime = lambda
 				|callMember
 				| func_node
 				| Value
@@ -821,7 +821,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 			//関数型名
 			funcType = '(' >> !(arg % ',') >> ')' >> "=>" >> type;
 
-			ramda = funcType >> block;
+			lambda = funcType >> block;
 
 			// 関数宣言の引数
 			arg = identifier >> ':'
@@ -906,7 +906,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				| decl_func
 				| decl_value
 				| nameSpace[popNameSpace(self.compiler)]
-				|ramda
+				|lambda
 				| syntax_error_p
 				);
 		}
@@ -959,8 +959,8 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 		boost::spirit::rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
 		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		boost::spirit::rule<ScannerT, ButiClosure::ramda_prime_val::context_t>	ramda_prime;
-		boost::spirit::rule<ScannerT, ButiClosure::ramda_val::context_t>		ramda;
+		boost::spirit::rule<ScannerT, ButiClosure::lambda_prime_val::context_t>	lambda_prime;
+		boost::spirit::rule<ScannerT, ButiClosure::lambda_val::context_t>		lambda;
 		boost::spirit::rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
 		boost::spirit::rule<ScannerT>							input, Enum;
 		boost::spirit::rule<ScannerT>							ident;
@@ -1032,7 +1032,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				;
 
 			// 計算のprimeノード
-			prime = ramda_prime[prime.node=arg1]
+			prime = lambda_prime[prime.node=arg1]
 				| callMember[prime.node = arg1]
 				|func_node[prime.node = arg1]
 				| Value[prime.node = arg1]
@@ -1111,9 +1111,9 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			//関数型名
 			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
 
-			ramda = funcType[ramda.node = make_ramda(arg1,self.compiler)] >> block[ramda.node=push_back(ramda.node,arg1)];
+			lambda = funcType[lambda.node = make_lambda(arg1,self.compiler)] >> block[lambda.node=push_back(lambda.node,arg1)];
 
-			ramda_prime = ramda[ramda_prime.node= ramda_node(pushCompiler(arg1, self.compiler),self.compiler)];
+			lambda_prime = lambda[lambda_prime.node= lambda_node(pushCompiler(arg1, self.compiler),self.compiler)];
 
 			// 関数宣言の引数
 			arg = identifier >> ':'
@@ -1276,19 +1276,22 @@ bool ButiScript::ScriptParse(const std::string& arg_filePath, Compiler* arg_comp
 	boost::spirit::parse_info<iterator_t> info = parse(begin, end, gr_typeRegist, skip_p);
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
 		arg_compiler->error("構文解析失敗");
+
+		arg_compiler->ClearGlobalNameSpace();
 		return false;
 	}
 	arg_compiler->ClearNameSpace();
 	info = parse(begin, end, gr, skip_p);
 	arg_compiler->OpHalt();
-	arg_compiler->RamdaCountReset();
+	arg_compiler->LambdaCountReset();
 	arg_compiler->Analyze();
 	arg_compiler->ClearNameSpace();
-	arg_compiler->RamdaCountReset();
-	if (info.hit && (info.full || skip_all(info.stop, end, skip_p))) {
-		return true;
+	arg_compiler->LambdaCountReset();
+	arg_compiler->ClearGlobalNameSpace();
+	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p))) ){
+		arg_compiler->error("構文解析失敗");
+		return false;
 	}
 
-	arg_compiler->error("構文解析失敗");
-	return false;
+	return true;
 }

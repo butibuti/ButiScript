@@ -1,3 +1,4 @@
+//コメント
 class Test{
 	m_i:int;
 	Method(): void{
@@ -19,22 +20,22 @@ var r:()=>void;
 var i_g:int;
 main():int
 {
-	RamdaSet();
+	LambdaSet();
 	r();
 	return i_g;
 }
 
-RamdaSet():void{
+LambdaSet():void{
 	var t:Test;
 	var i:int;
 	i=20;
 	r=()=>void{
 	
-		print("i:"+ToString(i)+"\n");
+		print( "i:" +ToString(i)+ "\n" );
 		i=100;
 		print("i:"+ToString(i)+"\n");
 		i_g=210;
 		t.Method();
-		print("ramdaramda\n");
+		print("lambdalambda\n");
 	};
 }

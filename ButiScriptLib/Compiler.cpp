@@ -131,9 +131,9 @@ std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
 	return output;
 }
 
-void ButiScript::Compiler::RamdaCountReset()
+void ButiScript::Compiler::LambdaCountReset()
 {
-	ramdaCount = 0;
+	lambdaCount = 0;
 }
 
 void ButiScript::Compiler::PushAnalyzeFunction(Function_t arg_function)
@@ -181,9 +181,9 @@ void ButiScript::Compiler::Analyze()
 	currentNameSpace = nameSpaceBuffer;
 }
 
-void ButiScript::Compiler::IncreaseRamdaCount()
+void ButiScript::Compiler::IncreaseLambdaCount()
 {
-	ramdaCount++;
+	lambdaCount++;
 }
 
 void ButiScript::Compiler::PopCurrentFunctionType()
@@ -198,6 +198,11 @@ void ButiScript::Compiler::PopCurrentFunctionName()
 	if (vec_function_name.size()) {
 		vec_function_name.erase((vec_function_name.end() - 1));
 	}
+}
+
+void ButiScript::Compiler::ClearGlobalNameSpace()
+{
+	globalNameSpace->Clear();
 }
 
 
@@ -304,10 +309,10 @@ ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const int arg_type
 	return  arg_funcTable->Find_strict(functionName, arg_vec_argDefines);
 }
 
-void ButiScript::Compiler::RegistRamda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
+void ButiScript::Compiler::RegistLambda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
 {
 	auto tag= RegistFunction(arg_type,arg_name , arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
-	tag->isRamda = true;
+	tag->isLambda = true;
 }
 
 void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value)
@@ -607,14 +612,14 @@ void ButiScript::Compiler::DebugDump()
 	int	pos = 0;
 	size_t size = statement.size();
 	for (size_t i = 0; i < size; i++) {
-		message += std::to_string(std::setw(6)) + std::to_string(pos) + ": " + op_name[statement[i].op_];
-		if (statement[i].currentSize > 1) {
+		message += std::to_string(std::setw(6)) + std::to_string(pos) + ": " + op_name[statement[i].op];
+		if (statement[i].size > 1) {
 			message += ", " + std::to_string(statement[i].GetConstValue<int>());
 		}
 		message += '\n';
 
-		if (statement[i].op_ != VM_MAXCOMMAND) {
-			pos += statement[i].currentSize;
+		if (statement[i].op != VM_MAXCOMMAND) {
+			pos += statement[i].size;
 		}
 	}
 	ButiEngine::GUI::Console(message);
@@ -1008,6 +1013,12 @@ void ButiScript::NameSpace::AnalyzeClasses(Compiler* arg_compiler)
 	for (auto itr = vec_analyzeClassBuffer.begin(), end = vec_analyzeClassBuffer.end(); itr != end; itr++) {
 		(*itr)->Analyze(arg_compiler);
 	}
+}
+
+void ButiScript::NameSpace::Clear()
+{
+	vec_analyzeClassBuffer.clear();
+	vec_analyzeFunctionBuffer.clear();
 }
 
 

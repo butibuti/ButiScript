@@ -3,6 +3,7 @@
 #include "VirtualMachine.h"
 
 
+std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
 #ifdef IMPL_BUTIENGINE
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
@@ -12,7 +13,6 @@ void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(But
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #endif
 
-std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
 std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
 	if (!p_vec_createMemberInstanceFunction) {
 		p_vec_createMemberInstanceFunction = new std::vector<ButiScript::CreateMemberInstanceFunction>();
@@ -49,8 +49,8 @@ ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, s
 void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_v) const
 {
 	std::vector<ButiScript::IValueData*> vec_members;
-	auto end = vec_data.end();
-	for (auto itr = vec_data.begin(); itr != end; itr++) {
+	
+	for (auto itr = vec_data.begin(), end = vec_data.end(); itr != end; itr++) {
 		IValueData* member;
 		(*itr)->RestoreValue(&member);
 		vec_members.push_back(member);

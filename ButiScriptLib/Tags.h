@@ -566,7 +566,7 @@ namespace ButiScript {
 		std::vector<int>	vec_args;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
-		bool isRamda=false;
+		bool isLambda=false;
 		std::vector<int> vec_captureList;
 	};
 

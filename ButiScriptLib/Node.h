@@ -119,7 +119,7 @@ namespace ButiScript {
 		int Assign(Compiler* arg_compiler) const;
 		int Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg) const;
 
-		virtual void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const;
+		virtual void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const;
 		static Node_t make_node(const int arg_op, const float arg_number, const Compiler* arg_compiler)
 		{
 			if (arg_op == OP_FLOAT)
@@ -155,7 +155,7 @@ namespace ButiScript {
 		int Push(Compiler* arg_compiler) const;
 		int PushClone(Compiler* arg_compiler) const;
 		int Pop(Compiler* arg_compiler) const;
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	};
 
 	// ノードリスト
@@ -176,7 +176,7 @@ namespace ButiScript {
 		size_t size() const { return vec_args.size(); }
 		Node_t get(size_t arg_index) const { return vec_args[arg_index]; }
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const ;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const ;
 	public:
 		std::vector<Node_t> vec_args;
 	};
@@ -194,7 +194,7 @@ namespace ButiScript {
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 		NodeList_t node_list_;
 	};
@@ -212,7 +212,7 @@ namespace ButiScript {
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 	};
 
@@ -234,7 +234,7 @@ namespace ButiScript {
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 		NodeList_t node_list_;
 	};
@@ -316,7 +316,7 @@ namespace ButiScript {
 
 		virtual int Analyze(Compiler* arg_compiler) = 0;
 		virtual int Regist(Compiler* arg_compiler) { return 0; };
-		virtual void RamdaCapture(std::map<std::string,const ValueTag*>& arg_captureList, Compiler* arg_compiler){}
+		virtual void LambdaCapture(std::map<std::string,const ValueTag*>& arg_captureList, Compiler* arg_compiler){}
 		virtual int Case_Analyze(Compiler* arg_compiler, int* arg_default_label)
 		{
 			return 0;
@@ -345,7 +345,7 @@ namespace ButiScript {
 
 		int Analyze(Compiler* arg_compiler);
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
 		Node_t node;
 	};
@@ -360,7 +360,7 @@ namespace ButiScript {
 
 		int Analyze(Compiler* arg_compiler);
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
 		Node_t node;
 	};
@@ -375,7 +375,7 @@ namespace ButiScript {
 
 		int Analyze(Compiler* arg_compiler);
 		int case_Analyze(Compiler* arg_compiler, int* arg_default_label);
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Node_t node;
@@ -407,7 +407,7 @@ namespace ButiScript {
 		}
 
 		int Analyze(Compiler* arg_compiler);
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Node_t node;
@@ -431,7 +431,7 @@ namespace ButiScript {
 		}
 
 		int Analyze(Compiler* arg_compiler);
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Node_t node;
@@ -452,7 +452,7 @@ namespace ButiScript {
 		}
 
 		int Analyze(Compiler* arg_compiler);
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Statement_t vec_statement;
@@ -474,7 +474,7 @@ namespace ButiScript {
 
 		int Analyze(Compiler* arg_compiler);
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
 		Node_t node;
 		Statement_t vec_statement;
@@ -495,7 +495,7 @@ namespace ButiScript {
 
 		int Analyze(Compiler* arg_compiler);
 
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
 		Node_t node;
 		std::vector<Statement_t> vec_statement;
@@ -510,7 +510,7 @@ namespace ButiScript {
 		}
 
 		int Analyze(Compiler* arg_compiler);
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Block_t block_;
@@ -587,7 +587,7 @@ namespace ButiScript {
 			static std::vector<Function_t> captureCheckDummy;
 			return Analyze(arg_compiler, captureCheckDummy);
 		}
-		void RamdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) ;
+		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) ;
 	private:
 		std::vector<Declaration_t> vec_decl;
 		std::vector<Statement_t> vec_state;
@@ -631,7 +631,7 @@ namespace ButiScript {
 			return name;
 		}
 		void SetParent(Function_t arg_function) { parentFunction = arg_function; }
-		virtual void RamdaCapture( Compiler* arg_compiler){}
+		virtual void LambdaCapture( Compiler* arg_compiler){}
 	protected:
 		Function(){}
 		int valueType;
@@ -644,17 +644,17 @@ namespace ButiScript {
 		NameSpace_t ownNameSpace;
 	};
 
-	class Ramda :public Function {
+	class Lambda :public Function {
 	public:
-		Ramda(const int arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
+		Lambda(const int arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
 		int PushCompiler(Compiler* arg_compiler);
 		int Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
-		void RamdaCapture(Compiler* arg_compiler)override;
+		void LambdaCapture(Compiler* arg_compiler)override;
 	private:
-		int ramdaIndex;
-		std::map<std::string, const ValueTag*> map_ramdaCapture;
+		int lambdaIndex;
+		std::map<std::string, const ValueTag*> map_lambdaCapture;
 	};
-	using Ramda_t = std::shared_ptr<Ramda>;
+	using Lambda_t = std::shared_ptr<Lambda>;
 
 	class Class:public std::enable_shared_from_this<Class> {
 	public:
