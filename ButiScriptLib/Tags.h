@@ -740,8 +740,8 @@ namespace ButiScript {
 		std::multimap<std::string, FunctionTag> map_functions;
 	};
 
-	class VirtualCPU;
-	using OperationFunction = void (VirtualCPU::*)();
+	class VirtualMachine;
+	using OperationFunction = void (VirtualMachine::*)();
 
 	/// <summary>
 	/// スクリプト側で定義するクラスの情報

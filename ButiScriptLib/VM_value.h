@@ -2108,12 +2108,12 @@ public:
 		if (Size <= currentSize) {
 			throw StackOverflow();
 		}
-		*(::new(data_[currentSize++]) T) = arg_value;
+		*(::new(data[currentSize++]) T) = arg_value;
 	}
 
 	void pop()
 	{
-		((T*)data_[--currentSize])->~T();
+		((T*)data[--currentSize])->~T();
 	}
 
 	void pop(const int count)
@@ -2127,20 +2127,20 @@ public:
 
 		if (oldsize > newsize) {
 			for (int i = newsize; i < oldsize; ++i)
-				((T*)data_[i])->~T();
+				((T*)data[i])->~T();
 		}
 		if (oldsize < newsize) {
 			if (Size < newsize)
 				throw StackOverflow();
 			for (int i = oldsize; i < newsize; ++i)
-				::new(data_[i]) T;
+				::new(data[i]) T;
 		}
 		currentSize = newsize;
 	}
 
-	const T& top() const { return *(const T*)data_[currentSize - 1]; }
+	const T& top() const { return *(const T*)data[currentSize - 1]; }
 	T& top() {
-		return *(T*)data_[currentSize - 1]; 
+		return *(T*)data[currentSize - 1];
 	}
 
 	bool overflow() const { return currentSize >= Size; }
@@ -2150,14 +2150,14 @@ public:
 	}
 
 	const T& operator[](const int index) const { 
-		return *(const T*)data_[index]; 
+		return *(const T*)data[index];
 	}
 	T& operator[](const int index) { 
-		return *(T*)data_[index]; 
+		return *(T*)data[index];
 	}
 
 protected:
-	char data_[Size][sizeof(T)];
+	char data[Size][sizeof(T)];
 	int currentSize;
 };
 }

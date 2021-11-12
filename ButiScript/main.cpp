@@ -24,18 +24,32 @@ int main(const int argCount, const char* args[])
 		data = std::make_shared<ButiScript::CompiledData>();
 		auto res= driver.InputCompiledData(StringHelper::GetDirectory(args[i]) + "/output/" + StringHelper::GetFileName(args[i], false) + ".cbs", *data);
 		if (res) {
+			ButiScript::VirtualMachine* p_clone; 
+			int returnCode;
+			{
 
-			ButiScript::VirtualCPU machine(data);
-			machine.Initialize();
-			machine.AllocGlobalValue();
-			//machine.SetGlobalVariable(1, "g_i");
-			//machine.SetGlobalVariable(2, "g_i1");
+				ButiScript::VirtualMachine machine(data);
 
-			std::cout << args[i] << "‚ÌmainŽÀs" << std::endl;
-			std::cout  << "////////////////////////////////////" << std::endl;
-			auto retunCode = machine.Execute<int>("main");
+				machine.Initialize();
+				machine.AllocGlobalValue();
+				//machine.SetGlobalVariable(1, "g_i");
+				//machine.SetGlobalVariable(2, "g_i1");
+
+				std::cout << args[i] << "‚ÌmainŽÀs" << std::endl;
+				std::cout << "////////////////////////////////////" << std::endl;
+				returnCode = machine.Execute<int>("main");
+				std::cout << "////////////////////////////////////" << std::endl;
+				std::cout << args[i] << "‚Ìreturn : " << std::to_string(returnCode) << std::endl;
+
+				p_clone = machine.Clone();
+			}
+
+			std::cout << args[i] << "‚ÌClone‚ÌmainŽÀs" << std::endl;
 			std::cout << "////////////////////////////////////" << std::endl;
-			std::cout << args[i] << "‚Ìreturn : " << std::to_string(retunCode) << std::endl;
+			returnCode = p_clone->Execute<int>("main");
+			std::cout << "////////////////////////////////////" << std::endl;
+			std::cout << args[i] << "‚ÌClone‚Ìreturn : " << std::to_string(returnCode) << std::endl;
+			delete p_clone;
 		}
 	}
 

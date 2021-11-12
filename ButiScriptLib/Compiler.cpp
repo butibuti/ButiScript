@@ -5,7 +5,7 @@
 #include <iomanip>
 #include "Parser.h"
 #include<direct.h>
-auto baseFunc = &ButiScript::VirtualCPU::Initialize;
+auto baseFunc = &ButiScript::VirtualMachine::Initialize;
 const char* thisPtrName = "this";
 
 namespace AccessModifierStr {
@@ -1127,59 +1127,59 @@ ButiScript::SystemFuntionRegister* ButiScript::SystemFuntionRegister::GetInstanc
 void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 {
 	using namespace ButiEngine;
-	DefineSystemFunction(&VirtualCPU::sys_print, TYPE_VOID, "print", "s");
-	DefineSystemFunction(&VirtualCPU::Sys_pause, TYPE_VOID, "pause", "");
-	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "i");
-	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "f");
-	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec2");
-	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec3");
-	DefineSystemFunction(&VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "vec4");
+	DefineSystemFunction(&VirtualMachine::sys_print, TYPE_VOID, "print", "s");
+	DefineSystemFunction(&VirtualMachine::Sys_pause, TYPE_VOID, "pause", "");
+	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "i");
+	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "f");
+	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec2");
+	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec3");
+	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec4");
 #ifdef IMPL_BUTIENGINE
 
-	DefineSystemFunction(&VirtualCPU::sys_registEventListner, TYPE_STRING, "RegistEvent", "s,s,s");
-	DefineSystemFunction(&VirtualCPU::sys_unregistEventListner, TYPE_VOID, "UnRegistEvent", "s,s");
-	DefineSystemFunction(&VirtualCPU::sys_addEventMessanger, TYPE_VOID, "AddEventMessanger", "s");
-	DefineSystemFunction(&VirtualCPU::sys_executeEvent, TYPE_VOID, "EventExecute", "s");
-	DefineSystemFunction(&VirtualCPU::sys_pushTask, TYPE_VOID, "PushTask", "s");
+	DefineSystemFunction(&VirtualMachine::sys_registEventListner, TYPE_STRING, "RegistEvent", "s,s,s");
+	DefineSystemFunction(&VirtualMachine::sys_unregistEventListner, TYPE_VOID, "UnRegistEvent", "s,s");
+	DefineSystemFunction(&VirtualMachine::sys_addEventMessanger, TYPE_VOID, "AddEventMessanger", "s");
+	DefineSystemFunction(&VirtualMachine::sys_executeEvent, TYPE_VOID, "EventExecute", "s");
+	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
 #endif // IMPL_BUTIENGINE
 
 
-	DefineSystemMethod(&VirtualCPU::sys_method_retNo< Vector2, &Vector2::Normalize, &VirtualCPU::GetTypePtr >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, float, &Vector2::GetLength, &VirtualCPU::GetTypePtr >, TYPE_VOID + 1, TYPE_FLOAT, "GetLength", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, float, &Vector2::GetLengthSqr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "GetLengthSqr", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, float, Vector2, &Vector2::Dot, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "Dot", "vec2");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2&, int, &Vector2::Floor, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Floor", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2&, int, &Vector2::Round, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Round", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2&, int, &Vector2::Ceil, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 1, (TYPE_VOID + 1), "Ceil", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, int, &Vector2::GetFloor, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetFloor", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, int, &Vector2::GetRound, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetRound", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector2, Vector2, int, &Vector2::GetCeil, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetCeil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_retNo< Vector2, &Vector2::Normalize, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, &Vector2::GetLength, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_FLOAT, "GetLength", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, &Vector2::GetLengthSqr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "GetLengthSqr", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, Vector2, &Vector2::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "Dot", "vec2");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Floor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Round", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, (TYPE_VOID + 1), "Ceil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, int, &Vector2::GetFloor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetFloor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, int, &Vector2::GetRound, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetRound", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, int, &Vector2::GetCeil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetCeil", "i");
 
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, &Vector3::Normalize, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID, "Normalize", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, &Vector3::GetNormalize, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetNormalize", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, float, &Vector3::GetLength, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLength", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, float, &Vector3::GetLengthSqr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLengthSqr", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, float, Vector3, &Vector3::Dot, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "Dot", "vec3");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, Vector3, &Vector3::GetCross, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCross", "vec3");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, int, &Vector3::Floor, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Floor", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, int, &Vector3::Round, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Round", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3&, int, &Vector3::Ceil, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, (TYPE_VOID + 2), "Ceil", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetFloor, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetFloor", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetRound, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetRound", "i");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Vector3, Vector3, int, &Vector3::GetCeil, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCeil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, &Vector3::Normalize, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID, "Normalize", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, &Vector3::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetNormalize", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, &Vector3::GetLength, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLength", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, &Vector3::GetLengthSqr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLengthSqr", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, Vector3, &Vector3::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "Dot", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, Vector3, &Vector3::GetCross, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCross", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Floor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Round", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, (TYPE_VOID + 2), "Ceil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, int, &Vector3::GetFloor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetFloor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, int, &Vector3::GetRound, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetRound", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, int, &Vector3::GetCeil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCeil", "i");
 
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Transpose, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Transpose", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4, &Matrix4x4::GetTranspose, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "GetTranspose", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Inverse, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Inverse", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4, &Matrix4x4::GetInverse, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "GetInverse", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Identity, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Identity", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetEulerOneValue, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetEulerOneValue", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetPosition, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetPosition", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetPosition_Transpose, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetPosition_Transpose", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4,Vector3, &Matrix4x4::GetEulerOneValue_local, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetEulerOneValue_local", "");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4&, Vector3, &Matrix4x4::CreateFromEuler, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler", "vec3");
-	DefineSystemMethod(&VirtualCPU::sys_method_ret< Matrix4x4, Matrix4x4&, Vector3, &Matrix4x4::CreateFromEuler_local, &VirtualCPU::GetTypePtr, &VirtualCPU::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler_local", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Transpose, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Transpose", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4, &Matrix4x4::GetTranspose, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "GetTranspose", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Inverse, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Inverse", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4, &Matrix4x4::GetInverse, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "GetInverse", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Identity, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Identity", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetEulerOneValue, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetEulerOneValue", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetPosition, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetPosition", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetPosition_Transpose, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetPosition_Transpose", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4,Vector3, &Matrix4x4::GetEulerOneValue_local, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetEulerOneValue_local", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, Vector3, &Matrix4x4::CreateFromEuler, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, Vector3, &Matrix4x4::CreateFromEuler_local, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler_local", "vec3");
 	
 }
 

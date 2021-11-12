@@ -7,7 +7,7 @@ class Test{
 		SubFunction();
 		print("m_i:"+ToString(this.m_i)+ "\n");
 
-		SubFunction():int{
+		function SubFunction():int{
 			print("SubFunction!\n");
 			this.m_i=15;
 			return 0;
@@ -18,14 +18,14 @@ class Test{
 
 var r:()=>void;
 var i_g:int;
-main():int
+function main():int
 {
 	LambdaSet();
 	r();
 	return i_g;
 }
 
-LambdaSet():void{
+function LambdaSet():void{
 	var t:Test;
 	var i:int;
 	i=20;
@@ -34,7 +34,7 @@ LambdaSet():void{
 		print( "i:" +ToString(i)+ "\n" );
 		i=100;
 		print("i:"+ToString(i)+"\n");
-		i_g=210;
+		i_g+=210;
 		t.Method();
 		print("lambdalambda\n");
 	};

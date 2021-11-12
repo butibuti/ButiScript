@@ -4,8 +4,8 @@
 #include"../../ButiUtil/Util/Helper/StringHelper.h"
 namespace ButiScript {
 
-class VirtualCPU;
-using SysFunction = void (VirtualCPU::*)();
+class VirtualMachine;
+using SysFunction = void (VirtualMachine::*)();
 
 class SystemFuntionRegister {
 	friend class Compiler;
@@ -57,10 +57,10 @@ public:
 		int index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
 		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.size());
-		vec_valueAllocCall.push_back(&VirtualCPU::pushValue<T>);
+		vec_valueAllocCall.push_back(&VirtualMachine::pushValue<T>);
 
 		map_refValueAllocCallsIndex.emplace(index, vec_refValueAllocCall.size());
-		vec_refValueAllocCall.push_back(&VirtualCPU::pushValue_ref<T>);
+		vec_refValueAllocCall.push_back(&VirtualMachine::pushValue_ref<T>);
 
 		type.typeName = arg_name;
 		type.typeIndex = index;
@@ -93,10 +93,10 @@ public:
 		int index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
 		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.size());
-		vec_valueAllocCall.push_back(&VirtualCPU::pushSharedValue<T>);
+		vec_valueAllocCall.push_back(&VirtualMachine::pushSharedValue<T>);
 
 		map_refValueAllocCallsIndex.emplace(index, vec_refValueAllocCall.size());
-		vec_refValueAllocCall.push_back(&VirtualCPU::pushSharedValue_ref<T>);
+		vec_refValueAllocCall.push_back(&VirtualMachine::pushSharedValue_ref<T>);
 
 		type.typeName = arg_name;
 		type.typeIndex = index;

@@ -61,7 +61,7 @@ namespace ButiScript {
 	};
 
 	// 仮想マシン
-	class VirtualCPU {
+	class VirtualMachine {
 	public:
 		const static int STACK_SIZE = 2048;
 		const static int global_flag = 0x4000000;
@@ -69,11 +69,11 @@ namespace ButiScript {
 
 
 	public:
-		VirtualCPU(std::shared_ptr<CompiledData> arg_data)
-			: data_(arg_data)
+		VirtualMachine(std::shared_ptr<CompiledData> arg_data)
+			: shp_data(arg_data)
 		{
 		}
-		~VirtualCPU()
+		~VirtualMachine()
 		{
 			free( p_op);
 			free( p_syscall );
@@ -84,7 +84,7 @@ namespace ButiScript {
 		}
 		template<typename T>
 		T Execute(const std::string& arg_entryPoint = "main") {
-			if (!data_->map_entryPoints.count(arg_entryPoint)) {
+			if (!shp_data->map_entryPoints.count(arg_entryPoint)) {
 				return T();
 			}
 			stack_base = valueStack.size();					// スタック参照位置初期化
@@ -100,7 +100,7 @@ namespace ButiScript {
 		}
 		template<>
 		void Execute(const std::string& arg_entryPoint ) {
-			if (!data_->map_entryPoints.count(arg_entryPoint)) {
+			if (!shp_data->map_entryPoints.count(arg_entryPoint)) {
 				return;
 			}
 			stack_base = valueStack.size();					// スタック参照位置初期化
@@ -129,9 +129,11 @@ namespace ButiScript {
 		}
 		void AllocGlobalValue();
 
+		VirtualMachine* Clone();
+
 		template<typename T>
 		void SetGlobalVariable(const T value, const std::string arg_variableName) {
-			if (!data_->map_globalValueAddress.count(arg_variableName)) {
+			if (!shp_data->map_globalValueAddress.count(arg_variableName)) {
 
 #ifdef IMPL_BUTIENGINE
 				ButiEngine::GUI::Console( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
@@ -139,11 +141,11 @@ namespace ButiScript {
 
 				return;
 			}
-			valueStack[globalValue_base + data_->map_globalValueAddress.at(arg_variableName)].valueData->Set(value);
+			valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData->Set(value);
 		}
 		template<typename T>
 		T& GetGlobalVariable(const std::string arg_variableName) {
-			if (!data_->map_globalValueAddress.count(arg_variableName)) {
+			if (!shp_data->map_globalValueAddress.count(arg_variableName)) {
 
 #ifdef IMPL_BUTIENGINE
 				ButiEngine::GUI::Console(arg_variableName + "にはアクセスできません", ButiEngine::Vector4(1.0f, 0.8f, 0.8f, 1.0f));
@@ -151,7 +153,7 @@ namespace ButiScript {
 				static T temp;
 				return temp;
 			}
-			return valueStack[globalValue_base + data_->map_globalValueAddress.at(arg_variableName)].valueData->GetRef<T>();
+			return valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData->GetRef<T>();
 		}
 
 #ifdef IMPL_BUTIENGINE
@@ -451,14 +453,14 @@ namespace ButiScript {
 
 		void OpAllocStackEnumType() {
 			int type = Constant<int>();
-			auto value = Value(Type_Enum(), &data_->map_enumTag.at(type));
+			auto value = Value(Type_Enum(), &shp_data->map_enumTag.at(type));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
 		//関数オブジェクト型の確保
 		void OpAllocStackFunctionType() {
 			int type = Constant<int>();
-			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,int>>());
+			auto value = Value(Type_Func(), &shp_data->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,int>>());
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
@@ -892,7 +894,7 @@ namespace ButiScript {
 
 			int type = top().valueData->Get<int>(); pop();
 			int address = Constant<int>();
-			auto value = Value(Type_Func(), &data_->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,int>>());
+			auto value = Value(Type_Func(), &shp_data->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,int>>());
 			value.valueData->Set(address); 
 			for (auto itr = captureList.rbegin(), end = captureList.rend(); itr != end;itr++) {
 				((ValueData<Type_Func>*)value.valueData)->AddCapture (valueStack[stack_base+ *itr].valueData, valueStack[stack_base + *itr].valueType);
@@ -1072,14 +1074,14 @@ namespace ButiScript {
 		}
 
 		//組み込みメソッド(return 無し)
-		template<typename T, void(T::* Method)() ,T*(VirtualCPU::*getValueFunc)() >
+		template<typename T, void(T::* Method)() ,T*(VirtualMachine::*getValueFunc)() >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
 			((v)->*Method)();
 			pop();
 		}
-		template<typename T, void(T::* Method)() const, T* (VirtualCPU::* getValueFunc)() >
+		template<typename T, void(T::* Method)() const, T* (VirtualMachine::* getValueFunc)() >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1087,7 +1089,7 @@ namespace ButiScript {
 			pop();
 		}
 		//組み込みメソッド(return 有り)
-		template<typename T, typename U, U(T::* Method)(), T* (VirtualCPU::* getValueFunc)() >
+		template<typename T, typename U, U(T::* Method)(), T* (VirtualMachine::* getValueFunc)() >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1095,7 +1097,7 @@ namespace ButiScript {
 			pop();
 			push(ret);
 		}
-		template<typename T, typename U, U(T::* Method)() const, T* (VirtualCPU::* getValueFunc)() >
+		template<typename T, typename U, U(T::* Method)() const, T* (VirtualMachine::* getValueFunc)() >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1105,7 +1107,7 @@ namespace ButiScript {
 		}
 
 		//組み込みメソッド(return 無し、引数有り)
-		template<typename T, typename Arg, void(T::* Method)(Arg) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename Arg, void(T::* Method)(Arg) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1115,7 +1117,7 @@ namespace ButiScript {
 			pop();
 
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename Arg, void(T::* Method)(Arg&) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1124,7 +1126,7 @@ namespace ButiScript {
 			((v)->*Method)(arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename Arg, void(T::* Method)(const Arg&) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1133,7 +1135,7 @@ namespace ButiScript {
 			((v)->*Method)(arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg*)const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename Arg, void(T::* Method)(Arg*)const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1142,7 +1144,7 @@ namespace ButiScript {
 			((v)->*Method)(&arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg*) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename Arg, void(T::* Method)(const Arg*) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1151,7 +1153,7 @@ namespace ButiScript {
 			((v)->*Method)(&arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename Arg, void(T::* Method)(Arg), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1161,7 +1163,7 @@ namespace ButiScript {
 			pop();
 
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename Arg, void(T::* Method)(Arg&), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1170,7 +1172,7 @@ namespace ButiScript {
 			((v)->*Method)(*arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename Arg, void(T::* Method)(const Arg&), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1179,7 +1181,7 @@ namespace ButiScript {
 			((v)->*Method)(*arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename Arg, void(T::* Method)(Arg*), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1188,7 +1190,7 @@ namespace ButiScript {
 			((v)->*Method)(&arg);
 			pop();
 		}
-		template<typename T, typename Arg, void(T::* Method)(const Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename Arg, void(T::* Method)(const Arg*), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_retNo()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1199,7 +1201,7 @@ namespace ButiScript {
 		}
 
 		//組み込みメソッド(return 有り、引数有り)
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1210,7 +1212,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1221,7 +1223,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1232,7 +1234,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()   >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()   >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1243,7 +1245,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) const, T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*) const, T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1253,7 +1255,7 @@ namespace ButiScript {
 			pop();
 			push(ret);
 		}
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1264,7 +1266,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg&), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1275,7 +1277,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()    >
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg&), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()    >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1286,7 +1288,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()    >
+		template<typename T, typename U, typename Arg, U(T::* Method)(Arg*), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()    >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1297,7 +1299,7 @@ namespace ButiScript {
 			push(ret);
 		}
 
-		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*), T* (VirtualCPU::* getValueFunc)(), Arg* (VirtualCPU::* getArgValueFunc)()  >
+		template<typename T, typename U, typename Arg, U(T::* Method)(const Arg*), T* (VirtualMachine::* getValueFunc)(), Arg* (VirtualMachine::* getArgValueFunc)()  >
 		void sys_method_ret()
 		{
 			auto v = ((this)->*getValueFunc)();
@@ -1375,7 +1377,7 @@ namespace ButiScript {
 		void push(std::shared_ptr<T> arg_v) {
 			valueStack.push(ButiScript::Value(arg_v));
 
-			auto ptr = &VirtualCPU::pushSharedValue<T>;
+			auto ptr = &VirtualMachine::pushSharedValue<T>;
 			auto address = *(long long int*) & (ptr);
 			top().SetTypeIndex(address);
 		}
@@ -1415,7 +1417,7 @@ namespace ButiScript {
 		}
 
 	private:
-		std::shared_ptr<CompiledData> data_;
+		std::shared_ptr<CompiledData> shp_data;
 
 		//コマンド羅列
 		unsigned char* commandTable;

@@ -8,7 +8,7 @@
 #endif // IMPL_BUTIENGINE
 
 
-void ButiScript::VirtualCPU::AllocGlobalValue()
+void ButiScript::VirtualMachine::AllocGlobalValue()
 {
 	stack_base = valueStack.size();						// スタック参照位置初期化
 	globalValue_base = stack_base;
@@ -29,44 +29,61 @@ void ButiScript::VirtualCPU::AllocGlobalValue()
 	globalValue_size = valueStack.size();
 }
 
-void ButiScript::VirtualCPU::Initialize()
+ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 {
-	commandTable = data_->commandTable;						// プログラム格納位置
-	textBuffer = data_->textBuffer;				// テキストデータ格納位置
-	commandSize = data_->commandSize;			// プログラムの大きさ
-	textSize = data_->textSize;					// データの大きさ
+	auto output = new VirtualMachine(shp_data);
+	output->Initialize();
+
+	output->stack_base = output->valueStack.size();						// スタック参照位置初期化
+	output->globalValue_base = output->stack_base;
+	output->stack_base = output->valueStack.size();
+	{
+		for (int i = globalValue_base; i < globalValue_base + globalValue_size; i++) {
+			output->push(valueStack[i].valueData, valueStack[i].valueType);
+		}
+	}
+	output->globalValue_size = globalValue_size;
+	return output;
+}
+
+void ButiScript::VirtualMachine::Initialize()
+{
+	commandTable = shp_data->commandTable;						// プログラム格納位置
+	textBuffer = shp_data->textBuffer;				// テキストデータ格納位置
+	commandSize = shp_data->commandSize;			// プログラムの大きさ
+	textSize = shp_data->textSize;					// データの大きさ
 
 
 	allocCommand_ptr_ = commandTable +1;
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
 
-	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * data_->vec_sysCalls.size());
-	for (int i = 0; i < data_->vec_sysCalls.size(); i++) {
-		p_syscall[i] = data_->vec_sysCalls[i];
+	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->vec_sysCalls.size());
+	for (int i = 0; i < shp_data->vec_sysCalls.size(); i++) {
+		p_syscall[i] = shp_data->vec_sysCalls[i];
 	}
 
-	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * data_->vec_sysCallMethods.size());
-	for (int i = 0; i < data_->vec_sysCallMethods.size(); i++) {
-		p_sysMethodCall[i] = data_->vec_sysCallMethods[i];
+	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->vec_sysCallMethods.size());
+	for (int i = 0; i < shp_data->vec_sysCallMethods.size(); i++) {
+		p_sysMethodCall[i] = shp_data->vec_sysCallMethods[i];
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() ));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (data_->vec_types.size() ));
-	for (int i = 0; i < data_->vec_types.size(); i++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.size() ));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.size() ));
+	for (int i = 0; i < shp_data->vec_types.size(); i++) {
 
-		p_pushValues[data_->vec_types.at(i).typeIndex] = data_->vec_types.at(i).typeFunc;
-		p_pushRefValues[data_->vec_types.at(i).typeIndex] = data_->vec_types.at(i).refTypeFunc;
+		p_pushValues[shp_data->vec_types.at(i).typeIndex] = shp_data->vec_types.at(i).typeFunc;
+		p_pushRefValues[shp_data->vec_types.at(i).typeIndex] = shp_data->vec_types.at(i).refTypeFunc;
 	}
 
-	vec_scriptClassInfo = data_->vec_scriptClassInfo;
+	vec_scriptClassInfo = shp_data->vec_scriptClassInfo;
 
 }
 
-void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
+void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 {
-	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];
+	command_ptr_ = commandTable + shp_data->map_entryPoints[entryPoint];
 	stack_base = valueStack.size();
 
 	int Op;
@@ -82,20 +99,20 @@ void ButiScript::VirtualCPU::Execute_(const std::string& entryPoint)
 		return ;
 	}
 
-	command_ptr_ = commandTable + data_->map_entryPoints[entryPoint];	// プログラムカウンター初期化
+	command_ptr_ = commandTable + shp_data->map_entryPoints[entryPoint];	// プログラムカウンター初期化
 }
 
 
 
 #ifdef IMPL_BUTIENGINE
 
-void ButiScript::VirtualCPU::sys_addEventMessanger()
+void ButiScript::VirtualMachine::sys_addEventMessanger()
 {
 	std::string eventName = top().valueData->GetRef<std::string>(); pop();
 	ButiEventSystem::AddEventMessenger<void>(eventName);
 }
 
-void ButiScript::VirtualCPU::sys_registEventListner()
+void ButiScript::VirtualMachine::sys_registEventListner()
 {
 	std::string functionName = top().valueData->GetRef<std::string>(); pop();
 	std::string keyName = top().valueData->GetRef<std::string>(); pop();
@@ -107,20 +124,20 @@ void ButiScript::VirtualCPU::sys_registEventListner()
 
 	push(retKey);
 }
-void ButiScript::VirtualCPU::sys_unregistEventListner()
+void ButiScript::VirtualMachine::sys_unregistEventListner()
 {
 	std::string eventName = top().valueData->GetRef<std::string>(); pop();
 	std::string keyName = top().valueData->GetRef<std::string>(); pop();
 	ButiEventSystem::UnRegistEventListner<void>(eventName, keyName);
 
 }
-void ButiScript::VirtualCPU::sys_executeEvent()
+void ButiScript::VirtualMachine::sys_executeEvent()
 {
 	std::string eventName = top().valueData->GetRef<std::string>(); pop();
 	ButiEventSystem::Execute(eventName);
 }
 
-void ButiScript::VirtualCPU::sys_pushTask()
+void ButiScript::VirtualMachine::sys_pushTask()
 {
 	std::string taskName = top().valueData->GetRef<std::string>(); pop();
 	ButiTaskSystem::PushTask(
@@ -131,7 +148,7 @@ void ButiScript::VirtualCPU::sys_pushTask()
 	);
 }
 
-void ButiScript::VirtualCPU::sys_LoadTextureAsync()
+void ButiScript::VirtualMachine::sys_LoadTextureAsync()
 {
 	std::string fileName = top().valueData->GetRef<std::string>(); pop();
 	ButiEngine::GUI::PushMessage(fileName + "を読み込みます");
@@ -142,7 +159,7 @@ void ButiScript::VirtualCPU::sys_LoadTextureAsync()
 			})
 	);
 }
-void ButiScript::VirtualCPU::sys_LoadWaveAsync()
+void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 {
 	std::string dirName = top().valueData->GetRef<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
@@ -181,12 +198,12 @@ void ButiScript::VirtualCPU::sys_LoadWaveAsync()
 		);
 	}
 }
-void ButiScript::VirtualCPU::sys_LoadTexture()
+void ButiScript::VirtualMachine::sys_LoadTexture()
 {
 	std::string fileName = top().valueData->GetRef<std::string>(); pop();
 	this->GetGameObject()->GetResourceContainer()->LoadTexture(fileName);
 }
-void ButiScript::VirtualCPU::sys_LoadWave()
+void ButiScript::VirtualMachine::sys_LoadWave()
 {
 	std::string dirName = top().valueData->GetRef<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
@@ -216,13 +233,13 @@ void ButiScript::VirtualCPU::sys_LoadWave()
 		ButiEngine::GUI::PushMessage(dirName + u8"の読み込み終了");
 	}
 }
-void ButiScript::VirtualCPU::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	for (int i = 0; i < globalValue_size- globalValue_base; i++) {
 		arg_ref_vec_saveObject.push_back(valueStack[globalValue_base+i].valueData->GetSaveObject());
 		arg_ref_vec_saveObject.at(i)->SetTypeIndex(valueStack[globalValue_base + i].valueType);
 	}
 }
-void ButiScript::VirtualCPU::RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	if (globalValue_size - globalValue_base != arg_ref_vec_saveObject.size()) {
 		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
 		
@@ -235,14 +252,14 @@ void ButiScript::VirtualCPU::RestoreGlobalValue(std::vector<std::shared_ptr< But
 		if (valueStack[globalValue_base + i].valueData) {
 			valueStack[globalValue_base + i].valueData->release();
 		}
-		arg_ref_vec_saveObject.at(i)->SetCompiledData(data_);
+		arg_ref_vec_saveObject.at(i)->SetCompiledData(shp_data);
 		arg_ref_vec_saveObject.at(i)->RestoreValue(&valueStack[globalValue_base + i].valueData);
 		
 	}
 }
-void ButiScript::VirtualCPU::ShowGUI() {
+void ButiScript::VirtualMachine::ShowGUI() {
 	
-	for (auto itr = data_->map_globalValueAddress.begin(), end = data_->map_globalValueAddress.end(); itr != end;itr++) {
+	for (auto itr = shp_data->map_globalValueAddress.begin(), end = shp_data->map_globalValueAddress.end(); itr != end;itr++) {
 		valueStack[globalValue_base + itr->second].valueData->ShowGUI(itr->first);
 	}
 }

@@ -675,7 +675,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		boost::spirit::rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
-		boost::spirit::rule<ScannerT>	decl_value,decl_classMember,Value,function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
+		boost::spirit::rule<ScannerT>	decl_value,decl_classMember,Value, function, decl_function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
 			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda;
 
 		boost::spirit::symbols<> keywords;
@@ -843,6 +843,9 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				':' >> type
 				>> block;
 
+			//関数宣言
+			decl_function = "function" >> function;
+
 			// 文ブロック
 			block = boost::spirit::ch_p('{')
 				>> *(statement
@@ -887,14 +890,14 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> '}'
 				| func_node >> ';'
 				| callMember >> ';'
-				| function
+				| decl_function
 				| block
 				;
 
 			nameSpace = boost::spirit::str_p("namespace") >> identifier[regist(make_namespace(arg1), self.compiler)] >> "{"
 				>> *(define_class[regist(arg1, self.compiler)]
 					| Enum[analyze(arg1, self.compiler)]
-					| function
+					| decl_function
 					| decl_func
 					| decl_value
 					| nameSpace[popNameSpace(self.compiler)]) >> "}";
@@ -902,7 +905,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 			// 入力された構文
 			input = *(define_class[regist(arg1, self.compiler)]
 				| Enum[analyze(arg1, self.compiler)]
-				| function
+				| decl_function
 				| decl_func
 				| decl_value
 				| nameSpace[popNameSpace(self.compiler)]
@@ -951,6 +954,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 		boost::spirit::rule<ScannerT, ButiClosure::nodelist_val::context_t>	argument;
 		boost::spirit::rule<ScannerT, ButiClosure::state_val::context_t>	statement;
 		boost::spirit::rule<ScannerT, ButiClosure::func_val::context_t>		function;
+		boost::spirit::rule<ScannerT, ButiClosure::func_val::context_t>		decl_function;
 		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		boost::spirit::rule<ScannerT, ButiClosure::type_val::context_t>		arg;
 		boost::spirit::rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
@@ -1135,6 +1139,8 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				':' >> type[function.node = set_functionType(function.node, arg1,self.compiler)]
 				>> block[function.node = push_back(function.node, arg1)];
 
+			decl_function = "function" >> function[decl_function.node = arg1];
+
 			//クラスのメンバー定義
 			decl_classMember = identifier[decl_classMember.name = arg1] >> !identifier[decl_classMember.name = specificAccessModifier(decl_classMember.name, decl_classMember.accessModifier, arg1)]
 				>> ':' >> type[decl_classMember.memberValue = make_memberValue(arg1, decl_classMember.name, decl_classMember.accessModifier)] >> ';';
@@ -1183,7 +1189,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
 				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
-				| function[statement.statement = make_statement1(NOP_STATE, pushCompiler_sub(arg1, self.compiler))]
+				| decl_function[statement.statement = make_statement1(NOP_STATE, pushCompiler_sub(arg1, self.compiler))]
 				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
@@ -1192,7 +1198,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			nameSpace = boost::spirit::str_p("namespace") >> identifier[regist(make_namespace(arg1), self.compiler)] >> "{"
 				>> *(define_class[pushCompiler(arg1,self.compiler)]
 					|Enum
-					|function[pushCompiler(arg1, self.compiler)]
+					|decl_function[pushCompiler(arg1, self.compiler)]
 					| decl_func[analyze(arg1, self.compiler)]
 					| decl_value[analyze(arg1, self.compiler)]
 					| nameSpace[popNameSpace(self.compiler)]) >> "}";
@@ -1200,7 +1206,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			// 入力された構文
 			input = *(define_class[pushCompiler(arg1, self.compiler)]
 				|Enum
-				|function[pushCompiler(arg1, self.compiler)]
+				|decl_function[pushCompiler(arg1, self.compiler)]
 				| decl_func[analyze(arg1, self.compiler)]
 				| decl_value[analyze(arg1, self.compiler)]
 				| nameSpace[popNameSpace(self.compiler)]

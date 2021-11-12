@@ -139,8 +139,8 @@ public:
 
 // ƒRƒ“ƒpƒCƒ‰
 
-class VirtualCPU;
-using SysFunction = void (VirtualCPU::*)();
+class VirtualMachine;
+using SysFunction = void (VirtualMachine::*)();
 
 
 
