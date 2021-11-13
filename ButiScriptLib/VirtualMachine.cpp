@@ -140,10 +140,11 @@ void ButiScript::VirtualMachine::sys_executeEvent()
 void ButiScript::VirtualMachine::sys_pushTask()
 {
 	std::string taskName = top().valueData->GetRef<std::string>(); pop();
+	auto clone = Clone();
 	ButiTaskSystem::PushTask(
-		std::function<void()>([this,taskName]()->void {
-			this->Execute<void>(taskName);
-			
+		std::function<void()>([clone, taskName]()->void {
+				clone->Execute<void>(taskName);
+				delete clone;
 			})
 	);
 }

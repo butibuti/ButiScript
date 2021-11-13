@@ -85,8 +85,17 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 	OpHalt();
 	bool result = ScriptParse(arg_filePath, this);	// 構文解析
 
-	if (!result)
+	if (!result) {
+
+		labels.clear();
+		statement.clear();
+		text_table.clear();
+		variables.clear();
+		functions.Clear_notSystem();
+		types.Clear_notSystem();
+		enums.Clear_notSystem();
 		return false;// パーサーエラー
+	}
 
 	int code_size = LabelSetting();				// ラベルにアドレスを設定
 	CreateData(arg_ref_data, code_size);				// バイナリ生成
