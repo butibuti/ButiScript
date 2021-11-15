@@ -160,9 +160,9 @@ struct make_statement_func {
 	struct result { using type = Statement_t; };
 
 	template <typename Ty>
-	Statement_t operator()(Ty arg_vec_state) const
+	Statement_t operator()(Ty arg_state) const
 	{
-		return Statement::make_statement(arg_vec_state);
+		return Statement::make_statement(arg_state);
 	}
 };
 
@@ -172,9 +172,9 @@ struct make_statement1_func {
 	struct result { using type = Statement_t; };
 
 	template <typename Ty1, typename Ty2>
-	Statement_t operator()(Ty1 arg_vec_state, const Ty2& arg_node) const
+	Statement_t operator()(Ty1 arg_state, const Ty2& arg_node) const
 	{
-		return Statement::make_statement(arg_vec_state, arg_node);
+		return Statement::make_statement(arg_state, arg_node);
 	}
 };
 
@@ -755,8 +755,11 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				;
 
 			// 単項演算子
-			unary = prime
-				| '-' >> prime;
+			unary = '-' >> prime
+				| prime>>"++"
+				| prime >> "--"
+				| prime
+				;
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
@@ -862,6 +865,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> boost::spirit::ch_p('}')[popNameSpace(self.compiler)];
 			// 文
 			statement = boost::spirit::ch_p(';')
+				| unary >> ';'
 				| assign >> ';'
 				| boost::spirit::str_p("case") >> expr >> ':'
 				| boost::spirit::str_p("default") >> ':'
@@ -877,7 +881,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				| boost::spirit::str_p("for") >> '('
 				>> !(assign) >> ';'
 				>> expr >> ';'
-				>> !(assign || func_node || callMember) >> ')'
+				>> !(assign | func_node | callMember| unary) >> ')'
 				>> statement
 
 				| boost::spirit::str_p("while") >> '('
@@ -1047,8 +1051,10 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				;
 
 			// 単項演算子
-			unary = prime[unary.node = arg1]
-				| '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)];
+			unary = '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)]
+				| prime[unary.node = unary_node(OP_INCREMENT, arg1, self.compiler)]>>"++" 
+				| prime[unary.node = unary_node(OP_DECREMENT, arg1, self.compiler)] >> "--"
+				| prime[unary.node = arg1];
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
@@ -1160,6 +1166,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 			// 文
 			statement = boost::spirit::ch_p(';')[statement.statement = make_statement(NOP_STATE)]
+				| unary[statement.statement = make_statement1(UNARY_STATE, arg1)] >> ';'
 				| assign[statement.statement = make_statement1(ASSIGN_STATE, arg1)] >> ';'
 				| boost::spirit::str_p("case") >> expr[statement.statement = make_statement1(CASE_STATE, arg1)] >> ':'
 				| boost::spirit::str_p("default")[statement.statement = make_statement(DEFAULT_STATE)] >> ':'
@@ -1176,7 +1183,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				| boost::spirit::str_p("for")[statement.statement = make_statement(FOR_STATE)] >> '('
 				>> !(assign[statement.statement = add_statement(statement.statement, 0, arg1)] ) >> ';'
 				>> expr[statement.statement = add_statement(statement.statement, 1, arg1)] >> ';'
-				>> !(assign[statement.statement = add_statement(statement.statement, 2, arg1)] || func_node[statement.statement = add_statement(statement.statement, 2, arg1)]) >> ')'
+				>> !(assign[statement.statement = add_statement(statement.statement, 2, arg1)] | func_node[statement.statement = add_statement(statement.statement, 2, arg1)]| unary[statement.statement = add_statement(statement.statement, 2, arg1)] ) >> ')'
 				>> statement[statement.statement = push_back(statement.statement, arg1)]
 
 
@@ -1281,7 +1288,7 @@ bool ButiScript::ScriptParse(const std::string& arg_filePath, Compiler* arg_comp
 	skip_parser skip_p;
 	boost::spirit::parse_info<iterator_t> info = parse(begin, end, gr_typeRegist, skip_p);
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
-		arg_compiler->error("構文解析失敗");
+		arg_compiler->error("クラス構文解析失敗");
 
 		arg_compiler->ClearGlobalNameSpace();
 		return false;
@@ -1295,7 +1302,7 @@ bool ButiScript::ScriptParse(const std::string& arg_filePath, Compiler* arg_comp
 	arg_compiler->LambdaCountReset();
 	arg_compiler->ClearGlobalNameSpace();
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p))) ){
-		arg_compiler->error("構文解析失敗");
+		arg_compiler->error("関数構文解析失敗");
 		return false;
 	}
 

@@ -21,6 +21,8 @@ namespace ButiScript {
 	// ÉmÅ[ÉhÇÃñΩóﬂ
 	enum OPCODE {
 		OP_NEG,
+		OP_INCREMENT,
+		OP_DECREMENT,
 		OP_ADD,
 		OP_SUB,
 		OP_MUL,
@@ -268,6 +270,7 @@ namespace ButiScript {
 	enum STATE_TYPE {
 		NOP_STATE,
 		ASSIGN_STATE,
+		UNARY_STATE,
 		CALL_STATE,
 		CASE_STATE,
 		DEFAULT_STATE,
@@ -333,6 +336,17 @@ namespace ButiScript {
 	class Statement_nop : public Statement {
 	public:
 		int Analyze(Compiler* arg_compiler);
+	};
+
+	class Statement_unary :public Statement {
+	public:
+		Statement_unary(Node_t arg_node)
+			: node(arg_node)
+		{
+		}
+		int Analyze(Compiler* arg_compiler)override;
+	private:
+		Node_t node;
 	};
 
 	// ë„ì¸

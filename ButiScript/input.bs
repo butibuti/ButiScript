@@ -1,41 +1,9 @@
-//コメント
-class Test{
-	m_i:int;
-	Method(): void{
 
-		this.m_i=5;
-		SubFunction();
-		print("m_i:"+ToString(this.m_i)+ "\n");
-
-		function SubFunction():int{
-			print("SubFunction!\n");
-			this.m_i=15;
-			return 0;
-		}
-
-	}
-}
-
-var r:()=>void;
-var i_g:int;
 function main():int
 {
-	LambdaSet();
-	r();
-	return i_g;
-}
-
-function LambdaSet():void{
-	var t:Test;
 	var i:int;
-	i=20;
-	r=()=>void{
-	
-		print( "i:" +ToString(i)+ "\n" );
-		i=100;
-		print("i:"+ToString(i)+"\n");
-		i_g+=210;
-		t.Method();
-		print("lambdalambda\n");
-	};
+	i=10;
+	i++;
+	print("aaaa");
+	return i;
 }

@@ -331,6 +331,9 @@ public:
 		return ge()(this, arg_v);
 	}
 
+	virtual void Increment() {}
+	virtual void Decrement(){}
+
 	//î‰är
 	virtual bool Eq(IValueData* p_other)const = 0;
 	virtual bool Gt(IValueData* p_other)const = 0;
@@ -532,9 +535,11 @@ protected:
 	template<typename T>
 	inline const T* Read()const { return (T*)p_instance; }
 	
+
+
 	template<typename T>
 	inline void Write(const T& arg_src) {
-		auto lock = std::lock_guard<std::mutex>(mtx_value);
+		std::lock_guard<std::mutex> guard (mtx_value);
 		memcpy(p_instance ,& arg_src, sizeof(T));
 	}
 
@@ -833,6 +838,12 @@ public:
 	bool Ge(IValueData* p_other)const override {
 		return !p_other->GreaterEq(*Read<int>());
 	}
+	void Increment()override {
+		(*GetInstance<int>())++;
+	}
+	void Decrement()override {
+		(*GetInstance<int>())--;
+	}
 
 	void ValueCopy(IValueData* p_other) const override {
 		p_other->Set<int>(*Read<int>());
@@ -988,7 +999,7 @@ public:
 		}
 		((ValueData<Type_Func>*)p_other)->vec_referenceValue = vec_referenceValue;
 		((ValueData<Type_Func>*)p_other)->p_functionJumpTable = p_functionJumpTable;
-		((ValueData<Type_Func>*)p_other)->Write(Read<int>());
+		((ValueData<Type_Func>*)p_other)->Write(*Read<int>());
 	}
 
 	void AddCapture(IValueData* arg_captureValueData,const int arg_type) {
@@ -1290,6 +1301,14 @@ class ValueData<float> :public IValueData {
 
 		void Nagative()override {
 			Write( -1 * (*Read<float>()));
+		}
+
+
+		void Increment()override {
+			(*GetInstance<float>())++;
+		}
+		void Decrement()override {
+			(*GetInstance<float>())--;
 		}
 
 		virtual const IValueData::get_value_base_t& get_value() const {

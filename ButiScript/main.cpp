@@ -41,15 +41,9 @@ int main(const int argCount, const char* args[])
 				std::cout << "////////////////////////////////////" << std::endl;
 				std::cout << args[i] << "‚Ìreturn : " << std::to_string(returnCode) << std::endl;
 
-				p_clone = machine.Clone();
+				//p_clone = machine.Clone();
 			}
 
-			std::cout << args[i] << "‚ÌClone‚ÌmainŽÀs" << std::endl;
-			std::cout << "////////////////////////////////////" << std::endl;
-			returnCode = p_clone->Execute<int>("main");
-			std::cout << "////////////////////////////////////" << std::endl;
-			std::cout << args[i] << "‚ÌClone‚Ìreturn : " << std::to_string(returnCode) << std::endl;
-			delete p_clone;
 		}
 	}
 

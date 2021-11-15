@@ -101,6 +101,10 @@ Node_t Node::make_node(const int arg_op, Node_t arg_left, const Compiler* arg_co
 			arg_left->num_int = -arg_left->num_int;
 			return arg_left;
 		}
+		if (arg_left->op == OP_FLOAT) {			// 定数演算を計算する
+			arg_left->num_float = -arg_left->num_float;
+			return arg_left;
+		}
 		break;
 	}
 	return Node_t(new Node(arg_op, arg_left));
@@ -749,8 +753,17 @@ int Node::Push(Compiler* arg_compiler) const{
 		if (leftNode->Push(arg_compiler) == TYPE_STRING)
 			arg_compiler->error("文字列には到底許されない計算です。");
 		arg_compiler->OpNeg();
-		return TYPE_INTEGER;
-
+		return leftNode->GetType(arg_compiler);
+	case OP_INCREMENT:
+		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+			arg_compiler->error("文字列には到底許されない計算です。");
+		arg_compiler->OpIncrement();
+		return leftNode->GetType(arg_compiler);
+	case OP_DECREMENT:
+		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+			arg_compiler->error("文字列には到底許されない計算です。");
+		arg_compiler->OpDecrement();
+		return leftNode->GetType(arg_compiler);
 	case OP_INT:
 		arg_compiler->PushConstInt(num_int);
 		return TYPE_INTEGER;
@@ -951,11 +964,17 @@ int Node::GetType(Compiler* arg_compiler)const {
 	}
 
 	switch (op) {
-	case OP_NEG:
-		if (leftNode->GetType(arg_compiler) == TYPE_STRING)
-			arg_compiler->error("文字列には許されない計算です。");
-		return TYPE_INTEGER;
 
+	case OP_INCREMENT:
+	case OP_DECREMENT:
+	case OP_NEG:
+	{
+
+		auto type = leftNode->GetType(arg_compiler);
+		if (type == TYPE_STRING)
+			arg_compiler->error("文字列には許されない計算です。");
+		return type;
+	}
 	case OP_INT:
 		return TYPE_INTEGER;
 	case OP_FLOAT:
@@ -1660,6 +1679,9 @@ Statement_t Statement::make_statement(const int arg_vec_state, const int)
 Statement_t Statement::make_statement(const int arg_vec_state, Node_t arg_node)
 {
 	switch (arg_vec_state) {
+
+	case UNARY_STATE:
+		return Statement_t(new Statement_unary(arg_node));
 	case ASSIGN_STATE:
 		return Statement_t(new Statement_assign(arg_node));
 
@@ -1933,6 +1955,23 @@ int Statement_block::Analyze(Compiler* arg_compiler)
 void Statement_block::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
 {
 	block_->LambdaCapture(arg_captureList, arg_compiler);
+}
+
+
+int Statement_unary::Analyze(Compiler* arg_compiler)
+{
+	switch (node->Op())
+	{
+	case OP_INCREMENT:
+	case OP_DECREMENT:
+
+		node->Push(arg_compiler);
+		arg_compiler->OpPop();
+		return 0;
+	default:
+		node->Push(arg_compiler);
+		return 0;
+	}
 }
 
 // 文ブロック
