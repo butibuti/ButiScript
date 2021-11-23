@@ -1,9 +1,10 @@
 
 function main():int
 {
-	var i:int;
-	i=10;
-	i++;
-	print("aaaa");
+	var i:float;
+	i=0;
+	if(i<=0){
+		print("aaaa\n");
+	}
 	return i;
 }

@@ -94,6 +94,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 		functions.Clear_notSystem();
 		types.Clear_notSystem();
 		enums.Clear_notSystem();
+		error_count = 0;
 		return false;// パーサーエラー
 	}
 
@@ -110,7 +111,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 	types.Clear_notSystem();
 	enums.Clear_notSystem();
 
-	return error_count == 0;
+	return true;
 }
 
 

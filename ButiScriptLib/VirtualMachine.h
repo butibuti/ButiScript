@@ -519,6 +519,7 @@ namespace ButiScript {
 			negV->Nagative();
 			pop();
 			push(negV,type);
+			negV->release();
 		}
 
 		// ==
@@ -572,7 +573,7 @@ namespace ButiScript {
 		{
 			auto rhs = top().valueData; rhs->addref(); pop();
 			auto lhs = top().valueData; lhs->addref(); pop();
-			push(!lhs->Gt(rhs));
+			push(!lhs->Ge(rhs));
 
 			rhs->release();
 			lhs->release();
@@ -584,7 +585,7 @@ namespace ButiScript {
 
 			auto rhs = top().valueData; rhs->addref(); pop();
 			auto lhs = top().valueData; lhs->addref(); pop();
-			push(!lhs->Ge(rhs));
+			push(!lhs->Gt(rhs));
 
 			rhs->release();
 			lhs->release();

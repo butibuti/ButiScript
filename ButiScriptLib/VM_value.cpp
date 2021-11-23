@@ -7,7 +7,11 @@ std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanc
 #ifdef IMPL_BUTIENGINE
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1,&shp_compiledData->map_enumTag.at(type));
+	*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1, &shp_compiledData->map_enumTag.at(type));
+}
+void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Func>::RestoreValue(ButiScript::IValueData** arg_v) const
+{
+	*arg_v = new ButiScript::ValueData<Type_Func>(1, nullptr, std::vector<std::pair< IValueData*, int>>());
 }
 
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);

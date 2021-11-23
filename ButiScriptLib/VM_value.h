@@ -218,14 +218,14 @@ private:
 	int arg_type;
 };
 template<>
-class GlobalValueSaveObject <Type_Enum>:public IGlobalValueSaveObject {
+class GlobalValueSaveObject <Type_Enum> :public IGlobalValueSaveObject {
 public:
 	GlobalValueSaveObject(const int& arg_value) {
 		data = arg_value;
 	}
 	GlobalValueSaveObject() {
 	}
-	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override{ shp_compiledData = arg_shp_data; }
+	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
 	void RestoreValue(IValueData** arg_v)const override;
 	int GetTypeIndex()const override {
 		return type;
@@ -241,6 +241,26 @@ public:
 	}
 private:
 	int data;
+	int type;
+	std::shared_ptr<CompiledData>shp_compiledData;
+};
+template<>
+class GlobalValueSaveObject <Type_Func> :public IGlobalValueSaveObject {
+public:
+	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
+	void RestoreValue(IValueData** arg_v)const override;
+	int GetTypeIndex()const override {
+		return type;
+	}
+	void SetTypeIndex(const int arg_index)override {
+		type = arg_index;
+	}
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(type);
+	}
+private:
 	int type;
 	std::shared_ptr<CompiledData>shp_compiledData;
 };
@@ -1104,7 +1124,7 @@ public:
 
 #ifdef IMPL_BUTIENGINE
 	std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
-		return std::make_shared<GlobalValueSaveObject<Type_Enum>>(*Read<int>());
+		return std::make_shared<GlobalValueSaveObject<Type_Func>>();
 	}
 
 	void ShowGUI(const std::string& arg_label) override {
