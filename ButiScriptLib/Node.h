@@ -50,6 +50,7 @@ namespace ButiScript {
 		OP_OR_ASSIGN,
 		OP_LSHIFT_ASSIGN,
 		OP_RSHIFT_ASSIGN,
+		OP_NULL,
 		OP_INT,
 		OP_FLOAT,
 		OP_IDENTIFIER,
@@ -145,6 +146,14 @@ namespace ButiScript {
 		Node_t rightNode;
 	};
 
+	//Nullのノード
+	class Node_Null:public Node {
+	public:
+		Node_Null():Node(OP_NULL,"null") {
+		}
+		int Push(Compiler* arg_compiler)const override;
+	};
+
 	// 変数ノード
 
 	class Node_value : public Node {
@@ -154,9 +163,9 @@ namespace ButiScript {
 		{
 		};
 		const ValueTag* GetValueTag(Compiler* arg_compiler)const override;
-		int Push(Compiler* arg_compiler) const;
-		int PushClone(Compiler* arg_compiler) const;
-		int Pop(Compiler* arg_compiler) const;
+		int Push(Compiler* arg_compiler) const override;
+		int PushClone(Compiler* arg_compiler) const override;
+		int Pop(Compiler* arg_compiler) const override;
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	};
 

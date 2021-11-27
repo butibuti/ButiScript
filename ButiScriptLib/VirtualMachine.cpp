@@ -111,6 +111,11 @@ void ButiScript::VirtualMachine::sys_addEventMessanger()
 	std::string eventName = top().valueData->GetRef<std::string>(); pop();
 	ButiEventSystem::AddEventMessenger<void>(eventName);
 }
+void ButiScript::VirtualMachine::sys_removeEventMessanger()
+{
+	std::string eventName = top().valueData->GetRef<std::string>(); pop();
+	ButiEventSystem::RemoveEventMessenger(eventName);
+}
 
 void ButiScript::VirtualMachine::sys_registEventListner()
 {
@@ -126,8 +131,8 @@ void ButiScript::VirtualMachine::sys_registEventListner()
 }
 void ButiScript::VirtualMachine::sys_unregistEventListner()
 {
-	std::string eventName = top().valueData->GetRef<std::string>(); pop();
 	std::string keyName = top().valueData->GetRef<std::string>(); pop();
+	std::string eventName = top().valueData->GetRef<std::string>(); pop();
 	ButiEventSystem::UnRegistEventListner<void>(eventName, keyName);
 
 }

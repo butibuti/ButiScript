@@ -135,6 +135,7 @@ template <>bool eq_stub(const  Type & arg_v)const {\
 
 namespace ButiScript {
 
+using Void_P = void*;
 //参照型など実体を持たない変数の初期化に使用
 struct Type_Null {};
 struct Type_Enum {
@@ -442,6 +443,7 @@ protected:
 			RegistSet(ButiEngine::Vector4);
 			RegistSetRef(std::string);
 			RegistSetRef(ButiEngine::Matrix4x4);
+			RegistEq(Void_P);
 			RegistSetRef(Type_Null);
 			RegistSetRef(Type_Enum);
 			RegistSetRef(Type_Func);
@@ -460,6 +462,7 @@ protected:
 			RegistEq(ButiEngine::Vector4);
 			RegistEq(std::string);
 			RegistEq(ButiEngine::Matrix4x4);
+			RegistEq(Void_P);
 			RegistEq(Type_Null);
 			RegistEq(Type_Enum);
 			RegistEq(Type_Func);
@@ -1438,15 +1441,15 @@ class ValueData<Type_Null> : public IValueData {
 	public:
 		ValueData(const Type_Null& arg_v, const int arg_ref) :IValueData(arg_ref) {
 			SetInstance( new Type_Null(arg_v));
-			assert(0);
-			//void型のオブジェクトが生成されています
+			
+			
 		}
 		ValueData(const int arg_ref) :IValueData(arg_ref) {
 			SetInstance(new Type_Null());
-			//void型のオブジェクトが生成されています
+			
 		}
 		~ValueData() override{
-			DeleteInstance<int>();
+			//DeleteInstance<Type_Null>();
 		}
 
 		bool Eq(IValueData* p_other)const override {
@@ -1513,6 +1516,12 @@ class ValueData<Type_Null> : public IValueData {
 
 		template <typename U> bool eq_stub(const U& arg_v)const {
 			return  false;
+		}
+		template <> bool eq_stub(const Type_Null& arg_v)const {
+			return  true;
+		}
+		template <> bool eq_stub(const Void_P & arg_v)const {
+			return  !arg_v;
 		}
 
 #ifdef IMPL_BUTIENGINE
@@ -1628,7 +1637,7 @@ public:
 	}
 	void ShowGUI(const std::string& arg_label)override {
 		if (ButiEngine::GUI::InputText(arg_label)) {
-			Write( ButiEngine::GUI::GetTextBuffer(arg_label));
+			*GetInstance<std::string>() =( ButiEngine::GUI::GetTextBuffer(arg_label));
 		}
 	}
 #endif // IMPL_BUTIENGINE
@@ -1929,7 +1938,6 @@ template<typename T>
 class Value_Shared :public IValueData {
 public:
 	Value_Shared(const int arg_ref) :IValueData(arg_ref) {
-		int i = 0;
 	}
 	Value_Shared(std::shared_ptr<T> arg_instance, const int arg_ref) :IValueData(arg_ref) {
 		shp = arg_instance;
@@ -1946,7 +1954,9 @@ public:
 	}
 
 	//比較
-	bool Eq(IValueData* p_other)const {return ((Value_Shared<T>*)p_other)->shp == shp;}
+	bool Eq(IValueData* p_other)const {
+		return p_other->Equal((void*)shp.get());
+	}
 	bool Gt(IValueData* p_other)const {return false;}
 	bool Ge(IValueData* p_other)const {return false;}
 
@@ -1960,6 +1970,21 @@ public:
 		return new Value_Shared(shp, 1);
 	}
 
+	template <typename U> bool eq_stub(const U& arg_v)const {
+		return  false;
+	}
+	template <> bool eq_stub(const Type_Null& arg_v)const {
+		return  !shp;
+	}
+	template <> bool eq_stub(const Void_P& arg_v)const {
+		return  arg_v==(void*) shp.get();
+	}
+
+	template <typename U> void set_value_stub(const U& arg_v) {
+	}
+	template <> void set_value_stub(const Type_Null& arg_v) {
+		shp = nullptr;
+	}
 	//単項マイナス
 	void Nagative() {}
 	const get_value_base_t& get_value() const {
@@ -1972,11 +1997,11 @@ public:
 		return s;
 	}
 	const set_value_base_t& set_value() const {
-		static const IValueData::set_value_t<ValueData<int>> s;
+		static const IValueData::set_value_t<Value_Shared<T>> s;
 		return s;
 	}
 	const eq_base_t& eq() const {
-		static const IValueData::eq_t<ValueData<int>> s;
+		static const IValueData::eq_t<Value_Shared<T>> s;
 		return s;
 	}
 	const gt_base_t& gt() const {
@@ -2023,13 +2048,15 @@ void PushCreateSharedMemberInstance() {
 }
 void PushCreateMemberInstance(CreateMemberInstanceFunction arg_function);
 
+ValueData<Type_Null>* GetNullValueData();
+
 // 変数
 class Value {
 
 public:
 	Value()
 	{
-		valueData = nullptr;
+		valueData = GetNullValueData();
 		valueType = TYPE_VOID;
 	}
 
@@ -2045,7 +2072,7 @@ public:
 	}
 
 	Value(const Type_Null) {
-		valueData = nullptr;
+		valueData = GetNullValueData();
 		valueType = TYPE_VOID;
 	}
 	Value(const Type_Enum,EnumTag* arg_enumTag) {
@@ -2081,12 +2108,9 @@ public:
 
 	Value& operator=(const Value& other)
 	{
-		if (this == &other)
-			return *this;
-
-
-		Assign(other);
-
+		if (this != &other) {
+			Assign(other);
+		}
 		return *this;
 	}
 
@@ -2119,33 +2143,21 @@ public:
 		valueData = other.valueData->Clone();
 	}
 	void Assign(const Value& other) {
-		if (!other.valueData) {
+		if (valueType & TYPE_REF || valueType == TYPE_VOID) {
 
-			valueType = other.valueType;
-			return;
-		}
+			clear();
 
-		if (valueData) {
+			valueData = other.valueData;
+
+			valueData->addref();
+
+			if (valueType == TYPE_VOID) {
+				valueType = other.valueType;
+			}
+		}else {
 			valueData->Set(*other.valueData);
 		}
-		else {
-			//自分が参照型の場合、相手の実体への参照を取得
-			if (valueType & TYPE_REF || valueType == TYPE_VOID) {
 
-				clear();
-
-				valueData = other.valueData;
-
-				valueData->addref();
-
-				if (valueType == TYPE_VOID) {
-					valueType = other.valueType;
-				}
-			}
-			else {
-				valueData = other.valueData->Clone();
-			}
-		}
 
 		
 

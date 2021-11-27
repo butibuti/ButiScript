@@ -968,6 +968,7 @@ namespace ButiScript {
 			vec_types[functionType.typeIndex] = &map_types.at(functionTypeName);
 			map_types.at(functionTypeName).p_functionObjectData = new FunctionObjectTypeData(arg_retType,arg_argmentTypes);
 
+			functionTypeCount++;
 			return &map_types.at(functionTypeName);
 		}
 
@@ -1037,6 +1038,7 @@ namespace ButiScript {
 					typeItr++;
 				}
 			}
+			functionTypeCount = 0;
 		}
 		int GetSize()const {
 			return vec_types.size();
@@ -1044,8 +1046,11 @@ namespace ButiScript {
 		int GetSystemTypeSize()const {
 			return systemTypeCount;
 		}
+		int GetFunctionTypeSize()const {
+			return functionTypeCount;
+		}
 		int GetScriptTypeSize()const {
-			return vec_types.size()-systemTypeCount;
+			return vec_types.size()-systemTypeCount-functionTypeCount;
 		}
 		std::vector<ScriptClassInfo> GetScriptClassInfo()const {
 			std::vector<ScriptClassInfo> output;
@@ -1063,7 +1068,7 @@ namespace ButiScript {
 		std::vector<TypeTag* > vec_types;
 		std::map<std::string, int> map_argmentChars;
 		std::map<std::string, TypeTag> map_types;
-		int systemTypeCount=0;
+		int systemTypeCount=0,functionTypeCount=0;
 	};
 	
 }

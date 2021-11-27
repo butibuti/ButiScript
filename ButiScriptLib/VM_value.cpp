@@ -97,6 +97,13 @@ void ButiScript::PushCreateMemberInstance(CreateMemberInstanceFunction arg_funct
 	GetCreateMemberInstanceFunction().push_back(arg_function);
 }
 
+auto nullValueData=ButiScript::ValueData<ButiScript::Type_Null>(1);
+ButiScript::ValueData<ButiScript::Type_Null>* ButiScript::GetNullValueData()
+{
+	nullValueData.addref();
+	return &nullValueData;
+}
+
 #ifdef IMPL_BUTIENGINE
 auto typeMapRelease= ButiEngine::Util::MemoryReleaser (&p_map_typeIndex);
 #else

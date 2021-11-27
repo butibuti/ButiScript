@@ -80,6 +80,17 @@ struct unary_node_func {
 	{
 		return Node::make_node(arg_operation, arg_left, arg_compiler);
 	}
+}; 
+
+struct null_node_func {
+	template <typename Ty1>
+	struct result { using type = Node_t; };
+
+	template <typename Ty1>
+	Node_t operator()(Ty1 arg_compiler)const 
+	{
+		return std::make_shared<Node_Null>();
+	}
 };
 
 // 二項演算子ノードを生成する
@@ -519,6 +530,7 @@ struct make_block_func {
 // phoenixが使用する無名関数用の関数
 const phoenix::function<BindFunctionObject::binary_node_func>  binary_node =						BindFunctionObject::binary_node_func();
 const phoenix::function<BindFunctionObject::binary_node_func_useDriver>		binary_node_comp =		BindFunctionObject::binary_node_func_useDriver();
+const phoenix::function<BindFunctionObject::null_node_func>  null_node =							BindFunctionObject::null_node_func();
 const phoenix::function<BindFunctionObject::unary_node_func>  unary_node =							BindFunctionObject::unary_node_func();
 const phoenix::function<BindFunctionObject::lambda_node_func>  lambda_node=							BindFunctionObject::lambda_node_func();
 const phoenix::function<BindFunctionObject::push_back_func>  push_back =							BindFunctionObject::push_back_func();
@@ -676,9 +688,9 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 		boost::spirit::rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		boost::spirit::rule<ScannerT>	decl_value,decl_classMember,Value, function, decl_function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
-			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda;
+			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda,null;
 
-		boost::spirit::symbols<> keywords;
+		boost::spirit::symbols<> keywords,boolean;
 		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
 		boost::spirit::dynamic_distinct_parser<ScannerT> keyword_p;
 		definition(typeRegist_grammer const& self)
@@ -690,7 +702,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 			using phoenix::new_;
 			using phoenix::construct_;
 
-			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace";
+			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace","true","false","class", "null", "function","public","private","var";
 
 
 			// 識別子
@@ -700,6 +712,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 			// 識別子（クロージャに登録）
 			identifier = ident[identifier.str = construct_<std::string>(arg1, arg2)];
 
+			null =boost::spirit::str_p( "null");
 
 			Enum = "enum" >> identifier[Enum.enum_t = make_enum(arg1)] >> "{" >>
 				!identifier[add_enum(Enum.enum_t, arg1)]
@@ -707,8 +720,8 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				"}";
 
 			//整数
-			number = boost::spirit::uint_p;
-
+			number = boost::spirit::uint_p| boolean;
+			boolean =  "true", "false";
 			//浮動小数
 			floatNumber = boost::spirit::strict_real_p;
 
@@ -734,13 +747,23 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				'(' >> !argument >> ')';
 
 			//メンバ変数呼び出し
-			callMember = Value >> "."
+			callMember = (Value >> "."
 				>> identifier
 				>> !('(' >> !argument >> ')')
 				>> *("." >>
 					identifier >>
 					!('(' >> !argument >> ')')
-					);
+					))
+				|(
+					func_node >> "."
+					>> identifier
+					>> !('(' >> !argument >> ')')
+					>> *("." >>
+						identifier >>
+						!('(' >> !argument >> ')')
+						)
+					)
+				;
 
 			// 計算のprimeノード
 			prime = lambda
@@ -750,16 +773,13 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				| floatNumber
 				| number
 				| string_node
+				|null
 				| '(' >> expr >> ')'
-			
 				;
 
 			// 単項演算子
 			unary = '-' >> prime
-				| prime>>"++"
-				| prime >> "--"
-				| prime
-				;
+				| prime>>!( boost::spirit::str_p("++")  | boost::spirit::str_p("--"));
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
@@ -865,7 +885,6 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> boost::spirit::ch_p('}')[popNameSpace(self.compiler)];
 			// 文
 			statement = boost::spirit::ch_p(';')
-				| unary >> ';'
 				| assign >> ';'
 				| boost::spirit::str_p("case") >> expr >> ':'
 				| boost::spirit::str_p("default") >> ':'
@@ -894,6 +913,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> '}'
 				| func_node >> ';'
 				| callMember >> ';'
+				| unary >> ';'
 				| decl_function
 				| block
 				;
@@ -970,10 +990,10 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 		boost::spirit::rule<ScannerT, ButiClosure::lambda_prime_val::context_t>	lambda_prime;
 		boost::spirit::rule<ScannerT, ButiClosure::lambda_val::context_t>		lambda;
 		boost::spirit::rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
-		boost::spirit::rule<ScannerT>							input, Enum;
+		boost::spirit::rule<ScannerT>							input, Enum,null;
 		boost::spirit::rule<ScannerT>							ident;
 
-		boost::spirit::symbols<> keywords;
+		boost::spirit::symbols<> keywords,boolean;
 		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
 		boost::spirit::dynamic_distinct_parser<ScannerT> keyword_p;
 
@@ -985,7 +1005,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			using phoenix::var;
 			using phoenix::new_;
 			using phoenix::construct_;
-			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace";
+			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace", "true", "false", "class", "null", "function", "public", "private", "var";
 			// 識別子
 			ident = boost::spirit::lexeme_d[
 				((boost::spirit::alpha_p | '_') >> *(boost::spirit::alnum_p | '_')) - (keywords >> boost::spirit::anychar_p - (boost::spirit::alnum_p | '_'))
@@ -1003,8 +1023,9 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
 
 			//整数
-			number = boost::spirit::uint_p[number.number = arg1];
+			number = boost::spirit::uint_p[number.number = arg1]|boolean[number.number=arg1];
 
+			boolean.add("true", 1)("false", 0);
 			//浮動小数
 			floatNumber = boost::spirit::strict_real_p[floatNumber.number = arg1];
 
@@ -1012,6 +1033,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			string_node = boost::spirit::lexeme_d[
 				boost::spirit::confix_p(boost::spirit::ch_p('"')[string_node.str = ""], *boost::spirit::c_escape_ch_p[string_node.str += arg1], '"')
 			];
+			null = boost::spirit::str_p("null");
 
 			// 変数
 			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
@@ -1029,13 +1051,20 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 
 			//メンバ呼び出し
-			callMember =Value[ callMember.valueNode=arg1]>>"."
-				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode,arg1, self.compiler)]
-				>>!(boost::spirit::ch_p('(' )[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)]>> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
-				>>* (".">> 
-					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)]  >>  
+			callMember = (Value[callMember.valueNode = arg1] >> "."
+				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]
+				>> !(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+				>> *("." >>
+					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)] >>
 					!(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
-					)
+					))
+				| (func_node[callMember.valueNode = arg1] >> "."
+					>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]
+					>> !(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+					>> *("." >>
+						identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)] >>
+						!(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
+						))
 				
 				;
 
@@ -1047,14 +1076,14 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1, self.compiler)]
 				| number[prime.node = unary_node(OP_INT, arg1, self.compiler)]
 				| string_node[prime.node = unary_node(OP_STRING, arg1, self.compiler)]
+				|null[prime.node=null_node(self.compiler)]
 				| '(' >> expr[prime.node = arg1] >> ')'
 				;
 
 			// 単項演算子
 			unary = '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)]
-				| prime[unary.node = unary_node(OP_INCREMENT, arg1, self.compiler)]>>"++" 
-				| prime[unary.node = unary_node(OP_DECREMENT, arg1, self.compiler)] >> "--"
-				| prime[unary.node = arg1];
+				| prime[unary.node = arg1] 
+				>> !(boost::spirit::str_p("++")[unary_node(OP_INCREMENT, unary.node, self.compiler)] | boost::spirit::str_p("--")[unary_node(OP_DECREMENT, unary.node, self.compiler)]);
 
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
@@ -1166,7 +1195,6 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 			// 文
 			statement = boost::spirit::ch_p(';')[statement.statement = make_statement(NOP_STATE)]
-				| unary[statement.statement = make_statement1(UNARY_STATE, arg1)] >> ';'
 				| assign[statement.statement = make_statement1(ASSIGN_STATE, arg1)] >> ';'
 				| boost::spirit::str_p("case") >> expr[statement.statement = make_statement1(CASE_STATE, arg1)] >> ':'
 				| boost::spirit::str_p("default")[statement.statement = make_statement(DEFAULT_STATE)] >> ':'
@@ -1198,6 +1226,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| decl_function[statement.statement = make_statement1(NOP_STATE, pushCompiler_sub(arg1, self.compiler))]
 				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
+				| unary[statement.statement = make_statement1(UNARY_STATE, arg1)] >> ';'
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				;
 

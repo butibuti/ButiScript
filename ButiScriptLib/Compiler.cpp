@@ -532,7 +532,13 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, in
 		if (func->IsSystem()) {
 			continue;
 		}
-		arg_ref_data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index].pos);
+		auto name = functions[i]->GetName();
+		if (!arg_ref_data.map_entryPoints.count(name)) {
+			arg_ref_data.map_entryPoints.emplace(name, labels[functions[i]->index].pos);
+		}
+		else {
+			arg_ref_data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index].pos);
+		}
 	}
 	
 	for (auto itr = arg_ref_data.map_entryPoints.begin(), end = arg_ref_data.map_entryPoints.end(); itr != end;itr++) {
@@ -553,7 +559,7 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, in
 	arg_ref_data.vec_sysCallMethods = vec_sysMethodCalls;
 	types.CreateTypeVec(arg_ref_data.vec_types);
 	arg_ref_data.vec_scriptClassInfo = types.GetScriptClassInfo();
-
+	arg_ref_data.functionTypeCount = types.GetFunctionTypeSize();
 	for (int i = 0; i < arg_ref_data.valueSize; i++) {
 		auto p_value = &variables[0][i];
 		if (p_value->access == AccessModifier::Public) {
@@ -821,7 +827,10 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	for (int i = 0; i < definedTypeCount; i++) {
 		arg_ref_data.vec_scriptClassInfo.at(i).InputFile(fIn);
 	}
-	arg_ref_data.systemTypeCount = arg_ref_data.vec_types.size() - definedTypeCount;
+
+	fIn.read((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
+
+	arg_ref_data.systemTypeCount = arg_ref_data.vec_types.size() - definedTypeCount-arg_ref_data.functionTypeCount;
 	int enumCount =0;
 	fIn.read((char*)&enumCount, sizeof(enumCount));
 	for (int i = 0; i < enumCount;i++) {
@@ -953,6 +962,9 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		arg_ref_data.vec_scriptClassInfo[i].OutputFile(fOut);
 	}
 
+	fOut.write((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
+
+
 	int enumCount = arg_ref_data.map_enumTag.size();
 	fOut.write((char*)&enumCount, sizeof(enumCount));
 	for (auto itr = arg_ref_data.map_enumTag.begin(), end = arg_ref_data.map_enumTag.end(); itr != end; itr++) {
@@ -1055,11 +1067,10 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 		}
 		else {
 			auto type = arg_comp->GetType(*itr);
-			if (type->isSystem) {
-				arg_comp->OpAllocStack(*itr);
-			}
-			else  if (type->p_enumTag) {
+			if (type->p_enumTag) {
 				arg_comp->OpAllocStackEnumType(*itr);
+			}else if (type->isSystem) {
+				arg_comp->OpAllocStack(*itr);
 			}
 			else  if (type->IsFunctionObjectType()) {
 				arg_comp->OpAllocStackFunctionType(*itr);
@@ -1149,6 +1160,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_registEventListner, TYPE_STRING, "RegistEvent", "s,s,s");
 	DefineSystemFunction(&VirtualMachine::sys_unregistEventListner, TYPE_VOID, "UnRegistEvent", "s,s");
 	DefineSystemFunction(&VirtualMachine::sys_addEventMessanger, TYPE_VOID, "AddEventMessanger", "s");
+	DefineSystemFunction(&VirtualMachine::sys_removeEventMessanger, TYPE_VOID, "RemoveEventMessanger", "s");
 	DefineSystemFunction(&VirtualMachine::sys_executeEvent, TYPE_VOID, "EventExecute", "s");
 	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
 #endif // IMPL_BUTIENGINE

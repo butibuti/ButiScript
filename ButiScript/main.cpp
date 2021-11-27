@@ -1,4 +1,15 @@
 #include "stdafx.h"
+class Sample {
+public:
+	int TestMethod() {
+		std::cout << "Sample::TestMethod() is Called!"<<std::endl;
+		return 0;
+	}
+};
+auto shp_sample = std::make_shared<Sample>();
+std::shared_ptr<Sample> CreateSample() {
+	return shp_sample;
+}
 #include"BuiltInTypeRegister.h"
 #include "Compiler.h"
 
@@ -6,9 +17,11 @@
 int main(const int argCount, const char* args[])
 {
 	ButiScript::Compiler driver;
-	driver.RegistDefaultSystems();
-	//driver.RegistSystemType<Sample>("Sample", "Sample");
-	//driver.DefineSystemFunction(&ButiScript::VirtualCPU::sys_tostr, TYPE_STRING, "ToString", "Sample"); 
+	ButiScript::SystemTypeRegister::GetInstance()->RegistSharedSystemType<Sample>("Sample", "Sample");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample, int, &Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::shared_ptr<Sample>,&CreateSample >,ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
+
+	driver.RegistDefaultSystems(); 
 	bool compile_result=false;
 	for(int i=1;i<argCount;i++)
 	{
@@ -25,7 +38,7 @@ int main(const int argCount, const char* args[])
 		auto res= driver.InputCompiledData(StringHelper::GetDirectory(args[i]) + "/output/" + StringHelper::GetFileName(args[i], false) + ".cbs", *data);
 		if (res) {
 			ButiScript::VirtualMachine* p_clone; 
-			int returnCode;
+			int returnCode=0;
 			{
 
 				ButiScript::VirtualMachine machine(data);
@@ -37,7 +50,7 @@ int main(const int argCount, const char* args[])
 
 				std::cout << args[i] << "‚ÌmainŽÀs" << std::endl;
 				std::cout << "////////////////////////////////////" << std::endl;
-				returnCode = machine.Execute<int>("main");
+				returnCode = machine.Execute<int,int ,int>("main",100,50);
 				std::cout << "////////////////////////////////////" << std::endl;
 				std::cout << args[i] << "‚Ìreturn : " << std::to_string(returnCode) << std::endl;
 

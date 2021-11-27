@@ -46,7 +46,7 @@ namespace ButiScript {
 		std::map<int, EnumTag> map_enumTag;
 		FunctionTable functions;
 		std::vector<ScriptClassInfo> vec_scriptClassInfo;
-		int systemTypeCount;
+		int systemTypeCount,functionTypeCount;
 		std::string sourceFilePath;
 	};
 
@@ -83,7 +83,7 @@ namespace ButiScript {
 			free(p_pushRefValues );
 		}
 		template<typename T>
-		T Execute(const std::string& arg_entryPoint = "main") {
+		T Execute(const std::string& arg_entryPoint) {
 			if (!shp_data->map_entryPoints.count(arg_entryPoint)) {
 				return T();
 			}
@@ -112,13 +112,24 @@ namespace ButiScript {
 
 			valueStack.resize(globalValue_size);
 		}
+		template <typename T>
+		void PushArgments( T argment) {
+			push(argment);
+		}
 
-		template<typename T, typename U>
-		int Execute(const std::string& arg_entryPoint, U argmentValue) {
+		template<typename T, typename... U>
+		void PushArgments( T argment,U...argments ) {
+			PushArgments(argment);
+			PushArgments(argments...);
+		}
+
+		template<typename T, typename... U>
+		T Execute(const std::string& arg_entryPoint, U... argmentValue) {
 
 			stack_base = valueStack.size();						// スタック参照位置初期化
-			push(argmentValue);									//引数push
-			push(1);										// mainへの引数カウントをpush
+			int pushCount = sizeof...(argmentValue);
+			PushArgments(argmentValue...);
+			push(pushCount);										// mainへの引数カウントをpush
 			push(stack_base);										// stack_baseの初期値をpush
 			push(0);										// プログラム終了位置をpush
 			Execute_(arg_entryPoint);
@@ -126,6 +137,19 @@ namespace ButiScript {
 			auto ret = top().valueData->Get<T>();
 			valueStack.resize(globalValue_size);
 			return ret;
+		}
+		template< typename... U>
+		void Execute(const std::string& arg_entryPoint, U... argmentValue) {
+
+			stack_base = valueStack.size();						// スタック参照位置初期化
+			int pushCount = sizeof...(argmentValue);
+			PushArgments(argmentValue...);
+			push(pushCount);										// mainへの引数カウントをpush
+			push(stack_base);										// stack_baseの初期値をpush
+			push(0);										// プログラム終了位置をpush
+			Execute_(arg_entryPoint);
+
+			valueStack.resize(globalValue_size);
 		}
 		void AllocGlobalValue();
 
@@ -840,8 +864,8 @@ namespace ButiScript {
 		inline void OpCall(const int arg_val)
 		{
 			push(stack_base);
-			push(addr());					// リターンアドレスをPush
-			stack_base = valueStack.size();		// スタックベース更新
+			push(addr());					
+			stack_base = valueStack.size();		
 			jmp(arg_val);
 		}
 
@@ -852,8 +876,8 @@ namespace ButiScript {
 		void OpCallByVariable() {
 			auto functionObject = (ValueData<Type_Func>*)top().valueData; pop();
 			push(stack_base);
-			push(addr());					// リターンアドレスをPush
-			stack_base = valueStack.size();		// スタックベース更新
+			push(addr());					
+			stack_base = valueStack.size();		
 			for (auto itr = functionObject->vec_referenceValue.begin(), end = functionObject->vec_referenceValue.end(); itr != end; itr++) {
 				push(itr->first,itr->second);
 			}
@@ -864,7 +888,7 @@ namespace ButiScript {
 		// 引数なしリターン
 		void OpReturn()
 		{
-			valueStack.resize(stack_base);		// ローカル変数排除
+			valueStack.resize(stack_base);		
 			int addr = top().valueData->Get<int>(); pop();
 			stack_base = top().valueData->Get<int>(); pop();
 			int arg_count = top().valueData->Get<int>(); pop();
@@ -877,13 +901,18 @@ namespace ButiScript {
 		{
 			ButiScript::Value result = top(); 
 			pop();
-			valueStack.resize(stack_base);		// ローカル変数排除
+			valueStack.resize(stack_base);		
 			int addr = top().valueData->Get<int>(); pop();
 			stack_base = top().valueData->Get<int>(); pop();
 			int arg_count = top().valueData->Get<int>(); pop();
 			valueStack.pop(arg_count);
 			push(result);
 			jmp(addr);
+		}
+
+		//nullをPush
+		inline void PushNull() {
+			push(Type_Null());
 		}
 
 		//関数オブジェクトのアドレスをPush
@@ -895,7 +924,7 @@ namespace ButiScript {
 
 			OpPushFunctionAddress(Constant<int>());
 		}
-
+		//ラムダ式の生成とPush
 		void OpPushLambda() {
 
 			int captureListSize = top().valueData->Get<int>(); pop();
@@ -947,6 +976,7 @@ namespace ButiScript {
 #ifdef IMPL_BUTIENGINE
 
 		void sys_addEventMessanger();
+		void sys_removeEventMessanger();
 		void sys_registEventListner();
 		void sys_unregistEventListner();
 		void sys_executeEvent();
@@ -1070,7 +1100,7 @@ namespace ButiScript {
 			auto arg3 = top().valueData->Get<Arg3>(); pop();
 			auto arg2 = top().valueData->Get<Arg2>(); pop();
 			auto arg1 = top().valueData->Get<Arg1>(); pop();
-			T ret = (*Method)(arg1, arg2,arg3);
+			T ret = (*Method)(arg1, arg2, arg3);
 			push(ret);
 		}
 		
@@ -1350,6 +1380,7 @@ namespace ButiScript {
 		void pushSharedValue() {
 			auto value = Value();
 			long long int address = TypeSpecific<T>();
+			value.valueData = new Value_Shared<T>(1);
 			value.SetType(Value::GetTypeIndex(address));
 			this->valueStack.push(value);
 		}
@@ -1402,6 +1433,11 @@ namespace ButiScript {
 		}
 		void push(const ButiScript::Value& arg_v) {
 			valueStack.push(arg_v);
+		}
+		void push(const Type_Null&) {
+			auto value = Value(Type_Null());
+			value.SetType(TYPE_VOID);
+			this->valueStack.push(value);
 		}
 
 		void pop() { 

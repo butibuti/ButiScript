@@ -92,6 +92,7 @@ public:
 		TypeTag type;
 		int index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
+		type.isShared = true;
 		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.size());
 		vec_valueAllocCall.push_back(&VirtualMachine::pushSharedValue<T>);
 

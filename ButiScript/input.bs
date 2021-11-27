@@ -1,10 +1,22 @@
+function main(i:int,i2:int):int{
+	var s:Sample;
+	var s2:Sample;
+	var i_ref:int&;
+	print(ToString(i)+"and "+ToString(i2)+"are argments\n");
 
-function main():int
-{
-	var i:float;
-	i=0;
-	if(i<=0){
-		print("aaaa\n");
+	if(i_ref==null){
+		print("i_ref is null!!\n");
+		i_ref=i;
 	}
-	return i;
+
+	s=CreateSample();
+	s.TestMethod();
+	if(null==s){
+		print("s is null!!\n");
+	}
+	if(s==s2){
+		print("s and s2 are same\n");
+	}
+	
+	return i_ref+i2;
 }
