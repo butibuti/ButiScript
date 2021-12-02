@@ -225,13 +225,17 @@ public:
 			return functions.Find_strict(arg_name, arg_vec_argIndex);
 		}
 		else {
-			return functions.Find(arg_name, arg_vec_argIndex);
+			return functions.Find(arg_name, arg_vec_argIndex,&types);
 		}
 	}
 	// ŠÖ”‚ÌŒŸõ
 	const FunctionTag* GetFunctionTag(const std::string& arg_name) const
 	{
 		return functions.Find(arg_name);
+	}
+
+	const TypeTable& GetTypeTable()const {
+		return types;
 	}
 
 	//Œ^‚ÌŒŸõ

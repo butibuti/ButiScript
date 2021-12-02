@@ -239,10 +239,21 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 		ButiEngine::GUI::PushMessage(dirName + u8"ÇÃì«Ç›çûÇ›èIóπ");
 	}
 }
+void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
+{
+	push(wkp_butiScriptBehavior.lock());
+}
 void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	for (int i = 0; i < globalValue_size- globalValue_base; i++) {
-		arg_ref_vec_saveObject.push_back(valueStack[globalValue_base+i].valueData->GetSaveObject());
-		arg_ref_vec_saveObject.at(i)->SetTypeIndex(valueStack[globalValue_base + i].valueType);
+		auto type = valueStack[globalValue_base + i].valueType;
+		if (type & TYPE_REF) {
+			arg_ref_vec_saveObject.push_back(std::make_shared<GlobalValueSaveObject<Type_Null>>());
+		}
+		else {
+			arg_ref_vec_saveObject.push_back(valueStack[globalValue_base + i].valueData->GetSaveObject());
+		}
+		
+		arg_ref_vec_saveObject.at(i)->SetTypeIndex(type);
 	}
 }
 void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
@@ -265,8 +276,8 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr<
 }
 void ButiScript::VirtualMachine::ShowGUI() {
 	
-	for (auto itr = shp_data->map_globalValueAddress.begin(), end = shp_data->map_globalValueAddress.end(); itr != end;itr++) {
-		valueStack[globalValue_base + itr->second].valueData->ShowGUI(itr->first);
+	for (auto itr = shp_data->map_addressToValueName.begin(), end = shp_data->map_addressToValueName.end(); itr != end;itr++) {
+		valueStack[globalValue_base + itr->first].valueData->ShowGUI(itr->second);
 	}
 }
 #endif

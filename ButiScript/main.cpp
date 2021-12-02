@@ -1,14 +1,22 @@
 #include "stdafx.h"
 class Sample {
 public:
+	int count = 0;
+	Sample() {
+		static int c_s = 0;
+		count = c_s;
+		c_s++;
+	}
+	~Sample() {
+		int i = 0;
+	}
 	int TestMethod() {
-		std::cout << "Sample::TestMethod() is Called!"<<std::endl;
-		return 0;
+		std::cout << "Sample::TestMethod() is Called! count:"<<count<<std::endl;
+		return count;
 	}
 };
-auto shp_sample = std::make_shared<Sample>();
 std::shared_ptr<Sample> CreateSample() {
-	return shp_sample;
+	return std::make_shared<Sample>();
 }
 #include"BuiltInTypeRegister.h"
 #include "Compiler.h"
@@ -50,7 +58,7 @@ int main(const int argCount, const char* args[])
 
 				std::cout << args[i] << "‚ÌmainŽÀs" << std::endl;
 				std::cout << "////////////////////////////////////" << std::endl;
-				returnCode = machine.Execute<int,int ,int>("main",100,50);
+				returnCode= machine.Execute<int>("main");
 				std::cout << "////////////////////////////////////" << std::endl;
 				std::cout << args[i] << "‚Ìreturn : " << std::to_string(returnCode) << std::endl;
 

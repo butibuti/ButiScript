@@ -818,6 +818,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		int address = 0;
 		fIn.read((char*)&address, sizeof(int));
 		arg_ref_data.map_globalValueAddress.emplace(std::string(strBuff, strSize), address);
+		arg_ref_data.map_addressToValueName.emplace(address, std::string(strBuff, strSize));
 		free(strBuff);
 	}
 
@@ -1170,7 +1171,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, &Vector2::GetLength, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_FLOAT, "GetLength", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, &Vector2::GetLengthSqr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "GetLengthSqr", "");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, Vector2, &Vector2::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "Dot", "vec2");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float,const Vector2&, &Vector2::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "Dot", "vec2");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Floor", "i");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Round", "i");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, (TYPE_VOID + 1), "Ceil", "i");
@@ -1182,8 +1183,8 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, &Vector3::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetNormalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, &Vector3::GetLength, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLength", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, &Vector3::GetLengthSqr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLengthSqr", "");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, Vector3, &Vector3::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "Dot", "vec3");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, Vector3, &Vector3::GetCross, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCross", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float,const Vector3&, &Vector3::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "Dot", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3,const Vector3&, &Vector3::GetCross, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCross", "vec3");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Floor", "i");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Round", "i");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, (TYPE_VOID + 2), "Ceil", "i");
@@ -1200,8 +1201,8 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetPosition, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetPosition", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Vector3, &Matrix4x4::GetPosition_Transpose, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetPosition_Transpose", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4,Vector3, &Matrix4x4::GetEulerOneValue_local, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 2, "GetEulerOneValue_local", "");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, Vector3, &Matrix4x4::CreateFromEuler, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler", "vec3");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, Vector3, &Matrix4x4::CreateFromEuler_local, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler_local", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&,const Vector3&, &Matrix4x4::CreateFromEuler, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler", "vec3");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, const Vector3&, &Matrix4x4::CreateFromEuler_local, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "CreateFromEuler_local", "vec3");
 	
 }
 

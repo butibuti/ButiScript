@@ -550,7 +550,7 @@ namespace ButiScript {
 		Declaration(const int arg_type,const AccessModifier arg_access)
 			:valueType(arg_type), isFunction(false)
 		{
-			if (arg_access == AccessModifier::Private || arg_access == AccessModifier::Public) {
+			if (arg_access == AccessModifier::Public || arg_access == AccessModifier::Private||arg_access==AccessModifier::Protected) {
 				accessType = arg_access;
 			}
 		}
@@ -624,14 +624,16 @@ namespace ButiScript {
 	class Function :public std::enable_shared_from_this<Function>{
 	public:
 		Function(const std::string& arg_name)
-			: name(arg_name),serchName(arg_name)
+			: name(arg_name),searchName(arg_name)
 		{
 			accessType = AccessModifier::Public;
 		}
-		Function(std::shared_ptr<Function> arg_access,const std::string& arg_name)
+		Function(const std::string& arg_name,const AccessModifier arg_access)
 			: name(arg_name)
 		{
-			accessType = StringToAccessModifier(arg_access->name);
+			if (arg_access == AccessModifier::Public || arg_access == AccessModifier::Private || arg_access == AccessModifier::Protected) {
+				accessType = arg_access;
+			}
 		}
 
 		void Add(ArgDefine arg_argDefine)
@@ -655,10 +657,15 @@ namespace ButiScript {
 		}
 		void SetParent(Function_t arg_function) { parentFunction = arg_function; }
 		virtual void LambdaCapture( Compiler* arg_compiler){}
+		void SetAccess(const AccessModifier arg_access) {
+			if (arg_access == AccessModifier::Public || arg_access == AccessModifier::Private || arg_access == AccessModifier::Protected) {
+				accessType = arg_access;
+			}
+		}
 	protected:
 		Function(){}
 		int valueType;
-		std::string name,serchName;
+		std::string name,searchName;
 		std::vector<ArgDefine> args;
 		AccessModifier accessType=AccessModifier::Public;
 		Block_t block;

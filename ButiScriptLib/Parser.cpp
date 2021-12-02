@@ -266,13 +266,13 @@ struct call_namespace_func {
 
 // 関数の生成
 struct make_function_func {
-	template < typename Ty1>
+	template < typename Ty1,typename Ty2>
 	struct result { using type = Function_t; };
 
-	template <typename Ty1>
-	Function_t operator()(const Ty1& arg_name) const
+	template <typename Ty1,typename Ty2>
+	Function_t operator()(const Ty1& arg_name,const Ty2 arg_modifier ) const
 	{
-		return Function_t(new Function(arg_name));
+		return Function_t(new Function(arg_name,arg_modifier));
 	}
 };
 // ラムダ式の生成
@@ -294,9 +294,10 @@ struct make_functionWithAccess_func {
 	struct result { using type = Function_t; };
 
 	template < typename Ty1, typename Ty2>
-	Function_t operator()(Ty1 arg_accessNameFunction, const Ty2& arg_name) const
+	Function_t operator()(Ty1 arg_function, const Ty2 arg_access) const
 	{
-		return Function_t(new Function(arg_accessNameFunction, arg_name));
+		arg_function->SetAccess(arg_access);
+		return arg_function;
 	}
 };
 
@@ -543,9 +544,9 @@ const phoenix::function<BindFunctionObject::make_decl_func>  make_decl =							B
 const phoenix::function<BindFunctionObject::make_decl1_func>  make_decl1 =							BindFunctionObject::make_decl1_func();
 const phoenix::function<BindFunctionObject::arg_ref_func>  arg_ref =								BindFunctionObject::arg_ref_func();
 const phoenix::function<BindFunctionObject::arg_name_func>	arg_name =								BindFunctionObject::arg_name_func();
+const phoenix::function<BindFunctionObject::make_functionWithAccess_func>	make_functionAccess =	BindFunctionObject::make_functionWithAccess_func();
 const phoenix::function<BindFunctionObject::make_function_func>	make_function =						BindFunctionObject::make_function_func();
-const phoenix::function<BindFunctionObject::make_lambda_func>  make_lambda =							BindFunctionObject::make_lambda_func();
-const phoenix::function<BindFunctionObject::make_functionWithAccess_func>make_functionWithAccess=	BindFunctionObject::make_functionWithAccess_func();
+const phoenix::function<BindFunctionObject::make_lambda_func>  make_lambda =						BindFunctionObject::make_lambda_func();
 const phoenix::function<BindFunctionObject::make_class_func>  make_class =							BindFunctionObject::make_class_func();
 const phoenix::function<BindFunctionObject::make_classMember_func>  make_classMember =				BindFunctionObject::make_classMember_func();
 const phoenix::function<BindFunctionObject::add_enum_func>  add_enum =								BindFunctionObject::add_enum_func();
@@ -635,20 +636,24 @@ namespace ButiClosure {
 		member1 node;
 		member2 type;
 		member3 value;
-		member4 access;
+		member4 accessModifier  ;
 	};
 
 	// 関数定義のクロージャ
-	struct func_val : boost::spirit::closure<func_val, Function_t, int, std::string> {
+	struct func_val : boost::spirit::closure<func_val, Function_t, int, std::string,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 name;
+		member4 accessModifier;
 	};
 	// クラスメンバ定義のクロージャ
 	struct classMember_val : boost::spirit::closure<classMember_val, MemberValue,std::string, AccessModifier> {
 		member1 memberValue;
 		member2 name;
 		member3 accessModifier;
+	};
+	struct access_val:boost::spirit::closure<access_val,  AccessModifier> {
+		member1 accessModifier;
 	};
 	// クラス定義のクロージャ
 	struct class_val : boost::spirit::closure<class_val, Class_t, std::string> {
@@ -688,7 +693,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 		boost::spirit::rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
 		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
 		boost::spirit::rule<ScannerT>	decl_value,decl_classMember,Value, function, decl_function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
-			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda,null;
+			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda,null,access;
 
 		boost::spirit::symbols<> keywords,boolean;
 		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
@@ -835,8 +840,10 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> assign_op
 				>> (expr);
 
+			access = (boost::spirit::str_p("private") | boost::spirit::str_p("public"));
+
 			// 変数宣言
-			decl_value = !(boost::spirit::str_p("private") | boost::spirit::str_p("public")) >> "var" >> Value % ',' >> ':' >> type >> ';';
+			decl_value = !access >> "var" >> Value % ',' >> ':' >> type >> ';';
 
 			// 型名
 			type = identifier >> !boost::spirit::ch_p('&')
@@ -861,13 +868,13 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				>> !boost::spirit::str_p("[]");
 
 			// 関数定義
-			function = identifier >> !identifier
+			function = !access >> identifier
 				>> '(' >> !(argdef% ',') >> ')' >>
 				':' >> type
 				>> block;
 
 			//関数宣言
-			decl_function = "function" >> function;
+			decl_function =!access>> "function" >> function;
 
 			// 文ブロック
 			block = boost::spirit::ch_p('{')
@@ -875,7 +882,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 					| decl_value)
 				>> '}';
 			//クラスのメンバー定義
-			decl_classMember = identifier >> !identifier
+			decl_classMember = !access >> identifier
 				>> ':' >> type >> ';';
 
 			//クラス定義
@@ -990,6 +997,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 		boost::spirit::rule<ScannerT, ButiClosure::lambda_prime_val::context_t>	lambda_prime;
 		boost::spirit::rule<ScannerT, ButiClosure::lambda_val::context_t>		lambda;
 		boost::spirit::rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
+		boost::spirit::rule<ScannerT, ButiClosure::access_val::context_t>		access;
 		boost::spirit::rule<ScannerT>							input, Enum,null;
 		boost::spirit::rule<ScannerT>							ident;
 
@@ -1081,10 +1089,10 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				;
 
 			// 単項演算子
-			unary = '-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)]
-				| prime[unary.node = arg1] 
-				>> !(boost::spirit::str_p("++")[unary_node(OP_INCREMENT, unary.node, self.compiler)] | boost::spirit::str_p("--")[unary_node(OP_DECREMENT, unary.node, self.compiler)]);
-
+			unary = ('-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)])
+				| (prime[unary.node = arg1]
+					>> !(boost::spirit::str_p("++")[unary.node=unary_node(OP_INCREMENT, unary.node, self.compiler)] | boost::spirit::str_p("--")[unary.node=unary_node(OP_DECREMENT, unary.node, self.compiler)]))
+				;
 			// 二項演算子（*, /, %）
 			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
 			mul_expr = unary[mul_expr.node = arg1]
@@ -1139,9 +1147,11 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				>> assign_op[assign.Op = arg1]
 				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
 
+			access = (boost::spirit::str_p("private")[access.accessModifier = AccessModifier::Private] | boost::spirit::str_p("public")[access.accessModifier = AccessModifier::Public]);
+
 			// 変数宣言
-			decl_value = !(boost::spirit::str_p("private")[decl_value.access = AccessModifier::Private] | boost::spirit::str_p("public")[decl_value.access = AccessModifier::Public])
-				>> "var" >> Value[vec_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.access), decl_value.value)] >> ';';
+			decl_value = !access[decl_value.accessModifier =arg1]
+				>> "var" >> Value[vec_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.accessModifier), decl_value.value)] >> ';';
 
 
 			// 型名
@@ -1169,15 +1179,16 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				>> !boost::spirit::str_p("[]")[argdef.node = arg_ref(argdef.node)];
 
 			// 関数定義
-			function = identifier[function.node = make_function(arg1)]>>!(identifier[function.node = make_functionWithAccess(function.node, arg1)])
-				>> '(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
+			function = !access[function.accessModifier = arg1] >>identifier[function.node = make_function(arg1,function.accessModifier)]>>
+				'(' >> !(argdef[function.node = push_back(function.node, arg1)] % ',') >> ')' >>
 				':' >> type[function.node = set_functionType(function.node, arg1,self.compiler)]
 				>> block[function.node = push_back(function.node, arg1)];
 
-			decl_function = "function" >> function[decl_function.node = arg1];
+			decl_function = !access[decl_function.accessModifier = arg1]>>"function" >> function[decl_function.node = make_functionAccess( arg1, decl_function.accessModifier)];
 
 			//クラスのメンバー定義
-			decl_classMember = identifier[decl_classMember.name = arg1] >> !identifier[decl_classMember.name = specificAccessModifier(decl_classMember.name, decl_classMember.accessModifier, arg1)]
+			decl_classMember = !access[decl_classMember.accessModifier= arg1]
+				>>identifier[decl_classMember.name = arg1]
 				>> ':' >> type[decl_classMember.memberValue = make_memberValue(arg1, decl_classMember.name, decl_classMember.accessModifier)] >> ';';
 
 
@@ -1226,8 +1237,8 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| decl_function[statement.statement = make_statement1(NOP_STATE, pushCompiler_sub(arg1, self.compiler))]
 				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
-				| unary[statement.statement = make_statement1(UNARY_STATE, arg1)] >> ';'
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
+				| unary[statement.statement = make_statement1(UNARY_STATE, arg1)] >> ';'
 				;
 
 
@@ -1319,6 +1330,8 @@ bool ButiScript::ScriptParse(const std::string& arg_filePath, Compiler* arg_comp
 	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
 		arg_compiler->error("クラス構文解析失敗");
 
+		arg_compiler->ClearNameSpace();
+		arg_compiler->LambdaCountReset();
 		arg_compiler->ClearGlobalNameSpace();
 		return false;
 	}

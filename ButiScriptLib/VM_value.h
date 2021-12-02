@@ -265,6 +265,26 @@ private:
 	int type;
 	std::shared_ptr<CompiledData>shp_compiledData;
 };
+template<>
+class GlobalValueSaveObject <Type_Null> :public IGlobalValueSaveObject {
+public:
+	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
+	void RestoreValue(IValueData** arg_v)const override;
+	int GetTypeIndex()const override {
+		return type;
+	}
+	void SetTypeIndex(const int arg_index)override {
+		type = arg_index;
+	}
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(type);
+	}
+private:
+	int type;
+	std::shared_ptr<CompiledData>shp_compiledData;
+};
 template<typename T>
 class GlobalSharedPtrValueSaveObject :public IGlobalValueSaveObject {
 public:
@@ -702,7 +722,7 @@ class ValueData : public IValueData {
 template <>
 class ValueData<ScriptClassInfo> :public IValueData {
 public:
-	ValueData(ScriptClassInfo* arg_v,std::vector<IValueData*> arg_vec_member, const int arg_ref) :IValueData(arg_ref) {
+	ValueData(ScriptClassInfo* arg_v,const std::vector<IValueData*> arg_vec_member, const int arg_ref) :IValueData(arg_ref) {
 		SetInstance( arg_v); 
 		int memberSize = arg_vec_member.size();
 		ary_p_member = (IValueData**)malloc(sizeof(IValueData*) * memberSize);
@@ -856,10 +876,10 @@ public:
 		return p_other->Equal(*Read<int>());
 	}
 	bool Gt(IValueData* p_other)const override {
-		return !p_other->GreaterThan(*Read<int>());
+		return p_other->GreaterThan(*Read<int>());
 	}
 	bool Ge(IValueData* p_other)const override {
-		return !p_other->GreaterEq(*Read<int>());
+		return p_other->GreaterEq(*Read<int>());
 	}
 	void Increment()override {
 		(*GetInstance<int>())++;
@@ -961,16 +981,16 @@ public:
 		return false;
 	}
 	template <> bool gt_stub(const int& arg_v)const {
-		return *Read<int>() > arg_v;
+		return arg_v> *Read<int>();
 	}
 	template <> bool ge_stub(const int& arg_v)const {
-		return *Read<int>() >= arg_v;
+		return arg_v >=*Read<int>() ;
 	}
 	template <> bool gt_stub(const float& arg_v)const {
-		return *Read<int>() > (int)arg_v;
+		return (int)arg_v >*Read<int>() ;
 	}
 	template <> bool ge_stub(const float& arg_v)const {
-		return *Read<int>() >= (int)arg_v;
+		return (int)arg_v >=*Read<int>() ;
 	}
 
 #ifdef IMPL_BUTIENGINE
@@ -1162,10 +1182,10 @@ public:
 		return p_other->Equal(*Read<int>());
 	}
 	bool Gt(IValueData* p_other)const override {
-		return !p_other->GreaterThan(*Read<int>());
+		return p_other->GreaterThan(*Read<int>());
 	}
 	bool Ge(IValueData* p_other)const override {
-		return !p_other->GreaterEq(*Read<int>());
+		return p_other->GreaterEq(*Read<int>());
 	}
 
 	void ValueCopy(IValueData* p_other) const override {
@@ -1220,7 +1240,7 @@ public:
 		return (float)*(Read<int>());
 	}
 	template <> std::string get_value_stub()const {
-		return std::to_string(*Read<int>());
+		return p_enumTag->GetTypeName() +"::" +p_enumTag->GetValueName(*Read<int>());
 	}
 	template <typename U> U& get_ref_stub() {
 		auto v = U();
@@ -1257,16 +1277,16 @@ public:
 		return false;
 	}
 	template <> bool gt_stub(const int& arg_v)const {
-		return *Read<int>() > arg_v;
+		return arg_v >*Read<int>() ;
 	}
 	template <> bool ge_stub(const int& arg_v)const {
-		return *Read<int>() >= arg_v;
+		return arg_v >=*Read<int>() ;
 	}
 	template <> bool gt_stub(const float& arg_v)const {
-		return *Read<int>() > (int)arg_v;
+		return (int)arg_v >*Read<int>() ;
 	}
 	template <> bool ge_stub(const float& arg_v)const {
-		return *Read<int>() >= (int)arg_v;
+		return (int)arg_v >=*Read<int>() ;
 	}
 
 #ifdef IMPL_BUTIENGINE
@@ -1308,10 +1328,10 @@ class ValueData<float> :public IValueData {
 			return p_other->Equal(*Read<float>());
 		}
 		bool Gt(IValueData* p_other)const override {
-			return !p_other->GreaterThan(*Read<float>());
+			return p_other->GreaterThan(*Read<float>());
 		}
 		bool Ge(IValueData* p_other)const override {
-			return !p_other->GreaterEq(*Read<float>());
+			return p_other->GreaterEq(*Read<float>());
 		}
 
 		void ValueCopy(IValueData* p_other) const override {
@@ -1414,16 +1434,16 @@ class ValueData<float> :public IValueData {
 			return false;
 		}
 		template <> bool gt_stub(const float& arg_v)const {
-			return *Read<float>() > arg_v;
+			return arg_v >*Read<float>() ;
 		}
 		template <> bool ge_stub(const float& arg_v)const {
-			return *Read<float>() >= arg_v;
+			return arg_v >=*Read<float>()  ;
 		}
 		template <> bool gt_stub(const int& arg_v)const {
-			return *Read<float>() > (float)arg_v;
+			return (float)arg_v >*Read<float>() ;
 		}
 		template <> bool ge_stub(const int& arg_v)const {
-			return *Read<float>() >= (float)arg_v;
+			return (float)arg_v >=*Read<float>() ;
 		}
 
 #ifdef IMPL_BUTIENGINE
@@ -1449,7 +1469,7 @@ class ValueData<Type_Null> : public IValueData {
 			
 		}
 		~ValueData() override{
-			//DeleteInstance<Type_Null>();
+			DeleteInstance<Type_Null>();
 		}
 
 		bool Eq(IValueData* p_other)const override {
@@ -1526,9 +1546,7 @@ class ValueData<Type_Null> : public IValueData {
 
 #ifdef IMPL_BUTIENGINE
 		std::shared_ptr<ButiScript::IGlobalValueSaveObject> GetSaveObject() const override {
-			assert(0);
-			//参照型の保存は未定義
-			return nullptr;
+			return std::make_shared<GlobalValueSaveObject<Type_Null>>();
 		}
 
 		void ShowGUI(const std::string& arg_label)override {
@@ -1943,9 +1961,9 @@ public:
 		shp = arg_instance;
 	}
 
-	std::shared_ptr<T> Get() {
+	std::shared_ptr<T>& Get() {
 		if (!shp) {
-			std::cout<<"インスタンスの生成されていないオブジェクトの関数を呼び出そうとしています" << std::endl;
+			
 		}
 		return shp;
 	}

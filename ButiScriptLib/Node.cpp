@@ -28,13 +28,13 @@ bool CanTypeCast(const int arg_left, const int arg_right) {
 const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& arg_leftNode) {
 
 	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
-	std::string serchName;
+	std::string searchName;
 	const  EnumTag* enumType = nullptr;
 	while (!enumType)
 	{
-		serchName = shp_namespace->GetGlobalNameString() + arg_leftNode.GetString();
+		searchName = shp_namespace->GetGlobalNameString() + arg_leftNode.GetString();
 
-		enumType = arg_compiler->GetEnumTag(serchName);
+		enumType = arg_compiler->GetEnumTag(searchName);
 
 		if (enumType) {
 			break;
@@ -51,13 +51,13 @@ const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& arg_leftNode) {
 const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::string& arg_str) {
 
 	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
-	std::string serchName;
+	std::string searchName;
 	const  FunctionTag* tag = nullptr;
 	while (!tag)
 	{
-		serchName = shp_namespace->GetGlobalNameString() + arg_str;
+		searchName = shp_namespace->GetGlobalNameString() + arg_str;
 
-		tag = arg_compiler->GetFunctionTag(serchName);
+		tag = arg_compiler->GetFunctionTag(searchName);
 
 		if (tag) {
 			break;
@@ -909,6 +909,9 @@ int Node::Push(Compiler* arg_compiler) const{
 		{
 			arg_compiler->OpEq();
 		}
+		else if (op == OP_NE) {
+			arg_compiler->OpNe();
+		}
 		return left_type;
 	}
 
@@ -921,11 +924,17 @@ int Node::Push(Compiler* arg_compiler) const{
 		if (op == OP_EQ && (arg_compiler->GetType(right_type)->isShared || rightNode->GetType(arg_compiler)&TYPE_REF)) {
 			arg_compiler->OpEq();
 		}
+		else if (op == OP_NE) {
+			arg_compiler->OpNe();
+		}
 		return TYPE_INTEGER;
 	}
 	if (right_type == TYPE_VOID) {
 		if (op == OP_EQ && (arg_compiler->GetType(left_type)->isShared || leftNode->GetType(arg_compiler) & TYPE_REF)) {
 			arg_compiler->OpEq();
+		}
+		else if (op == OP_NE) {
+			arg_compiler->OpNe();
 		}
 		return TYPE_INTEGER;
 	}
@@ -1083,21 +1092,21 @@ const ValueTag* Node::GetValueTag(Compiler* arg_compiler) const
 const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_compiler) const
 {
 	std::string  valueName;
-	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
+	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
 	const ValueTag* valueTag = nullptr;
 
 	while (!valueTag)
 	{
-		if (currentSerchNameSpace) {
-			valueName = currentSerchNameSpace->GetGlobalNameString() + arg_name;
+		if (currentsearchNameSpace) {
+			valueName = currentsearchNameSpace->GetGlobalNameString() + arg_name;
 		}
 		else {
 			valueName = arg_name;
 		}
 
 		valueTag = arg_compiler->GetValueTag(valueName);
-		if (currentSerchNameSpace) {
-			currentSerchNameSpace = currentSerchNameSpace->GetParent();
+		if (currentsearchNameSpace) {
+			currentsearchNameSpace = currentsearchNameSpace->GetParent();
 		}
 		else {
 			break;
@@ -1128,13 +1137,13 @@ int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const
 		}
 	}
 	std::string  functionName;
-	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
+	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
 	const FunctionTag* tag=nullptr;
 
 	while (!tag)
 	{
-		if (currentSerchNameSpace) {
-			functionName = currentSerchNameSpace->GetGlobalNameString() + arg_name;
+		if (currentsearchNameSpace) {
+			functionName = currentsearchNameSpace->GetGlobalNameString() + arg_name;
 		}
 		else {
 			functionName = arg_name;
@@ -1144,8 +1153,8 @@ int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const
 		if (!tag) {
 			tag = arg_compiler->GetFunctionTag(functionName, argTypes, false);
 		}
-		if (currentSerchNameSpace) {
-			currentSerchNameSpace = currentSerchNameSpace->GetParent();
+		if (currentsearchNameSpace) {
+			currentsearchNameSpace = currentsearchNameSpace->GetParent();
 		}
 		else {
 			break;
@@ -1161,15 +1170,16 @@ int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const
 
 // 代入文
 int Node::Assign(Compiler* arg_compiler) const{
-	int left_type = -1;
+	int left_type_raw;
 	//代入のみのパターンではないので左辺をpush
 	if (op != OP_ASSIGN) {
-		left_type = leftNode->Push(arg_compiler)&~TYPE_REF;
+		left_type_raw = leftNode->Push(arg_compiler);
 	}
 	else {
-		left_type = leftNode->GetType(arg_compiler) & ~TYPE_REF;
+		left_type_raw = leftNode->GetType(arg_compiler) ;
 	}
-	int right_type = rightNode->Push(arg_compiler) & ~TYPE_REF;
+	int right_type_raw = rightNode->Push(arg_compiler) & ~TYPE_REF,right_type=right_type_raw&~TYPE_REF,
+		left_type = left_type_raw & ~TYPE_REF;
 
 
 
@@ -1289,7 +1299,12 @@ int Node::Assign(Compiler* arg_compiler) const{
 		leftNode->Pop(arg_compiler);
 		return 0;
 	}
-	else if (right_type == TYPE_VOID&&(arg_compiler->GetType( left_type)->isShared||left_type&TYPE_REF)) {
+	else if (right_type == TYPE_VOID && (arg_compiler->GetType(left_type)->isShared || left_type_raw & TYPE_REF)) {
+		leftNode->Pop(arg_compiler);
+		return 0;
+	}
+	else if ((arg_compiler->GetType(right_type)->p_enumTag && (left_type == TYPE_INTEGER || arg_compiler->GetType(left_type)->p_enumTag))
+		|| (arg_compiler->GetType(left_type)->p_enumTag && (right_type== TYPE_INTEGER || arg_compiler->GetType(right_type)->p_enumTag))	) {
 		leftNode->Pop(arg_compiler);
 		return 0;
 	}
@@ -1316,21 +1331,21 @@ const ValueTag* Node_value::GetValueTag(Compiler* arg_compiler) const{
 	else {
 
 		std::string  valueName;
-		NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
+		NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
 		const ValueTag* valueTag = nullptr;
 
 		while (!valueTag)
 		{
-			if (currentSerchNameSpace) {
-				valueName = currentSerchNameSpace->GetGlobalNameString() + strData;
+			if (currentsearchNameSpace) {
+				valueName = currentsearchNameSpace->GetGlobalNameString() + strData;
 			}
 			else {
 				valueName = strData;
 			}
 
 			valueTag = arg_compiler->GetValueTag(valueName);
-			if (currentSerchNameSpace) {
-				currentSerchNameSpace = currentSerchNameSpace->GetParent();
+			if (currentsearchNameSpace) {
+				currentsearchNameSpace = currentsearchNameSpace->GetParent();
 			}
 			else {
 				break;
@@ -1511,13 +1526,13 @@ struct set_arg {
 			}
 			else {
 				std::string  valueName;
-				NameSpace_t currentSerchNameSpace = p_compiler->GetCurrentNameSpace();
+				NameSpace_t currentsearchNameSpace = p_compiler->GetCurrentNameSpace();
 				const ValueTag* tag = arg_node->GetValueTag(p_compiler);
 				if (tag == nullptr) {
 					p_compiler->error("変数 " + arg_node->GetString() + " は定義されていません。");
 				}
 				else {
-					if (!TypeCheck(tag->valueType ,type) ){
+					if (!TypeCheck(tag->valueType ,type,&p_compiler->GetTypeTable()) ){
 						p_compiler->error("引数の型が合いません。");
 					}
 
@@ -1543,7 +1558,7 @@ struct set_arg {
 			}
 		}
 		else {
-			if (!TypeCheck( arg_node->PushClone(p_compiler), type)) {
+			if (!TypeCheck( arg_node->PushClone(p_compiler), type,& p_compiler->GetTypeTable())) {
 				p_compiler->error("引数の型が合いません。");
 			}
 		}
@@ -1554,7 +1569,7 @@ struct set_arg {
 int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNodes) const
 {
 	std::string  functionName;
-	NameSpace_t currentSerchNameSpace = arg_compiler->GetCurrentNameSpace();
+	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
 
 	std::vector<int> argTypes;
 	if (arg_vec_argNodes) {
@@ -1569,8 +1584,8 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 	
 	while (!functionTag)
 	{
-		if (currentSerchNameSpace) {
-			functionName = currentSerchNameSpace->GetGlobalNameString() + arg_name;
+		if (currentsearchNameSpace) {
+			functionName = currentsearchNameSpace->GetGlobalNameString() + arg_name;
 		}
 		else {
 			functionName = arg_name;
@@ -1580,8 +1595,8 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 		if (!functionTag) {
 			functionTag = arg_compiler->GetFunctionTag(functionName, argTypes, false);
 		}
-		if (currentSerchNameSpace) {
-			currentSerchNameSpace = currentSerchNameSpace->GetParent();
+		if (currentsearchNameSpace) {
+			currentsearchNameSpace = currentsearchNameSpace->GetParent();
 		}
 		else {
 			break;
@@ -2178,7 +2193,7 @@ int Node_Member::Pop(Compiler* arg_compiler) const
 	else {
 
 		//型
-		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler));
+		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler)&~TYPE_REF);
 		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
 			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
 		}
@@ -2208,7 +2223,7 @@ int Node_Member::GetType(Compiler* arg_compiler) const
 			{
 
 				//型
-				auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler));
+				auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler)&~TYPE_REF);
 				if (!typeTag->map_memberValue.count(strData)) {
 					arg_compiler->error("構文エラー："+typeTag->typeName+"にメンバ変数"+strData+"は存在しません");
 					return -1;
@@ -2242,7 +2257,7 @@ int Node_Method::Push(Compiler* arg_compiler) const
 
 
 	typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
-	methodTag = typeTag->methods.Find(strData, argTypes);
+	methodTag = typeTag->methods.Find(strData, argTypes,&arg_compiler->GetTypeTable());
 	if (methodTag->accessType != AccessModifier::Public&&arg_compiler->GetCurrentThisType()!=typeTag) {
 
 		arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
@@ -2306,7 +2321,7 @@ int Node_Method::GetType(Compiler* arg_compiler) const
 
 
 	const TypeTag* typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
-	const FunctionTag* tag = typeTag->methods.Find(strData, argTypes);
+	const FunctionTag* tag = typeTag->methods.Find(strData, argTypes, &arg_compiler->GetTypeTable());
 
 	return tag->valueType;
 }
@@ -2456,7 +2471,7 @@ int Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p_funcTabl
 	if (!arg_p_funcTable) {
 		arg_compiler->GetCurrentNameSpace()->PushFunction(shared_from_this());
 	}
-	serchName =arg_p_funcTable?name:  arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
+	searchName =arg_p_funcTable?name:  arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	
 	return 0;
 }
@@ -2466,7 +2481,7 @@ int Function::PushCompiler_sub(Compiler* arg_compiler)
 	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
-	serchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
+	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	arg_compiler->PushSubFunction(shared_from_this());
 	return 0;
 }
@@ -2514,29 +2529,29 @@ int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 
 
-	FunctionTag* tag = p_functable->Find_strict(serchName, args);
+	FunctionTag* tag = p_functable->Find_strict(searchName, args);
 	if (tag) {
 		if (tag->IsDefinition()) {
-			arg_compiler-> error("関数 " + serchName+ " は既に定義されています");
+			arg_compiler-> error("関数 " + searchName+ " は既に定義されています");
 			return 0;
 		}
 		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
-			arg_compiler-> error("関数 " + serchName + " に異なる型の引数が指定されています");
+			arg_compiler-> error("関数 " + searchName + " に異なる型の引数が指定されています");
 			return 0;
 		}
 		tag->SetDefinition();	// 定義済みに設定
 	}
 	else {
-		FunctionTag func(valueType, serchName);
+		FunctionTag func(valueType, searchName);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(arg_compiler-> MakeLabel());		// ラベル登録
-		tag = p_functable->Add(serchName, func);
+		tag = p_functable->Add(searchName, func);
 		if (tag == nullptr)
 			arg_compiler->error("内部エラー：関数テーブルに登録できません");
 	}
 
-	arg_compiler->PushCurrentFunctionName(serchName);		// 処理中の関数名を登録
+	arg_compiler->PushCurrentFunctionName(searchName);		// 処理中の関数名を登録
 	arg_compiler->PushCurrentFunctionType(  valueType);		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
@@ -2572,7 +2587,7 @@ int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 	}
 	else {
 		if (code.op != VM_RETURNV) {
-			arg_compiler->error("関数 " + serchName + " の最後にreturn文が有りません。");
+			arg_compiler->error("関数 " + searchName + " の最後にreturn文が有りません。");
 		}
 	}
 
@@ -2611,7 +2626,7 @@ int Lambda::PushCompiler(Compiler* arg_compiler)
 
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistLambda(typeTag->GetFunctionObjectReturnType(),name, args, nullptr);
-	serchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
+	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 
 	arg_compiler->PushSubFunction(shared_from_this());
 
@@ -2627,29 +2642,29 @@ int Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 
 
-	FunctionTag* tag = p_functable->Find_strict(serchName, args);
+	FunctionTag* tag = p_functable->Find_strict(searchName, args);
 	if (tag) {
 		if (tag->IsDefinition()) {
-			arg_compiler->error("関数 " + serchName + " は既に定義されています");
+			arg_compiler->error("関数 " + searchName + " は既に定義されています");
 			return 0;
 		}
 		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
-			arg_compiler->error("関数 " + serchName + " に異なる型の引数が指定されています");
+			arg_compiler->error("関数 " + searchName + " に異なる型の引数が指定されています");
 			return 0;
 		}
 		tag->SetDefinition();	// 定義済みに設定
 	}
 	else {
-		FunctionTag func(valueType, serchName);
+		FunctionTag func(valueType, searchName);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(arg_compiler->MakeLabel());		// ラベル登録
-		tag = p_functable->Add(serchName, func);
+		tag = p_functable->Add(searchName, func);
 		if (tag == nullptr)
 			arg_compiler->error("内部エラー：関数テーブルに登録できません");
 	}
 
-	arg_compiler->PushCurrentFunctionName(serchName);		// 処理中の関数名を登録
+	arg_compiler->PushCurrentFunctionName(searchName);		// 処理中の関数名を登録
 	arg_compiler->PushCurrentFunctionType(valueType);		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
@@ -2696,7 +2711,7 @@ int Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 	}
 	else {
 		if (code.op != VM_RETURNV) {
-			arg_compiler->error("関数 " + serchName + " の最後にreturn文が有りません。");
+			arg_compiler->error("関数 " + searchName + " の最後にreturn文が有りません。");
 		}
 	}
 
@@ -2721,7 +2736,7 @@ void Lambda::LambdaCapture(Compiler* arg_compiler)
 		FunctionTable* p_functable = &arg_compiler->GetFunctions();
 
 
-		FunctionTag* tag = p_functable->Find_strict(serchName, args);
+		FunctionTag* tag = p_functable->Find_strict(searchName, args);
 		block->LambdaCapture(map_lambdaCapture, arg_compiler);
 
 		///キャプチャする変数を確保

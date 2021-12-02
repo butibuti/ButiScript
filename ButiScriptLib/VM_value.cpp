@@ -13,6 +13,10 @@ void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Func>::RestoreValue(But
 {
 	*arg_v = new ButiScript::ValueData<Type_Func>(1, nullptr, std::vector<std::pair< IValueData*, int>>());
 }
+void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Null>::RestoreValue(ButiScript::IValueData** arg_v) const
+{
+	*arg_v = new ButiScript::ValueData<Type_Null>(1);
+}
 
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #endif
@@ -41,7 +45,7 @@ ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, s
 		}
 		//éQè∆å^
 		else {
-			vec_members.push_back(nullptr);
+			vec_members.push_back(ButiScript::GetNullValueData());
 		}
 	}
 	return new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
