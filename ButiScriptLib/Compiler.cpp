@@ -273,7 +273,7 @@ void ButiScript::Compiler::ValueDefine(int arg_type, const std::vector<Node_t>& 
 // 関数宣言
 void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_name, const std::vector<int>& arg_vec_argIndex)
 {
-	const FunctionTag* tag = functions.Find_strict(arg_name,arg_vec_argIndex);
+	const FunctionTag* tag = functions.Find_strict(arg_name,arg_vec_argIndex,&GetTypeTable());
 	if (tag) {			// 既に宣言済み
 		if (!tag->CheckArgList_strict(arg_vec_argIndex)) {
 			error("関数 " + arg_name + " に異なる型の引数が指定されています");
@@ -285,7 +285,7 @@ void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_n
 		func.SetArgs(arg_vec_argIndex);				// 引数を設定
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
-		if (functions.Add(arg_name, func) == 0) {
+		if (functions.Add(arg_name, func, &GetTypeTable()) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
@@ -299,7 +299,7 @@ ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const int arg_type
 	std::string functionName =arg_funcTable? arg_name: currentNameSpace->GetGlobalNameString() + arg_name;
 	arg_funcTable = arg_funcTable ? arg_funcTable : &functions;
 
-	FunctionTag* tag = arg_funcTable->Find_strict(functionName,arg_vec_argDefines);
+	FunctionTag* tag = arg_funcTable->Find_strict(functionName,arg_vec_argDefines,&GetTypeTable());
 	if (tag) {			// 既に宣言済み
 		if (!tag->CheckArgList_strict(arg_vec_argDefines)) {
 			error("関数 " + functionName + " に異なる型の引数が指定されています");
@@ -312,11 +312,11 @@ ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const int arg_type
 		func.SetDeclaration();			// 宣言済み
 		func.SetIndex(MakeLabel());		// ラベル登録
 		func.SetAccessType(arg_access);
-		if (arg_funcTable->Add(functionName, func) == 0) {
+		if (arg_funcTable->Add(functionName, func, &GetTypeTable()) == 0) {
 			error("内部エラー：関数テーブルに登録できません");
 		}
 	}
-	return  arg_funcTable->Find_strict(functionName, arg_vec_argDefines);
+	return  arg_funcTable->Find_strict(functionName, arg_vec_argDefines,&GetTypeTable());
 }
 
 void ButiScript::Compiler::RegistLambda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
@@ -1150,6 +1150,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 {
 	using namespace ButiEngine;
 	DefineSystemFunction(&VirtualMachine::sys_print, TYPE_VOID, "print", "s");
+	//DefineSystemFunction(&VirtualMachine::sys_debugPrint, TYPE_VOID, "print_debug", "s");
 	DefineSystemFunction(&VirtualMachine::Sys_pause, TYPE_VOID, "pause", "");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "i");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "f");
@@ -1166,6 +1167,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
 #endif // IMPL_BUTIENGINE
 
+	DefineSystemMethod(&VirtualMachine::sys_method_retCast< std::string, size_t,int, &std::string::size, &VirtualMachine::GetTypePtr  >, TYPE_STRING, TYPE_INTEGER, "Size", "");
 
 	DefineSystemMethod(&VirtualMachine::sys_method_retNo< Vector2, &Vector2::Normalize, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");
@@ -1206,7 +1208,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	
 }
 
-bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op, const int arg_retType, const std::string& arg_name, const std::string& arg_vec_argDefines)
+bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op, const int arg_retType, const std::string& arg_name, const std::string& arg_vec_argDefines, const std::vector<int>& arg_vec_templateTypes)
 {
 	FunctionTag func(arg_retType, arg_name);
 	if (!func.SetArgs(arg_vec_argDefines, SystemTypeRegister::GetInstance()->types .GetArgmentKeyMap()))
@@ -1216,17 +1218,17 @@ bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op,
 	func.SetSystem();				// Systemフラグセット
 	int index = vec_sysCalls.size();
 	func.SetIndex(index);			// 組み込み関数番号を設定
-
+	func.SetTemplateType(arg_vec_templateTypes);
 	long long int address = *(long long int*) & arg_op;
 	map_sysCallsIndex.emplace(address, vec_sysCalls.size());
 	vec_sysCalls.push_back(arg_op);
-	if (functions.Add(arg_name, func) == 0) {
+	if (functions.Add(arg_name, func, &SystemTypeRegister::GetInstance()->types) == 0) {
 		return false;
 	}
 	return true;
 }
 
-bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_method, const int arg_type, const int arg_retType, const std::string& arg_name, const std::string& arg_args)
+bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_method, const int arg_type, const int arg_retType, const std::string& arg_name, const std::string& arg_args, const std::vector<int>& arg_vec_templateTypes)
 {
 	FunctionTag func(arg_retType, arg_name);
 	if (!func.SetArgs(arg_args, SystemTypeRegister::GetInstance()->types.GetArgmentKeyMap()))
@@ -1235,12 +1237,12 @@ bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_met
 	func.SetDeclaration();
 	func.SetSystem();				// Systemフラグセット
 	func.SetIndex(vec_sysMethodCalls.size());			// 組み込み関数番号を設定
-
+	func.SetTemplateType(arg_vec_templateTypes);
 	long long int address = *(long long int*) & arg_p_method;
 	map_sysMethodCallsIndex.emplace(address, vec_sysMethodCalls.size());
 	vec_sysMethodCalls.push_back(arg_p_method);
 	auto typeTag = SystemTypeRegister::GetInstance()->types.GetType(arg_type);
-	if (typeTag->AddMethod(arg_name, func) == 0) {
+	if (typeTag->AddMethod(arg_name, func,&SystemTypeRegister::GetInstance()->types) == 0) {
 		return false;
 	}
 	return true;

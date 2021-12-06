@@ -219,24 +219,59 @@ public:
 	}
 
 	// ä÷êîÇÃåüçı
-	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<int>& arg_vec_argIndex, const bool arg_isStrict) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<int>& arg_vec_argIndex, const bool arg_isStrict,std::shared_ptr<NameSpace> arg_namespace) const
 	{
+		const FunctionTag* output=nullptr;
+		const FunctionTag* (FunctionTable::* findMethod)(const std::string&, const std::vector<int>&,const TypeTable* )const;
 		if (arg_isStrict) {
-			return functions.Find_strict(arg_name, arg_vec_argIndex);
+
+			findMethod = &FunctionTable::Find_strict;
+
 		}
 		else {
-			return functions.Find(arg_name, arg_vec_argIndex,&types);
+			findMethod = &FunctionTable::Find;
 		}
+		while (!output) {
+			if (!arg_namespace) {
+				break;
+			}
+			output = (functions.*findMethod)(arg_namespace->GetGlobalNameString() + arg_name, arg_vec_argIndex,&GetTypeTable());
+			arg_namespace = arg_namespace->GetParent();
+		}
+		return output;
+	}
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<int>& arg_vec_argIndex, const bool arg_isStrict) const {
+		return GetFunctionTag(arg_name, arg_vec_argIndex, arg_isStrict, GetCurrentNameSpace());
+	}
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<int>& arg_vec_argIndex, const std::vector<int>& arg_vec_template,const bool arg_isStrict) const {
+		
+		return GetFunctionTag(arg_name+ GetTemplateName(arg_vec_template, &GetTypeTable()), arg_vec_argIndex, arg_isStrict, GetCurrentNameSpace());
 	}
 	// ä÷êîÇÃåüçı
-	const FunctionTag* GetFunctionTag(const std::string& arg_name) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, std::shared_ptr<NameSpace> arg_namespace) const
 	{
-		return functions.Find(arg_name);
+		const FunctionTag* output=nullptr;
+		
+		while (!output) {
+			if (!arg_namespace) {
+				break;
+			}
+			output = functions.Find(arg_namespace->GetGlobalNameString()+ arg_name);
+			arg_namespace = arg_namespace->GetParent();
+		}
+		return output;
+	}
+	const FunctionTag* GetFunctionTag(const std::string& arg_name) const {
+		return GetFunctionTag(arg_name, GetCurrentNameSpace());
+	}
+	const FunctionTag* GetFunctionTag(const std::string& arg_name,const std::vector<int>& arg_vec_temps) const {
+		return GetFunctionTag(arg_name+GetTemplateName(arg_vec_temps,& GetTypeTable()), GetCurrentNameSpace());
 	}
 
 	const TypeTable& GetTypeTable()const {
 		return types;
 	}
+
 
 	//å^ÇÃåüçı
 	int GetTypeIndex(const std::string& arg_typeName)const {

@@ -1634,10 +1634,10 @@ public:
 		return *GetInstance<std::string>();
 	}
 	template <typename U> void set_value_stub(const U& arg_v) {
-		Write( std::to_string(arg_v));
+		*GetInstance<std::string>() =  std::to_string(arg_v);
 	}
 	template <>void set_value_stub(const std::string& arg_v) {
-		Write (arg_v);
+		*GetInstance<std::string>() = arg_v;
 	}
 
 

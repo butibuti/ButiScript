@@ -1139,10 +1139,13 @@ namespace ButiScript {
 
 			ButiEngine::GUI::Console( text(top()));
 #else
-
 			std::cout << text(top());
 #endif // IMPL_BUTIENGINE
+			pop();
+		}
 
+		void sys_debugPrint() {
+			std::cout << text(top());
 			pop();
 		}
 
@@ -1253,6 +1256,14 @@ namespace ButiScript {
 		{
 			auto v = ((this)->*getValueFunc)();
 			RetType ret = ((v)->*Method)();
+			pop();
+			push(ret);
+		}
+		template<typename T, typename RetType,typename CastType, RetType(T::* Method)() const, T* (VirtualMachine::* getValueFunc)() >
+		void sys_method_retCast()
+		{
+			auto v = ((this)->*getValueFunc)();
+			CastType ret =(CastType) ((v)->*Method)();
 			pop();
 			push(ret);
 		}

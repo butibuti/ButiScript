@@ -49,27 +49,7 @@ const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& arg_leftNode) {
 	return enumType;
 }
 const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const std::string& arg_str) {
-
-	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
-	std::string searchName;
-	const  FunctionTag* tag = nullptr;
-	while (!tag)
-	{
-		searchName = shp_namespace->GetGlobalNameString() + arg_str;
-
-		tag = arg_compiler->GetFunctionTag(searchName);
-
-		if (tag) {
-			break;
-		}
-
-		shp_namespace = shp_namespace->GetParent();
-		if (!shp_namespace) {
-			break;
-		}
-
-	}
-	return tag;
+	return arg_compiler->GetFunctionTag(arg_str);
 }
 
 const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& leftNode) {
@@ -545,6 +525,11 @@ Node_t Node::make_node(const int arg_op, Node_t arg_left, NodeList_t arg_right)
 	return Node_t(new Node_function(arg_op, arg_left, arg_right));
 }
 
+Node_t Node::make_node(const int arg_op, Node_t arg_left, const std::vector<int>& arg_templateTypes)
+{
+	return Node_t(new Node_function(arg_op, arg_left, arg_templateTypes));
+}
+
 
 
 template <typename T>
@@ -776,7 +761,7 @@ int Node::Push(Compiler* arg_compiler) const{
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return Call(arg_compiler, strData, nullptr);
+		return Call(arg_compiler, strData, nullptr, {});
 	}
 
 	int left_type = leftNode->Push(arg_compiler);
@@ -1011,7 +996,7 @@ int Node::GetType(Compiler* arg_compiler)const {
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return GetCallType(arg_compiler, strData, nullptr);
+		return GetCallType(arg_compiler, strData, nullptr, {});
 	}
 	if (op == OP_IDENTIFIER) {
 		const ValueTag* valueTag = GetValueTag(arg_compiler);
@@ -1119,7 +1104,7 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 	return valueTag;
 }
 int  Node_function::GetType(Compiler* arg_compiler)const {
-	return GetCallType(arg_compiler, leftNode->GetString(), &node_list_->vec_args);
+	return GetCallType(arg_compiler, leftNode->GetString(), &node_list_->vec_args,vec_templateTypes);
 }
 void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
 {
@@ -1127,7 +1112,7 @@ void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_ca
 	node_list_->LambdaCapture(arg_captureList, arg_compiler);
 }
 //ノードの関数呼び出し型チェック
-int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNode)const {
+int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNode, const std::vector<int>& arg_vec_temps)const {
 
 	std::vector<int> argTypes;
 	if (arg_vec_argNode) {
@@ -1136,30 +1121,10 @@ int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
-	std::string  functionName;
 	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
-	const FunctionTag* tag=nullptr;
-
-	while (!tag)
-	{
-		if (currentsearchNameSpace) {
-			functionName = currentsearchNameSpace->GetGlobalNameString() + arg_name;
-		}
-		else {
-			functionName = arg_name;
-		}
-
-		tag = arg_compiler->GetFunctionTag(functionName, argTypes, true);
-		if (!tag) {
-			tag = arg_compiler->GetFunctionTag(functionName, argTypes, false);
-		}
-		if (currentsearchNameSpace) {
-			currentsearchNameSpace = currentsearchNameSpace->GetParent();
-		}
-		else {
-			break;
-		}
-
+	const FunctionTag* tag= arg_compiler->GetFunctionTag(arg_name, argTypes, arg_vec_temps, true);
+	if (!tag) {
+		tag= arg_compiler->GetFunctionTag(arg_name, argTypes,arg_vec_temps, false);
 	}
 
 	if (tag == nullptr) {
@@ -1566,10 +1531,8 @@ struct set_arg {
 };
 
 // 関数呼び出し
-int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNodes) const
+int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNodes,  const std::vector<int>& arg_vec_temps) const
 {
-	std::string  functionName;
-	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
 
 	std::vector<int> argTypes;
 	if (arg_vec_argNodes) {
@@ -1580,28 +1543,9 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 	}
 
 	int argSize = argTypes.size();
-	const FunctionTag* functionTag=nullptr;
-	
-	while (!functionTag)
-	{
-		if (currentsearchNameSpace) {
-			functionName = currentsearchNameSpace->GetGlobalNameString() + arg_name;
-		}
-		else {
-			functionName = arg_name;
-		}
-		
-		functionTag = arg_compiler->GetFunctionTag(functionName, argTypes, true);
-		if (!functionTag) {
-			functionTag = arg_compiler->GetFunctionTag(functionName, argTypes, false);
-		}
-		if (currentsearchNameSpace) {
-			currentsearchNameSpace = currentsearchNameSpace->GetParent();
-		}
-		else {
-			break;
-		}
-
+	const FunctionTag* functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_vec_temps, true);
+	if (!functionTag) {
+		functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_vec_temps, false);
 	}
 
 
@@ -1657,7 +1601,7 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 		}
 		message += "を引数にとる";
 	}
-	message += "関数" + functionName + "は未宣言です";
+	message += "関数" + arg_name + "は未宣言です";
 	arg_compiler->error(message);
 	return -1;
 }
@@ -1692,7 +1636,7 @@ void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList
 
 int Node_function::Push(Compiler* arg_compiler) const
 {
-	return Call(arg_compiler, leftNode->GetString(), &node_list_->vec_args);
+	return Call(arg_compiler, leftNode->GetString(), &node_list_->vec_args,vec_templateTypes);
 }
 
 // 関数にpopはできないのでエラーメッセージを出す
@@ -2529,7 +2473,7 @@ int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 
 
-	FunctionTag* tag = p_functable->Find_strict(searchName, args);
+	FunctionTag* tag = p_functable->Find_strict(searchName, args,&arg_compiler->GetTypeTable());
 	if (tag) {
 		if (tag->IsDefinition()) {
 			arg_compiler-> error("関数 " + searchName+ " は既に定義されています");
@@ -2546,7 +2490,7 @@ int Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(arg_compiler-> MakeLabel());		// ラベル登録
-		tag = p_functable->Add(searchName, func);
+		tag = p_functable->Add(searchName, func,&arg_compiler->GetTypeTable());
 		if (tag == nullptr)
 			arg_compiler->error("内部エラー：関数テーブルに登録できません");
 	}
@@ -2642,7 +2586,7 @@ int Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 
 
-	FunctionTag* tag = p_functable->Find_strict(searchName, args);
+	FunctionTag* tag = p_functable->Find_strict(searchName, args, & arg_compiler->GetTypeTable());
 	if (tag) {
 		if (tag->IsDefinition()) {
 			arg_compiler->error("関数 " + searchName + " は既に定義されています");
@@ -2659,7 +2603,7 @@ int Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(arg_compiler->MakeLabel());		// ラベル登録
-		tag = p_functable->Add(searchName, func);
+		tag = p_functable->Add(searchName, func,& arg_compiler->GetTypeTable());
 		if (tag == nullptr)
 			arg_compiler->error("内部エラー：関数テーブルに登録できません");
 	}
@@ -2736,7 +2680,7 @@ void Lambda::LambdaCapture(Compiler* arg_compiler)
 		FunctionTable* p_functable = &arg_compiler->GetFunctions();
 
 
-		FunctionTag* tag = p_functable->Find_strict(searchName, args);
+		FunctionTag* tag = p_functable->Find_strict(searchName, args, &arg_compiler->GetTypeTable());
 		block->LambdaCapture(map_lambdaCapture, arg_compiler);
 
 		///キャプチャする変数を確保

@@ -18,6 +18,11 @@ public:
 std::shared_ptr<Sample> CreateSample() {
 	return std::make_shared<Sample>();
 }
+
+template<typename T> 
+T CreateInstance() { 
+	return T(); 
+}
 #include"BuiltInTypeRegister.h"
 #include "Compiler.h"
 
@@ -27,7 +32,9 @@ int main(const int argCount, const char* args[])
 	ButiScript::Compiler driver;
 	ButiScript::SystemTypeRegister::GetInstance()->RegistSharedSystemType<Sample>("Sample", "Sample");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample, int, &Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::shared_ptr<Sample>,&CreateSample >,ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::shared_ptr<Sample>, &CreateSample >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<int, &CreateInstance<int>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<float, &CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
 
 	driver.RegistDefaultSystems(); 
 	bool compile_result=false;

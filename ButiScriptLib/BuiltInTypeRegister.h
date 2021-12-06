@@ -20,8 +20,16 @@ public:
 	/// <param name="name">ä÷êîñº</param>
 	/// <param name="args">à¯êîÇÃëgÇ›çáÇÌÇπ</param>
 	/// <returns>ê¨å˜</returns>
-	bool DefineSystemFunction(SysFunction arg_op, const int retType, const std::string& name, const std::string& args);
-	bool DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args);
+	bool DefineSystemFunction(SysFunction arg_op, const int retType, const std::string& name, const std::string& args, const std::vector<int>& arg_vec_templateTypes);
+	inline bool DefineSystemFunction(SysFunction arg_op, const int retType, const std::string& name, const std::string& args) {
+		static auto temps= std::vector<int>();
+		return DefineSystemFunction(arg_op, retType, name, args, temps);
+	}
+	bool DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args,const std::vector<int>& arg_vec_templateTypes);
+	inline bool DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args) {
+		static auto temps = std::vector<int>();
+		return DefineSystemMethod(arg_p_method, type,retType, name,arg_args, temps);
+	}
 
 private:
 

@@ -1,69 +1,8 @@
-class ControllList{
-	controlBehavior:Sample;
-	next: ControllList&;
-	bef: ControllList&;
-}
-private var top:ControllList&;
-private var end:ControllList&;
+
 function main():int{
-    OnStart();
-	
-    Push_end(CreateSample());
-    Push_end(CreateSample());
-    top.controlBehavior.TestMethod();
-    Pop_top();
-    top.controlBehavior.TestMethod();
-    Push_end(CreateSample());
-    Pop_top();
-    Push_end(CreateSample());
-    Pop_top();
-    top.controlBehavior.TestMethod();
-    return 0;
-}
-
-function Pop_top():void{
-	if(top!=null){
-		top=top.next;
-		if(top!=null){
-			top.bef=null;
-		}
-	}
-}
-function Pop_end():void{
-	if(end!=null){
-		end=end.bef;
-		if(end!=null){
-			end.next=null;
-		}
-	}
-}
-function Push_top(arg_controlBehavior:Sample):void{
-	
-	var newList:ControllList;
-	newList.controlBehavior=arg_controlBehavior;
-	if(top!=null){
-		newList.next=top;
-		top.bef=newList;
-	}
-	top=newList;
-	if(end==null){
-		end=top;
-	}
-}
-function Push_end(arg_controlBehavior:Sample):void{
     
-	var newList:ControllList;
-	newList.controlBehavior=arg_controlBehavior;
-	if(end!=null){
-		newList.bef=end;
-		end.next=newList;
-	}
-	end=newList;
-	if(top==null){
-		top=end;
-	}
-}
+	var i:string;
+	i="aasd";
 
-function OnStart():void{
-	
+    return i.Size();
 }

@@ -547,7 +547,9 @@ class FunctionTag {
 			name = std::string(buff, size);
 			free(buff);
 		}
-
+		void SetTemplateType(const std::vector<int>& arg_template) { vec_templateTypes = arg_template; }
+		bool IsTemplate()const { return vec_templateTypes.size(); }
+		std::string GetTemplateNames(const TypeTable* arg_table)const;
 		int		valueType = 0;
 		int		flags = 0;
 		int		index = 0;
@@ -556,6 +558,7 @@ class FunctionTag {
 		AccessModifier accessType = AccessModifier::Public;
 		bool isLambda=false;
 		std::vector<int> vec_captureList;
+		std::vector<int> vec_templateTypes;
 	};
 
 class FunctionTable {
@@ -569,15 +572,15 @@ class FunctionTable {
 		}
 
 
-		FunctionTag* Add(const std::string& arg_name, const FunctionTag& arg_tag)
+		FunctionTag* Add(const std::string& arg_name, const FunctionTag& arg_tag,const TypeTable* arg_table)
 		{
-			auto key = arg_name;
+			auto key = arg_name+arg_tag.GetTemplateNames(arg_table);
 			auto result = map_functions.emplace(key, arg_tag);
 
 			return &result->second;
 		}
 
-		const FunctionTag* Find_strict(const std::string& arg_name, const std::vector<int>& arg_vec_args) const
+		const FunctionTag* Find_strict(const std::string& arg_name, const std::vector<int>& arg_vec_args, const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -593,7 +596,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		FunctionTag* Find_strict(const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_args)
+		FunctionTag* Find_strict(const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
 		{
 			iter itr = map_functions.find(arg_name);
 
@@ -843,8 +846,8 @@ struct TypeTag {
 	//ÉÅÉ\ÉbÉh
 	FunctionTable methods;
 
-	FunctionTag* AddMethod(const std::string& arg_methodName, const FunctionTag& arg_method) {
-		return methods.Add(arg_methodName, arg_method);
+	FunctionTag* AddMethod(const std::string& arg_methodName, const FunctionTag& arg_method,const TypeTable* arg_table) {
+		return methods.Add(arg_methodName, arg_method, arg_table);
 	}
 	bool isSystem = false, isShared = false;
 	bool IsFunctionObjectType()const { return p_functionObjectData; }
@@ -1091,5 +1094,27 @@ inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& 
 		}
 	}
 	return output;
+}
+
+static std::string GetTemplateName(const std::vector<int>& arg_vec_temps, const ButiScript::TypeTable* arg_table) {
+
+
+	if (!arg_vec_temps.size()) {
+		return "";
+	}
+	std::string output = "<";
+	for (int i = 0; i < arg_vec_temps.size(); i++) {
+		if (i != 0) {
+			output += ",";
+		}
+		output += arg_table->GetType(arg_vec_temps[i])->typeName;
+	}
+	output += ">";
+	return output;
+}
+
+inline std::string ButiScript::FunctionTag::GetTemplateNames(const TypeTable* arg_table) const
+{
+	return GetTemplateName(vec_templateTypes,arg_table);
 }
 #endif // !TAGS_H

@@ -117,6 +117,7 @@ struct binary_node_func_useDriver {
 	}
 };
 
+
 //ラムダ式を値として利用するノードを生成する
 struct lambda_node_func {
 	template <typename Ty1, typename Ty2>
@@ -586,10 +587,11 @@ namespace ButiClosure {
 	};
 
 	// ノードのクロージャ
-	struct node_val : boost::spirit::closure<node_val, Node_t, int, std::string> {
+	struct node_val : boost::spirit::closure<node_val, Node_t, int, std::string,std::vector<int>> {
 		member1 node;
 		member2 Op;
 		member3 name;
+		member4 typeTemplates;
 	};
 	// メンバ呼び出しのクロージャ
 	struct callmember_val : boost::spirit::closure<callmember_val, Node_t, int, std::string> {
@@ -749,6 +751,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 
 			// 関数呼び出し
 			func_node = *(identifier >> "::") >> identifier >>
+				!('<' >> type>> *(',' >> type) >>'>') >>
 				'(' >> !argument >> ')';
 
 			//メンバ変数呼び出し
@@ -1055,6 +1058,8 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			// 関数呼び出し
 			func_node = (*(nameSpace_call[func_node.name += functionCall_namespace(arg1) ]))>>
 				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1, self.compiler)] >>
+				!( '<'>> type[ vec_push_back(func_node.typeTemplates,arg1) ]>>*(','>> type[vec_push_back(func_node.typeTemplates, arg1)])>>
+					boost::spirit::ch_p('>')[func_node.node = binary_node(OP_FUNCTION, func_node.node,func_node.typeTemplates )]) >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
 

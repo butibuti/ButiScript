@@ -117,10 +117,10 @@ namespace ButiScript {
 		virtual const ValueTag* GetValueTag(Compiler* arg_compiler)const;
 		virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* arg_compiler)const;
 		virtual int EnumType(Compiler* arg_compiler)const {return TYPE_INTEGER;}
-		int GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg)const;
+		int GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg,const std::vector<int>& arg_vec_temps)const;
 
 		int Assign(Compiler* arg_compiler) const;
-		int Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg) const;
+		int Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg, const std::vector<int>& arg_vec_temps) const;
 
 		virtual void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const;
 		static Node_t make_node(const int arg_op, const float arg_number, const Compiler* arg_compiler)
@@ -136,7 +136,7 @@ namespace ButiScript {
 		static Node_t make_node(const int arg_op, Node_t arg_left,const std::string arg_memberName,const Compiler* arg_compiler);
 		static Node_t make_node(const int arg_op, Node_t arg_left, Node_t arg_right);
 		static Node_t make_node(const int arg_op, Node_t arg_left, NodeList_t arg_right);
-
+		static Node_t make_node(const int arg_op, Node_t arg_left, const std::vector<int>& arg_templateTypes);
 	protected:
 		int op;
 		int num_int;
@@ -200,14 +200,20 @@ namespace ButiScript {
 			: Node(arg_op, arg_node), node_list_(arg_list)
 		{
 		}
-
+		Node_function(int arg_op, const Node_t& arg_node, const std::vector<int>& arg_templateTypes)
+			: Node(arg_op, arg_node), vec_templateTypes(arg_templateTypes)
+		{
+		}
+		
 		virtual int Push(Compiler* arg_compiler) const;
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
+
 	private:
 		NodeList_t node_list_;
+		std::vector<int> vec_templateTypes;
 	};
 
 	//メンバ変数へのアクセスノード
