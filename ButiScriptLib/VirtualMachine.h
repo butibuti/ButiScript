@@ -169,6 +169,7 @@ namespace ButiScript {
 			valueStack.resize(globalValue_size);
 		}
 		void AllocGlobalValue();
+		void Clear();
 
 		VirtualMachine* Clone();
 

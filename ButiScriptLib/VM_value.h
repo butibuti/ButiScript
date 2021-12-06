@@ -1240,7 +1240,7 @@ public:
 		return (float)*(Read<int>());
 	}
 	template <> std::string get_value_stub()const {
-		return p_enumTag->GetTypeName() +"::" +p_enumTag->GetValueName(*Read<int>());
+		return p_enumTag->GetValueName(*Read<int>());
 	}
 	template <typename U> U& get_ref_stub() {
 		auto v = U();

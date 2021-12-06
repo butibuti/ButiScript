@@ -29,6 +29,11 @@ void ButiScript::VirtualMachine::AllocGlobalValue()
 	globalValue_size = valueStack.size();
 }
 
+void ButiScript::VirtualMachine::Clear()
+{
+	valueStack.resize(0);
+}
+
 ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 {
 	auto output = new VirtualMachine(shp_data);

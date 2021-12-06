@@ -1178,7 +1178,7 @@ int Node::Assign(Compiler* arg_compiler) const{
 	else {
 		left_type_raw = leftNode->GetType(arg_compiler) ;
 	}
-	int right_type_raw = rightNode->Push(arg_compiler) & ~TYPE_REF,right_type=right_type_raw&~TYPE_REF,
+	int right_type_raw = rightNode->Push(arg_compiler) ,right_type=right_type_raw&~TYPE_REF,
 		left_type = left_type_raw & ~TYPE_REF;
 
 
