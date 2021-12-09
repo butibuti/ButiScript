@@ -754,23 +754,9 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 				!('<' >> type>> *(',' >> type) >>'>') >>
 				'(' >> !argument >> ')';
 
-			//メンバ変数呼び出し
-			callMember = (Value >> "."
-				>> identifier
-				>> !('(' >> !argument >> ')')
-				>> *("." >>
-					identifier >>
-					!('(' >> !argument >> ')')
-					))
-				|(
-					func_node >> "."
-					>> identifier
-					>> !('(' >> !argument >> ')')
-					>> *("." >>
-						identifier >>
-						!('(' >> !argument >> ')')
-						)
-					)
+			//メンバ呼び出し
+			callMember = (Value >> "." >> (func_node | identifier) >> *("." >> (func_node | identifier)))|
+				(func_node >> ".">> (func_node|identifier)>>  *("." >> (func_node | identifier)) )
 				;
 
 			// 計算のprimeノード
@@ -1079,6 +1065,12 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 						!(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
 						))
 				
+				;
+
+			callMember = (Value[callMember.valueNode = arg1] >> "." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.valueNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]) >>
+				*("." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.memberNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)]))) |
+				(func_node[callMember.valueNode = arg1] >> "." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.valueNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]) >>
+					*("." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.memberNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)])))
 				;
 
 			// 計算のprimeノード

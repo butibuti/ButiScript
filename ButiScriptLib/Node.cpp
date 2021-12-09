@@ -59,21 +59,21 @@ const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& lef
 Node_t Node::make_node(const int arg_op, const std::string& arg_str, const Compiler* arg_compiler)
 {
 	if (arg_op == OP_IDENTIFIER)
-		return Node_t(new Node_value(arg_str));
+		return std::make_shared<Node_value>(arg_str);
 
 	if (arg_op == OP_STRING) {
 		size_t pos = arg_str.rfind('\"');
 		if (pos != std::string::npos)
-			return Node_t(new Node(arg_op, arg_str.substr(0, pos)));
+			return std::make_shared<Node>(arg_op, arg_str.substr(0, pos));
 	}
-	return Node_t(new Node(arg_op, arg_str));
+	return std::make_shared<Node>(arg_op, arg_str);
 }
 
 // 単項演算子のノードを生成
 Node_t Node::make_node(const int arg_op, Node_t arg_left, const Compiler* arg_compiler)
 {
 	if (arg_op == OP_METHOD) {
-		return Node_t(new Node_Method(arg_op, arg_left->GetLeft(), arg_left->GetString()));
+		return nullptr;
 	}
 	switch (arg_op) {
 	case OP_NEG:
@@ -87,23 +87,23 @@ Node_t Node::make_node(const int arg_op, Node_t arg_left, const Compiler* arg_co
 		}
 		break;
 	}
-	return Node_t(new Node(arg_op, arg_left));
+	return std::make_shared<Node>(arg_op, arg_left);
 }
 
 
 Node_t Node::make_node(const int arg_op, Node_t arg_left, const std::string arg_memberName,const Compiler* arg_compiler)
 {
 	if (GetEnumType(arg_compiler,*arg_left)) {
-		return  Node_t(new Node_enum( arg_left, arg_memberName));
+		return  std::make_shared<Node_enum>( arg_left, arg_memberName);
 	}
 
 	if (arg_op == OP_MEMBER) {
-		return Node_t(new Node_Member(arg_op, arg_left, arg_memberName));
+		return std::make_shared<Node_Member>(arg_op, arg_left, arg_memberName);
 	}
 	else if (arg_op == OP_METHOD) {
-		return Node_t(new Node_Method(arg_op, arg_left, arg_memberName));
+		return nullptr;
 	}
-	return Node_t();
+	return nullptr;
 }
 
 
@@ -516,18 +516,26 @@ Node_t Node::make_node(const int arg_op, Node_t arg_left, Node_t arg_right)
 	return Node_t(new Node(arg_op, arg_left, arg_right));
 }
 
-// 関数ノードの生成
-Node_t Node::make_node(const int arg_op, Node_t arg_left, NodeList_t arg_right)
+Node_t Node::make_node(const int arg_op, Node_t arg_left, Node_t arg_right, const Compiler* arg_compiler)
 {
-	if (arg_op == OP_METHOD) {
-		return  Node_t(new Node_Method(arg_op, arg_left, arg_right));
-	}
-	return Node_t(new Node_function(arg_op, arg_left, arg_right));
+	assert(arg_op == OP_METHOD);
+	return	arg_right->CreateMethod(arg_left);
 }
 
+// 引数有り関数ノードの生成
+Node_t Node::make_node(const int arg_op, Node_t arg_left, NodeList_t arg_list)
+{
+	auto left = std::dynamic_pointer_cast<Node_function>(arg_left);
+	if (left) {
+		left->SetArgmentList(arg_list);
+		return left;
+	}
+	return std::make_shared<Node_function>(arg_op, arg_left, arg_list);
+}
+//テンプレート引数有り関数ノードの生成
 Node_t Node::make_node(const int arg_op, Node_t arg_left, const std::vector<int>& arg_templateTypes)
 {
-	return Node_t(new Node_function(arg_op, arg_left, arg_templateTypes));
+	return std::make_shared<Node_function>(arg_op, arg_left, arg_templateTypes);
 }
 
 
@@ -1104,12 +1112,16 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 	return valueTag;
 }
 int  Node_function::GetType(Compiler* arg_compiler)const {
-	return GetCallType(arg_compiler, leftNode->GetString(), &node_list_->vec_args,vec_templateTypes);
+	return GetCallType(arg_compiler, leftNode->GetString(), &nodeList->vec_args,vec_templateTypes);
 }
 void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
 {
 	leftNode->LambdaCapture(arg_captureList, arg_compiler);
-	node_list_->LambdaCapture(arg_captureList, arg_compiler);
+	nodeList->LambdaCapture(arg_captureList, arg_compiler);
+}
+Node_t Node_function::CreateMethod(Node_t arg_node)
+{
+	return std::make_shared<Node_Method>(OP_METHOD,leftNode,arg_node, nodeList, vec_templateTypes);
 }
 //ノードの関数呼び出し型チェック
 int Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNode, const std::vector<int>& arg_vec_temps)const {
@@ -1606,6 +1618,12 @@ int Node::Call(Compiler* arg_compiler, const std::string& arg_name, const std::v
 	return -1;
 }
 
+Node_t Node::CreateMethod(Node_t arg_node)
+{
+	static std::vector<int> empty;
+	return std::make_shared<Node_Method>(OP_METHOD, shared_from_this(),arg_node ,nullptr, empty);
+}
+
 void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const
 {
 	if (leftNode) {
@@ -1636,7 +1654,7 @@ void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList
 
 int Node_function::Push(Compiler* arg_compiler) const
 {
-	return Call(arg_compiler, leftNode->GetString(), &node_list_->vec_args,vec_templateTypes);
+	return Call(arg_compiler, leftNode->GetString(), &nodeList->vec_args,vec_templateTypes);
 }
 
 // 関数にpopはできないのでエラーメッセージを出す
@@ -2163,7 +2181,7 @@ int Node_Member::GetType(Compiler* arg_compiler) const
 	}
 	else {
 		//変数のメンバ変数
-		if (leftNode->Op() == OP_IDENTIFIER|| leftNode->Op() == OP_MEMBER) {
+		if (leftNode->Op() == OP_IDENTIFIER|| leftNode->Op() == OP_MEMBER ||leftNode->Op()==OP_FUNCTION ) {
 			{
 
 				//型
@@ -2188,9 +2206,9 @@ int Node_Method::Push(Compiler* arg_compiler) const
 	}
 
 	std::vector<int> argTypes;
-	if (node_list_) {
-		auto end = node_list_->vec_args.end();
-		for (auto itr = node_list_->vec_args.begin(); itr != end; itr++) {
+	if (nodeList) {
+		auto end = nodeList->vec_args.end();
+		for (auto itr = nodeList->vec_args.begin(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -2200,8 +2218,8 @@ int Node_Method::Push(Compiler* arg_compiler) const
 	const FunctionTag* methodTag = nullptr;
 
 
-	typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
-	methodTag = typeTag->methods.Find(strData, argTypes,&arg_compiler->GetTypeTable());
+	typeTag = arg_compiler->GetType(rightNode-> GetType(arg_compiler) & ~TYPE_REF);
+	methodTag = typeTag->methods.Find(leftNode->GetString()+GetTemplateName(vec_templateTypes, &arg_compiler->GetTypeTable()), argTypes,&arg_compiler->GetTypeTable());
 	if (methodTag->accessType != AccessModifier::Public&&arg_compiler->GetCurrentThisType()!=typeTag) {
 
 		arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
@@ -2221,12 +2239,12 @@ int Node_Method::Push(Compiler* arg_compiler) const
 	}
 
 	// 引数をpush
-	if (node_list_&& methodTag->ArgSize() == argSize) {
-		std::for_each(node_list_->vec_args.begin(), node_list_->vec_args.end(), set_arg(arg_compiler, methodTag));
+	if (nodeList && methodTag->ArgSize() == argSize) {
+		std::for_each(nodeList->vec_args.begin(), nodeList->vec_args.end(), set_arg(arg_compiler, methodTag));
 	}
 
 
-	leftNode->Push(arg_compiler);
+	rightNode->Push(arg_compiler);
 
 
 	if (methodTag->IsSystem()) {
@@ -2256,23 +2274,22 @@ int Node_Method::GetType(Compiler* arg_compiler) const
 
 	std::vector<int> argTypes;
 
-	if (node_list_) {
-		auto end = node_list_->vec_args.end();
-		for (auto itr = node_list_->vec_args.begin(); itr != end; itr++) {
+	if (nodeList) {
+		for (auto itr = nodeList->vec_args.begin(), end = nodeList->vec_args.end(); itr != end; itr++) {
 			argTypes.push_back((*itr)->GetType(arg_compiler));
 		}
 	}
 
 
-	const TypeTag* typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
-	const FunctionTag* tag = typeTag->methods.Find(strData, argTypes, &arg_compiler->GetTypeTable());
+	const TypeTag* typeTag = arg_compiler->GetType(rightNode->GetType(arg_compiler) & ~TYPE_REF);
+	const FunctionTag* tag = typeTag->methods.Find(leftNode->GetString() +GetTemplateName(vec_templateTypes, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
 
 	return tag->valueType;
 }
 void Node_Method::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
 {
-	if (node_list_ ) {
-		node_list_->LambdaCapture(arg_captureList, arg_compiler);
+	if (nodeList) {
+		nodeList->LambdaCapture(arg_captureList, arg_compiler);
 	}
 
 

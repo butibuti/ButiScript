@@ -767,6 +767,7 @@ public:
 		auto memberSize = (Read<ScriptClassInfo>())->GetMemberSize();
 		for (int i = 0; i < memberSize; i++) {
 			if (ary_memberType[i] & TYPE_REF) {
+				ary_p_member[i]->addref();
 				vec_clonedMember.push_back(ary_p_member[i]);
 			}
 			else {

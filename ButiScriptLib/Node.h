@@ -70,7 +70,7 @@ namespace ButiScript {
 	using Node_t = std::shared_ptr<Node>;
 	using NodeList_t = std::shared_ptr<NodeList>;
 
-	class Node {
+	class Node :public std::enable_shared_from_this<Node>{
 	public:
 		Node(const int arg_op, const Node_t& arg_left, const Node_t& arg_right)
 			: op(arg_op), leftNode(arg_left), rightNode(arg_right), num_int(0), num_float(0)
@@ -122,6 +122,8 @@ namespace ButiScript {
 		int Assign(Compiler* arg_compiler) const;
 		int Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg, const std::vector<int>& arg_vec_temps) const;
 
+		virtual Node_t CreateMethod(Node_t arg_node);
+
 		virtual void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const;
 		static Node_t make_node(const int arg_op, const float arg_number, const Compiler* arg_compiler)
 		{
@@ -135,8 +137,13 @@ namespace ButiScript {
 		static Node_t make_node(const int arg_op, Node_t arg_left, const Compiler* arg_compiler);
 		static Node_t make_node(const int arg_op, Node_t arg_left,const std::string arg_memberName,const Compiler* arg_compiler);
 		static Node_t make_node(const int arg_op, Node_t arg_left, Node_t arg_right);
-		static Node_t make_node(const int arg_op, Node_t arg_left, NodeList_t arg_right);
+		static Node_t make_node(const int arg_op, Node_t arg_left, Node_t arg_right,const Compiler* arg_compiler);
+		static Node_t make_node(const int arg_op, Node_t arg_left, NodeList_t arg_list);
 		static Node_t make_node(const int arg_op, Node_t arg_left, const std::vector<int>& arg_templateTypes);
+
+		void SetLeftNode(Node_t arg_node) { leftNode = arg_node; }
+		void SetRightNode(Node_t arg_node) { rightNode = arg_node; }
+
 	protected:
 		int op;
 		int num_int;
@@ -193,26 +200,28 @@ namespace ButiScript {
 	};
 
 	// 関数のノード
-
+	class Node_Member;
 	class Node_function : public Node {
 	public:
-		Node_function(int arg_op, const Node_t& arg_node, const NodeList_t& arg_list)
-			: Node(arg_op, arg_node), node_list_(arg_list)
+		Node_function(int arg_op, const Node_t& arg_node, const NodeList_t arg_list)
+			: Node(arg_op, arg_node), nodeList(arg_list)
 		{
 		}
 		Node_function(int arg_op, const Node_t& arg_node, const std::vector<int>& arg_templateTypes)
 			: Node(arg_op, arg_node), vec_templateTypes(arg_templateTypes)
 		{
 		}
-		
+		void SetArgmentList(NodeList_t arg_List) {
+			nodeList = arg_List;
+		}
 		virtual int Push(Compiler* arg_compiler) const;
 		virtual int Pop(Compiler* arg_compiler) const;
 		int GetType(Compiler* arg_compiler)const override;
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
-
+		Node_t CreateMethod(Node_t arg_node)override;
 	private:
-		NodeList_t node_list_;
+		NodeList_t nodeList;
 		std::vector<int> vec_templateTypes;
 	};
 
@@ -236,16 +245,10 @@ namespace ButiScript {
 	//メンバ関数のノード
 	class Node_Method :public Node {
 	public:
-		Node_Method(const int arg_op, const Node_t& arg_methodNode,  const NodeList_t& arg_list)
-			:Node(arg_op, arg_methodNode->GetLeft()), node_list_(arg_list)
+		
+		Node_Method(const int arg_op, const Node_t arg_funcNode, const Node_t arg_valueNode, const NodeList_t list, const std::vector<int>& arg_templateTypes)
+			:Node(arg_op, arg_funcNode,arg_valueNode), nodeList(list),vec_templateTypes(arg_templateTypes)
 		{
-			strData =arg_methodNode->GetString();
-
-		}
-		Node_Method(const int arg_op, const Node_t& arg_valueNode, const std::string& arg_memberName)
-			:Node(arg_op, arg_valueNode)
-		{
-			strData = (arg_memberName);
 		}
 		virtual int Push(Compiler* arg_compiler) const;
 		virtual int Pop(Compiler* arg_compiler) const;
@@ -253,13 +256,14 @@ namespace ButiScript {
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
-		NodeList_t node_list_;
+		NodeList_t nodeList;
+		std::vector<int> vec_templateTypes;
 	};
 
 	//enum呼び出しのノード
 	class Node_enum:public Node {
 	public:
-		Node_enum(const Node_t& arg_enumTypeNode, const std::string& arg_identiferName): Node(OP_INT, arg_enumTypeNode) {
+		Node_enum(const Node_t arg_enumTypeNode, const std::string& arg_identiferName): Node(OP_INT, arg_enumTypeNode) {
 			strData = arg_identiferName;
 		}
 

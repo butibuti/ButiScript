@@ -12,7 +12,7 @@ namespace ButiScript {
 #include"value_type.h"
 
 #define	VM_ENUMDEF
-	enum {
+	enum VM_ENUM{
 #include "VM_enum.h"
 		VM_MAXCOMMAND,
 	};
@@ -299,12 +299,14 @@ namespace ButiScript {
 			PushLocalArray(Constant<int>());
 		}
 
-		//グローバル変数のメンバ変数のコピーをpush
+		//メンバ変数のコピーをpush
 		inline void PushMember( const int arg_valueIndex) {
 			auto valueData = top().valueData;
+			valueData->addref();
 			pop();
 			push_clone(valueData->GetMember(arg_valueIndex), valueData->GetMemberType(arg_valueIndex));
 			top().valueData->release();
+			valueData->release();
 		}
 
 		void PushMember() {
@@ -362,8 +364,10 @@ namespace ButiScript {
 		//メンバ変数の参照をpush
 		inline void PushMemberRef( const int arg_valueIndex) {
 			auto v = top().valueData;
+			v->addref();
 			pop();
 			push(v->GetMember(arg_valueIndex), v->GetMemberType(arg_valueIndex));
+			v->release();
 		}
 
 		void PushMemberRef() {

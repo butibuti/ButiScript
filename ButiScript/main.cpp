@@ -14,6 +14,10 @@ public:
 		std::cout << "Sample::TestMethod() is Called! count:"<<count<<std::endl;
 		return count;
 	}
+	template <typename T>
+	T TemplateMethod(const std::string& str) {
+		return 1.5f;
+	}
 };
 std::shared_ptr<Sample> CreateSample() {
 	return std::make_shared<Sample>();
@@ -32,6 +36,8 @@ int main(const int argCount, const char* args[])
 	ButiScript::Compiler driver;
 	ButiScript::SystemTypeRegister::GetInstance()->RegistSharedSystemType<Sample>("Sample", "Sample");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample, int, &Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample,int,const std::string&, &Sample::TemplateMethod<int>, &ButiScript::VirtualMachine::GetSharedTypePtr ,&ButiScript::VirtualMachine::GetTypePtr >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TemplateMethod", "s", { TYPE_INTEGER });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample,float, const std::string&, &Sample::TemplateMethod<float>, &ButiScript::VirtualMachine::GetSharedTypePtr, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_FLOAT, "TemplateMethod", "s", {TYPE_FLOAT});
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::shared_ptr<Sample>, &CreateSample >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<int, &CreateInstance<int>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<float, &CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});

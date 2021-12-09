@@ -1,8 +1,19 @@
-
+class ControllList{
+	controlBehavior:Sample;
+	next: ControllList&;
+	bef: ControllList&;
+}
+private var top:ControllList&;
+private var end:ControllList&;
 function main():int{
-    
-	var i:string;
-	i="aasd";
+	var t:ControllList;
+    top=t;
+	top.controlBehavior=CreateSample();
+	print(ToString(GetTop().controlBehavior.TemplateMethod<float>("00"))+"\n");
+    return 0;
+}
 
-    return i.Size();
+function GetTop():ControllList&
+{
+	return top;
 }
