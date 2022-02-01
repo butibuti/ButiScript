@@ -48,7 +48,7 @@ int main(const int argCount, const char* args[])
 	{
 		std::shared_ptr< ButiScript::CompiledData> data = std::make_shared<ButiScript::CompiledData>();
 		compile_result = driver.Compile(args[i], *data);
-		if (compile_result) {
+		if (!compile_result) {
 			std::cout << args[i]<<"‚ÌƒRƒ“ƒpƒCƒ‹¬Œ÷" << std::endl;
 			driver.OutputCompiledData(StringHelper::GetDirectory(args[i])+"/output/"+ StringHelper::GetFileName(args[i],false)+ ".cbs", *data);
 		}
@@ -57,7 +57,7 @@ int main(const int argCount, const char* args[])
 		}
 		data = std::make_shared<ButiScript::CompiledData>();
 		auto res= driver.InputCompiledData(StringHelper::GetDirectory(args[i]) + "/output/" + StringHelper::GetFileName(args[i], false) + ".cbs", *data);
-		if (res) {
+		if (!res) {
 			ButiScript::VirtualMachine* p_clone; 
 			int returnCode=0;
 			{

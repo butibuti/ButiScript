@@ -1,4 +1,3 @@
-#pragma once
 
 #undef VMCODE0
 #undef VMCODE1

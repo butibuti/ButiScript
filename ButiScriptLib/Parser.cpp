@@ -773,6 +773,7 @@ struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
 
 			// 単項演算子
 			unary = '-' >> prime
+				| '!' >> prime
 				| prime>>!( boost::spirit::str_p("++")  | boost::spirit::str_p("--"));
 
 			// 二項演算子（*, /, %）
@@ -1087,6 +1088,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 			// 単項演算子
 			unary = ('-' >> prime[unary.node = unary_node(OP_NEG, arg1, self.compiler)])
+				| ('!' >> prime[unary.node = unary_node(OP_NOT, arg1, self.compiler)])
 				| (prime[unary.node = arg1]
 					>> !(boost::spirit::str_p("++")[unary.node=unary_node(OP_INCREMENT, unary.node, self.compiler)] | boost::spirit::str_p("--")[unary.node=unary_node(OP_DECREMENT, unary.node, self.compiler)]))
 				;

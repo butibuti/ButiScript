@@ -86,6 +86,16 @@ Node_t Node::make_node(const int arg_op, Node_t arg_left, const Compiler* arg_co
 			return arg_left;
 		}
 		break;
+	case OP_NOT:
+		if (arg_left->op == OP_INT) {			// ’è”‰‰ŽZ‚ðŒvŽZ‚·‚é
+			arg_left->num_int = !arg_left->num_int;
+			return arg_left;
+		}
+		if (arg_left->op == OP_FLOAT) {			// ’è”‰‰ŽZ‚ðŒvŽZ‚·‚é
+			arg_left->num_float = !arg_left->num_float;
+			return arg_left;
+		}
+		break;
 	}
 	return std::make_shared<Node>(arg_op, arg_left);
 }
@@ -747,6 +757,11 @@ int Node::Push(Compiler* arg_compiler) const{
 			arg_compiler->error("•¶Žš—ñ‚É‚Í“ž’ê‹–‚³‚ê‚È‚¢ŒvŽZ‚Å‚·B");
 		arg_compiler->OpNeg();
 		return leftNode->GetType(arg_compiler);
+	case OP_NOT:
+		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+			arg_compiler->error("•¶Žš—ñ‚É‚Í“ž’ê‹–‚³‚ê‚È‚¢ŒvŽZ‚Å‚·B");
+		arg_compiler->OpNot();
+		return leftNode->GetType(arg_compiler);
 	case OP_INCREMENT:
 		if (leftNode->Push(arg_compiler) == TYPE_STRING)
 			arg_compiler->error("•¶Žš—ñ‚É‚Í“ž’ê‹–‚³‚ê‚È‚¢ŒvŽZ‚Å‚·B");
@@ -988,6 +1003,7 @@ int Node::GetType(Compiler* arg_compiler)const {
 	case OP_INCREMENT:
 	case OP_DECREMENT:
 	case OP_NEG:
+	case OP_NOT:
 	{
 
 		auto type = leftNode->GetType(arg_compiler);
@@ -1634,6 +1650,7 @@ void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList
 	}
 	switch (op) {
 	case OP_NEG:
+	case OP_NOT:
 	case OP_INT:
 	case OP_FLOAT:
 	case OP_STRING:
@@ -2181,7 +2198,7 @@ int Node_Member::GetType(Compiler* arg_compiler) const
 	}
 	else {
 		//•Ï”‚Ìƒƒ“ƒo•Ï”
-		if (leftNode->Op() == OP_IDENTIFIER|| leftNode->Op() == OP_MEMBER ||leftNode->Op()==OP_FUNCTION ) {
+		if (leftNode->Op() == OP_IDENTIFIER|| leftNode->Op() == OP_MEMBER||leftNode->Op()==OP_METHOD ||leftNode->Op()==OP_FUNCTION ) {
 			{
 
 				//Œ^

@@ -1,6 +1,9 @@
 #pragma once
 #ifndef	__VM_H__
 #define	__VM_H__
+#ifdef _BUTIENGINEBUILD
+#include"Header/GameObjects/DefaultGameComponent/ButiScriptBehavior.h"
+#endif // _BUTIENGINEBUILD
 
 #include <vector>
 #include<unordered_map>
@@ -30,7 +33,6 @@ namespace ButiScript {
 			delete[] textBuffer;
 		}
 
-	public:
 		unsigned char* commandTable;	// コマンドテーブル
 		char* textBuffer;			// テキストデータ
 		int commandSize;			// コマンドサイズ
@@ -68,8 +70,6 @@ namespace ButiScript {
 		const static int global_flag = 0x4000000;
 		const static int global_mask = 0x3ffffff;
 
-
-	public:
 		VirtualMachine(std::shared_ptr<CompiledData> arg_data)
 			: shp_data(arg_data)
 		{
@@ -170,14 +170,16 @@ namespace ButiScript {
 		}
 		void AllocGlobalValue();
 		void Clear();
-
+		bool IsExistFunction(const std::string& arg_functionName)const {
+			return shp_data->functions.Find(arg_functionName);
+		}
 		VirtualMachine* Clone();
 
 		template<typename T>
 		void SetGlobalVariable(const T value, const std::string arg_variableName) {
 			if (!shp_data->map_globalValueAddress.count(arg_variableName)) {
 
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 				ButiEngine::GUI::Console( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
 #endif
 
@@ -189,7 +191,7 @@ namespace ButiScript {
 		T& GetGlobalVariable(const std::string arg_variableName) {
 			if (!shp_data->map_globalValueAddress.count(arg_variableName)) {
 
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 				ButiEngine::GUI::Console(arg_variableName + "にはアクセスできません", ButiEngine::Vector4(1.0f, 0.8f, 0.8f, 1.0f));
 #endif
 				static T temp;
@@ -198,7 +200,7 @@ namespace ButiScript {
 			return valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData->GetRef<T>();
 		}
 
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 		void SetGameObject(std::shared_ptr<ButiEngine::GameObject> arg_gameObject) {
 			shp_gameObject = arg_gameObject;
 		}
@@ -214,9 +216,11 @@ namespace ButiScript {
 		void RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
 		void SaveGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
 		void ShowGUI();
+		std::shared_ptr<CompiledData> GetCompiledData()const { return shp_data; }
 #endif
 
 		void Initialize();
+		bool HotReload(std::shared_ptr<CompiledData> arg_data);
 	private:
 		void Execute_(const std::string& arg_entryPoint );
 
@@ -571,6 +575,16 @@ namespace ButiScript {
 			pop();
 			push(negV,type);
 			negV->release();
+		}
+
+		// !
+		void OpNot() {
+			auto notV = top().valueData->Clone();
+			auto type = top().valueType;
+			notV->Not();
+			pop();
+			push(notV, type);
+			notV->release();
 		}
 
 		// ==
@@ -1000,7 +1014,7 @@ namespace ButiScript {
 	public:
 
 
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 
 		void sys_addEventMessanger();
 		void sys_removeEventMessanger();
@@ -1134,17 +1148,17 @@ namespace ButiScript {
 			auto message = text(top());	pop();
 			ButiEngine::GUI::Console(message,color);
 		}
-#endif // IMPL_BUTIENGINE
+#endif // _BUTIENGINEBUILD
 
 		// 組み込み関数（print）
 		void sys_print()
 		{
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 
 			ButiEngine::GUI::Console( text(top()));
 #else
 			std::cout << text(top());
-#endif // IMPL_BUTIENGINE
+#endif // _BUTIENGINEBUILD
 			pop();
 		}
 
@@ -1513,8 +1527,9 @@ namespace ButiScript {
 		int stack_base=0;
 		int globalValue_base = 0;
 		int globalValue_size=0;
-
-#ifdef IMPL_BUTIENGINE
+		//グローバル変数確保の命令数
+		int globalValueAllocOpSize=0;
+#ifdef _BUTIENGINEBUILD
 		std::shared_ptr<ButiEngine::GameObject> shp_gameObject;
 		std::weak_ptr < ButiEngine::ButiScriptBehavior >wkp_butiScriptBehavior;
 #endif

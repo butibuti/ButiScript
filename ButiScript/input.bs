@@ -1,19 +1,12 @@
-class ControllList{
-	controlBehavior:Sample;
-	next: ControllList&;
-	bef: ControllList&;
-}
-private var top:ControllList&;
-private var end:ControllList&;
+
 function main():int{
-	var t:ControllList;
-    top=t;
-	top.controlBehavior=CreateSample();
-	print(ToString(GetTop().controlBehavior.TemplateMethod<float>("00"))+"\n");
+	if(!GetTrue()){
+		print("Yes!\n");
+	}
+
     return 0;
 }
 
-function GetTop():ControllList&
-{
-	return top;
+function GetTrue():int{
+	return false;
 }

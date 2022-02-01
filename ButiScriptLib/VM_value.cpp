@@ -4,7 +4,7 @@
 
 
 std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
 	*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1, &shp_compiledData->map_enumTag.at(type));
@@ -52,7 +52,7 @@ ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, s
 	//return nullptr;
 }
 
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 
 void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_v) const
 {
@@ -108,7 +108,7 @@ ButiScript::ValueData<ButiScript::Type_Null>* ButiScript::GetNullValueData()
 	return &nullValueData;
 }
 
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 auto typeMapRelease= ButiEngine::Util::MemoryReleaser (&p_map_typeIndex);
 #else
 

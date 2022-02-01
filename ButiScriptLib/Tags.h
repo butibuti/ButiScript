@@ -766,6 +766,23 @@ public:
 	void SetClassName(const std::string& arg_className) {
 		className = arg_className;
 	}
+
+	bool operator ==(const ScriptClassInfo& other) const{
+		if ((other.typeIndex != typeIndex) ||(other.systemTypeCount!=systemTypeCount)||(other.vec_memberTypes.size()!=vec_memberTypes.size() )) {
+			return false;
+		}
+		for (auto itr = vec_memberTypes.begin(), end = vec_memberTypes.end(), otherItr = other.vec_memberTypes.begin(); itr != end; itr++, otherItr++) {
+			if ((*itr) != (*otherItr)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool operator !=(const ScriptClassInfo& other)const {
+		return !(*this == other);
+	}
+
 	void OutputFile(std::ofstream& arg_fOut) const {
 		int size = className.size();
 		arg_fOut.write((char*)&size, sizeof(int));
@@ -808,8 +825,11 @@ public:
 		}
 
 	}
+	int GetSystemTypeCount()const { return typeIndex; }
+	void SetSystemTypeCount(const int arg_systemTypeCount) { systemTypeCount = arg_systemTypeCount; }
 private:
 	int typeIndex;
+	int systemTypeCount;
 	std::vector<int> vec_memberTypes;
 	std::vector<std::string> vec_memberName;
 	std::string className;

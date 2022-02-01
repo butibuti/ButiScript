@@ -21,6 +21,7 @@ namespace ButiScript {
 	// ÉmÅ[ÉhÇÃñΩóﬂ
 	enum OPCODE {
 		OP_NEG,
+		OP_NOT,
 		OP_INCREMENT,
 		OP_DECREMENT,
 		OP_ADD,

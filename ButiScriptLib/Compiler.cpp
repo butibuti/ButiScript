@@ -95,7 +95,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 		types.Clear_notSystem();
 		enums.Clear_notSystem();
 		error_count = 0;
-		return false;// パーサーエラー
+		return true;// パーサーエラー
 	}
 
 	int code_size = LabelSetting();				// ラベルにアドレスを設定
@@ -111,7 +111,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 	types.Clear_notSystem();
 	enums.Clear_notSystem();
 
-	return true;
+	return false;
 }
 
 
@@ -683,7 +683,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	fIn.open(arg_filePath,std::ios::binary);
 	if (!fIn.is_open()) {
 		fIn.close();
-		return 0;
+		return 1;
 	}
 
 
@@ -780,7 +780,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		}
 
 		typeTag.methods.FileInput(fIn);
-
+		typeTag.isSystem = true;
 		arg_ref_data.vec_types.push_back(typeTag);
 	}
 
@@ -832,6 +832,10 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	fIn.read((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
 
 	arg_ref_data.systemTypeCount = arg_ref_data.vec_types.size() - definedTypeCount-arg_ref_data.functionTypeCount;
+	for (int i = 0; i < definedTypeCount; i++) {
+		arg_ref_data.vec_scriptClassInfo.at(i).SetSystemTypeCount(arg_ref_data.systemTypeCount);
+		arg_ref_data.vec_types.at(arg_ref_data.vec_scriptClassInfo.at(i).GetTypeIndex()).isSystem = false;
+	}
 	int enumCount =0;
 	fIn.read((char*)&enumCount, sizeof(enumCount));
 	for (int i = 0; i < enumCount;i++) {
@@ -841,13 +845,14 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		tag.InputFile(fIn);
 		arg_ref_data.map_enumTag.emplace(typeIndex,tag);
 		arg_ref_data.map_enumTag.at(typeIndex).CreateEnumMap();
+		arg_ref_data.vec_types.at(typeIndex).p_enumTag = &arg_ref_data.map_enumTag.at(typeIndex);
 	}
 
 	arg_ref_data.functions.FileInput(fIn);
 
 	fIn.close();
 
-	return 1;
+	return 0;
 }
 
 int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
@@ -1157,7 +1162,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec2");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec3");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec4");
-#ifdef IMPL_BUTIENGINE
+#ifdef _BUTIENGINEBUILD
 
 	DefineSystemFunction(&VirtualMachine::sys_registEventListner, TYPE_STRING, "RegistEvent", "s,s,s");
 	DefineSystemFunction(&VirtualMachine::sys_unregistEventListner, TYPE_VOID, "UnRegistEvent", "s,s");
@@ -1165,7 +1170,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_removeEventMessanger, TYPE_VOID, "RemoveEventMessanger", "s");
 	DefineSystemFunction(&VirtualMachine::sys_executeEvent, TYPE_VOID, "EventExecute", "s");
 	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
-#endif // IMPL_BUTIENGINE
+#endif // _BUTIENGINEBUILD
 
 	DefineSystemMethod(&VirtualMachine::sys_method_retCast< std::string, size_t,int, &std::string::size, &VirtualMachine::GetTypePtr  >, TYPE_STRING, TYPE_INTEGER, "Size", "");
 
@@ -1278,7 +1283,7 @@ void ButiScript::TypeTable::Release() {
 	vec_types.clear();
 }
 
-#ifndef IMPL_BUTIENGINE
+#ifndef _BUTIENGINEBUILD
 template<typename T>
 class MemoryReleaser {
 public:
