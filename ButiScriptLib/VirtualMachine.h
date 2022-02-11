@@ -1181,51 +1181,51 @@ namespace ButiScript {
 		}
 
 		//組み込み関数(return 無し)
-		template< void(*Method)() >
+		template< void(*Function)() >
 		void sys_func_retNo()
 		{
-			(*Method)();
+			(*Function)();
 		}
 		//組み込み関数(return 有り)
-		template<typename T, T(*Method)() >
+		template<typename T, T(*Function)() >
 		void sys_func_ret()
 		{
-			T ret = (*Method)();
+			T ret = (*Function)();
 			push(ret);
 		}
 
 		//組み込み関数(return 無し)
-		template<typename Arg, void(*Method)(Arg) >
+		template<typename Arg, void(*Function)(Arg) >
 		void sys_func_retNo()
 		{
 			auto arg = top().valueData->Get<Arg>(); pop(); 
-			(*Method)(arg);
+			(*Function)(arg);
 		}
 		//組み込み関数(return 有り)
-		template<typename T, typename Arg, T(*Method)(Arg) >
+		template<typename T, typename Arg, T(*Function)(Arg) >
 		void sys_func_ret()
 		{
 			auto arg = top().valueData->Get<Arg>(); pop();
-			T ret = (*Method)(arg);
+			T ret = (*Function)(arg);
 			push(ret);
 		}
 		//組み込み関数(return 有り)
-		template<typename T, typename Arg1, typename Arg2, T(*Method)(Arg1, Arg2) >
+		template<typename T, typename Arg1, typename Arg2, T(*Function)(Arg1, Arg2) >
 		void sys_func_ret()
 		{
 			auto arg2 = top().valueData->Get<Arg2>(); pop();
 			auto arg1 = top().valueData->Get<Arg1>(); pop();
-			T ret = (*Method)(arg1, arg2);
+			T ret = (*Function)(arg1, arg2);
 			push(ret);
 		}
 		//組み込み関数(return 有り)
-		template<typename T, typename Arg1, typename Arg2, typename Arg3, T(*Method)(Arg1, Arg2, Arg3) >
+		template<typename T, typename Arg1, typename Arg2, typename Arg3, T(*Function)(Arg1, Arg2, Arg3) >
 		void sys_func_ret()
 		{
 			auto arg3 = top().valueData->Get<Arg3>(); pop();
 			auto arg2 = top().valueData->Get<Arg2>(); pop();
 			auto arg1 = top().valueData->Get<Arg1>(); pop();
-			T ret = (*Method)(arg1, arg2, arg3);
+			T ret = (*Function)(arg1, arg2, arg3);
 			push(ret);
 		}
 		
