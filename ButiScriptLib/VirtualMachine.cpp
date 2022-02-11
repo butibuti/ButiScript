@@ -17,7 +17,7 @@ void ButiScript::VirtualMachine::AllocGlobalValue()
 
 		auto buff = command_ptr_;
 		command_ptr_ = allocCommand_ptr_;
-		int Op;
+		std::int32_t Op;
 		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
 			globalValueAllocOpSize++;
 			(this->*p_op[Op])();
@@ -40,7 +40,7 @@ ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 	output->stack_base = output->valueStack.size();						// スタック参照位置初期化
 	output->globalValue_base = output->stack_base;
 	{
-		for (int i = globalValue_base; i < globalValue_size- globalValue_base  ; i++) {
+		for (std::int32_t i = globalValue_base; i < globalValue_size- globalValue_base  ; i++) {
 			output->push(valueStack[i].valueData, valueStack[i].valueType);
 		}
 	}
@@ -61,22 +61,22 @@ void ButiScript::VirtualMachine::Initialize()
 #include "VM_table.h"
 
 	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->vec_sysCalls.size());
-	for (int i = 0; i < shp_data->vec_sysCalls.size(); i++) {
-		p_syscall[i] = shp_data->vec_sysCalls[i];
+	for (std::int32_t index = 0; index < shp_data->vec_sysCalls.size(); index++) {
+		p_syscall[index] = shp_data->vec_sysCalls[index];
 	}
 
 	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->vec_sysCallMethods.size());
-	for (int i = 0; i < shp_data->vec_sysCallMethods.size(); i++) {
-		p_sysMethodCall[i] = shp_data->vec_sysCallMethods[i];
+	for (std::int32_t index = 0; index < shp_data->vec_sysCallMethods.size(); index++) {
+		p_sysMethodCall[index] = shp_data->vec_sysCallMethods[index];
 	}
 
 
 	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.size() ));
 	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.size() ));
-	for (int i = 0; i < shp_data->vec_types.size(); i++) {
+	for (std::int32_t index = 0; index < shp_data->vec_types.size(); index++) {
 
-		p_pushValues[shp_data->vec_types.at(i).typeIndex] = shp_data->vec_types.at(i).typeFunc;
-		p_pushRefValues[shp_data->vec_types.at(i).typeIndex] = shp_data->vec_types.at(i).refTypeFunc;
+		p_pushValues[shp_data->vec_types.at(index).typeIndex] = shp_data->vec_types.at(index).typeFunc;
+		p_pushRefValues[shp_data->vec_types.at(index).typeIndex] = shp_data->vec_types.at(index).refTypeFunc;
 	}
 
 	vec_scriptClassInfo = shp_data->vec_scriptClassInfo;
@@ -108,22 +108,22 @@ bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_dat
 #include "VM_table.h"
 
 	p_syscall = (OperationFunction*)malloc(sizeof(OperationFunction) * arg_data->vec_sysCalls.size());
-	for (int i = 0; i < arg_data->vec_sysCalls.size(); i++) {
-		p_syscall[i] = arg_data->vec_sysCalls[i];
+	for (std::int32_t index = 0; index < arg_data->vec_sysCalls.size(); index++) {
+		p_syscall[index] = arg_data->vec_sysCalls[index];
 	}
 
 	p_sysMethodCall = (OperationFunction*)malloc(sizeof(OperationFunction) * arg_data->vec_sysCallMethods.size());
-	for (int i = 0; i < arg_data->vec_sysCallMethods.size(); i++) {
-		p_sysMethodCall[i] = arg_data->vec_sysCallMethods[i];
+	for (std::int32_t index = 0; index < arg_data->vec_sysCallMethods.size(); index++) {
+		p_sysMethodCall[index] = arg_data->vec_sysCallMethods[index];
 	}
 
 
 	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.size()));
 	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.size()));
-	for (int i = 0; i < arg_data->vec_types.size(); i++) {
+	for (std::int32_t index = 0; index < arg_data->vec_types.size(); index++) {
 
-		p_pushValues[arg_data->vec_types.at(i).typeIndex] = arg_data->vec_types.at(i).typeFunc;
-		p_pushRefValues[arg_data->vec_types.at(i).typeIndex] = arg_data->vec_types.at(i).refTypeFunc;
+		p_pushValues[arg_data->vec_types.at(index).typeIndex] = arg_data->vec_types.at(index).typeFunc;
+		p_pushRefValues[arg_data->vec_types.at(index).typeIndex] = arg_data->vec_types.at(index).refTypeFunc;
 	}
 	if (vec_scriptClassInfo.size() != arg_data->vec_scriptClassInfo.size()) {
 		output = true;
@@ -143,14 +143,14 @@ bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_dat
 		AllocGlobalValue();
 	}
 	else {
-		for (int i = globalValue_base; i < globalValue_size; i++) {
-			auto typeIndex = valueStack[i].valueType;
+		for (std::int32_t index = globalValue_base; index < globalValue_size; index++) {
+			auto typeIndex = valueStack[index].valueType;
 			auto& tag = shp_data->vec_types.at(typeIndex & ~TYPE_REF);
 			if (!tag.isSystem&&!tag.IsFunctionObjectType() ) {
-				(valueStack[i].valueData)->set_scriptClassInfo(arg_data->vec_types , vec_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
+				(valueStack[index].valueData)->set_scriptClassInfo(arg_data->vec_types , vec_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
 			}
 			else if(tag.p_enumTag){
-				((ValueData<Type_Enum>*)valueStack[i].valueData)->set_enumTagPtr(arg_data->vec_types.at(typeIndex).p_enumTag);
+				((ValueData<Type_Enum>*)valueStack[index].valueData)->set_enumTagPtr(arg_data->vec_types.at(typeIndex).p_enumTag);
 			}
 		}
 	}
@@ -164,7 +164,7 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 	command_ptr_ = commandTable + shp_data->map_entryPoints[entryPoint];
 	stack_base = valueStack.size();
 
-	int Op;
+	std::int32_t Op;
 	//mainから開始
 	try {
 		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
@@ -321,16 +321,16 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 	push(wkp_butiScriptBehavior.lock());
 }
 void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
-	for (int i = 0; i < globalValue_size- globalValue_base; i++) {
-		auto type = valueStack[globalValue_base + i].valueType;
+	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
+		auto type = valueStack[globalValue_base + index].valueType;
 		if (type & TYPE_REF) {
 			arg_ref_vec_saveObject.push_back(std::make_shared<GlobalValueSaveObject<Type_Null>>());
 		}
 		else {
-			arg_ref_vec_saveObject.push_back(valueStack[globalValue_base + i].valueData->GetSaveObject());
+			arg_ref_vec_saveObject.push_back(valueStack[globalValue_base + index].valueData->GetSaveObject());
 		}
 		
-		arg_ref_vec_saveObject.at(i)->SetTypeIndex(type);
+		arg_ref_vec_saveObject.at(index)->SetTypeIndex(type);
 	}
 }
 void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
@@ -339,15 +339,15 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr<
 		
 		return;
 	}
-	for (int i = 0; i < globalValue_size - globalValue_base; i++) {
-		if (valueStack[globalValue_base + i].valueType != arg_ref_vec_saveObject.at(i)->GetTypeIndex()) {
+	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
+		if (valueStack[globalValue_base + index].valueType != arg_ref_vec_saveObject.at(index)->GetTypeIndex()) {
 			continue;
 		}
-		if (valueStack[globalValue_base + i].valueData) {
-			valueStack[globalValue_base + i].valueData->release();
+		if (valueStack[globalValue_base + index].valueData) {
+			valueStack[globalValue_base + index].valueData->release();
 		}
-		arg_ref_vec_saveObject.at(i)->SetCompiledData(shp_data);
-		arg_ref_vec_saveObject.at(i)->RestoreValue(&valueStack[globalValue_base + i].valueData);
+		arg_ref_vec_saveObject.at(index)->SetCompiledData(shp_data);
+		arg_ref_vec_saveObject.at(index)->RestoreValue(&valueStack[globalValue_base + index].valueData);
 		
 	}
 }

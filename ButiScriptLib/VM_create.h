@@ -7,7 +7,7 @@
 #undef VMCODE3
 
 #define	VMCODE0(code_, name)	void name()			{ statement.push_back(VMCode(code_)); }
-#define	VMCODE1(code_, name)	void name(const int arg1)	{ statement.push_back(VMCode(code_, arg1)); }
+#define	VMCODE1(code_, name)	void name(const std::int32_t arg1)	{ statement.push_back(VMCode(code_, arg1)); }
 #define	VMCODE2(code_, name)	void name(const float arg1)	{ statement.push_back(VMCode(code_, arg1)); }
 
 #define	VMCODE_T(code_, name)						template<typename T> void name(){   statement.push_back(VMCode(code_)); }

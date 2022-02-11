@@ -20,14 +20,14 @@ public:
 	/// <param name="name">ä÷êîñº</param>
 	/// <param name="args">à¯êîÇÃëgÇ›çáÇÌÇπ</param>
 	/// <returns>ê¨å˜</returns>
-	bool DefineSystemFunction(SysFunction arg_op, const int retType, const std::string& name, const std::string& args, const std::vector<int>& arg_vec_templateTypes);
-	inline bool DefineSystemFunction(SysFunction arg_op, const int retType, const std::string& name, const std::string& args) {
-		static auto temps= std::vector<int>();
+	bool DefineSystemFunction(SysFunction arg_op, const std::int32_t retType, const std::string& name, const std::string& args, const std::vector<std::int32_t>& arg_vec_templateTypes);
+	inline bool DefineSystemFunction(SysFunction arg_op, const std::int32_t retType, const std::string& name, const std::string& args) {
+		static auto temps= std::vector<std::int32_t>();
 		return DefineSystemFunction(arg_op, retType, name, args, temps);
 	}
-	bool DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args,const std::vector<int>& arg_vec_templateTypes);
-	inline bool DefineSystemMethod(SysFunction arg_p_method, const int type, const int retType, const std::string& name, const std::string& arg_args) {
-		static auto temps = std::vector<int>();
+	bool DefineSystemMethod(SysFunction arg_p_method, const std::int32_t type, const std::int32_t retType, const std::string& name, const std::string& arg_args,const std::vector<std::int32_t>& arg_vec_templateTypes);
+	inline bool DefineSystemMethod(SysFunction arg_p_method, const std::int32_t type, const std::int32_t retType, const std::string& name, const std::string& arg_args) {
+		static auto temps = std::vector<std::int32_t>();
 		return DefineSystemMethod(arg_p_method, type,retType, name,arg_args, temps);
 	}
 
@@ -36,8 +36,8 @@ private:
 	FunctionTable functions;
 	std::vector<SysFunction> vec_sysCalls;
 	std::vector<SysFunction> vec_sysMethodCalls;
-	std::map<long long int, int> map_sysCallsIndex;
-	std::map<long long int, int> map_sysMethodCallsIndex;
+	std::map<std::int64_t, std::int32_t> map_sysCallsIndex;
+	std::map<std::int64_t, std::int32_t> map_sysMethodCallsIndex;
 };
 
 class SystemTypeRegister {
@@ -49,7 +49,7 @@ public:
 	void SetDefaultSystemType();
 
 	void RegistSystemEnumType(const std::string& arg_typeName);
-	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const int value);
+	void RegistEnum(const std::string& arg_typeName, const std::string& identiferName, const std::int32_t value);
 	/// <summary>
 	/// ëgÇ›çûÇ›å^ÇÃìoò^
 	/// </summary>
@@ -62,7 +62,7 @@ public:
 		TypeTag type;
 
 
-		int index = Value::SetTypeIndex(TypeSpecific<T>());
+		std::int32_t index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
 		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.size());
 		vec_valueAllocCall.push_back(&VirtualMachine::pushValue<T>);
@@ -77,7 +77,7 @@ public:
 		if (memberInfo.size()) {
 			auto identiferSplited = StringHelper::Split(memberInfo, ",");
 
-			for (int i = 0; i < identiferSplited.size(); i++) {
+			for (std::int32_t i = 0; i < identiferSplited.size(); i++) {
 				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
 				if (typeSplited.size() != 2) {
 					// "ëgÇ›çûÇ›å^ÇÃÉÅÉìÉoïœêîÇÃéwíËÇ™ä‘à·Ç¡ÇƒÇ¢Ç‹Ç∑"
@@ -98,7 +98,7 @@ public:
 	template <typename T>
 	void RegistSharedSystemType(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
 		TypeTag type;
-		int index = Value::SetTypeIndex(TypeSpecific<T>());
+		std::int32_t index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
 		type.isShared = true;
 		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.size());
@@ -114,7 +114,7 @@ public:
 		if (memberInfo.size()) {
 			auto identiferSplited = StringHelper::Split(memberInfo, ",");
 
-			for (int i = 0; i < identiferSplited.size(); i++) {
+			for (std::int32_t i = 0; i < identiferSplited.size(); i++) {
 				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
 				if (typeSplited.size() != 2) {
 					// "ëgÇ›çûÇ›å^ÇÃÉÅÉìÉoïœêîÇÃéwíËÇ™ä‘à·Ç¡ÇƒÇ¢Ç‹Ç∑"
@@ -130,7 +130,7 @@ public:
 		//ÉXÉNÉäÉvÉgíËã`ÇÃå^Ç™ÉÅÉìÉoÇ∆ÇµÇƒóòópÇ∑ÇÈå^ÇÃìoò^
 		PushCreateSharedMemberInstance<T>();
 	}
-	int GetIndex(const std::string& arg_typeName);
+	std::int32_t GetIndex(const std::string& arg_typeName);
 private:
 	SystemTypeRegister() {}
 
@@ -138,8 +138,8 @@ private:
 	TypeTable types;
 	std::vector<SysFunction> vec_valueAllocCall;
 	std::vector<SysFunction> vec_refValueAllocCall;
-	std::map<long long int, int> map_valueAllocCallsIndex;
-	std::map<long long int, int> map_refValueAllocCallsIndex;
+	std::map<std::int64_t, std::int32_t> map_valueAllocCallsIndex;
+	std::map<std::int64_t, std::int32_t> map_refValueAllocCallsIndex;
 };
 
 }

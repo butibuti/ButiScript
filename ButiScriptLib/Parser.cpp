@@ -25,7 +25,7 @@ struct error_parser {
 	}
 
 	template <typename ScannerT>
-	int operator()(ScannerT const& arg_scan, result_t& arg_result) const
+	std::int32_t operator()(ScannerT const& arg_scan, result_t& arg_result) const
 	{
 		// 終わりまで来たら-1を返す
 		if (arg_scan.at_end()) {
@@ -40,7 +40,7 @@ struct error_parser {
 		std::cout << fpos.file << ": " << fpos.line << "." << fpos.column << ": "
 			<< message << " : " << std::string(b, arg_scan.first) << std::endl;
 
-//		return (int)length + 1;
+//		return (std::int32_t)length + 1;
 		return -1;
 	}
 
@@ -55,15 +55,15 @@ const error_p syntax_error_p = error_parser("文法エラー");
 
 //メンバ変数の情報
 struct MemberValue {
-	MemberValue(const int arg_index,const std::string& arg_name,const AccessModifier arg_accessType) {
+	MemberValue(const std::int32_t arg_index,const std::string& arg_name,const AccessModifier arg_accessType) {
 		type= arg_index;
 		name = arg_name;
-		if ((int)arg_accessType <= (int)AccessModifier::Protected && (int)arg_accessType >= (int)AccessModifier::Public) {
+		if ((std::int32_t)arg_accessType <= (std::int32_t)AccessModifier::Protected && (std::int32_t)arg_accessType >= (std::int32_t)AccessModifier::Public) {
 			accessType = arg_accessType;
 		}
 	}
 	MemberValue(){}
-	int type;
+	std::int32_t type;
 	std::string name;
 	AccessModifier accessType=AccessModifier::Public;
 };
@@ -463,10 +463,10 @@ struct	cout_func {
 //型の特定
 struct	specificType_func {
 	template <typename Ty1, typename Ty2>
-	struct result { using type = int; };
+	struct result { using type = std::int32_t; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(const Ty1& arg_key, Ty2 arg_compiler) const
+	std::int32_t operator()(const Ty1& arg_key, Ty2 arg_compiler) const
 	{
 		return  arg_compiler->GetTypeIndex(arg_key);
 	}
@@ -474,10 +474,10 @@ struct	specificType_func {
 //型の特定
 struct	specificFunctionType_func {
 	template <typename Ty1, typename Ty2, typename Ty3>
-	struct result { using type = int; };
+	struct result { using type = std::int32_t; };
 
 	template <typename Ty1, typename Ty2, typename Ty3>
-	int operator()(const Ty1& arg_retType, const Ty2& arg_args, Ty3 arg_compiler) const
+	std::int32_t operator()(const Ty1& arg_retType, const Ty2& arg_args, Ty3 arg_compiler) const
 	{
 		return  arg_compiler->GetfunctionTypeIndex(arg_args, arg_retType);
 	}
@@ -487,10 +487,10 @@ struct	specificFunctionType_func {
 // 最終登録
 struct analyze_func {
 	template <typename Ty1, typename Ty2>
-	struct result { using type = int; };
+	struct result { using type = std::int32_t; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(Ty1 arg_decl, Ty2 arg_compiler) const
+	std::int32_t operator()(Ty1 arg_decl, Ty2 arg_compiler) const
 	{
 		return arg_decl->Analyze(arg_compiler);
 	}
@@ -498,10 +498,10 @@ struct analyze_func {
 // 関数、ラムダ登録
 struct pushConpiler_func {
 	template <typename Ty1, typename Ty2>
-	struct result { using type = int; };
+	struct result { using type = std::int32_t; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(Ty1 arg_decl, Ty2 arg_compiler) const
+	std::int32_t operator()(Ty1 arg_decl, Ty2 arg_compiler) const
 	{
 		return arg_decl->PushCompiler(arg_compiler);
 	}
@@ -509,10 +509,10 @@ struct pushConpiler_func {
 // ブロック内関数登録
 struct pushConpiler_sub_func {
 	template <typename Ty1, typename Ty2>
-	struct result { using type = int; };
+	struct result { using type = std::int32_t; };
 
 	template <typename Ty1, typename Ty2>
-	int operator()(Ty1 arg_decl, Ty2 arg_compiler) const
+	std::int32_t operator()(Ty1 arg_decl, Ty2 arg_compiler) const
 	{
 		return arg_decl->PushCompiler_sub(arg_compiler);
 	}
@@ -578,7 +578,7 @@ namespace ButiClosure {
 		member1 str;
 	};
 	// 整数のクロージャ
-	struct number_val : boost::spirit::closure<number_val, unsigned int> {
+	struct number_val : boost::spirit::closure<number_val, std::uint32_t> {
 		member1 number;
 	};
 	// 浮動小数クロージャ
@@ -587,14 +587,14 @@ namespace ButiClosure {
 	};
 
 	// ノードのクロージャ
-	struct node_val : boost::spirit::closure<node_val, Node_t, int, std::string,std::vector<int>> {
+	struct node_val : boost::spirit::closure<node_val, Node_t, std::int32_t, std::string,std::vector<std::int32_t>> {
 		member1 node;
 		member2 Op;
 		member3 name;
 		member4 typeTemplates;
 	};
 	// メンバ呼び出しのクロージャ
-	struct callmember_val : boost::spirit::closure<callmember_val, Node_t, int, std::string> {
+	struct callmember_val : boost::spirit::closure<callmember_val, Node_t, std::int32_t, std::string> {
 		member1 memberNode;
 		member1 valueNode;
 		member2 Op;
@@ -606,7 +606,7 @@ namespace ButiClosure {
 		member1 name;
 	};
 	// ノードのクロージャ
-	struct nodelist_val : boost::spirit::closure<nodelist_val, NodeList_t, int> {
+	struct nodelist_val : boost::spirit::closure<nodelist_val, NodeList_t, std::int32_t> {
 		member1 node;
 		member2 Op;
 	};
@@ -615,16 +615,16 @@ namespace ButiClosure {
 		member1 statement;
 	};
 	// 型のクロージャ
-	struct type_val : boost::spirit::closure<type_val, int> {
+	struct type_val : boost::spirit::closure<type_val, std::int32_t> {
 		member1 type;
 	};
 	// 関数型のクロージャ
-	struct type_func_val : boost::spirit::closure<type_func_val, std::pair< int, std::vector<ArgDefine>>,std::vector<ArgDefine>> {
+	struct type_func_val : boost::spirit::closure<type_func_val, std::pair< std::int32_t, std::vector<ArgDefine>>,std::vector<ArgDefine>> {
 		member1 type;
 		member2 argments;
 	};
 	//ラムダ式定義のクロージャ
-	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, int, std::vector<int>> {
+	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, std::int32_t, std::vector<std::int32_t>> {
 		member1 node;
 		member2 type;
 	};
@@ -634,7 +634,7 @@ namespace ButiClosure {
 	};
 
 	// 変数定義のクロージャ
-	struct decl_val : boost::spirit::closure<decl_val, Declaration_t, int,std::vector< Node_t>,AccessModifier> {
+	struct decl_val : boost::spirit::closure<decl_val, Declaration_t, std::int32_t,std::vector< Node_t>,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 value;
@@ -642,7 +642,7 @@ namespace ButiClosure {
 	};
 
 	// 関数定義のクロージャ
-	struct func_val : boost::spirit::closure<func_val, Function_t, int, std::string,AccessModifier> {
+	struct func_val : boost::spirit::closure<func_val, Function_t, std::int32_t, std::string,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 name;

@@ -11,7 +11,7 @@ void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(But
 }
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Func>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::ValueData<Type_Func>(1, nullptr, std::vector<std::pair< IValueData*, int>>());
+	*arg_v = new ButiScript::ValueData<Type_Func>(1, nullptr, std::vector<std::pair< IValueData*, std::int32_t>>());
 }
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Null>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
@@ -30,8 +30,8 @@ std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFu
 ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 
 	std::vector<ButiScript::IValueData*> vec_members;
-	int memberSize = arg_info.GetMemberSize();
-	for (int i = 0; i < memberSize; i++) {
+	std::int32_t memberSize = arg_info.GetMemberSize();
+	for (std::int32_t i = 0; i < memberSize; i++) {
 		auto typeIndex = arg_info.GetMemberTypeIndex(i);
 		//’l‚Ì¶¬
 		if (! (typeIndex & TYPE_REF) ){
@@ -73,24 +73,24 @@ ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::Scri
 	valueType = arg_info.GetTypeIndex();
 }
 
-std::map<long long int, int>* p_map_typeIndex;
+std::map<std::int64_t, std::int32_t>* p_map_typeIndex;
 
-std::map<long long int, int>& GetTypeIndexMap() {
+std::map<std::int64_t, std::int32_t>& GetTypeIndexMap() {
 	if (!p_map_typeIndex) {
 
-		p_map_typeIndex = new std::map<long long int, int>();
+		p_map_typeIndex = new std::map<std::int64_t, std::int32_t>();
 	}
 	return *p_map_typeIndex;
 }
 
-int ButiScript::Value::SetTypeIndex(long long int arg_typeFunc)
+std::int32_t ButiScript::Value::SetTypeIndex(std::int64_t arg_typeFunc)
 {
 	auto index = GetTypeIndexMap().size();
 	auto r= GetTypeIndexMap().emplace( arg_typeFunc, index );
 	return index;
 }
 
-int ButiScript::Value::GetTypeIndex(long long int arg_typeFunc)
+std::int32_t ButiScript::Value::GetTypeIndex(std::int64_t arg_typeFunc)
 {
 	return GetTypeIndexMap().at(arg_typeFunc);
 }
@@ -126,5 +126,5 @@ private:
 	T** p_memoryAddress;
 };
 
-auto typeMapRelease = MemoryReleaser<std::map<long long,int>>(&p_map_typeIndex);
+auto typeMapRelease = MemoryReleaser<std::map<std::int64_t,std::int32_t>>(&p_map_typeIndex);
 #endif

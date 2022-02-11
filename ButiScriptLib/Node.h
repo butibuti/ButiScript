@@ -73,27 +73,27 @@ namespace ButiScript {
 
 	class Node :public std::enable_shared_from_this<Node>{
 	public:
-		Node(const int arg_op, const Node_t& arg_left, const Node_t& arg_right)
+		Node(const std::int32_t arg_op, const Node_t& arg_left, const Node_t& arg_right)
 			: op(arg_op), leftNode(arg_left), rightNode(arg_right), num_int(0), num_float(0)
 		{
 		}
-		Node(const int arg_op, const Node_t& arg_left)
+		Node(const std::int32_t arg_op, const Node_t& arg_left)
 			: op(arg_op), leftNode(arg_left), num_int(0), num_float(0)
 		{
 		}
-		Node(const int arg_op, const int arg_number)
+		Node(const std::int32_t arg_op, const std::int32_t arg_number)
 			: op(arg_op), num_int(arg_number)
 		{
 		}
-		Node(const int arg_op, float arg_number)
+		Node(const std::int32_t arg_op, float arg_number)
 			: op(arg_op), num_float(arg_number)
 		{
 		}
-		Node(const int arg_op, const std::string& arg_str)
+		Node(const std::int32_t arg_op, const std::string& arg_str)
 			: op(arg_op), num_int(0), strData(arg_str)
 		{
 		}
-		Node(const int arg_op, const char* arg_buffer, const char* arg_size)
+		Node(const std::int32_t arg_op, const char* arg_buffer, const char* arg_size)
 			: op(arg_op), strData(arg_buffer, arg_size)
 		{
 		}
@@ -101,53 +101,53 @@ namespace ButiScript {
 		{
 		}
 
-		int Op() const { return op; }
-		int GetNumber() const { return num_int; }
+		std::int32_t Op() const { return op; }
+		std::int32_t GetNumber() const { return num_int; }
 		const std::string& GetString() const { return strData; }
 		Node_t GetLeft() const { return leftNode; }
 		Node_t GetRight() const { return rightNode; }
 
-		virtual int Push(Compiler* arg_compiler) const;
-		virtual int PushClone(Compiler* arg_compiler) const {
+		virtual std::int32_t Push(Compiler* arg_compiler) const;
+		virtual std::int32_t PushClone(Compiler* arg_compiler) const {
 			return Push(arg_compiler);
 		}
-		virtual int Pop(Compiler* arg_compiler) const;
+		virtual std::int32_t Pop(Compiler* arg_compiler) const;
 
-		virtual int GetType(Compiler* arg_compiler)const;
+		virtual std::int32_t GetType(Compiler* arg_compiler)const;
 
 		virtual const ValueTag* GetValueTag(Compiler* arg_compiler)const;
 		virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* arg_compiler)const;
-		virtual int EnumType(Compiler* arg_compiler)const {return TYPE_INTEGER;}
-		int GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg,const std::vector<int>& arg_vec_temps)const;
+		virtual std::int32_t EnumType(Compiler* arg_compiler)const {return TYPE_INTEGER;}
+		std::int32_t GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg,const std::vector<std::int32_t>& arg_vec_temps)const;
 
-		int Assign(Compiler* arg_compiler) const;
-		int Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg, const std::vector<int>& arg_vec_temps) const;
+		std::int32_t Assign(Compiler* arg_compiler) const;
+		std::int32_t Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg, const std::vector<std::int32_t>& arg_vec_temps) const;
 
 		virtual Node_t CreateMethod(Node_t arg_node);
 
 		virtual void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const;
-		static Node_t make_node(const int arg_op, const float arg_number, const Compiler* arg_compiler)
+		static Node_t make_node(const std::int32_t arg_op, const float arg_number, const Compiler* arg_compiler)
 		{
 			if (arg_op == OP_FLOAT)
 				return Node_t(new Node(arg_op, arg_number));
 
-			return Node_t(new Node(arg_op, (int)arg_number));
+			return Node_t(new Node(arg_op, (std::int32_t)arg_number));
 		}
 
-		static Node_t make_node(const int arg_op, const std::string& arg_str, const Compiler* arg_compiler);
-		static Node_t make_node(const int arg_op, Node_t arg_left, const Compiler* arg_compiler);
-		static Node_t make_node(const int arg_op, Node_t arg_left,const std::string arg_memberName,const Compiler* arg_compiler);
-		static Node_t make_node(const int arg_op, Node_t arg_left, Node_t arg_right);
-		static Node_t make_node(const int arg_op, Node_t arg_left, Node_t arg_right,const Compiler* arg_compiler);
-		static Node_t make_node(const int arg_op, Node_t arg_left, NodeList_t arg_list);
-		static Node_t make_node(const int arg_op, Node_t arg_left, const std::vector<int>& arg_templateTypes);
+		static Node_t make_node(const std::int32_t arg_op, const std::string& arg_str, const Compiler* arg_compiler);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, const Compiler* arg_compiler);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left,const std::string arg_memberName,const Compiler* arg_compiler);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_right);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_right,const Compiler* arg_compiler);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, NodeList_t arg_list);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, const std::vector<std::int32_t>& arg_templateTypes);
 
 		void SetLeftNode(Node_t arg_node) { leftNode = arg_node; }
 		void SetRightNode(Node_t arg_node) { rightNode = arg_node; }
 
 	protected:
-		int op;
-		int num_int;
+		std::int32_t op;
+		std::int32_t num_int;
 		float num_float;
 		std::string strData;
 		Node_t leftNode;
@@ -159,7 +159,7 @@ namespace ButiScript {
 	public:
 		Node_Null():Node(OP_NULL,"null") {
 		}
-		int Push(Compiler* arg_compiler)const override;
+		std::int32_t Push(Compiler* arg_compiler)const override;
 	};
 
 	// 変数ノード
@@ -171,9 +171,9 @@ namespace ButiScript {
 		{
 		};
 		const ValueTag* GetValueTag(Compiler* arg_compiler)const override;
-		int Push(Compiler* arg_compiler) const override;
-		int PushClone(Compiler* arg_compiler) const override;
-		int Pop(Compiler* arg_compiler) const override;
+		std::int32_t Push(Compiler* arg_compiler) const override;
+		std::int32_t PushClone(Compiler* arg_compiler) const override;
+		std::int32_t Pop(Compiler* arg_compiler) const override;
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	};
 
@@ -204,40 +204,40 @@ namespace ButiScript {
 	class Node_Member;
 	class Node_function : public Node {
 	public:
-		Node_function(int arg_op, const Node_t& arg_node, const NodeList_t arg_list)
+		Node_function(std::int32_t arg_op, const Node_t& arg_node, const NodeList_t arg_list)
 			: Node(arg_op, arg_node), nodeList(arg_list)
 		{
 		}
-		Node_function(int arg_op, const Node_t& arg_node, const std::vector<int>& arg_templateTypes)
+		Node_function(std::int32_t arg_op, const Node_t& arg_node, const std::vector<std::int32_t>& arg_templateTypes)
 			: Node(arg_op, arg_node), vec_templateTypes(arg_templateTypes)
 		{
 		}
 		void SetArgmentList(NodeList_t arg_List) {
 			nodeList = arg_List;
 		}
-		virtual int Push(Compiler* arg_compiler) const;
-		virtual int Pop(Compiler* arg_compiler) const;
-		int GetType(Compiler* arg_compiler)const override;
+		virtual std::int32_t Push(Compiler* arg_compiler) const;
+		virtual std::int32_t Pop(Compiler* arg_compiler) const;
+		std::int32_t GetType(Compiler* arg_compiler)const override;
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 		Node_t CreateMethod(Node_t arg_node)override;
 	private:
 		NodeList_t nodeList;
-		std::vector<int> vec_templateTypes;
+		std::vector<std::int32_t> vec_templateTypes;
 	};
 
 	//メンバ変数へのアクセスノード
 	class Node_Member :public Node {
 	public:
-		Node_Member(const int arg_op, const Node_t& arg_valueNode,const std::string& arg_memberName)
+		Node_Member(const std::int32_t arg_op, const Node_t& arg_valueNode,const std::string& arg_memberName)
 			:Node(arg_op, arg_valueNode)
 		{
 			strData = (arg_memberName);
 		}
-		virtual int Push(Compiler* arg_compiler) const;
-		int PushClone(Compiler* arg_compiler) const;
-		virtual int Pop(Compiler* arg_compiler) const;
-		int GetType(Compiler* arg_compiler)const override;
+		virtual std::int32_t Push(Compiler* arg_compiler) const;
+		std::int32_t PushClone(Compiler* arg_compiler) const;
+		virtual std::int32_t Pop(Compiler* arg_compiler) const;
+		std::int32_t GetType(Compiler* arg_compiler)const override;
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
@@ -247,18 +247,18 @@ namespace ButiScript {
 	class Node_Method :public Node {
 	public:
 		
-		Node_Method(const int arg_op, const Node_t arg_funcNode, const Node_t arg_valueNode, const NodeList_t list, const std::vector<int>& arg_templateTypes)
+		Node_Method(const std::int32_t arg_op, const Node_t arg_funcNode, const Node_t arg_valueNode, const NodeList_t list, const std::vector<std::int32_t>& arg_templateTypes)
 			:Node(arg_op, arg_funcNode,arg_valueNode), nodeList(list),vec_templateTypes(arg_templateTypes)
 		{
 		}
-		virtual int Push(Compiler* arg_compiler) const;
-		virtual int Pop(Compiler* arg_compiler) const;
-		int GetType(Compiler* arg_compiler)const override;
+		virtual std::int32_t Push(Compiler* arg_compiler) const;
+		virtual std::int32_t Pop(Compiler* arg_compiler) const;
+		std::int32_t GetType(Compiler* arg_compiler)const override;
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 		NodeList_t nodeList;
-		std::vector<int> vec_templateTypes;
+		std::vector<std::int32_t> vec_templateTypes;
 	};
 
 	//enum呼び出しのノード
@@ -268,10 +268,10 @@ namespace ButiScript {
 			strData = arg_identiferName;
 		}
 
-		virtual int Push(Compiler* arg_compiler) const;
-		virtual int Pop(Compiler* arg_compiler) const;
-		int GetType(Compiler* arg_compiler)const override;
-		int EnumType(Compiler* arg_compiler)const override;
+		virtual std::int32_t Push(Compiler* arg_compiler) const;
+		virtual std::int32_t Pop(Compiler* arg_compiler) const;
+		std::int32_t GetType(Compiler* arg_compiler)const override;
+		std::int32_t EnumType(Compiler* arg_compiler)const override;
 	};
 
 	//関数オブジェクトのノード
@@ -280,9 +280,9 @@ namespace ButiScript {
 		Node_FunctionObject(const std::string& arg_identiferName) : Node(OP_INT,arg_identiferName) {
 			strData = arg_identiferName;
 		}
-		virtual int Push(Compiler* arg_compiler) const;
-		virtual int Pop(Compiler* arg_compiler) const;
-		int GetType(Compiler* arg_compiler)const override;
+		virtual std::int32_t Push(Compiler* arg_compiler) const;
+		virtual std::int32_t Pop(Compiler* arg_compiler) const;
+		std::int32_t GetType(Compiler* arg_compiler)const override;
 	};
 
 	// ステートメント
@@ -327,35 +327,35 @@ namespace ButiScript {
 			std::cerr << "内部エラー：Add(std::vector< node>)が呼ばれました" << std::endl;
 		}
 
-		virtual void Add(const int arg_index, Statement_t arg_statement)
+		virtual void Add(const std::int32_t arg_index, Statement_t arg_statement)
 		{
 			std::cerr << "内部エラー：Add(index, statement)が呼ばれました" << std::endl;
 		}
 
-		virtual void Add(const int arg_index, Node_t arg_node)
+		virtual void Add(const std::int32_t arg_index, Node_t arg_node)
 		{
 			std::cerr << "内部エラー：Add(index, node)が呼ばれました" << std::endl;
 		}
 
-		virtual int Analyze(Compiler* arg_compiler) = 0;
-		virtual int Regist(Compiler* arg_compiler) { return 0; };
+		virtual std::int32_t Analyze(Compiler* arg_compiler) = 0;
+		virtual std::int32_t Regist(Compiler* arg_compiler) { return 0; };
 		virtual void LambdaCapture(std::map<std::string,const ValueTag*>& arg_captureList, Compiler* arg_compiler){}
-		virtual int Case_Analyze(Compiler* arg_compiler, int* arg_default_label)
+		virtual std::int32_t Case_Analyze(Compiler* arg_compiler, std::int32_t* arg_default_label)
 		{
 			return 0;
 		}
 
-		static Statement_t make_statement(const int arg_vec_state);
-		static Statement_t make_statement(const int arg_vec_state,const int );
-		static Statement_t make_statement(const int arg_vec_state, Node_t arg_node);
-		static Statement_t make_statement(const int arg_vec_state, Block_t arg_block);
+		static Statement_t make_statement(const std::int32_t arg_vec_state);
+		static Statement_t make_statement(const std::int32_t arg_vec_state,const std::int32_t );
+		static Statement_t make_statement(const std::int32_t arg_vec_state, Node_t arg_node);
+		static Statement_t make_statement(const std::int32_t arg_vec_state, Block_t arg_block);
 
 	};
 
 	// nop
 	class Statement_nop : public Statement {
 	public:
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 	};
 
 	class Statement_unary :public Statement {
@@ -364,7 +364,7 @@ namespace ButiScript {
 			: node(arg_node)
 		{
 		}
-		int Analyze(Compiler* arg_compiler)override;
+		std::int32_t Analyze(Compiler* arg_compiler)override;
 	private:
 		Node_t node;
 	};
@@ -377,7 +377,7 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
@@ -392,7 +392,7 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
@@ -407,29 +407,29 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* arg_compiler);
-		int case_Analyze(Compiler* arg_compiler, int* arg_default_label);
+		std::int32_t Analyze(Compiler* arg_compiler);
+		std::int32_t case_Analyze(Compiler* arg_compiler, std::int32_t* arg_default_label);
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
 		Node_t node;
-		int label_;
+		std::int32_t label_;
 	};
 
 	// default
 	class Statement_default : public Statement {
 	public:
-		int Analyze(Compiler* arg_compiler);
-		int case_Analyze(Compiler* arg_compiler, int* arg_default_label);
+		std::int32_t Analyze(Compiler* arg_compiler);
+		std::int32_t case_Analyze(Compiler* arg_compiler, std::int32_t* arg_default_label);
 
 	private:
-		int label_;
+		std::int32_t label_;
 	};
 
 	// break
 	class Statement_break : public Statement {
 	public:
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 	};
 
 	// return
@@ -440,7 +440,7 @@ namespace ButiScript {
 			node = arg_node;
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
@@ -459,12 +459,12 @@ namespace ButiScript {
 			node = arg_node;
 		}
 
-		void Add(const int arg_index, Statement_t arg_statement)
+		void Add(const std::int32_t arg_index, Statement_t arg_statement)
 		{
 			vec_statement[arg_index] = arg_statement;
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
@@ -480,12 +480,12 @@ namespace ButiScript {
 			vec_statement = arg_statement;
 		}
 
-		void Add(const int arg_index, Node_t arg_node)
+		void Add(const std::int32_t arg_index, Node_t arg_node)
 		{
 			node[arg_index] = arg_node;
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
@@ -506,7 +506,7 @@ namespace ButiScript {
 			node = arg_node;
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
@@ -527,7 +527,7 @@ namespace ButiScript {
 			vec_statement.push_back(arg_statement);
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
@@ -543,7 +543,7 @@ namespace ButiScript {
 		{
 		}
 
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 
 	private:
@@ -554,11 +554,11 @@ namespace ButiScript {
 
 	class Declaration : public Statement {
 	public:
-		Declaration(const int arg_type)
+		Declaration(const std::int32_t arg_type)
 			:valueType(arg_type), isFunction(false)
 		{
 		}
-		Declaration(const int arg_type,const AccessModifier arg_access)
+		Declaration(const std::int32_t arg_type,const AccessModifier arg_access)
 			:valueType(arg_type), isFunction(false)
 		{
 			if (arg_access == AccessModifier::Public || arg_access == AccessModifier::Private||arg_access==AccessModifier::Protected) {
@@ -566,7 +566,7 @@ namespace ButiScript {
 			}
 		}
 
-		Declaration(const int arg_type, const std::string& arg_name)
+		Declaration(const std::int32_t arg_type, const std::string& arg_name)
 			:valueType(arg_type), name(arg_name), isFunction(true)
 		{
 		}
@@ -580,24 +580,24 @@ namespace ButiScript {
 			vec_node=(arg_node);
 		}
 
-		void Add(const int arg_type)
+		void Add(const std::int32_t arg_type)
 		{
 			vec_argType.push_back(arg_type);
 		}
 
-		int PushCompiler(Compiler* arg_compiler);
-		int Analyze(Compiler* arg_compiler);
+		std::int32_t PushCompiler(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
 
 		void Define(Compiler* arg_compiler);
 		bool IsFunction()const {
 			return isFunction;
 		}
 	private:
-		int valueType;					
+		std::int32_t valueType;					
 		bool isFunction;				
 		std::vector<Node_t> vec_node;	
 		std::string name;			
-		std::vector<int> vec_argType;		
+		std::vector<std::int32_t> vec_argType;		
 		AccessModifier accessType=AccessModifier::Public;
 	};
 
@@ -616,8 +616,8 @@ namespace ButiScript {
 			vec_state.push_back(arg_state);
 		}
 
-		int Analyze(Compiler* arg_compiler, std::vector<Function_t>& arg_captureCheck);
-		inline int Analyze(Compiler* arg_compiler) {
+		std::int32_t Analyze(Compiler* arg_compiler, std::vector<Function_t>& arg_captureCheck);
+		inline std::int32_t Analyze(Compiler* arg_compiler) {
 			static std::vector<Function_t> captureCheckDummy;
 			return Analyze(arg_compiler, captureCheckDummy);
 		}
@@ -656,10 +656,10 @@ namespace ButiScript {
 		{
 			block = arg_block;
 		}
-		int PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
-		int PushCompiler_sub(Compiler* arg_compiler);
-		virtual int Analyze(Compiler* arg_compiler,FunctionTable* arg_p_funcTable =nullptr);
-		void set_type(const int arg_type) {
+		std::int32_t PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
+		std::int32_t PushCompiler_sub(Compiler* arg_compiler);
+		virtual std::int32_t Analyze(Compiler* arg_compiler,FunctionTable* arg_p_funcTable =nullptr);
+		void set_type(const std::int32_t arg_type) {
 			valueType = arg_type;
 		}
 		void AddSubFunction(Function_t);
@@ -675,7 +675,7 @@ namespace ButiScript {
 		}
 	protected:
 		Function(){}
-		int valueType;
+		std::int32_t valueType;
 		std::string name,searchName;
 		std::vector<ArgDefine> args;
 		AccessModifier accessType=AccessModifier::Public;
@@ -687,12 +687,12 @@ namespace ButiScript {
 
 	class Lambda :public Function {
 	public:
-		Lambda(const int arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
-		int PushCompiler(Compiler* arg_compiler);
-		int Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
+		Lambda(const std::int32_t arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
+		std::int32_t PushCompiler(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
 		void LambdaCapture(Compiler* arg_compiler)override;
 	private:
-		int lambdaIndex;
+		std::int32_t lambdaIndex;
 		std::map<std::string, const ValueTag*> map_lambdaCapture;
 	};
 	using Lambda_t = std::shared_ptr<Lambda>;
@@ -703,13 +703,13 @@ namespace ButiScript {
 			: name(arg_name)
 		{
 		}
-		int Analyze(Compiler* arg_compiler);
-		int Regist(Compiler* arg_compiler);
-		int PushCompiler(Compiler* arg_compiler);
+		std::int32_t Analyze(Compiler* arg_compiler);
+		std::int32_t Regist(Compiler* arg_compiler);
+		std::int32_t PushCompiler(Compiler* arg_compiler);
 		void RegistMethod(Function_t arg_method, Compiler* arg_compiler);
-		void SetValue(const std::string& arg_name, const int arg_type,const AccessModifier arg_accessType);
+		void SetValue(const std::string& arg_name, const std::int32_t arg_type,const AccessModifier arg_accessType);
 	private:
-		std::map < std::string, std::pair< int,AccessModifier>> map_values;
+		std::map < std::string, std::pair< std::int32_t,AccessModifier>> map_values;
 		std::vector<Function_t> vec_methods;
 		std::string name;
 	};
@@ -724,11 +724,11 @@ namespace ButiScript {
 		Enum(const std::string& arg_typeName):typeName(arg_typeName){}
 
 		void SetIdentifer(const std::string& arg_name);
-		void SetIdentifer(const std::string& arg_name,const int arg_value);
-		int Analyze(Compiler* arg_compiler);
+		void SetIdentifer(const std::string& arg_name,const std::int32_t arg_value);
+		std::int32_t Analyze(Compiler* arg_compiler);
 	private:
 		std::string typeName;
-		std::map<std::string, int> map_identifer;
+		std::map<std::string, std::int32_t> map_identifer;
 	};
 	using Enum_t = std::shared_ptr<Enum>;
 }

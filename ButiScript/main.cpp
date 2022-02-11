@@ -1,16 +1,16 @@
 #include "stdafx.h"
 class Sample {
 public:
-	int count = 0;
+	std::int32_t count = 0;
 	Sample() {
-		static int c_s = 0;
+		static std::int32_t c_s = 0;
 		count = c_s;
 		c_s++;
 	}
 	~Sample() {
-		int i = 0;
+		std::int32_t i = 0;
 	}
-	int TestMethod() {
+	std::int32_t TestMethod() {
 		std::cout << "Sample::TestMethod() is Called! count:"<<count<<std::endl;
 		return count;
 	}
@@ -31,20 +31,20 @@ T CreateInstance() {
 #include "Compiler.h"
 
 
-int main(const int argCount, const char* args[])
+std::int32_t main(const std::int32_t argCount, const char* args[])
 {
 	ButiScript::Compiler driver;
 	ButiScript::SystemTypeRegister::GetInstance()->RegistSharedSystemType<Sample>("Sample", "Sample");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample, int, &Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample,int,const std::string&, &Sample::TemplateMethod<int>, &ButiScript::VirtualMachine::GetSharedTypePtr ,&ButiScript::VirtualMachine::GetTypePtr >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TemplateMethod", "s", { TYPE_INTEGER });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample, std::int32_t, &Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample,std::int32_t,const std::string&, &Sample::TemplateMethod<std::int32_t>, &ButiScript::VirtualMachine::GetSharedTypePtr ,&ButiScript::VirtualMachine::GetTypePtr >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TemplateMethod", "s", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample,float, const std::string&, &Sample::TemplateMethod<float>, &ButiScript::VirtualMachine::GetSharedTypePtr, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_FLOAT, "TemplateMethod", "s", {TYPE_FLOAT});
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::shared_ptr<Sample>, &CreateSample >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<int, &CreateInstance<int>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::int32_t, &CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<float, &CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
 
 	driver.RegistDefaultSystems(); 
 	bool compile_result=false;
-	for(int i=1;i<argCount;i++)
+	for(std::int32_t i=1;i<argCount;i++)
 	{
 		std::shared_ptr< ButiScript::CompiledData> data = std::make_shared<ButiScript::CompiledData>();
 		compile_result = driver.Compile(args[i], *data);
@@ -59,7 +59,7 @@ int main(const int argCount, const char* args[])
 		auto res= driver.InputCompiledData(StringHelper::GetDirectory(args[i]) + "/output/" + StringHelper::GetFileName(args[i], false) + ".cbs", *data);
 		if (!res) {
 			ButiScript::VirtualMachine* p_clone; 
-			int returnCode=0;
+			std::int32_t returnCode=0;
 			{
 
 				ButiScript::VirtualMachine machine(data);
@@ -71,7 +71,7 @@ int main(const int argCount, const char* args[])
 
 				std::cout << args[i] << "‚ÌmainŽÀs" << std::endl;
 				std::cout << "////////////////////////////////////" << std::endl;
-				returnCode= machine.Execute<int>("main");
+				returnCode= machine.Execute<std::int32_t>("main");
 				std::cout << "////////////////////////////////////" << std::endl;
 				std::cout << args[i] << "‚Ìreturn : " << std::to_string(returnCode) << std::endl;
 

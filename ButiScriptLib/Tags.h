@@ -22,11 +22,11 @@ public:
 	{
 	}
 
-	ArgDefine(const int arg_type)
+	ArgDefine(const std::int32_t arg_type)
 		: valueType(arg_type)
 	{
 	}
-	ArgDefine(const int arg_type, const std::string& arg_name)
+	ArgDefine(const std::int32_t arg_type, const std::string& arg_name)
 		: valueType(arg_type), name(arg_name)
 	{
 	}
@@ -41,11 +41,11 @@ public:
 		name = arg_name;
 	}
 
-	int GetType() const { return valueType; }
+	std::int32_t GetType() const { return valueType; }
 	const std::string& GetName() const { return name; }
 
 private:
-	int valueType;
+	std::int32_t valueType;
 	std::string name;
 };
 class EnumTag {
@@ -53,13 +53,13 @@ public:
 	EnumTag(){}
 	EnumTag(const std::string& arg_typeName):type_Name(arg_typeName){}
 
-	void SetValue(const std::string& arg_identiferName, const int arg_value) {
+	void SetValue(const std::string& arg_identiferName, const std::int32_t arg_value) {
 		if (map_identifers.count(arg_identiferName)) {
 			return;
 		}
 		map_identifers.emplace(arg_identiferName, arg_value);
 	}
-	int GetValue(const std::string& arg_identiferName)const {
+	std::int32_t GetValue(const std::string& arg_identiferName)const {
 		return map_identifers.at(arg_identiferName);
 	}
 	bool ExistenceIdentifers(const std::string& arg_identiferName)const {
@@ -68,42 +68,42 @@ public:
 	const std::string& GetTypeName()const {
 		return type_Name;
 	}
-	const std::string& GetValueName(const int value)const {
+	const std::string& GetValueName(const std::int32_t value)const {
 		return map_identifer_value.at(value);
 	}
 	void OutputFile(std::ofstream& arg_out)const {
-		int nameSize = type_Name.size();
-		arg_out.write((char*)&nameSize, sizeof(int));
+		std::int32_t nameSize = type_Name.size();
+		arg_out.write((char*)&nameSize, sizeof(std::int32_t));
 		arg_out.write(type_Name.c_str(), nameSize);
 
-		int identSize = map_identifers.size();
-		arg_out.write((char*)&identSize, sizeof(int));
+		std::int32_t identSize = map_identifers.size();
+		arg_out.write((char*)&identSize, sizeof(std::int32_t));
 		for (auto itr = map_identifers.begin(), end = map_identifers.end(); itr != end; itr++) {
-			int identiferSize = itr->first.size();
-			arg_out.write((char*)&identiferSize, sizeof(int));
+			std::int32_t identiferSize = itr->first.size();
+			arg_out.write((char*)&identiferSize, sizeof(std::int32_t));
 			arg_out.write(itr->first.c_str(), identiferSize);
-			arg_out.write((char*)&itr->second, sizeof(int));
+			arg_out.write((char*)&itr->second, sizeof(std::int32_t));
 
 		}
 	}
 	void InputFile(std::ifstream& arg_in) {
-		int nameSize = 0;
-		arg_in.read((char*)&nameSize, sizeof(int));
+		std::int32_t nameSize = 0;
+		arg_in.read((char*)&nameSize, sizeof(std::int32_t));
 		char* buff =(char*) malloc(nameSize);
 		arg_in.read(buff, nameSize);
 		type_Name = std::string(buff,nameSize);
 		delete buff;
-		int identSize = 0;
-		arg_in.read((char*)&identSize, sizeof(int));
-		for (int i = 0; i < identSize;i++) {
-			int identiferSize = 0;
-			arg_in.read((char*)&identiferSize, sizeof(int));
+		std::int32_t identSize = 0;
+		arg_in.read((char*)&identSize, sizeof(std::int32_t));
+		for (std::int32_t i = 0; i < identSize;i++) {
+			std::int32_t identiferSize = 0;
+			arg_in.read((char*)&identiferSize, sizeof(std::int32_t));
 			buff = (char*)malloc(identiferSize);
 			arg_in.read(buff, identiferSize);
 			auto identifer = std::string(buff,identiferSize);
 			delete buff;
-			int value = 0;
-			arg_in.read((char*)&value, sizeof(int));
+			std::int32_t value = 0;
+			arg_in.read((char*)&value, sizeof(std::int32_t));
 			map_identifers.emplace(identifer, value);
 		}
 	}
@@ -114,15 +114,15 @@ public:
 			}
 		}
 	}
-	const std::map<int, std::string>& GetIdentiferMap()const {
+	const std::map<std::int32_t, std::string>& GetIdentiferMap()const {
 		return map_identifer_value;
 	}
 	bool isSystem;
-	int typeIndex;
+	std::int32_t typeIndex;
 private:
 	std::string type_Name;
-	std::map<std::string, int>map_identifers;
-	std::map<int, std::string>map_identifer_value;
+	std::map<std::string, std::int32_t>map_identifers;
+	std::map<std::int32_t, std::string>map_identifer_value;
 };
 class EnumTable {
 public:
@@ -155,12 +155,12 @@ public:
 			}
 		}
 	}
-	int Size()const {
+	std::int32_t Size()const {
 		return map_enumTag.size();
 	}
-	EnumTag* operator[](const int arg_index) {
+	EnumTag* operator[](const std::int32_t arg_index) {
 		auto itr = map_enumTag.begin();
-		for (int i = 0; i < arg_index; i++) { itr++; }
+		for (std::int32_t i = 0; i < arg_index; i++) { itr++; }
 		return &itr->second;
 	}
 private:
@@ -173,20 +173,20 @@ public:
 	ValueTag() : address(-1), originalAddress(-1), valueType(TYPE_INTEGER), currentSize(1), isGlobal(false)
 	{
 	}
-	ValueTag(const int arg_addr, const int arg_type, const int arg_size, const bool arg_global ,const AccessModifier arg_access)
+	ValueTag(const std::int32_t arg_addr, const std::int32_t arg_type, const std::int32_t arg_size, const bool arg_global ,const AccessModifier arg_access)
 		: address(arg_addr),originalAddress(arg_addr), valueType(arg_type), currentSize(arg_size), isGlobal(arg_global),access(arg_access)
 	{
 	}
 
-	int		valueType;
-	int		currentSize;
+	std::int32_t		valueType;
+	std::int32_t		currentSize;
 	bool	isGlobal;
 	AccessModifier access=AccessModifier::Public;
-	int GetAddress()const { return address; }
+	std::int32_t GetAddress()const { return address; }
 	
 private:
 
-	int		address,originalAddress;
+	std::int32_t		address,originalAddress;
 };
 class ValueTable {
 private:
@@ -194,7 +194,7 @@ private:
 	using const_iter = std::map<std::string, ValueTag>::const_iterator;
 
 public:
-	ValueTable(const int arg_start_addr = 0, const bool arg_isFunctionBlockTable = false) : addr(arg_start_addr), isGlobal(false), isFunction(true)
+	ValueTable(const std::int32_t arg_start_addr = 0, const bool arg_isFunctionBlockTable = false) : addr(arg_start_addr), isGlobal(false), isFunction(true)
 	{
 	}
 
@@ -203,7 +203,7 @@ public:
 		isGlobal = true;
 	}
 
-	bool Add(const int arg_type, const std::string& arg_name,const AccessModifier arg_access, const int arg_size = 1)
+	bool Add(const std::int32_t arg_type, const std::string& arg_name,const AccessModifier arg_access, const std::int32_t arg_size = 1)
 	{
 		if (!map_variables.count(arg_name)) {
 			map_variables.emplace(arg_name, ValueTag(addr, arg_type, arg_size, isGlobal,arg_access));
@@ -222,30 +222,30 @@ public:
 		return nullptr;
 	}
 
-	bool add_arg(const int arg_type, const std::string& arg_name, const int arg_addr)
+	bool add_arg(const std::int32_t arg_type, const std::string& arg_name, const std::int32_t arg_addr)
 	{
 		auto result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public)));
 		argmentsCount++;
 		return result.second;
 	}
-	bool add_capture(const int arg_type, const std::string& arg_name, const int arg_addr) {
+	bool add_capture(const std::int32_t arg_type, const std::string& arg_name, const std::int32_t arg_addr) {
 
 		auto result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false, AccessModifier::Public)));
 		addr++;
 		return result.second;
 	}
 
-	int size() const { return addr; }
-	int valueCount()const { return map_variables.size(); }
+	std::int32_t size() const { return addr; }
+	std::int32_t valueCount()const { return map_variables.size(); }
 
-	int AddressAdd(const int arg_v) {
+	std::int32_t AddressAdd(const std::int32_t arg_v) {
 		auto difference = arg_v +( map_variables.size() - 1-argmentsCount);
 		for (auto itr = map_variables.begin(), end = map_variables.end(); itr != end; itr++) {
 			itr->second.address = itr->second.originalAddress+ difference;
 		}
 		return difference+argmentsCount;
 	}
-	int AddressSub(const int arg_v) {
+	std::int32_t AddressSub(const std::int32_t arg_v) {
 
 		auto difference = arg_v - (map_variables.size() - 1-argmentsCount);
 		for (auto itr = map_variables.begin(), end = map_variables.end(); itr != end; itr++) {
@@ -261,18 +261,18 @@ public:
 	}
 
 	void Alloc(Compiler* arg_comp)const;
-	ValueTag& operator[] (const int arg_index) {
+	ValueTag& operator[] (const std::int32_t arg_index) {
 		auto itr = map_variables.begin();
-		for (int i = 0; i < arg_index; i++) {
+		for (std::int32_t i = 0; i < arg_index; i++) {
 			itr++;
 		}
 
 		return itr->second;
 	}
 
-	const std::string& GetVariableName(const int arg_index)const {
+	const std::string& GetVariableName(const std::int32_t arg_index)const {
 		auto itr = map_variables.begin();
-		for (int i = 0; i < arg_index; i++) {
+		for (std::int32_t i = 0; i < arg_index; i++) {
 			itr++;
 		}
 
@@ -305,16 +305,16 @@ bool IsFunctionBlock()const { return isFunction; }
 
 private:
 	std::map <std::string, ValueTag> map_variables;
-	std::vector < int> vec_variableTypes;
-	int		addr,argmentsCount=0;
+	std::vector < std::int32_t> vec_variableTypes;
+	std::int32_t addr,argmentsCount=0;
 	bool	isGlobal,isFunction;
 };
 class TypeTable;
 
-static bool TypeCheck(const int arg_left, const int arg_right, const TypeTable* arg_table);
-static bool TypeCheck_strict(const int arg_left, const int arg_right) {
-	int left = arg_left & ~TYPE_REF;
-	int right = arg_right & ~TYPE_REF;
+static bool TypeCheck(const std::int32_t arg_left, const std::int32_t arg_right, const TypeTable* arg_table);
+static bool TypeCheck_strict(const std::int32_t arg_left, const std::int32_t arg_right) {
+	std::int32_t left = arg_left & ~TYPE_REF;
+	std::int32_t right = arg_right & ~TYPE_REF;
 	//同じ型のチェック
 	if (left == right) {
 		return true;
@@ -338,11 +338,11 @@ class FunctionTag {
 		FunctionTag(const std::string& arg_name):name(arg_name)
 		{
 		}
-		FunctionTag(const int arg_type,const std::string &arg_name) 
+		FunctionTag(const std::int32_t arg_type,const std::string &arg_name) 
 			: valueType(arg_type), flags(0), index(0), name(arg_name)
 		{
 		}
-		void SetArg(const int arg_type)
+		void SetArg(const std::int32_t arg_type)
 		{
 			vec_args.push_back(arg_type);
 		}
@@ -355,7 +355,7 @@ class FunctionTag {
 			}
 		}
 
-		void SetArgs(const std::vector<int>& arg_vec_args)
+		void SetArgs(const std::vector<std::int32_t>& arg_vec_args)
 		{
 			size_t size = arg_vec_args.size();
 			for (size_t i = 0; i < size; i++) {
@@ -363,15 +363,15 @@ class FunctionTag {
 			}
 		}
 
-		bool SetArgs(const std::string& args, const std::map<std::string, int>& arg_map_argmentChars)
+		bool SetArgs(const std::string& args, const std::map<std::string, std::int32_t>& arg_map_argmentChars)
 		{
 			if (args.size() == 0) {
 				return true;
 			}
 
 			auto splited = std::vector<std::string>();
-			int first = 0;
-			int last = args.find_first_of(",");
+			std::int32_t first = 0;
+			std::int32_t last = args.find_first_of(",");
 			if (last == std::string::npos) {
 
 				splited.push_back(args);
@@ -389,7 +389,7 @@ class FunctionTag {
 				}
 			}
 
-			for (int i = 0; i < splited.size(); i++) {
+			for (std::int32_t i = 0; i < splited.size(); i++) {
 				if (!arg_map_argmentChars.count(splited[i])) {
 					return false;
 				}
@@ -418,14 +418,14 @@ class FunctionTag {
 			//厳密チェック
 			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck(arg_vec_args[i].GetType(), (int)vec_args[i],arg_typeTable))
+				if (!TypeCheck(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i],arg_typeTable))
 					return false;
 			}
 
 			return true;
 		}
 
-		bool CheckArgList(const std::vector<int>& arg_vec_args, const TypeTable* arg_typeTable) const
+		bool CheckArgList(const std::vector<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
 		{
 			// 引数が無い場合
 			if (arg_vec_args.empty())
@@ -439,7 +439,7 @@ class FunctionTag {
 			//厳密チェック
 			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck(arg_vec_args[i], (int)vec_args[i],arg_typeTable))
+				if (!TypeCheck(arg_vec_args[i], (std::int32_t)vec_args[i],arg_typeTable))
 					return false;
 			}
 			return true;
@@ -461,14 +461,14 @@ class FunctionTag {
 			//厳密チェック
 			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck_strict(arg_vec_args[i].GetType(), (int)vec_args[i]))
+				if (!TypeCheck_strict(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i]))
 					return false;
 			}
 
 			return true;
 		}
 
-		bool CheckArgList_strict(const std::vector<int>& arg_vec_args) const
+		bool CheckArgList_strict(const std::vector<std::int32_t>& arg_vec_args) const
 		{
 			// 引数が無い場合
 			if (arg_vec_args.empty())
@@ -482,7 +482,7 @@ class FunctionTag {
 			//厳密チェック
 			size_t size = vec_args.size();
 			for (size_t i = 0; i < size; i++) {
-				if (!TypeCheck_strict(arg_vec_args[i], (int)vec_args[i]))
+				if (!TypeCheck_strict(arg_vec_args[i], (std::int32_t)vec_args[i]))
 					return false;
 			}
 			return true;
@@ -490,19 +490,19 @@ class FunctionTag {
 
 		// 指定の引数の型を得る
 
-		int GetArg(const int arg_index) const
+		std::int32_t GetArg(const std::int32_t arg_index) const
 		{
 			return vec_args[arg_index];
 		}
 
-		int ArgSize() const { return (int)vec_args.size(); }
+		std::int32_t ArgSize() const { return (std::int32_t)vec_args.size(); }
 
-		void SetIndex(const int arg_index) { index = arg_index; }
+		void SetIndex(const std::int32_t arg_index) { index = arg_index; }
 		void SetDeclaration() { flags |= flag_declaration; }	// 宣言
 		void SetDefinition() { flags |= flag_definition; }		// 定義
 		void SetSystem() { flags |= flag_system; }
 
-		int GetIndex() const { 
+		std::int32_t GetIndex() const { 
 			return index; 
 		}
 		bool IsDeclaration() const { return (flags & flag_declaration) != 0; }
@@ -520,12 +520,12 @@ class FunctionTag {
 			arg_fOut.write((char*)&valueType, sizeof(valueType));
 			arg_fOut.write((char*)&flags, sizeof(flags));
 			arg_fOut.write((char*)&index, sizeof(index));
-			int argsSize = vec_args.size();
+			std::int32_t argsSize = vec_args.size();
 			arg_fOut.write((char*)&argsSize, sizeof(argsSize));
-			for (int i = 0; i < argsSize; i++) {
+			for (std::int32_t i = 0; i < argsSize; i++) {
 				arg_fOut.write((char*)&vec_args[i], sizeof(vec_args[i]));
 			}
-			int size = name.size();
+			std::int32_t size = name.size();
 			arg_fOut.write((char*)&size, sizeof(size));
 			arg_fOut.write(name.c_str(), (size));
 		}
@@ -533,32 +533,32 @@ class FunctionTag {
 			arg_fIn.read((char*)&valueType, sizeof(valueType));
 			arg_fIn.read((char*)&flags, sizeof(flags));
 			arg_fIn.read((char*)&index, sizeof(index));
-			int argsSize = 0;
+			std::int32_t argsSize = 0;
 			arg_fIn.read((char*)&argsSize, sizeof(argsSize));
-			for (int i = 0; i < argsSize; i++) {
-				int arg;
+			for (std::int32_t i = 0; i < argsSize; i++) {
+				std::int32_t arg;
 				arg_fIn.read((char*)&arg, sizeof(arg));
 				vec_args.push_back(arg);
 			}
-			int size = 0;
+			std::int32_t size = 0;
 			arg_fIn.read((char*)&size, sizeof(size));
 			char* buff=(char*)malloc(size);
 			arg_fIn.read(buff, (size));
 			name = std::string(buff, size);
 			free(buff);
 		}
-		void SetTemplateType(const std::vector<int>& arg_template) { vec_templateTypes = arg_template; }
+		void SetTemplateType(const std::vector<std::int32_t>& arg_template) { vec_templateTypes = arg_template; }
 		bool IsTemplate()const { return vec_templateTypes.size(); }
 		std::string GetTemplateNames(const TypeTable* arg_table)const;
-		int		valueType = 0;
-		int		flags = 0;
-		int		index = 0;
-		std::vector<int>	vec_args;
+		std::int32_t		valueType = 0;
+		std::int32_t		flags = 0;
+		std::int32_t		index = 0;
+		std::vector<std::int32_t>	vec_args;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
 		bool isLambda=false;
-		std::vector<int> vec_captureList;
-		std::vector<int> vec_templateTypes;
+		std::vector<std::int32_t> vec_captureList;
+		std::vector<std::int32_t> vec_templateTypes;
 	};
 
 class FunctionTable {
@@ -580,7 +580,7 @@ class FunctionTable {
 			return &result->second;
 		}
 
-		const FunctionTag* Find_strict(const std::string& arg_name, const std::vector<int>& arg_vec_args, const TypeTable* arg_typeTable) const
+		const FunctionTag* Find_strict(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -614,7 +614,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		const FunctionTag* Find(const std::string& arg_name, const std::vector<int>& arg_vec_args,const TypeTable* arg_typeTable) const
+		const FunctionTag* Find(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_args,const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -681,14 +681,14 @@ class FunctionTable {
 				}
 			}
 		}
-		int Size()const {
+		std::int32_t Size()const {
 			return map_functions.size();
 		}
 
-		FunctionTag* operator[](const int arg_index) {
+		FunctionTag* operator[](const std::int32_t arg_index) {
 			auto itr = map_functions.begin();
-			int maxCount = min(map_functions.size(),arg_index);
-			for (int i = 0; i < maxCount; i++) {
+			std::int32_t maxCount = min(map_functions.size(),arg_index);
+			for (std::int32_t i = 0; i < maxCount; i++) {
 				itr++;
 			}
 
@@ -696,11 +696,11 @@ class FunctionTable {
 		}
 		
 		void FileOutput(std::ofstream& arg_fOut) const{
-			int functionsSize = map_functions.size();
+			std::int32_t functionsSize = map_functions.size();
 			arg_fOut.write((char*)&functionsSize, sizeof(functionsSize));
 			auto end = map_functions.end();
 			for (auto itr = map_functions.begin(); itr !=end;itr++) {
-				int size = itr->first.size();
+				std::int32_t size = itr->first.size();
 				arg_fOut.write((char*)&size, sizeof(size));
 				arg_fOut.write(itr->first.c_str(), size);
 				itr->second.FileOutput(arg_fOut);
@@ -709,11 +709,11 @@ class FunctionTable {
 		}
 
 		void FileInput(std::ifstream& arg_fIn) {
-			int functionsSize = 0;
+			std::int32_t functionsSize = 0;
 			arg_fIn.read((char*)&functionsSize, sizeof(functionsSize));
 
-			for (int i = 0; i < functionsSize; i++) {
-				int size = 0;
+			for (std::int32_t i = 0; i < functionsSize; i++) {
+				std::int32_t size = 0;
 				std::string functionStr;
 				arg_fIn.read((char*)&size, sizeof(size));
 				char* p_buff = (char*)malloc(size);
@@ -742,19 +742,19 @@ public:
 	std::string ToString()const {
 		return "ScriptClass!";
 	}
-	int GetTypeIndex()const {
+	std::int32_t GetTypeIndex()const {
 		return typeIndex;
 	}
-	int GetMemberTypeIndex(const int arg_index)const {
+	std::int32_t GetMemberTypeIndex(const std::int32_t arg_index)const {
 		return vec_memberTypes[arg_index];
 	}
-	int GetMemberSize()const {
+	std::int32_t GetMemberSize()const {
 		return vec_memberTypes.size();
 	}
-	void SetTypeIndex(const int arg_index) {
+	void SetTypeIndex(const std::int32_t arg_index) {
 		typeIndex = arg_index;
 	}
-	void SetMemberTypes(const std::vector<int> arg_vec_types) {
+	void SetMemberTypes(const std::vector<std::int32_t> arg_vec_types) {
 		vec_memberTypes = arg_vec_types;
 	}
 	void SetMemberNames(const std::vector<std::string> arg_vec_names) {
@@ -784,40 +784,40 @@ public:
 	}
 
 	void OutputFile(std::ofstream& arg_fOut) const {
-		int size = className.size();
-		arg_fOut.write((char*)&size, sizeof(int));
+		std::int32_t size = className.size();
+		arg_fOut.write((char*)&size, sizeof(std::int32_t));
 		arg_fOut.write(className.c_str(), size);
-		arg_fOut.write((char*)&typeIndex, sizeof(int));
-		int memberSize = vec_memberTypes.size();
-		arg_fOut.write((char*)&memberSize, sizeof(int));
-		for (int i = 0; i < memberSize; i++) {
-			arg_fOut.write((char*)&vec_memberTypes[i], sizeof(int));
+		arg_fOut.write((char*)&typeIndex, sizeof(std::int32_t));
+		std::int32_t memberSize = vec_memberTypes.size();
+		arg_fOut.write((char*)&memberSize, sizeof(std::int32_t));
+		for (std::int32_t i = 0; i < memberSize; i++) {
+			arg_fOut.write((char*)&vec_memberTypes[i], sizeof(std::int32_t));
 		}
-		for (int i = 0; i < memberSize; i++) {
-			int size = vec_memberName[i].size();
-			arg_fOut.write((char*)&size, sizeof(int));
+		for (std::int32_t i = 0; i < memberSize; i++) {
+			std::int32_t size = vec_memberName[i].size();
+			arg_fOut.write((char*)&size, sizeof(std::int32_t));
 			arg_fOut.write(vec_memberName[i].c_str(), size);
 		}
 
 	}
 	void InputFile(std::ifstream& arg_fIn) {
-		int size = 0;
-		arg_fIn.read((char*)&size, sizeof(int));
+		std::int32_t size = 0;
+		arg_fIn.read((char*)&size, sizeof(std::int32_t));
 		char* nameBuff = (char*)malloc(size);
 		arg_fIn.read(nameBuff, size);
 		className = std::string(nameBuff, size);
 		free(nameBuff);
 
-		arg_fIn.read((char*)&typeIndex, sizeof(int));
-		int memberSize = 0;
-		arg_fIn.read((char*)&memberSize, sizeof(int));
+		arg_fIn.read((char*)&typeIndex, sizeof(std::int32_t));
+		std::int32_t memberSize = 0;
+		arg_fIn.read((char*)&memberSize, sizeof(std::int32_t));
 		vec_memberTypes.resize(memberSize);
-		for (int i = 0; i < memberSize; i++) {
-			arg_fIn.read((char*)&vec_memberTypes[i], sizeof(int));
+		for (std::int32_t i = 0; i < memberSize; i++) {
+			arg_fIn.read((char*)&vec_memberTypes[i], sizeof(std::int32_t));
 		}
-		for (int i = 0; i < memberSize; i++) {
-			int size = 0;
-			arg_fIn.read((char*)&size, sizeof(int));
+		for (std::int32_t i = 0; i < memberSize; i++) {
+			std::int32_t size = 0;
+			arg_fIn.read((char*)&size, sizeof(std::int32_t));
 			char* nameBuff = (char*)malloc(size);
 			arg_fIn.read(nameBuff, size);
 			vec_memberName.push_back(std::string(nameBuff, size));
@@ -825,24 +825,24 @@ public:
 		}
 
 	}
-	int GetSystemTypeCount()const { return typeIndex; }
-	void SetSystemTypeCount(const int arg_systemTypeCount) { systemTypeCount = arg_systemTypeCount; }
+	std::int32_t GetSystemTypeCount()const { return typeIndex; }
+	void SetSystemTypeCount(const std::int32_t arg_systemTypeCount) { systemTypeCount = arg_systemTypeCount; }
 private:
-	int typeIndex;
-	int systemTypeCount;
-	std::vector<int> vec_memberTypes;
+	std::int32_t typeIndex;
+	std::int32_t systemTypeCount;
+	std::vector<std::int32_t> vec_memberTypes;
 	std::vector<std::string> vec_memberName;
 	std::string className;
 };
 struct MemberValueInfo {
-	int index;
-	int type;
+	std::int32_t index;
+	std::int32_t type;
 	AccessModifier access = AccessModifier::Public;
 };
 struct FunctionObjectTypeData {
-	FunctionObjectTypeData(const int arg_retType,const std::vector<int>& arg_argTypes):returnType(arg_retType),vec_argTypes(arg_argTypes){}
-	int returnType;
-	std::vector<int> vec_argTypes;
+	FunctionObjectTypeData(const std::int32_t arg_retType,const std::vector<std::int32_t>& arg_argTypes):returnType(arg_retType),vec_argTypes(arg_argTypes){}
+	std::int32_t returnType;
+	std::vector<std::int32_t> vec_argTypes;
 };
 struct TypeTag {
 	TypeTag() {}
@@ -856,7 +856,7 @@ struct TypeTag {
 	//参照型生成用アドレス
 	OperationFunction refTypeFunc;
 	//型情報
-	int typeIndex;
+	std::int32_t typeIndex;
 	//型名
 	std::string typeName;
 	//引数記号
@@ -873,9 +873,9 @@ struct TypeTag {
 	bool IsFunctionObjectType()const { return p_functionObjectData; }
 	EnumTag* p_enumTag = nullptr;
 	FunctionObjectTypeData* p_functionObjectData=nullptr;
-	int GetFunctionObjectReturnType()const;
-	int GetFunctionObjectArgSize()const;
-	const std::vector<int>& GetFunctionObjectArgment()const;
+	std::int32_t GetFunctionObjectReturnType()const;
+	std::int32_t GetFunctionObjectArgSize()const;
+	const std::vector<std::int32_t>& GetFunctionObjectArgment()const;
 	ScriptClassInfo GetScriptTypeInfo()const {
 		if (isSystem||p_functionObjectData) {
 			//組み込み型なのでスクリプト型定義は作れない
@@ -885,7 +885,7 @@ struct TypeTag {
 		ScriptClassInfo output;
 		output.SetClassName(typeName); 
 		output.SetTypeIndex(typeIndex);
-		std::vector<int> vec_types;
+		std::vector<std::int32_t> vec_types;
 		std::vector<std::string> vec_memberNames;
 		vec_types.resize(map_memberValue.size());
 		vec_memberNames.resize(map_memberValue.size());
@@ -909,19 +909,19 @@ struct TypeTag {
 class TypeTable {
 public:
 	void Release();
-	const TypeTag* GetType(const int arg_index) const {
+	const TypeTag* GetType(const std::int32_t arg_index) const {
 		if (vec_types.size() <= arg_index) {
 			return nullptr;
 		}
 		return vec_types[arg_index];
 	}
-	TypeTag* GetType(const int arg_index) {
+	TypeTag* GetType(const std::int32_t arg_index) {
 		if (vec_types.size() <= arg_index) {
 			return nullptr;
 		}
 		return vec_types[arg_index];
 	}
-	const std::map<std::string, int>& GetArgmentKeyMap()const {
+	const std::map<std::string, std::int32_t>& GetArgmentKeyMap()const {
 		return map_argmentChars;
 	}
 
@@ -937,7 +937,7 @@ public:
 		}
 		return &map_types.at(arg_typename);
 	}
-	const TypeTag* GetFunctionType(const std::vector<int>& arg_argmentTypes, const int arg_retType)const {
+	const TypeTag* GetFunctionType(const std::vector<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType)const {
 		auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
 		for (auto i = 0; i < arg_argmentTypes.size(); i++) {
 			functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
@@ -947,7 +947,7 @@ public:
 		}
 		return &map_types.at(functionTypeName);
 	}
-	TypeTag* GetFunctionType(const std::vector<int>& arg_argmentTypes, const int arg_retType) {
+	TypeTag* GetFunctionType(const std::vector<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType) {
 		auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
 		for (auto i = 0; i < arg_argmentTypes.size(); i++) {
 			functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
@@ -957,7 +957,7 @@ public:
 		}
 		return &map_types.at(functionTypeName);
 	}
-	TypeTag* CreateFunctionType(const std::vector<int>& arg_argmentTypes, const int arg_retType) {
+	TypeTag* CreateFunctionType(const std::vector<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType) {
 		auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
 		for (auto i = 0; i < arg_argmentTypes.size(); i++) {
 			functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
@@ -1051,21 +1051,21 @@ public:
 		}
 		functionTypeCount = 0;
 	}
-	int GetSize()const {
+	std::int32_t GetSize()const {
 		return vec_types.size();
 	}
-	int GetSystemTypeSize()const {
+	std::int32_t GetSystemTypeSize()const {
 		return systemTypeCount;
 	}
-	int GetFunctionTypeSize()const {
+	std::int32_t GetFunctionTypeSize()const {
 		return functionTypeCount;
 	}
-	int GetScriptTypeSize()const {
+	std::int32_t GetScriptTypeSize()const {
 		return vec_types.size()-systemTypeCount-functionTypeCount;
 	}
 	std::vector<ScriptClassInfo> GetScriptClassInfo()const {
 		std::vector<ScriptClassInfo> output;
-		for (int i = 0; i < vec_types.size(); i++) {
+		for (std::int32_t i = 0; i < vec_types.size(); i++) {
 			if (vec_types[i]->isSystem|| vec_types[i]->p_functionObjectData){ continue; }
 				
 			output.push_back(vec_types[i]->GetScriptTypeInfo());
@@ -1077,14 +1077,14 @@ public:
 private:
 
 	std::vector<TypeTag* > vec_types;
-	std::map<std::string, int> map_argmentChars;
+	std::map<std::string, std::int32_t> map_argmentChars;
 	std::map<std::string, TypeTag> map_types;
-	int systemTypeCount=0,functionTypeCount=0;
+	std::int32_t systemTypeCount=0,functionTypeCount=0;
 };
 
-bool TypeCheck(const int arg_left, const int arg_right, const TypeTable* arg_table) {
-	int left = arg_left & ~TYPE_REF;
-	int right = arg_right & ~TYPE_REF;
+bool TypeCheck(const std::int32_t arg_left, const std::int32_t arg_right, const TypeTable* arg_table) {
+	std::int32_t left = arg_left & ~TYPE_REF;
+	std::int32_t right = arg_right & ~TYPE_REF;
 	//同じ型のチェック
 	if (left == right) {
 		return true;
@@ -1107,7 +1107,7 @@ inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& 
 		output += ":";
 	}
 
-	for (int i = 0; i < vec_args.size(); i++) {
+	for (std::int32_t i = 0; i < vec_args.size(); i++) {
 		output += arg_typeTable.GetType(vec_args[i] & ~TYPE_REF)->argName;
 		if (i + 1 != vec_args.size()) {
 			output += ",";
@@ -1116,14 +1116,14 @@ inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& 
 	return output;
 }
 
-static std::string GetTemplateName(const std::vector<int>& arg_vec_temps, const ButiScript::TypeTable* arg_table) {
+static std::string GetTemplateName(const std::vector<std::int32_t>& arg_vec_temps, const ButiScript::TypeTable* arg_table) {
 
 
 	if (!arg_vec_temps.size()) {
 		return "";
 	}
 	std::string output = "<";
-	for (int i = 0; i < arg_vec_temps.size(); i++) {
+	for (std::int32_t i = 0; i < arg_vec_temps.size(); i++) {
 		if (i != 0) {
 			output += ",";
 		}

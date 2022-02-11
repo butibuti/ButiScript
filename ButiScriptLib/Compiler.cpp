@@ -7,7 +7,7 @@
 #include<direct.h>
 auto baseFunc = &ButiScript::VirtualMachine::Initialize;
 const char* thisPtrName = "this";
-
+constexpr std::int32_t functionStackSize = 4;
 namespace AccessModifierStr {
 const char* publicStr = "public";
 const char* protectedStr = "protected";
@@ -98,7 +98,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 		return true;// パーサーエラー
 	}
 
-	int code_size = LabelSetting();				// ラベルにアドレスを設定
+	std::int32_t code_size = LabelSetting();				// ラベルにアドレスを設定
 	CreateData(arg_ref_data, code_size);				// バイナリ生成
 
 	arg_ref_data.sourceFilePath = arg_filePath;
@@ -127,9 +127,9 @@ void ButiScript::Compiler::ClearStatement()
 	statement.clear();
 }
 
-std::string ButiScript::Compiler::GetTypeName(const int arg_type) const
+std::string ButiScript::Compiler::GetTypeName(const std::int32_t arg_type) const
 {
-	int type = arg_type & ~TYPE_REF;
+	std::int32_t type = arg_type & ~TYPE_REF;
 	std::string output = "";
 	
 	output = types.GetType(type)->typeName;
@@ -220,9 +220,9 @@ void ButiScript::Compiler::ClearGlobalNameSpace()
 // 外部変数の定義
 struct Define_value {
 	ButiScript::Compiler* p_compiler;
-	int valueType;
+	std::int32_t valueType;
 	ButiScript::AccessModifier arg_access;
-	Define_value(ButiScript::Compiler* arg_p_comp, const int arg_type,ButiScript::AccessModifier arg_access ) : p_compiler(arg_p_comp), valueType(arg_type),arg_access(arg_access)
+	Define_value(ButiScript::Compiler* arg_p_comp, const std::int32_t arg_type,ButiScript::AccessModifier arg_access ) : p_compiler(arg_p_comp), valueType(arg_type),arg_access(arg_access)
 	{
 	}
 
@@ -232,17 +232,17 @@ struct Define_value {
 	}
 };
 
-void ButiScript::Compiler::AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< int, AccessModifier>>& arg_memberInfo)
+void ButiScript::Compiler::AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::int32_t, AccessModifier>>& arg_memberInfo)
 {
 	auto typeTag = GetType(arg_typeName);
 	if (arg_memberInfo.size()) {
 		auto memberInfoEnd = arg_memberInfo.end();
-		int i = 0;
-		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; i++,itr++) {
+		std::int32_t memberIndex = 0;
+		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; memberIndex++,itr++) {
 			if (typeTag->typeIndex == itr->second.first) {
 				error("クラス "+itr->first + "が自身と同じ型をメンバ変数として保持しています。");
 			}
-			MemberValueInfo info = { i ,itr->second.first,itr->second.second };
+			MemberValueInfo info = { memberIndex ,itr->second.first,itr->second.second };
 			typeTag->map_memberValue.emplace(itr->first, info);
 
 		}
@@ -253,7 +253,7 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 {
 
 	TypeTag type;
-	int typeIndex = types.GetSize();
+	std::int32_t typeIndex = types.GetSize();
 	type.isSystem = false;
 
 
@@ -265,13 +265,13 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 	types.RegistType(type);
 }
 
-void ButiScript::Compiler::ValueDefine(int arg_type, const std::vector<Node_t>& arg_node, const AccessModifier arg_access)
+void ButiScript::Compiler::ValueDefine(std::int32_t arg_type, const std::vector<Node_t>& arg_node, const AccessModifier arg_access)
 {
 	std::for_each(arg_node.begin(), arg_node.end(), Define_value(this, arg_type,arg_access));
 }
 
 // 関数宣言
-void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_name, const std::vector<int>& arg_vec_argIndex)
+void ButiScript::Compiler::FunctionDefine(std::int32_t arg_type, const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex)
 {
 	const FunctionTag* tag = functions.Find_strict(arg_name,arg_vec_argIndex,&GetTypeTable());
 	if (tag) {			// 既に宣言済み
@@ -294,7 +294,7 @@ void ButiScript::Compiler::FunctionDefine(int arg_type, const std::string& arg_n
 
 
 
-ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
+ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const std::int32_t arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable )
 {
 	std::string functionName =arg_funcTable? arg_name: currentNameSpace->GetGlobalNameString() + arg_name;
 	arg_funcTable = arg_funcTable ? arg_funcTable : &functions;
@@ -319,13 +319,13 @@ ButiScript::FunctionTag* ButiScript::Compiler::RegistFunction(const int arg_type
 	return  arg_funcTable->Find_strict(functionName, arg_vec_argDefines,&GetTypeTable());
 }
 
-void ButiScript::Compiler::RegistLambda(const int arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
+void ButiScript::Compiler::RegistLambda(const std::int32_t arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefines, FunctionTable* arg_functionTable)
 {
 	auto tag= RegistFunction(arg_type,arg_name , arg_vec_argDefines, nullptr, AccessModifier::Public, arg_functionTable);
 	tag->isLambda = true;
 }
 
-void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value)
+void ButiScript::Compiler::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const std::int32_t arg_value)
 {
 	auto enumType = GetEnumTag(arg_typeName);
 	if (!enumType) {
@@ -344,14 +344,14 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 	types.RegistType(*enums.FindType(arg_typeName));
 }
 
-int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const int arg_retType)
+std::int32_t ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const std::int32_t arg_retType)
 {
-	std::vector<int> vec_argTypes;
+	std::vector<std::int32_t> vec_argTypes;
 	std::for_each(arg_vec_argmentTypes.begin(), arg_vec_argmentTypes.end(), [&](const ArgDefine& itr)->void {vec_argTypes.push_back(itr.GetType()); });
 	
 	return GetfunctionTypeIndex(vec_argTypes,arg_retType);
 }
-int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_argmentTypes, const int arg_retType)
+std::int32_t ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<std::int32_t>& arg_vec_argmentTypes, const std::int32_t arg_retType)
 {
 	auto type = types.GetFunctionType(arg_vec_argmentTypes, arg_retType);
 	if (!type) {
@@ -362,10 +362,10 @@ int ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<int>& arg_vec_a
 
 
 // 変数の登録
-void ButiScript::Compiler::AddValue(const int arg_typeIndex, const std::string& arg_name, Node_t arg_node ,const AccessModifier arg_access)
+void ButiScript::Compiler::AddValue(const std::int32_t arg_typeIndex, const std::string& arg_name, Node_t arg_node ,const AccessModifier arg_access)
 {
 	std::string valueName = GetCurrentNameSpace()->GetGlobalNameString() + arg_name;
-	int size = 1;
+	std::int32_t size = 1;
 	if (arg_node) {
 		if (arg_node->Op() != OP_INT) {
 			error("配列のサイズは定数で指定してください。");
@@ -383,15 +383,15 @@ void ButiScript::Compiler::AddValue(const int arg_typeIndex, const std::string& 
 }
 
 // ラベル生成
-int ButiScript::Compiler::MakeLabel()
+std::int32_t ButiScript::Compiler::MakeLabel()
 {
-	int index = (int)labels.size();
+	std::int32_t index = (std::int32_t)labels.size();
 	labels.push_back(Label(index));
 	return index;
 }
 
 // ラベルのダミーコマンドをステートメントリストに登録する
-void ButiScript::Compiler::SetLabel(const int arg_label)
+void ButiScript::Compiler::SetLabel(const std::int32_t arg_label)
 {
 	statement.push_back(VMCode(VM_MAXCOMMAND, arg_label));
 }
@@ -399,7 +399,7 @@ void ButiScript::Compiler::SetLabel(const int arg_label)
 // 文字列定数をpush
 void ButiScript::Compiler::PushString(const std::string& arg_str)
 {
-	PushString(((int)text_table.size()));
+	PushString(((std::int32_t)text_table.size()));
 	text_table.insert(text_table.end(), arg_str.begin(), arg_str.end());
 	text_table.push_back('\0');
 }
@@ -418,7 +418,7 @@ bool ButiScript::Compiler::JmpBreakLabel()
 // ブロック内では新しい変数セットに変数を登録する
 void ButiScript::Compiler::BlockIn(const bool arg_isFunctionBlock, const bool arg_isSubFunctionBlock)
 {
-	int start_addr = 0;					
+	std::int32_t start_addr = 0;					
 	if (variables.size() > 1&&!arg_isSubFunctionBlock) {			
 		start_addr = variables.back().size();
 	}
@@ -430,26 +430,26 @@ void ButiScript::Compiler::BlockOut()
 	variables.pop_back();
 }
 
-void ButiScript::Compiler::ValueAddressAddition(const int arg_difference)
+void ButiScript::Compiler::ValueAddressAddition(const std::int32_t arg_difference)
 {
 	auto difference = arg_difference;
-	int endIndex = 1;
-	for (int i = variables.size() - 2; i >= endIndex; i--) {
-		difference=variables[i].AddressAdd(difference);
-		if (variables[i - 1].IsFunctionBlock()) {
-			difference += 4;
+	std::int32_t endIndex = 1;
+	for (std::int32_t index = variables.size() - 2; index >= endIndex; index--) {
+		difference=variables[index].AddressAdd(difference);
+		if (variables[index - 1].IsFunctionBlock()) {
+			difference += functionStackSize;
 		}
 	}
 }
 
-void ButiScript::Compiler::ValueAddressSubtract(const int arg_difference)
+void ButiScript::Compiler::ValueAddressSubtract(const std::int32_t arg_difference)
 {
 	auto difference = arg_difference;
-	int endIndex = 1;
-	for (int i = variables.size() - 2; i >= endIndex; i--) {
-		difference = variables[i].AddressSub(difference);
-		if (variables[i - 1].IsFunctionBlock()) {
-			difference -= 4;
+	std::int32_t endIndex = 1;
+	for (std::int32_t index = variables.size() - 2; index >= endIndex; index--) {
+		difference = variables[index].AddressSub(difference);
+		if (variables[index - 1].IsFunctionBlock()) {
+			difference -= functionStackSize;
 		}
 	}
 }
@@ -463,14 +463,14 @@ void ButiScript::Compiler::AllocStack()
 // アドレス計算
 struct calc_addr {
 	std::vector<ButiScript::Label>& vec_labels;
-	int& pos;
-	calc_addr(std::vector<ButiScript::Label>& arg_vec_labels, int& arg_pos) : vec_labels(arg_vec_labels), pos(arg_pos)
+	std::int32_t& pos;
+	calc_addr(std::vector<ButiScript::Label>& arg_vec_labels, std::int32_t& arg_pos) : vec_labels(arg_vec_labels), pos(arg_pos)
 	{
 	}
 	void operator()(const ButiScript::VMCode& code)
 	{
 		if (code.op == ButiScript::VM_MAXCOMMAND) {			// ラベルのダミーコマンド
-			vec_labels[code.GetConstValue<int>()].pos = pos;
+			vec_labels[code.GetConstValue<std::int32_t>()].pos = pos;
 		}
 		else {
 			pos += code.size;
@@ -494,16 +494,16 @@ struct set_addr {
 		case ButiScript::VM_CALL:
 		case ButiScript::VM_PUSHFUNCTIONOBJECT:
 		case ButiScript::VM_PUSHRAMDA:
-			arg_code.SetConstValue( vec_labels[arg_code.GetConstValue<int>()].pos);
+			arg_code.SetConstValue( vec_labels[arg_code.GetConstValue<std::int32_t>()].pos);
 			break;
 		}
 	}
 };
 
-int ButiScript::Compiler::LabelSetting()
+std::int32_t ButiScript::Compiler::LabelSetting()
 {
 	// アドレス計算
-	int pos = 0;
+	std::int32_t pos = 0;
 	std::for_each(statement.begin(), statement.end(), calc_addr(labels, pos));
 	// ジャンプアドレス設定
 	std::for_each(statement.begin(), statement.end(), set_addr(labels));
@@ -514,8 +514,8 @@ int ButiScript::Compiler::LabelSetting()
 // バイナリデータ生成
 
 struct copy_code {
-	unsigned char* code;
-	copy_code(unsigned char* arg_code) : code(arg_code)
+	std::uint8_t* code;
+	copy_code(std::uint8_t* arg_code) : code(arg_code)
 	{
 	}
 	void operator()(const ButiScript::VMCode& arg_code)
@@ -524,20 +524,20 @@ struct copy_code {
 	}
 };
 
-bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, int arg_codeSize)
+bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, std::int32_t arg_codeSize)
 {
 
-	for (int i = 0; i < functions.Size(); i++) {
-		auto func = functions[i];
+	for (std::int32_t index = 0; index < functions.Size(); index++) {
+		auto func = functions[index];
 		if (func->IsSystem()) {
 			continue;
 		}
-		auto name = functions[i]->GetName();
+		auto name = functions[index]->GetName();
 		if (!arg_ref_data.map_entryPoints.count(name)) {
-			arg_ref_data.map_entryPoints.emplace(name, labels[functions[i]->index].pos);
+			arg_ref_data.map_entryPoints.emplace(name, labels[functions[index]->index].pos);
 		}
 		else {
-			arg_ref_data.map_entryPoints.emplace(functions[i]->GetNameWithArgment(types), labels[functions[i]->index].pos);
+			arg_ref_data.map_entryPoints.emplace(functions[index]->GetNameWithArgment(types), labels[functions[index]->index].pos);
 		}
 	}
 	
@@ -549,25 +549,25 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, in
 
 	arg_ref_data.functions = functions;
 
-	arg_ref_data.commandTable = new unsigned char[arg_codeSize];
+	arg_ref_data.commandTable = new std::uint8_t[arg_codeSize];
 	arg_ref_data.textBuffer = new char[text_table.size()];
 	arg_ref_data.commandSize = arg_codeSize;
-	arg_ref_data.textSize = (int)text_table.size();
-	arg_ref_data.valueSize = (int)variables[0].size();
+	arg_ref_data.textSize = (std::int32_t)text_table.size();
+	arg_ref_data.valueSize = (std::int32_t)variables[0].size();
 
 	arg_ref_data.vec_sysCalls = vec_sysCalls;
 	arg_ref_data.vec_sysCallMethods = vec_sysMethodCalls;
 	types.CreateTypeVec(arg_ref_data.vec_types);
 	arg_ref_data.vec_scriptClassInfo = types.GetScriptClassInfo();
 	arg_ref_data.functionTypeCount = types.GetFunctionTypeSize();
-	for (int i = 0; i < arg_ref_data.valueSize; i++) {
-		auto p_value = &variables[0][i];
+	for (std::int32_t index = 0; index < arg_ref_data.valueSize; index++) {
+		auto p_value = &variables[0][index];
 		if (p_value->access == AccessModifier::Public) {
-			arg_ref_data.map_globalValueAddress.emplace(variables[0].GetVariableName(i), p_value->GetAddress());
+			arg_ref_data.map_globalValueAddress.emplace(variables[0].GetVariableName(index), p_value->GetAddress());
 		}
 	}
-	for (int i = 0; i < enums.Size();i++) {
-		arg_ref_data.map_enumTag.emplace(enums[i]->typeIndex, *enums[i]);
+	for (std::int32_t index = 0; index < enums.Size();index++) {
+		arg_ref_data.map_enumTag.emplace(enums[index]->typeIndex, *enums[index]);
 	}
 	if (arg_ref_data.textSize != 0) {
 		memcpy(arg_ref_data.textBuffer, &text_table[0], arg_ref_data.textSize);
@@ -613,8 +613,8 @@ void ButiScript::Compiler::DebugDump()
 	std::string message = "---variables---\n";
 	size_t vsize = variables.size();
 	message += "value stack = " + std::to_string(vsize) + '\n';
-	for (size_t i = 0; i < vsize; i++) {
-		variables[i].Dump();
+	for (size_t index = 0; index < vsize; index++) {
+		variables[index].Dump();
 	}
 	message += "---code---" + '\n';
 
@@ -625,17 +625,17 @@ void ButiScript::Compiler::DebugDump()
 		"LABEL",
 	};
 
-	int	pos = 0;
+	std::int32_t	pos = 0;
 	size_t size = statement.size();
-	for (size_t i = 0; i < size; i++) {
-		message += std::to_string(std::setw(6)) + std::to_string(pos) + ": " + op_name[statement[i].op];
-		if (statement[i].size > 1) {
-			message += ", " + std::to_string(statement[i].GetConstValue<int>());
+	for (size_t index = 0; index < size; index++) {
+		message += std::to_string(std::setw(6)) + std::to_string(pos) + ": " + op_name[statement[index].op];
+		if (statement[index].size > 1) {
+			message += ", " + std::to_string(statement[index].GetConstValue<std::int32_t>());
 		}
 		message += '\n';
 
-		if (statement[i].op != VM_MAXCOMMAND) {
-			pos += statement[i].size;
+		if (statement[index].op != VM_MAXCOMMAND) {
+			pos += statement[index].size;
 		}
 	}
 	ButiEngine::GUI::Console(message);
@@ -659,12 +659,12 @@ void ButiScript::Compiler::DebugDump()
 		"LABEL",
 	};
 
-	int	pos = 0;
+	std::int32_t	pos = 0;
 	size_t size = statement.size();
 	for (size_t i = 0; i < size; i++) {
 		std::cout << std::setw(6) << pos << ": " << op_name[statement[i].op];
 		if (statement[i].size > 1) {
-			std::cout << ", " << statement[i].GetConstValue<int>();
+			std::cout << ", " << statement[i].GetConstValue<std::int32_t>();
 		}
 		std::cout << std::endl;
 
@@ -677,7 +677,7 @@ void ButiScript::Compiler::DebugDump()
 #endif // _DEBUG
 
 
-int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
+std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
 {
 	std::ifstream fIn;
 	fIn.open(arg_filePath,std::ios::binary);
@@ -687,7 +687,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	}
 
 
-	int sourceFilePathStrSize = 0;
+	std::int32_t sourceFilePathStrSize = 0;
 	fIn.read((char*)&sourceFilePathStrSize, sizeof(sourceFilePathStrSize));
 	char* sourceFilePathStrBuff = (char*)malloc(sourceFilePathStrSize);
 	fIn.read(sourceFilePathStrBuff, sourceFilePathStrSize);
@@ -695,21 +695,21 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	free(sourceFilePathStrBuff);
 
 
-	fIn.read((char*)&arg_ref_data.commandSize, 4);
-	arg_ref_data.commandTable = (unsigned char*)malloc(arg_ref_data.commandSize);
+	fIn.read((char*)&arg_ref_data.commandSize, sizeof(std::int32_t));
+	arg_ref_data.commandTable = (std::uint8_t*)malloc(arg_ref_data.commandSize);
 	fIn.read((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
 
-	fIn.read((char*)&arg_ref_data.textSize, 4);
+	fIn.read((char*)&arg_ref_data.textSize, sizeof(std::int32_t));
 	arg_ref_data.textBuffer = (char*)malloc(arg_ref_data.textSize);
 	fIn.read((char*)arg_ref_data.textBuffer, arg_ref_data.textSize);
 
 
-	fIn.read((char*)&arg_ref_data.valueSize, 4);
+	fIn.read((char*)&arg_ref_data.valueSize, sizeof(std::int32_t));
 
-	int sysCallSize=0;
-	fIn.read((char*)&sysCallSize, 4);
-	for (int i = 0; i < sysCallSize; i++) {
-		int index=0;
+	std::int32_t sysCallSize=0;
+	fIn.read((char*)&sysCallSize, sizeof(std::int32_t));
+	for (std::int32_t count = 0; count < sysCallSize; count++) {
+		std::int32_t index=0;
 		fIn.read((char*)&index, sizeof(index));
 		SysFunction sysFunc = vec_sysCalls[index];
 		arg_ref_data.vec_sysCalls.push_back(sysFunc);
@@ -717,20 +717,20 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 
 
-	fIn.read((char*)&sysCallSize, 4);
-	for (int i = 0; i < sysCallSize; i++) {
-		int index = 0;
+	fIn.read((char*)&sysCallSize, sizeof(std::int32_t));
+	for (std::int32_t count = 0; count < sysCallSize; count++) {
+		std::int32_t index = 0;
 		fIn.read((char*)&index, sizeof(index));
 		SysFunction sysFunc = vec_sysMethodCalls[index];
 		arg_ref_data.vec_sysCallMethods.push_back(sysFunc);
 	}
 
 
-	fIn.read((char*)&sysCallSize, 4);
-	for (int i = 0; i < sysCallSize; i++) {
+	fIn.read((char*)&sysCallSize, sizeof(std::int32_t));
+	for (std::int32_t count = 0; count < sysCallSize; count++) {
 		TypeTag typeTag;
 
-		int size=0;
+		std::int32_t size=0;
 		fIn.read((char*)&size, sizeof(size));
 		char* p_strBuff = (char*)malloc(size);
 		fIn.read(p_strBuff, size);
@@ -743,7 +743,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		typeTag.typeName = std::string(p_strBuff, size);
 		free(p_strBuff);
 
-		int index = 0;
+		std::int32_t index = 0;
 		fIn.read((char*)&index, sizeof(index));
 		SysFunction sysFunc=nullptr;
 		if (index < vec_valueAllocCall.size()&&index>=0) {
@@ -761,13 +761,13 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 
 
 
-		fIn.read((char*)&typeTag.typeIndex, sizeof(int));
+		fIn.read((char*)&typeTag.typeIndex, sizeof(std::int32_t));
 
-		int typeMapSize = 0;
+		std::int32_t typeMapSize = 0;
 		fIn.read((char*)&typeMapSize, sizeof(typeMapSize));
 
-		for (int j=0; j < typeMapSize;j++) {
-			int size =0;
+		for (std::int32_t j=0; j < typeMapSize;j++) {
+			std::int32_t size =0;
 			std::string typeNameStr;
 			MemberValueInfo memberInfo;
 			fIn.read((char*)&size, sizeof(size));
@@ -785,21 +785,21 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	}
 
 
-	int entryPointsSize = 0;
+	std::int32_t entryPointsSize = 0;
 	fIn.read((char*)&entryPointsSize, sizeof(entryPointsSize));
 	
-	for (int i = 0; i < entryPointsSize;i++) {
+	for (std::int32_t count = 0; count < entryPointsSize;count++) {
 		
 
-		int size =0, entryPoint = 0;
+		std::int32_t size =0, entryPoint = 0;
 
 		fIn.read((char*)&size, sizeof(size));
 		char* buff = (char*)malloc(size);
 		fIn.read(buff, size);
 		std::string name = std::string(buff, size);
 		free(buff); 
-		fIn.read((char*)&entryPoint, sizeof(int));
-		int current = fIn.tellg();
+		fIn.read((char*)&entryPoint, sizeof(std::int32_t));
+		std::int32_t current = fIn.tellg();
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 
 	}
@@ -808,40 +808,40 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 		arg_ref_data.map_functionJumpPointsTable.emplace(entryPointItr->second, &entryPointItr->first);
 	}
 
-	int publicGlobalValue = 0;
+	std::int32_t publicGlobalValue = 0;
 	fIn.read((char*)&publicGlobalValue, sizeof(publicGlobalValue));
-	for (int i = 0; i < publicGlobalValue; i++) {
-		int strSize = 0;
-		fIn.read((char*)&strSize, sizeof(int));
+	for (std::int32_t count = 0; count < publicGlobalValue; count++) {
+		std::int32_t strSize = 0;
+		fIn.read((char*)&strSize, sizeof(std::int32_t));
 		char* strBuff = (char*)malloc(strSize);
 		fIn.read(strBuff, strSize);
-		int address = 0;
-		fIn.read((char*)&address, sizeof(int));
+		std::int32_t address = 0;
+		fIn.read((char*)&address, sizeof(std::int32_t));
 		arg_ref_data.map_globalValueAddress.emplace(std::string(strBuff, strSize), address);
 		arg_ref_data.map_addressToValueName.emplace(address, std::string(strBuff, strSize));
 		free(strBuff);
 	}
 
-	int definedTypeCount = 0;
+	std::int32_t definedTypeCount = 0;
 	fIn.read((char*)&definedTypeCount, sizeof(definedTypeCount));
 	arg_ref_data.vec_scriptClassInfo.resize(definedTypeCount);
-	for (int i = 0; i < definedTypeCount; i++) {
-		arg_ref_data.vec_scriptClassInfo.at(i).InputFile(fIn);
+	for (std::int32_t index = 0; index < definedTypeCount; index++) {
+		arg_ref_data.vec_scriptClassInfo.at(index).InputFile(fIn);
 	}
 
 	fIn.read((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
 
 	arg_ref_data.systemTypeCount = arg_ref_data.vec_types.size() - definedTypeCount-arg_ref_data.functionTypeCount;
-	for (int i = 0; i < definedTypeCount; i++) {
-		arg_ref_data.vec_scriptClassInfo.at(i).SetSystemTypeCount(arg_ref_data.systemTypeCount);
-		arg_ref_data.vec_types.at(arg_ref_data.vec_scriptClassInfo.at(i).GetTypeIndex()).isSystem = false;
+	for (std::int32_t index = 0; index < definedTypeCount; index++) {
+		arg_ref_data.vec_scriptClassInfo.at(index).SetSystemTypeCount(arg_ref_data.systemTypeCount);
+		arg_ref_data.vec_types.at(arg_ref_data.vec_scriptClassInfo.at(index).GetTypeIndex()).isSystem = false;
 	}
-	int enumCount =0;
+	std::int32_t enumCount =0;
 	fIn.read((char*)&enumCount, sizeof(enumCount));
-	for (int i = 0; i < enumCount;i++) {
+	for (std::int32_t index = 0; index < enumCount;index++) {
 		EnumTag tag;
-		int typeIndex = 0;
-		fIn.read((char*)&typeIndex, sizeof(int));
+		std::int32_t typeIndex = 0;
+		fIn.read((char*)&typeIndex, sizeof(std::int32_t));
 		tag.InputFile(fIn);
 		arg_ref_data.map_enumTag.emplace(typeIndex,tag);
 		arg_ref_data.map_enumTag.at(typeIndex).CreateEnumMap();
@@ -855,7 +855,7 @@ int ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, But
 	return 0;
 }
 
-int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
+std::int32_t ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
 {
 
 	auto dirPath = StringHelper::GetDirectory(arg_filePath);
@@ -863,46 +863,46 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 		auto dirRes = _mkdir(dirPath.c_str());
 	}
 	std::ofstream fOut(arg_filePath,  std::ios::binary);
-	int sourcePathSize = arg_ref_data.sourceFilePath.size();
+	std::int32_t sourcePathSize = arg_ref_data.sourceFilePath.size();
 	fOut.write((char*)&sourcePathSize,sizeof(sourcePathSize));
 	fOut.write(arg_ref_data.sourceFilePath.c_str(),sourcePathSize);
 
-	fOut.write((char*)&arg_ref_data.commandSize, 4);
+	fOut.write((char*)&arg_ref_data.commandSize, sizeof(std::int32_t));
 	fOut.write((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
 
-	fOut.write((char*)&arg_ref_data.textSize, 4);
+	fOut.write((char*)&arg_ref_data.textSize, sizeof(std::int32_t));
 	fOut.write((char*)arg_ref_data.textBuffer,  arg_ref_data.textSize);
 
 
-	fOut.write((char*)&arg_ref_data.valueSize, 4);
+	fOut.write((char*)&arg_ref_data.valueSize, sizeof(std::int32_t));
 
-	int sysCallSize = arg_ref_data.vec_sysCalls.size();
-	fOut.write((char*)&sysCallSize, 4);
-	for (int i = 0; i < sysCallSize; i++) {
-		 auto p_sysCallFunc=arg_ref_data.vec_sysCalls[i];
-		 long long int address = *(long long int*) & p_sysCallFunc;
-		 int index = map_sysCallsIndex.at(address);
+	std::int32_t sysCallSize = arg_ref_data.vec_sysCalls.size();
+	fOut.write((char*)&sysCallSize, sizeof(std::int32_t));
+	for (std::int32_t count = 0; count < sysCallSize; count++) {
+		 auto p_sysCallFunc=arg_ref_data.vec_sysCalls[count];
+		 std::int64_t address = *(std::int64_t*) & p_sysCallFunc;
+		 std::int32_t index = map_sysCallsIndex.at(address);
 
 		 fOut.write((char*)&index, sizeof(index));
 	}
 
 	sysCallSize = arg_ref_data.vec_sysCallMethods.size();
-	fOut.write((char*)&sysCallSize, 4);
-	for (int i = 0; i < sysCallSize; i++) {
-		auto p_sysCallFunc = arg_ref_data.vec_sysCallMethods[i];
-		long long int address = *(long long int*) & p_sysCallFunc;
-		int index = map_sysMethodCallsIndex.at(address);
+	fOut.write((char*)&sysCallSize, sizeof(std::int32_t));
+	for (std::int32_t count = 0; count < sysCallSize; count++) {
+		auto p_sysCallFunc = arg_ref_data.vec_sysCallMethods[count];
+		std::int64_t address = *(std::int64_t*) & p_sysCallFunc;
+		std::int32_t index = map_sysMethodCallsIndex.at(address);
 
 		fOut.write((char*)&index, sizeof(index));
 	}
 
 
 	sysCallSize = arg_ref_data.vec_types.size();
-	fOut.write((char*)&sysCallSize, 4);
-	for (int i = 0; i < sysCallSize; i++) {
-		auto p_type =& arg_ref_data.vec_types[i];
+	fOut.write((char*)&sysCallSize, sizeof(std::int32_t));
+	for (std::int32_t count = 0; count < sysCallSize; count++) {
+		auto p_type =& arg_ref_data.vec_types[count];
 
-		int size = p_type->argName.size();
+		std::int32_t size = p_type->argName.size();
 		fOut.write((char*)&size, sizeof(size));
 		fOut.write(p_type->argName.c_str(), size); 
 
@@ -912,7 +912,7 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 
 		auto p_sysCallFunc = p_type->typeFunc;
 
-		int index = -1;
+		std::int32_t index = -1;
 		if (p_type->isSystem&&!p_type->p_enumTag) {
 			index = map_valueAllocCallsIndex.at(p_type->typeIndex);
 		}
@@ -928,11 +928,11 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 
 		fOut.write((char*)&p_type->typeIndex, sizeof(p_type->typeIndex));
 
-		int typeMapSize = p_type->map_memberValue.size();
+		std::int32_t typeMapSize = p_type->map_memberValue.size();
 		fOut.write((char*)&typeMapSize, sizeof(typeMapSize));
 		auto end = p_type->map_memberValue.end();
 		for (auto itr = p_type->map_memberValue.begin(); itr != end; itr++) {
-			int size = itr->first.size();
+			std::int32_t size = itr->first.size();
 			fOut.write((char*)&size, sizeof(size));
 			fOut.write(itr->first.c_str(), size);
 			fOut.write((char*)&itr->second, sizeof(itr->second));
@@ -942,39 +942,39 @@ int ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, co
 
 	}
 
-	int entryPointsSize = arg_ref_data.map_entryPoints.size();
+	std::int32_t entryPointsSize = arg_ref_data.map_entryPoints.size();
 	fOut.write((char*)&entryPointsSize, sizeof(entryPointsSize));
 	auto end = arg_ref_data.map_entryPoints.end();
 	for (auto itr = arg_ref_data.map_entryPoints.begin(); itr != end; itr++) {
-		int size = itr->first.size();
+		std::int32_t size = itr->first.size();
 		fOut.write((char*)&size,sizeof(size));
 		fOut.write(itr->first.c_str(), size);
 		fOut.write((char*)&itr->second, sizeof(itr->second));
 	}
 
-	int publicGlobalValue = arg_ref_data.map_globalValueAddress.size();
+	std::int32_t publicGlobalValue = arg_ref_data.map_globalValueAddress.size();
 	fOut.write((char*)&publicGlobalValue, sizeof(publicGlobalValue));
 	auto itr = arg_ref_data.map_globalValueAddress.begin();
-	for (int i = 0; i < publicGlobalValue; i++,itr++) {
-		int strSize =itr->first.size();
-		fOut.write((char*)&strSize, sizeof(int));
+	for (std::int32_t count = 0; count < publicGlobalValue; count++,itr++) {
+		std::int32_t strSize =itr->first.size();
+		fOut.write((char*)&strSize, sizeof(std::int32_t));
 		fOut.write(itr->first.c_str(), strSize);
-		fOut.write((char*)&itr->second, sizeof(int));
+		fOut.write((char*)&itr->second, sizeof(std::int32_t));
 	}
 
-	int defineTypeCount = arg_ref_data.vec_scriptClassInfo.size();
+	std::int32_t defineTypeCount = arg_ref_data.vec_scriptClassInfo.size();
 	fOut.write((char*)&defineTypeCount, sizeof(defineTypeCount));
-	for (int i = 0; i < defineTypeCount; i++) {
-		arg_ref_data.vec_scriptClassInfo[i].OutputFile(fOut);
+	for (std::int32_t index = 0; index < defineTypeCount; index++) {
+		arg_ref_data.vec_scriptClassInfo[index].OutputFile(fOut);
 	}
 
 	fOut.write((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
 
 
-	int enumCount = arg_ref_data.map_enumTag.size();
+	std::int32_t enumCount = arg_ref_data.map_enumTag.size();
 	fOut.write((char*)&enumCount, sizeof(enumCount));
 	for (auto itr = arg_ref_data.map_enumTag.begin(), end = arg_ref_data.map_enumTag.end(); itr != end; itr++) {
-		fOut.write((char*)&itr->first,sizeof(int));
+		fOut.write((char*)&itr->first,sizeof(std::int32_t));
 		itr->second.OutputFile(fOut);
 
 	}
@@ -1056,7 +1056,7 @@ void ButiScript::ValueTable::Alloc(Compiler* arg_comp) const
 	for (auto itr = vec_variableTypes.begin(); itr != end; itr++)
 	{
 		if (*itr & TYPE_REF) {
-			int typeIndex = *itr &~TYPE_REF;
+			std::int32_t typeIndex = *itr &~TYPE_REF;
 			auto type = arg_comp->GetType(typeIndex);
 			if (type->isSystem) {
 				arg_comp->OpAllocStack_Ref(*itr);
@@ -1105,7 +1105,7 @@ ButiScript::SystemTypeRegister* ButiScript::SystemTypeRegister::GetInstance()
 }
 void ButiScript::SystemTypeRegister::SetDefaultSystemType()
 {
-	RegistSystemType_<int>("int", "i");
+	RegistSystemType_<std::int32_t>("std::int32_t", "i");
 	RegistSystemType_<float>("float", "f");
 	RegistSystemType_<std::string>("string", "s");
 	RegistSystemType_<Type_Null>("void", "v");
@@ -1121,7 +1121,7 @@ void ButiScript::SystemTypeRegister::RegistSystemEnumType(const std::string& arg
 	enums.SetEnum(tag);
 	types.RegistType(*enums.FindType(arg_typeName));
 }
-void ButiScript::SystemTypeRegister::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const int arg_value)
+void ButiScript::SystemTypeRegister::RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const std::int32_t arg_value)
 {
 	auto enumType = enums.FindType(arg_typeName);
 	if (!enumType) {
@@ -1131,7 +1131,7 @@ void ButiScript::SystemTypeRegister::RegistEnum(const std::string& arg_typeName,
 
 	enumType->SetValue(arg_identiferName, arg_value);
 }
-int ButiScript::SystemTypeRegister::GetIndex(const std::string& arg_typeName)
+std::int32_t ButiScript::SystemTypeRegister::GetIndex(const std::string& arg_typeName)
 {
 	auto tag = types.GetType(arg_typeName);
 	if (tag) {
@@ -1172,19 +1172,19 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
 #endif // _BUTIENGINEBUILD
 
-	DefineSystemMethod(&VirtualMachine::sys_method_retCast< std::string, size_t,int, &std::string::size, &VirtualMachine::GetTypePtr  >, TYPE_STRING, TYPE_INTEGER, "Size", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_retCast< std::string, size_t,std::int32_t, &std::string::size, &VirtualMachine::GetTypePtr  >, TYPE_STRING, TYPE_INTEGER, "Size", "");
 
 	DefineSystemMethod(&VirtualMachine::sys_method_retNo< Vector2, &Vector2::Normalize, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, &Vector2::GetLength, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_FLOAT, "GetLength", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float, &Vector2::GetLengthSqr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "GetLengthSqr", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, float,const Vector2&, &Vector2::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_FLOAT, "Dot", "vec2");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Floor", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Round", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, int, &Vector2::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, (TYPE_VOID + 1), "Ceil", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, int, &Vector2::GetFloor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetFloor", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, int, &Vector2::GetRound, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetRound", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, int, &Vector2::GetCeil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetCeil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, std::int32_t, &Vector2::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Floor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, std::int32_t, &Vector2::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, (TYPE_VOID + 1), "Round", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2&, std::int32_t, &Vector2::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, (TYPE_VOID + 1), "Ceil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, std::int32_t, &Vector2::GetFloor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetFloor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, std::int32_t, &Vector2::GetRound, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetRound", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, std::int32_t, &Vector2::GetCeil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetCeil", "i");
 
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, &Vector3::Normalize, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID, "Normalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, &Vector3::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetNormalize", "");
@@ -1192,12 +1192,12 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float, &Vector3::GetLengthSqr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "GetLengthSqr", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, float,const Vector3&, &Vector3::Dot, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_FLOAT, "Dot", "vec3");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3,const Vector3&, &Vector3::GetCross, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCross", "vec3");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Floor", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Round", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, int, &Vector3::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, (TYPE_VOID + 2), "Ceil", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, int, &Vector3::GetFloor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetFloor", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, int, &Vector3::GetRound, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetRound", "i");
-	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, int, &Vector3::GetCeil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCeil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, std::int32_t, &Vector3::Floor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Floor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, std::int32_t, &Vector3::Round, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, (TYPE_VOID + 2), "Round", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3&, std::int32_t, &Vector3::Ceil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, (TYPE_VOID + 2), "Ceil", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, std::int32_t, &Vector3::GetFloor, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 2, TYPE_VOID + 2, "GetFloor", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, std::int32_t, &Vector3::GetRound, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetRound", "i");
+	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector3, Vector3, std::int32_t, &Vector3::GetCeil, &VirtualMachine::GetTypePtr, &VirtualMachine::GetTypePtr >, TYPE_VOID + 2, TYPE_VOID + 2, "GetCeil", "i");
 
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4&, &Matrix4x4::Transpose, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "Transpose", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Matrix4x4, Matrix4x4, &Matrix4x4::GetTranspose, &VirtualMachine::GetTypePtr >, TYPE_VOID + 4, TYPE_VOID + 4, "GetTranspose", "");
@@ -1213,7 +1213,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	
 }
 
-bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op, const int arg_retType, const std::string& arg_name, const std::string& arg_vec_argDefines, const std::vector<int>& arg_vec_templateTypes)
+bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op, const std::int32_t arg_retType, const std::string& arg_name, const std::string& arg_vec_argDefines, const std::vector<std::int32_t>& arg_vec_templateTypes)
 {
 	FunctionTag func(arg_retType, arg_name);
 	if (!func.SetArgs(arg_vec_argDefines, SystemTypeRegister::GetInstance()->types .GetArgmentKeyMap()))
@@ -1221,10 +1221,10 @@ bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op,
 
 	func.SetDeclaration();
 	func.SetSystem();				// Systemフラグセット
-	int index = vec_sysCalls.size();
+	std::int32_t index = vec_sysCalls.size();
 	func.SetIndex(index);			// 組み込み関数番号を設定
 	func.SetTemplateType(arg_vec_templateTypes);
-	long long int address = *(long long int*) & arg_op;
+	std::int64_t address = *(std::int64_t*) & arg_op;
 	map_sysCallsIndex.emplace(address, vec_sysCalls.size());
 	vec_sysCalls.push_back(arg_op);
 	if (functions.Add(arg_name, func, &SystemTypeRegister::GetInstance()->types) == 0) {
@@ -1233,7 +1233,7 @@ bool ButiScript::SystemFuntionRegister::DefineSystemFunction(SysFunction arg_op,
 	return true;
 }
 
-bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_method, const int arg_type, const int arg_retType, const std::string& arg_name, const std::string& arg_args, const std::vector<int>& arg_vec_templateTypes)
+bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_method, const std::int32_t arg_type, const std::int32_t arg_retType, const std::string& arg_name, const std::string& arg_args, const std::vector<std::int32_t>& arg_vec_templateTypes)
 {
 	FunctionTag func(arg_retType, arg_name);
 	if (!func.SetArgs(arg_args, SystemTypeRegister::GetInstance()->types.GetArgmentKeyMap()))
@@ -1243,7 +1243,7 @@ bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_met
 	func.SetSystem();				// Systemフラグセット
 	func.SetIndex(vec_sysMethodCalls.size());			// 組み込み関数番号を設定
 	func.SetTemplateType(arg_vec_templateTypes);
-	long long int address = *(long long int*) & arg_p_method;
+	std::int64_t address = *(std::int64_t*) & arg_p_method;
 	map_sysMethodCallsIndex.emplace(address, vec_sysMethodCalls.size());
 	vec_sysMethodCalls.push_back(arg_p_method);
 	auto typeTag = SystemTypeRegister::GetInstance()->types.GetType(arg_type);
@@ -1252,7 +1252,7 @@ bool ButiScript::SystemFuntionRegister::DefineSystemMethod(SysFunction arg_p_met
 	}
 	return true;
 }
-int ButiScript::TypeTag::GetFunctionObjectReturnType() const
+std::int32_t ButiScript::TypeTag::GetFunctionObjectReturnType() const
 {
 	if (!p_functionObjectData) {
 		return -1;
@@ -1260,7 +1260,7 @@ int ButiScript::TypeTag::GetFunctionObjectReturnType() const
 
 	return p_functionObjectData->returnType;
 }
-int ButiScript::TypeTag::GetFunctionObjectArgSize() const
+std::int32_t ButiScript::TypeTag::GetFunctionObjectArgSize() const
 {
 	if (!p_functionObjectData) {
 		return -1;
@@ -1268,15 +1268,15 @@ int ButiScript::TypeTag::GetFunctionObjectArgSize() const
 	return p_functionObjectData->vec_argTypes.size();
 }
 
-const std::vector<int>& ButiScript::TypeTag::GetFunctionObjectArgment() const
+const std::vector<std::int32_t>& ButiScript::TypeTag::GetFunctionObjectArgment() const
 {
 
 	return p_functionObjectData->vec_argTypes;
 }
 
 void ButiScript::TypeTable::Release() {
-	for (auto itr = map_types.begin(), end = map_types.end(); itr != end; itr++) {
-		itr->second.Release();
+	for (auto& type: map_types) {
+		type.second.Release();
 	}
 	map_types.clear();
 	map_argmentChars.clear();
