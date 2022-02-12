@@ -349,16 +349,16 @@ class FunctionTag {
 
 		void SetArgs(const std::vector<ArgDefine>& arg_vec_args)
 		{
-			size_t size = arg_vec_args.size();
-			for (size_t i = 0; i < size; i++) {
+			std::uint64_t size = arg_vec_args.size();
+			for (std::uint64_t i = 0; i < size; i++) {
 				vec_args.push_back(arg_vec_args[i].GetType());
 			}
 		}
 
 		void SetArgs(const std::vector<std::int32_t>& arg_vec_args)
 		{
-			size_t size = arg_vec_args.size();
-			for (size_t i = 0; i < size; i++) {
+			std::uint64_t size = arg_vec_args.size();
+			for (std::uint64_t i = 0; i < size; i++) {
 				vec_args.push_back(arg_vec_args[i]);
 			}
 		}
@@ -416,8 +416,8 @@ class FunctionTag {
 			// 全引数の型をチェック
 
 			//厳密チェック
-			size_t size = vec_args.size();
-			for (size_t i = 0; i < size; i++) {
+			std::uint64_t size = vec_args.size();
+			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i],arg_typeTable))
 					return false;
 			}
@@ -437,8 +437,8 @@ class FunctionTag {
 
 			// 全引数の型をチェック
 			//厳密チェック
-			size_t size = vec_args.size();
-			for (size_t i = 0; i < size; i++) {
+			std::uint64_t size = vec_args.size();
+			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck(arg_vec_args[i], (std::int32_t)vec_args[i],arg_typeTable))
 					return false;
 			}
@@ -459,8 +459,8 @@ class FunctionTag {
 			// 全引数の型をチェック
 
 			//厳密チェック
-			size_t size = vec_args.size();
-			for (size_t i = 0; i < size; i++) {
+			std::uint64_t size = vec_args.size();
+			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck_strict(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i]))
 					return false;
 			}
@@ -480,8 +480,8 @@ class FunctionTag {
 
 			// 全引数の型をチェック
 			//厳密チェック
-			size_t size = vec_args.size();
-			for (size_t i = 0; i < size; i++) {
+			std::uint64_t size = vec_args.size();
+			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck_strict(arg_vec_args[i], (std::int32_t)vec_args[i]))
 					return false;
 			}

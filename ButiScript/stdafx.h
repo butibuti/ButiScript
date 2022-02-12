@@ -16,4 +16,3 @@
 #include <cassert>
 #include <algorithm>
 #include <functional>
-

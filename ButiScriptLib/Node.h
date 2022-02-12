@@ -192,8 +192,8 @@ namespace ButiScript {
 			return this;
 		}
 
-		size_t size() const { return vec_args.size(); }
-		Node_t get(size_t arg_index) const { return vec_args[arg_index]; }
+		std::uint64_t size() const { return vec_args.size(); }
+		Node_t get(std::uint64_t arg_index) const { return vec_args[arg_index]; }
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const ;
 	public:

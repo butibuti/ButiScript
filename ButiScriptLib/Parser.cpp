@@ -35,7 +35,7 @@ struct error_parser {
 		// 改行までをスキャンし、そこまでを表示する。
 
 		iterator_t b = arg_scan.first;
-		size_t length = (*(boost::spirit::anychar_p - '\n')).parse(arg_scan).length();
+		std::uint64_t length = (*(boost::spirit::anychar_p - '\n')).parse(arg_scan).length();
 		boost::spirit::file_position fpos = arg_scan.first.get_position();
 		std::cout << fpos.file << ": " << fpos.line << "." << fpos.column << ": "
 			<< message << " : " << std::string(b, arg_scan.first) << std::endl;

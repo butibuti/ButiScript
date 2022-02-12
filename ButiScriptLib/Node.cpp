@@ -62,7 +62,7 @@ Node_t Node::make_node(const std::int32_t arg_op, const std::string& arg_str, co
 		return std::make_shared<Node_value>(arg_str);
 
 	if (arg_op == OP_STRING) {
-		size_t pos = arg_str.rfind('\"');
+		std::uint64_t pos = arg_str.rfind('\"');
 		if (pos != std::string::npos)
 			return std::make_shared<Node>(arg_op, arg_str.substr(0, pos));
 	}

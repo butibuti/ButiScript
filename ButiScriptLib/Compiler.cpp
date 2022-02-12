@@ -611,9 +611,9 @@ void ButiScript::Compiler::DebugDump()
 // デバッグダンプ
 {
 	std::string message = "---variables---\n";
-	size_t vsize = variables.size();
+	std::uint64_t vsize = variables.size();
 	message += "value stack = " + std::to_string(vsize) + '\n';
-	for (size_t index = 0; index < vsize; index++) {
+	for (std::uint64_t index = 0; index < vsize; index++) {
 		variables[index].Dump();
 	}
 	message += "---code---" + '\n';
@@ -626,8 +626,8 @@ void ButiScript::Compiler::DebugDump()
 	};
 
 	std::int32_t	pos = 0;
-	size_t size = statement.size();
-	for (size_t index = 0; index < size; index++) {
+	std::uint64_t size = statement.size();
+	for (std::uint64_t index = 0; index < size; index++) {
 		message += std::to_string(std::setw(6)) + std::to_string(pos) + ": " + op_name[statement[index].op];
 		if (statement[index].size > 1) {
 			message += ", " + std::to_string(statement[index].GetConstValue<std::int32_t>());
@@ -644,9 +644,9 @@ void ButiScript::Compiler::DebugDump()
 
 {
 	std::cout << "---variables---" << std::endl;
-	size_t vsize = variables.size();
+	std::uint64_t vsize = variables.size();
 	std::cout << "value stack = " << vsize << std::endl;
-	for (size_t i = 0; i < vsize; i++) {
+	for (std::uint64_t i = 0; i < vsize; i++) {
 		variables[i].Dump();
 	}
 	std::cout << "---code---" << std::endl;
@@ -660,8 +660,8 @@ void ButiScript::Compiler::DebugDump()
 	};
 
 	std::int32_t	pos = 0;
-	size_t size = statement.size();
-	for (size_t i = 0; i < size; i++) {
+	std::uint64_t size = statement.size();
+	for (std::uint64_t i = 0; i < size; i++) {
 		std::cout << std::setw(6) << pos << ": " << op_name[statement[i].op];
 		if (statement[i].size > 1) {
 			std::cout << ", " << statement[i].GetConstValue<std::int32_t>();
@@ -1172,7 +1172,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
 #endif // _BUTIENGINEBUILD
 
-	DefineSystemMethod(&VirtualMachine::sys_method_retCast< std::string, size_t,std::int32_t, &std::string::size, &VirtualMachine::GetTypePtr  >, TYPE_STRING, TYPE_INTEGER, "Size", "");
+	DefineSystemMethod(&VirtualMachine::sys_method_retCast< std::string, std::uint64_t,std::int32_t, &std::string::size, &VirtualMachine::GetTypePtr  >, TYPE_STRING, TYPE_INTEGER, "Size", "");
 
 	DefineSystemMethod(&VirtualMachine::sys_method_retNo< Vector2, &Vector2::Normalize, &VirtualMachine::GetTypePtr >, TYPE_VOID + 1, TYPE_VOID, "Normalize", "");
 	DefineSystemMethod(&VirtualMachine::sys_method_ret< Vector2, Vector2, &Vector2::GetNormalize, &VirtualMachine::GetTypePtr  >, TYPE_VOID + 1, TYPE_VOID + 1, "GetNormalize", "");

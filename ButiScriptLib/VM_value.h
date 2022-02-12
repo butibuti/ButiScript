@@ -312,6 +312,7 @@ private:
 };
 
 #endif //_BUTIENGINEBUILD
+
 class IValueData {
 public:
 	IValueData(const std::int32_t arg_ref) {
