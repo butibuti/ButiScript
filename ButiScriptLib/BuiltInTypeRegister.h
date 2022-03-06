@@ -59,6 +59,17 @@ public:
 	/// <param name="memberInfo">ƒƒ“ƒoî•ñ</param>
 	template <typename T>
 	void RegistSystemType_(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
+		RegistSystemType_<T, T>(arg_name, arg_argmentName, memberInfo);
+	}
+	/// <summary>
+	/// ‘g‚İ‚İŒ^‚Ì“o˜^
+	/// </summary>
+	/// <typeparam name="T">Œ^î•ñ</typeparam>
+	/// <param name="arg_name">Œ^–¼</param>
+	/// <param name="arg_argmentName">ˆø”‚Ég‚¤—ª–¼</param>
+	/// <param name="memberInfo">ƒƒ“ƒoî•ñ</param>
+	template <typename T,typename GenerateType>
+	void RegistSystemType_(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
 		TypeTag type;
 
 
@@ -91,7 +102,7 @@ public:
 		}
 		types.RegistType(type);
 		//ƒXƒNƒŠƒvƒg’è‹`‚ÌŒ^‚ªƒƒ“ƒo‚Æ‚µ‚Ä—˜—p‚·‚éŒ^‚Ì“o˜^
-		PushCreateMemberInstance<T>();
+		PushCreateMemberInstance<GenerateType>();
 
 	}
 

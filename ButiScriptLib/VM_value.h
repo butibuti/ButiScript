@@ -28,18 +28,30 @@ public:
 	virtual inline const ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)const = 0;
 	virtual inline const std::int32_t GetMemberType(const std::int32_t arg_index)const = 0;
 	virtual inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index) = 0;
+	template<typename T>
+	void DoSome(){}
+	template <typename MemberType, std::int32_t TypeIndex>
+	inline void SetMemberType(const std::int32_t ByteOffset) {
+		SetMemberType_({ ButiEngine::to_value(reinterpret_cast<MemberType*> (reinterpret_cast<std::int8_t*>(this) + ByteOffset)),TypeIndex });
+	}
+	template <typename MemberType, std::int32_t ByteOffset, std::int32_t TypeIndex>
+	inline void SetMemberType() {
+		SetMemberType_({ ButiEngine::to_value(reinterpret_cast<MemberType*> (reinterpret_cast<std::int8_t*>(this) + ByteOffset)),TypeIndex });
+	}
+protected:
+	virtual inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)=0;
 };
 
 template<typename T>
 class Type_hasMember :public T, public IType_hasMember {
 public:
-	inline Type_hasMember(const T& v):T(v) {
+	inline Type_hasMember(const T& v) :T(v) {
 	}
-	inline Type_hasMember(){}
-	inline Type_hasMember(const Type_hasMember<T>& arg_v):T(static_cast<T>(arg_v)) {
+	inline Type_hasMember() {}
+	inline Type_hasMember(const Type_hasMember<T>& arg_v) : T(static_cast<T>(arg_v)) {
 		vec_member.reserve(arg_v.vec_member.size());
 		for (auto& member : arg_v.vec_member) {
-			vec_member.push_back({ ButiEngine::Valu_ptrHelper::CreateSameTypeValuePtr(member.first,reinterpret_cast<std::int8_t*>(this) + (reinterpret_cast<std::int8_t >( member.first.get()) -reinterpret_cast<std::int8_t>( &arg_v))) ,member.second });
+			vec_member.push_back({ ButiEngine::Valu_ptrHelper::CreateSameTypeValuePtr(member.first,reinterpret_cast<std::int8_t*>(this) + (reinterpret_cast<std::int8_t>(member.first.get()) - reinterpret_cast<std::int8_t>(&arg_v))) ,member.second });
 		}
 	}
 	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
@@ -54,15 +66,160 @@ public:
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index).first = arg_data;
 	}
-	template <typename MemberType, std::int32_t TypeIndex>
-	void SetMemberType(const std::int32_t ByteOffset) {
-		vec_member.push_back({ ButiEngine::to_value(reinterpret_cast<MemberType*> (reinterpret_cast<std::int8_t*>(this) + ByteOffset)),TypeIndex });
-	}
-	template <typename MemberType, std::int32_t ByteOffset, std::int32_t TypeIndex>
-	void SetMemberType() {
-		vec_member.push_back({ ButiEngine::to_value(reinterpret_cast<MemberType*> (reinterpret_cast<std::int8_t*>(this) + ByteOffset)),TypeIndex });
+protected:
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t>& arg_memberType)override {
+		vec_member.push_back(arg_memberType);
 	}
 private:
+	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+};
+template<>
+class Type_hasMember< ButiEngine::Vector2> :public ButiEngine::Vector2, public IType_hasMember {
+public:
+	inline Type_hasMember(const  ButiEngine::Vector2& v) : ButiEngine::Vector2(v) {
+		SetMembers();
+	}
+	inline Type_hasMember() {
+		SetMembers();
+	}
+	inline Type_hasMember(const Type_hasMember< ButiEngine::Vector2>& arg_v) : ButiEngine::Vector2(static_cast<ButiEngine::Vector2>(arg_v)) {
+		SetMembers();
+	}
+	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)const override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const std::int32_t GetMemberType(const std::int32_t arg_index)const {
+		return vec_member.at(arg_index).second;
+	}
+	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
+		vec_member.at(arg_index).first = arg_data;
+	}
+protected:
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
+		vec_member.push_back(arg_memberType);
+	}
+private:
+	inline void SetMembers() {
+		this->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
+	}
+	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+};
+template<>
+class Type_hasMember< ButiEngine::Vector3> :public ButiEngine::Vector3, public IType_hasMember {
+public:
+	inline Type_hasMember(const  ButiEngine::Vector3& v) : ButiEngine::Vector3(v) {
+		SetMembers();
+	}
+	inline Type_hasMember() {
+		SetMembers();
+	}
+	inline Type_hasMember(const Type_hasMember< ButiEngine::Vector3>& arg_v) : ButiEngine::Vector3(static_cast<ButiEngine::Vector3>(arg_v)) {
+		SetMembers();
+	}
+	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)const override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const std::int32_t GetMemberType(const std::int32_t arg_index)const {
+		return vec_member.at(arg_index).second;
+	}
+	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
+		vec_member.at(arg_index).first = arg_data;
+	}
+protected:
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
+		vec_member.push_back(arg_memberType);
+	}
+private:
+	inline void SetMembers() {
+		this->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();
+	}
+	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+};
+
+template<>
+class Type_hasMember< ButiEngine::Vector4> :public ButiEngine::Vector4, public IType_hasMember {
+public:
+	inline Type_hasMember(const  ButiEngine::Vector4& v) : ButiEngine::Vector4(v) {
+		SetMembers();
+	}
+	inline Type_hasMember() {
+		SetMembers();
+	}
+	inline Type_hasMember(const Type_hasMember< ButiEngine::Vector4>& arg_v) : ButiEngine::Vector4(static_cast<ButiEngine::Vector4>(arg_v)) {
+		SetMembers();
+	}
+	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)const override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const std::int32_t GetMemberType(const std::int32_t arg_index)const {
+		return vec_member.at(arg_index).second;
+	}
+	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
+		vec_member.at(arg_index).first = arg_data;
+	}
+protected:
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
+		vec_member.push_back(arg_memberType);
+	}
+private:
+	inline void SetMembers() {
+		this->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 3, TYPE_FLOAT>();
+	}
+	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+};
+
+template<>
+class Type_hasMember< ButiEngine::Matrix4x4> :public ButiEngine::Matrix4x4, public IType_hasMember {
+public:
+	inline Type_hasMember(const  ButiEngine::Matrix4x4& v) : ButiEngine::Matrix4x4(v) {
+		SetMembers();
+	}
+	inline Type_hasMember() {
+		SetMembers();
+	}
+	inline Type_hasMember(const Type_hasMember< ButiEngine::Matrix4x4>& arg_v) : ButiEngine::Matrix4x4(static_cast<ButiEngine::Matrix4x4>(arg_v)) {
+		SetMembers();
+	}
+	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)const override {
+		return vec_member.at(arg_index).first;
+	}
+	inline const std::int32_t GetMemberType(const std::int32_t arg_index)const {
+		return vec_member.at(arg_index).second;
+	}
+	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
+		vec_member.at(arg_index).first = arg_data;
+	}
+protected:
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
+		vec_member.push_back(arg_memberType);
+	}
+private:
+	inline void SetMembers() {
+
+		this->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();	this->SetMemberType<float, vTableSize + sizeof(float) * 3, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 4, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 5, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 6, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 7, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 8, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 9, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 10, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 11, TYPE_FLOAT>();
+		this->SetMemberType<float, vTableSize + sizeof(float) * 12, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 13, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 14, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 15, TYPE_FLOAT>();
+
+	}
 	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
 };
 //参照型など実体を持たない変数の初期化に使用
@@ -127,6 +284,10 @@ struct Type_ScriptClass:public IType_hasMember
 	}
 	std::vector<ButiEngine::Value_ptr<void>> vec_member;
 	const ScriptClassInfo* p_classInfo;
+protected:
+
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
+	}
 };
 template<typename T>
 std::int64_t TypeSpecific() {
@@ -323,9 +484,6 @@ public:
 	inline Value(const ButiEngine::Vector2& arg_v) {
 		static Type_hasMember<ButiEngine::Vector2> t;
 		auto data = ButiEngine::make_value<Type_hasMember<ButiEngine::Vector2>>(arg_v);
-
-		data->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
 		valueData = data;
 		valueType = TYPE_VOID;
 	}
@@ -333,10 +491,6 @@ public:
 	inline Value(const ButiEngine::Vector3& arg_v) {
 		static Type_hasMember<ButiEngine::Vector3> t;
 		auto data = ButiEngine::make_value<Type_hasMember<ButiEngine::Vector3>>(arg_v);
-
-		data->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();
 		valueData = data;
 		valueType = TYPE_VOID;
 	}
@@ -344,10 +498,6 @@ public:
 	inline Value(const ButiEngine::Vector4& arg_v) {
 		static Type_hasMember<ButiEngine::Vector4> t;
 		auto data = ButiEngine::make_value<Type_hasMember<ButiEngine::Vector4>>(arg_v);
-		data->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 3, TYPE_FLOAT>();
 
 		valueData = data;
 		valueType = TYPE_VOID;
@@ -356,11 +506,6 @@ public:
 	inline Value(const ButiEngine::Matrix4x4& arg_v) {
 		static Type_hasMember<ButiEngine::Matrix4x4> t;
 		auto data = ButiEngine::make_value<Type_hasMember<ButiEngine::Matrix4x4>>(arg_v);
-
-		data->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();	data->SetMemberType<float, vTableSize + sizeof(float) * 3, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 4, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 5, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 6, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 7, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 8, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 9, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 10, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 11, TYPE_FLOAT>();
-		data->SetMemberType<float, vTableSize + sizeof(float) * 12, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 13, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 14, TYPE_FLOAT>();data->SetMemberType<float, vTableSize + sizeof(float) * 15, TYPE_FLOAT>();
 		valueData = data;
 		valueType = TYPE_VOID;
 	}
@@ -449,6 +594,56 @@ public:
 	}
 	void SetType(const std::int32_t arg_type) {
 		valueType = arg_type;
+	}
+
+	///Vector2等の組み込みクラスの取り出し
+	template <>
+	inline const ButiEngine::Vector2& Get()const {
+		return static_cast<const ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>());
+	}
+	template <>
+	inline ButiEngine::Vector2& Get() {
+		return static_cast<ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>());
+	}
+	template <>
+	inline void Negative<ButiEngine::Vector2>() {
+		static_cast<ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>()) = -1 * static_cast<ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>());
+	}
+	template <>
+	inline const ButiEngine::Vector3& Get()const {
+		return static_cast<const ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>());
+	}
+	template <>
+	inline ButiEngine::Vector3& Get() {
+		return static_cast<ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>());
+	}
+	template <>
+	inline void Negative<ButiEngine::Vector3>() {
+		static_cast<ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>()) = -1 * static_cast<ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>());
+	}
+	template <>
+	inline const ButiEngine::Vector4& Get()const {
+		return static_cast<const ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>());
+	}
+	template <>
+	inline ButiEngine::Vector4& Get() {
+		return static_cast<ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>());
+	}
+	template <>
+	inline void Negative<ButiEngine::Vector4>() {
+		static_cast<ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>()) = -1 * static_cast<ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>());
+	}
+	template <>
+	inline const ButiEngine::Matrix4x4& Get()const {
+		return static_cast<const ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>());
+	}
+	template <>
+	inline ButiEngine::Matrix4x4& Get() {
+		return static_cast<ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>());
+	}
+	template <>
+	inline void Negative<ButiEngine::Matrix4x4>() {
+		static_cast<ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>()) = -1 * static_cast<ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>());
 	}
 	ButiEngine::Value_ptr<void> valueData;
 	std::int32_t valueType;

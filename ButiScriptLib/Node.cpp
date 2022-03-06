@@ -1168,11 +1168,12 @@ std::int32_t Node::Assign(Compiler* arg_compiler) const{
 	}
 	std::int32_t right_type_raw = rightNode->Push(arg_compiler) ,right_type=right_type_raw&~TYPE_REF,
 		left_type = left_type_raw & ~TYPE_REF;
-
-	std::int32_t systemTypeOpRet = SystemTypeOperatorCheck(op, left_type, right_type, arg_compiler);
-	if (systemTypeOpRet == -1&& op != OP_ASSIGN) {
-		arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		return -1;
+	if (op != OP_ASSIGN) {
+		right_type = SystemTypeOperatorCheck(op - OP_ASSIGN + OP_DECREMENT, left_type, right_type, arg_compiler);
+		if (right_type == -1 ) {
+			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
+			return -1;
+		}
 	}
 
 

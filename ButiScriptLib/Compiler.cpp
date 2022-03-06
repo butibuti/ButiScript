@@ -1109,10 +1109,10 @@ void ButiScript::SystemTypeRegister::SetDefaultSystemType()
 	RegistSystemType_<float>("float", "f");
 	RegistSystemType_<std::string>("string", "s");
 	RegistSystemType_<Type_Null>("void", "v");
-	RegistSystemType_<ButiEngine::Vector2>("Vector2", "vec2", "x:f,y:f");
-	RegistSystemType_<ButiEngine::Vector3>("Vector3", "vec3", "x:f,y:f,z:f");
-	RegistSystemType_<ButiEngine::Vector4>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
-	RegistSystemType_<ButiEngine::Matrix4x4>("Matrix4x4", "Matrix4x4", "_m11:f,_m12:f,_m13:f,_m14:f,_m21:f,_m22:f,_m23:f,_m24:f,_m31:f,_m32:f,_m33:f,_m34:f,_m41:f,_m42:f,_m43:f,_m44:f");
+	RegistSystemType_<ButiEngine::Vector2,Type_hasMember<ButiEngine::Vector2>>("Vector2", "vec2", "x:f,y:f");
+	RegistSystemType_<ButiEngine::Vector3,Type_hasMember<ButiEngine::Vector3>>("Vector3", "vec3", "x:f,y:f,z:f");
+	RegistSystemType_<ButiEngine::Vector4,Type_hasMember<ButiEngine::Vector4>>("Vector4", "vec4", "x:f,y:f,z:f,w:f");
+	RegistSystemType_<ButiEngine::Matrix4x4,Type_hasMember<ButiEngine::Matrix4x4>>("Matrix4x4", "Matrix4x4", "_m11:f,_m12:f,_m13:f,_m14:f,_m21:f,_m22:f,_m23:f,_m24:f,_m31:f,_m32:f,_m33:f,_m34:f,_m41:f,_m42:f,_m43:f,_m44:f");
 }
 void ButiScript::SystemTypeRegister::RegistSystemEnumType(const std::string& arg_typeName)
 {
