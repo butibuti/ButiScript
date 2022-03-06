@@ -1,14 +1,15 @@
 
 function main():int{
 	var i:Parameter;
-	i.speed=11;
+	i.s=CreateSample();
+	i.s.TestMethod();
+	i.speed=i.s.TestMethod();
 	i.velocity.x=22;
 	i.velocity.y=i.speed*3;
 	i.velocity*=2;
 	print(ToString(i.velocity)+"\n");
 	i.velocity.Normalize();
 	print(ToString(i.velocity)+"\n");
-
 
     return i.speed*2;
 }
@@ -22,4 +23,5 @@ function GetFalse() : int{
 class Parameter{
 	public speed:float; 
 	public velocity:Vector2;
+	public s:Sample;
 }

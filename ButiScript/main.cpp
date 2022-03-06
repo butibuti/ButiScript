@@ -11,6 +11,7 @@ public:
 	~Sample() {	}
 	std::int32_t TestMethod() {
 		std::cout << "Sample::TestMethod() is Called! count:"<<count<<std::endl;
+		count++;
 		return count;
 	}
 };
@@ -36,7 +37,7 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::int32_t, &CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<float, &CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
 
-	driver.RegistDefaultSystems(); 
+	driver.RegistDefaultSystems();
 	bool compile_result=false;
 	for(std::int32_t i=1;i<argCount;i++)
 	{
