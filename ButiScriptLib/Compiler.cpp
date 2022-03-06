@@ -1105,7 +1105,7 @@ ButiScript::SystemTypeRegister* ButiScript::SystemTypeRegister::GetInstance()
 }
 void ButiScript::SystemTypeRegister::SetDefaultSystemType()
 {
-	RegistSystemType_<std::int32_t>("std::int32_t", "i");
+	RegistSystemType_<std::int32_t>("int", "i");
 	RegistSystemType_<float>("float", "f");
 	RegistSystemType_<std::string>("string", "s");
 	RegistSystemType_<Type_Null>("void", "v");
@@ -1284,20 +1284,6 @@ void ButiScript::TypeTable::Release() {
 }
 
 #ifndef _BUTIENGINEBUILD
-template<typename T>
-class MemoryReleaser {
-public:
-	MemoryReleaser(T** arg_p_memoryAddress) :p_memoryAddress(arg_p_memoryAddress) {}
-	~MemoryReleaser()
-	{
-		if (*p_memoryAddress) {
-			delete (*p_memoryAddress);
-		}
-	}
-private:
-	T** p_memoryAddress;
-};
-
 auto compilerRelease = MemoryReleaser<ButiScript::Compiler>(&p_instance);
 auto sysTypeRelease = MemoryReleaser<ButiScript::SystemTypeRegister>(&p_sysreginstance);
 auto sysFuncRelease = MemoryReleaser<ButiScript::SystemFuntionRegister>(&p_sysfuncregister);

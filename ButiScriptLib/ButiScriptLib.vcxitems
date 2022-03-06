@@ -22,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)BuiltInTypeRegister.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)ButiPtr.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Compiler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Node.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Parser.h" />

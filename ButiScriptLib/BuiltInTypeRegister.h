@@ -102,10 +102,10 @@ public:
 		type.isSystem = true;
 		type.isShared = true;
 		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.size());
-		vec_valueAllocCall.push_back(&VirtualMachine::pushSharedValue<T>);
+		vec_valueAllocCall.push_back(&VirtualMachine::pushValue<std::shared_ptr< T>>);
 
 		map_refValueAllocCallsIndex.emplace(index, vec_refValueAllocCall.size());
-		vec_refValueAllocCall.push_back(&VirtualMachine::pushSharedValue_ref<T>);
+		vec_refValueAllocCall.push_back(&VirtualMachine::pushValue_ref<std::shared_ptr< T>>);
 
 		type.typeName = arg_name;
 		type.typeIndex = index;
@@ -128,7 +128,7 @@ public:
 		}
 		types.RegistType(type);
 		//スクリプト定義の型がメンバとして利用する型の登録
-		PushCreateSharedMemberInstance<T>();
+		PushCreateMemberInstance<std::shared_ptr<T>>();
 	}
 	std::int32_t GetIndex(const std::string& arg_typeName);
 private:

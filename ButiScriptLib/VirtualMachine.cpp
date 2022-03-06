@@ -147,10 +147,10 @@ bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_dat
 			auto typeIndex = valueStack[index].valueType;
 			auto& tag = shp_data->vec_types.at(typeIndex & ~TYPE_REF);
 			if (!tag.isSystem&&!tag.IsFunctionObjectType() ) {
-				(valueStack[index].valueData)->set_scriptClassInfo(arg_data->vec_types , vec_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
+				(valueStack[index].Get<Type_ScriptClass>()).SetClassInfoUpdate (arg_data->vec_types , vec_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
 			}
 			else if(tag.p_enumTag){
-				((ValueData<Type_Enum>*)valueStack[index].valueData)->set_enumTagPtr(arg_data->vec_types.at(typeIndex).p_enumTag);
+				(valueStack[index].Get<Type_Enum>()).p_enumTag=(arg_data->vec_types.at(typeIndex).p_enumTag);
 			}
 		}
 	}
@@ -164,10 +164,10 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 	command_ptr_ = commandTable + shp_data->map_entryPoints[entryPoint];
 	stack_base = valueStack.size();
 
-	std::int32_t Op;
+	auto Op=VM_HALT;
 	//mainから開始
 	try {
-		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
+		while ((Op =static_cast<VM_ENUM> (*command_ptr_++)) != VM_HALT) {	// Haltするまでループ
 			(this->*p_op[Op])();
 		}
 	}
@@ -322,7 +322,7 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 }
 void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
-		auto type = valueStack[globalValue_base + index].valueType;
+		auto type = valueStack[globalValue_base + index].returnType;
 		if (type & TYPE_REF) {
 			arg_ref_vec_saveObject.push_back(std::make_shared<GlobalValueSaveObject<Type_Null>>());
 		}
@@ -340,7 +340,7 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr<
 		return;
 	}
 	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
-		if (valueStack[globalValue_base + index].valueType != arg_ref_vec_saveObject.at(index)->GetTypeIndex()) {
+		if (valueStack[globalValue_base + index].returnType != arg_ref_vec_saveObject.at(index)->GetTypeIndex()) {
 			continue;
 		}
 		if (valueStack[globalValue_base + index].valueData) {

@@ -660,7 +660,7 @@ namespace ButiScript {
 		std::int32_t PushCompiler_sub(Compiler* arg_compiler);
 		virtual std::int32_t Analyze(Compiler* arg_compiler,FunctionTable* arg_p_funcTable =nullptr);
 		void set_type(const std::int32_t arg_type) {
-			valueType = arg_type;
+			returnType = arg_type;
 		}
 		void AddSubFunction(Function_t);
 		const std::string& GetName()const {
@@ -675,7 +675,7 @@ namespace ButiScript {
 		}
 	protected:
 		Function(){}
-		std::int32_t valueType;
+		std::int32_t returnType;
 		std::string name,searchName;
 		std::vector<ArgDefine> args;
 		AccessModifier accessType=AccessModifier::Public;

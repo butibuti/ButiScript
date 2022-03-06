@@ -4,6 +4,7 @@
 
 
 std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
+auto createMemberInstancesRelease = MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #ifdef _BUTIENGINEBUILD
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
@@ -27,9 +28,9 @@ std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFu
 	}
 	return *p_vec_createMemberInstanceFunction;
 }
-ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
+ButiEngine::Value_ptr<void> CreateScriptValueData(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 
-	std::vector<ButiScript::IValueData*> vec_members;
+	std::vector<ButiEngine::Value_ptr<void>> vec_members;
 	std::int32_t memberSize = arg_info.GetMemberSize();
 	for (std::int32_t i = 0; i < memberSize; i++) {
 		auto typeIndex = arg_info.GetMemberTypeIndex(i);
@@ -40,15 +41,15 @@ ButiScript::IValueData* GetScriptIValue(ButiScript::ScriptClassInfo& arg_info, s
 				vec_members.push_back(GetCreateMemberInstanceFunction()[typeIndex]());
 			}
 			else {
-				vec_members.push_back(GetScriptIValue(p_vec_scriptClassInfo->at(typeIndex - GetCreateMemberInstanceFunction().size()), p_vec_scriptClassInfo));
+				vec_members.push_back(CreateScriptValueData(p_vec_scriptClassInfo->at(typeIndex - GetCreateMemberInstanceFunction().size()), p_vec_scriptClassInfo));
 			}
 		}
 		//éQè∆å^
 		else {
-			vec_members.push_back(ButiScript::GetNullValueData());
+			vec_members.push_back(ButiEngine::Value_ptr<void>());
 		}
 	}
-	return new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&arg_info, vec_members, 1);
+	return ButiEngine::make_value<ButiScript::Type_ScriptClass>(vec_members ,&arg_info);
 	//return nullptr;
 }
 
@@ -69,7 +70,7 @@ void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_
 #endif
 ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
 	
-	valueData = GetScriptIValue(arg_info,p_vec_scriptClassInfo);
+	valueData = CreateScriptValueData(arg_info,p_vec_scriptClassInfo);
 	valueType = arg_info.GetTypeIndex();
 }
 
@@ -97,34 +98,13 @@ std::int32_t ButiScript::Value::GetTypeIndex(std::int64_t arg_typeFunc)
 
 void ButiScript::PushCreateMemberInstance(CreateMemberInstanceFunction arg_function)
 {
-
 	GetCreateMemberInstanceFunction().push_back(arg_function);
 }
 
-auto nullValueData=ButiScript::ValueData<ButiScript::Type_Null>(1);
-ButiScript::ValueData<ButiScript::Type_Null>* ButiScript::GetNullValueData()
-{
-	nullValueData.addref();
-	return &nullValueData;
-}
 
 #ifdef _BUTIENGINEBUILD
 auto typeMapRelease= ButiEngine::Util::MemoryReleaser (&p_map_typeIndex);
 #else
-
-template<typename T>
-class MemoryReleaser {
-public:
-	MemoryReleaser(T** arg_p_memoryAddress) :p_memoryAddress(arg_p_memoryAddress) {}
-	~MemoryReleaser()
-	{
-		if (*p_memoryAddress) {
-			delete (*p_memoryAddress);
-		}
-	}
-private:
-	T** p_memoryAddress;
-};
 
 auto typeMapRelease = MemoryReleaser<std::map<std::int64_t,std::int32_t>>(&p_map_typeIndex);
 #endif

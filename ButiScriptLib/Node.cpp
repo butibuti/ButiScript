@@ -549,23 +549,23 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const std::ve
 
 
 
-template <typename T>
+template <typename LeftType,typename RightType,typename ReturnType>
 bool SetDefaultOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 	switch (arg_op) {
 	case OP_ADD:
-		arg_compiler->OpAdd<T>();
+		arg_compiler->OpAdd<LeftType,RightType,ReturnType>();
 		break;
 
 	case OP_SUB:
-		arg_compiler->OpSub<T>();
+		arg_compiler->OpSub<LeftType, RightType, ReturnType>();
 		break;
 
 	case OP_MUL:
-		arg_compiler->OpMul<T>();
+		arg_compiler->OpMul<LeftType, RightType, ReturnType>();
 		break;
 
 	case OP_DIV:
-		arg_compiler->OpDiv<T>();
+		arg_compiler->OpDiv<LeftType, RightType, ReturnType>();
 		break;
 
 
@@ -575,33 +575,32 @@ bool SetDefaultOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 	}
 	return true;
 }
-template <typename T, typename U>
-bool SetDeferentTypeMulOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
-	if (arg_op == OP_MUL) {
 
-		arg_compiler->OpMul<T, U>();
-		return true;
-	}
-	return false;
-}
-template <typename T, typename U>
-bool SetDeferentTypeDivOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
-	if (arg_op == OP_DIV) {
-
-		arg_compiler->OpDiv<T, U>();
-		return true;
-	}
-	return false;
-}
-
-template <typename T>
+template <typename LeftType, typename RightType>
 bool SetModOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 	if (arg_op == OP_MOD) {
-		arg_compiler->OpMod<T>();
+		arg_compiler->OpMod<LeftType, RightType>();
 		return true;
 	}
 	return false;
 }
+template <typename LeftType, typename RightType, typename ReturnType>
+bool SetMulOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_MUL) {
+		arg_compiler->OpMul<LeftType, RightType, ReturnType>();
+		return true;
+	}
+	return false;
+}
+template <typename LeftType, typename RightType, typename ReturnType>
+bool SetDivOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
+	if (arg_op == OP_DIV) {
+		arg_compiler->OpDiv<LeftType, RightType, ReturnType>();
+		return true;
+	}
+	return false;
+}
+template<typename LeftType,typename RightType>
 bool SetLogicalOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 	switch (arg_op) {
 	case OP_LOGAND:
@@ -613,27 +612,27 @@ bool SetLogicalOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 		break;
 
 	case OP_EQ:
-		arg_compiler->OpEq();
+		arg_compiler->OpEq<LeftType,RightType>();
 		break;
 
 	case OP_NE:
-		arg_compiler->OpNe();
+		arg_compiler->OpNe<LeftType, RightType>();
 		break;
 
 	case OP_GT:
-		arg_compiler->OpGt();
+		arg_compiler->OpGt<LeftType, RightType>();
 		break;
 
 	case OP_GE:
-		arg_compiler->OpGe();
+		arg_compiler->OpGe<LeftType, RightType>();
 		break;
 
 	case OP_LT:
-		arg_compiler->OpLt();
+		arg_compiler->OpLt<LeftType, RightType>();
 		break;
 
 	case OP_LE:
-		arg_compiler->OpLe();
+		arg_compiler->OpLe<LeftType, RightType>();
 		break;
 
 	case OP_AND:
@@ -660,55 +659,6 @@ bool SetLogicalOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 }
 
 
-
-template <typename T>
-bool SetDefaultAssignOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
-	switch (arg_op) {
-	case OP_ADD_ASSIGN:
-		arg_compiler->OpAdd<T>();
-		break;
-
-	case OP_SUB_ASSIGN:
-		arg_compiler->OpSub<T>();
-		break;
-
-	case OP_MUL_ASSIGN:
-		arg_compiler->OpMul<T>();
-		break;
-
-	case OP_DIV_ASSIGN:
-		arg_compiler->OpDiv<T>();
-		break;
-
-	case OP_ASSIGN:
-
-		break;
-
-	default:
-		return false;
-		break;
-	}
-	return true;
-}
-template <typename T, typename U>
-bool SetDeferentTypeMulAssignOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
-	if (arg_op == OP_MUL_ASSIGN) {
-
-		arg_compiler->OpMul<T, U>();
-		return true;
-	}
-	return false;
-}
-template <typename T, typename U>
-bool SetDeferentTypeDivAssignOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
-	if (arg_op == OP_DIV_ASSIGN) {
-
-		arg_compiler->OpDiv<T, U>();
-		return true;
-	}
-	return false;
-}
-
 template <typename T>
 bool SetModAssignOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 	if (arg_op == OP_MOD_ASSIGN) {
@@ -717,33 +667,135 @@ bool SetModAssignOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
 	}
 	return false;
 }
-bool SetLogicalAssignOperator(const std::int32_t arg_op, Compiler* arg_compiler) {
-	switch (arg_op) {
-	case OP_AND_ASSIGN:
-		arg_compiler->OpAnd();
-		break;
 
-	case OP_OR_ASSIGN:
-		arg_compiler->OpOr();
-		break;
+std::int32_t SystemTypeOperatorCheck(const std::int32_t arg_op,const std::int32_t arg_leftType, const std::int32_t arg_rightType, Compiler* arg_p_compiler) {
 
-	case OP_LSHIFT_ASSIGN:
-		arg_compiler->OpLeftShift();
-		break;
-
-	case OP_RSHIFT_ASSIGN:
-		arg_compiler->OpRightShift();
-		break;
-
-	default:
-		return false;
-		break;
+	// float計算ノード
+	if ((arg_leftType == TYPE_FLOAT && arg_rightType == TYPE_FLOAT)) {
+		if (!SetDefaultOperator<float, float, float>(arg_op, arg_p_compiler) && (!SetModOperator<float, float>(arg_op, arg_p_compiler)) && (!SetLogicalOperator<float, float>(arg_op, arg_p_compiler))) {
+			
+		}
+		return TYPE_FLOAT;
 	}
-	return true;
+
+	if ((arg_leftType == TYPE_FLOAT && arg_rightType == TYPE_INTEGER)) {
+		if (!SetDefaultOperator<float, std::int32_t, float>(arg_op, arg_p_compiler) && (!SetModOperator<float, std::int32_t>(arg_op, arg_p_compiler)) && (!SetLogicalOperator<float, std::int32_t>(arg_op, arg_p_compiler))) {
+			
+		}
+		return TYPE_FLOAT;
+	}
+
+	if ((arg_leftType == TYPE_INTEGER && arg_rightType == TYPE_FLOAT)) {
+		if (!SetDefaultOperator<std::int32_t, float, float>(arg_op, arg_p_compiler) && (!SetModOperator<std::int32_t, float>(arg_op, arg_p_compiler)) && (!SetLogicalOperator<std::int32_t, float>(arg_op, arg_p_compiler))) {
+			
+		}
+		return TYPE_FLOAT;
+	}
+
+
+	// 整数計算ノードの処理
+	if (arg_leftType == TYPE_INTEGER && arg_rightType == TYPE_INTEGER) {
+		if (!SetDefaultOperator<std::int32_t, std::int32_t, std::int32_t>(arg_op, arg_p_compiler) && (!SetModOperator<std::int32_t, std::int32_t>(arg_op, arg_p_compiler)) && (!SetLogicalOperator<std::int32_t, std::int32_t>(arg_op, arg_p_compiler))) {
+			
+		}
+		return TYPE_INTEGER;
+	}
+
+	//Vector2計算ノード
+	if (arg_leftType == TYPE_VECTOR2 && arg_rightType == TYPE_VECTOR2) {
+		if (!SetDefaultOperator<ButiEngine::Vector2, ButiEngine::Vector2, ButiEngine::Vector2>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR2;
+	}
+	if (arg_leftType == TYPE_VECTOR2 && arg_rightType == TYPE_FLOAT) {
+		if (!SetMulOperator<ButiEngine::Vector2, float, ButiEngine::Vector2>(arg_op, arg_p_compiler) && !!SetDivOperator<ButiEngine::Vector2, float, ButiEngine::Vector2>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR2;
+	}
+	if (arg_leftType == TYPE_VECTOR2 && arg_rightType == TYPE_INTEGER) {
+		if (!SetMulOperator<ButiEngine::Vector2, std::int32_t, ButiEngine::Vector2>(arg_op, arg_p_compiler) && !!SetDivOperator<ButiEngine::Vector2, std::int32_t, ButiEngine::Vector2>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR2;
+	}
+	if (arg_leftType == TYPE_FLOAT && arg_rightType == TYPE_VECTOR2) {
+		if (!SetMulOperator<float, ButiEngine::Vector2, ButiEngine::Vector2>(arg_op, arg_p_compiler) && !SetDivOperator<float, ButiEngine::Vector2, ButiEngine::Vector2>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR2;
+	}
+	if (arg_leftType == TYPE_INTEGER && arg_rightType == TYPE_VECTOR2) {
+		if (!SetMulOperator<std::int32_t, ButiEngine::Vector2, ButiEngine::Vector2>(arg_op, arg_p_compiler) && !SetDivOperator<std::int32_t, ButiEngine::Vector2, ButiEngine::Vector2>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR2;
+	}
+	//Vector3計算ノード
+	if (arg_leftType == TYPE_VECTOR3 && arg_rightType == TYPE_VECTOR3) {
+		if (!SetDefaultOperator<ButiEngine::Vector3, ButiEngine::Vector3, ButiEngine::Vector3>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR3;
+	}
+	if (arg_leftType == TYPE_VECTOR3 && arg_rightType == TYPE_FLOAT) {
+		if (!SetMulOperator<ButiEngine::Vector3, float, ButiEngine::Vector3>(arg_op, arg_p_compiler) && !!SetDivOperator<ButiEngine::Vector3, float, ButiEngine::Vector3>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR3;
+	}
+	if (arg_leftType == TYPE_VECTOR3 && arg_rightType == TYPE_INTEGER) {
+		if (!SetMulOperator<ButiEngine::Vector3, std::int32_t, ButiEngine::Vector3>(arg_op, arg_p_compiler) && !!SetDivOperator<ButiEngine::Vector3, std::int32_t, ButiEngine::Vector3>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR3;
+	}
+	if (arg_leftType == TYPE_FLOAT && arg_rightType == TYPE_VECTOR3) {
+		if (!SetMulOperator<float, ButiEngine::Vector3, ButiEngine::Vector3>(arg_op, arg_p_compiler) && !SetDivOperator<float, ButiEngine::Vector3, ButiEngine::Vector3>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR3;
+	}
+	if (arg_leftType == TYPE_INTEGER && arg_rightType == TYPE_VECTOR3) {
+		if (!SetMulOperator<std::int32_t, ButiEngine::Vector3, ButiEngine::Vector3>(arg_op, arg_p_compiler) && !SetDivOperator<std::int32_t, ButiEngine::Vector3, ButiEngine::Vector3>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR3;
+	}
+	//Vector4計算ノード
+	if (arg_leftType == TYPE_VECTOR4 && arg_rightType == TYPE_VECTOR4) {
+		if (!SetDefaultOperator<ButiEngine::Vector4, ButiEngine::Vector4, ButiEngine::Vector4>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR4;
+	}
+	if (arg_leftType == TYPE_VECTOR4 && arg_rightType == TYPE_FLOAT) {
+		if (!SetMulOperator<ButiEngine::Vector4, float, ButiEngine::Vector4>(arg_op, arg_p_compiler) && !!SetDivOperator<ButiEngine::Vector4, float, ButiEngine::Vector4>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR4;
+	}
+	if (arg_leftType == TYPE_VECTOR4 && arg_rightType == TYPE_INTEGER) {
+		if (!SetMulOperator<ButiEngine::Vector4, std::int32_t, ButiEngine::Vector4>(arg_op, arg_p_compiler) && !!SetDivOperator<ButiEngine::Vector4, std::int32_t, ButiEngine::Vector4>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR4;
+	}
+	if (arg_leftType == TYPE_FLOAT && arg_rightType == TYPE_VECTOR4) {
+		if (!SetMulOperator<float, ButiEngine::Vector4, ButiEngine::Vector4>(arg_op, arg_p_compiler) && !SetDivOperator<float, ButiEngine::Vector4, ButiEngine::Vector4>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR4;
+	}
+	if (arg_leftType == TYPE_INTEGER && arg_rightType == TYPE_VECTOR4) {
+		if (!SetMulOperator<std::int32_t, ButiEngine::Vector4, ButiEngine::Vector4>(arg_op, arg_p_compiler) && !SetDivOperator<std::int32_t, ButiEngine::Vector4, ButiEngine::Vector4>(arg_op, arg_p_compiler)) {
+			
+		}
+		return TYPE_VECTOR4;
+	}
+	return -1;
 }
-
-
-
 // ノードのpush処理
 std::int32_t Node::Push(Compiler* arg_compiler) const{
 	if (op >= OP_ASSIGN && op <= OP_RSHIFT_ASSIGN) {
@@ -752,25 +804,77 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 
 	switch (op) {
 	case OP_NEG:
-		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+	{
+		auto typeIndex_raw = leftNode->Push(arg_compiler);
+		auto typeIndex = typeIndex_raw & ~TYPE_REF;
+		if (typeIndex == TYPE_STRING) {
 			arg_compiler->error("文字列には到底許されない計算です。");
-		arg_compiler->OpNeg();
-		return leftNode->GetType(arg_compiler);
+		}
+		else if (typeIndex == TYPE_INTEGER) {
+			arg_compiler->OpNeg<std::int32_t>();
+		}
+		else if (typeIndex == TYPE_FLOAT) {
+			arg_compiler->OpNeg<float>();
+		}
+		else if (typeIndex == TYPE_VECTOR2) {
+			arg_compiler->OpNeg<ButiEngine::Vector2>();
+		}
+		else if (typeIndex == TYPE_VECTOR3) {
+			arg_compiler->OpNeg<ButiEngine::Vector3>();
+		}
+		else if (typeIndex == TYPE_VECTOR4) {
+			arg_compiler->OpNeg<ButiEngine::Vector4>();
+		}
+		else if (typeIndex == TYPE_MATRIX4X4) {
+			arg_compiler->OpNeg<ButiEngine::Matrix4x4>();
+		}
+		return typeIndex_raw;
+	}
 	case OP_NOT:
-		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+	{
+		auto typeIndex_raw = leftNode->Push(arg_compiler);
+		auto typeIndex = typeIndex_raw & ~TYPE_REF;
+		if (typeIndex == TYPE_STRING) {
 			arg_compiler->error("文字列には到底許されない計算です。");
-		arg_compiler->OpNot();
-		return leftNode->GetType(arg_compiler);
-	case OP_INCREMENT:
-		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+		}
+		else if (typeIndex == TYPE_INTEGER) {
+			arg_compiler->OpNot<std::int32_t>();
+		}
+		else if (typeIndex== TYPE_FLOAT) {
+			arg_compiler->OpNot<float>();
+		}		
+		return typeIndex_raw;
+	}
+	case OP_INCREMENT: 
+	{
+		auto typeIndex_raw = leftNode->Push(arg_compiler);
+		auto typeIndex = typeIndex_raw & ~TYPE_REF;
+		if (typeIndex == TYPE_STRING) {
 			arg_compiler->error("文字列には到底許されない計算です。");
-		arg_compiler->OpIncrement();
-		return leftNode->GetType(arg_compiler);
+		}
+		else if (typeIndex == TYPE_INTEGER) {
+			arg_compiler->OpIncrement<std::int32_t>();
+		}
+		else if (typeIndex == TYPE_FLOAT) {
+			arg_compiler->OpIncrement<float>();
+		}
+		return typeIndex_raw;
+	}
 	case OP_DECREMENT:
-		if (leftNode->Push(arg_compiler) == TYPE_STRING)
+	{
+		auto typeIndex_raw = leftNode->Push(arg_compiler);
+		auto typeIndex = typeIndex_raw & ~TYPE_REF;
+		if (typeIndex == TYPE_STRING) {
 			arg_compiler->error("文字列には到底許されない計算です。");
-		arg_compiler->OpDecrement();
-		return leftNode->GetType(arg_compiler);
+		}
+		else if (typeIndex == TYPE_INTEGER) {
+			arg_compiler->OpDecrement<std::int32_t>();
+		}
+		else if (typeIndex == TYPE_FLOAT) {
+			arg_compiler->OpDecrement<float>();
+		}
+		return typeIndex_raw;
+	}
 	case OP_INT:
 		arg_compiler->PushConstInt(num_int);
 		return TYPE_INTEGER;
@@ -793,155 +897,42 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 	if (left_type <= -1 || right_type <= -1) {
 		return -1;
 	}
-
-	// float計算ノードの処理
-	if ((left_type == TYPE_FLOAT && right_type == TYPE_FLOAT ) || (left_type == TYPE_INTEGER && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_INTEGER)) {
-		if (!SetDefaultOperator<float>(op, arg_compiler) && (!SetModOperator<float>(op, arg_compiler)) && (!SetLogicalOperator(op, arg_compiler))) {
-				arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-
-		return TYPE_FLOAT;
-	}
-
-	// 整数計算ノードの処理
-	if (left_type ==  TYPE_INTEGER && right_type==TYPE_INTEGER) {
-		if (!SetDefaultOperator<std::int32_t>(op, arg_compiler)&&  (!SetModOperator<std::int32_t>(op, arg_compiler))&& (!SetLogicalOperator(op, arg_compiler))) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");	
-		}
-		return TYPE_INTEGER;
-	}
-
-	//Vector2計算ノード
-	if (left_type == TYPE_VECTOR2 && right_type == TYPE_VECTOR2) {
-		if (!SetDefaultOperator<ButiEngine::Vector2>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR2;
-	}
-	if (left_type == TYPE_VECTOR2 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, float>(op, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, float>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR2;
-	}
-	if (left_type == TYPE_VECTOR2 && right_type == TYPE_INTEGER) {
-
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector2, std::int32_t>(op, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector2, std::int32_t>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR2;
-	}
-	if (left_type == TYPE_FLOAT && right_type == TYPE_VECTOR2) {
-		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector2>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR2;
-	}
-	if (left_type == TYPE_INTEGER && right_type == TYPE_VECTOR2) {
-
-		if (!SetDeferentTypeMulOperator<std::int32_t, ButiEngine::Vector2>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR2;
-	}
-	//Vector3計算ノード
-	if (left_type == TYPE_VECTOR3 && right_type == TYPE_VECTOR3) {
-		if (!SetDefaultOperator<ButiEngine::Vector3>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR3;
-	}
-	if (left_type == TYPE_VECTOR3 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, float>(op, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, float>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR3;
-	}
-	if (left_type == TYPE_VECTOR3 && right_type == TYPE_INTEGER) {
-
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector3, std::int32_t>(op, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector3, std::int32_t>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR3;
-	}
-	if (left_type == TYPE_FLOAT && right_type == TYPE_VECTOR3) {
-		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector3>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR3;
-	}
-	if (left_type == TYPE_INTEGER && right_type == TYPE_VECTOR3) {
-
-		if (!SetDeferentTypeMulOperator<std::int32_t, ButiEngine::Vector3>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR3;
-	}
-	//Vector4計算ノード
-	if (left_type == TYPE_VECTOR4 && right_type == TYPE_VECTOR4) {
-		if (!SetDefaultOperator<ButiEngine::Vector4>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR4;
-	}
-	if (left_type == TYPE_VECTOR4 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, float>(op, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, float>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR4;
-	}
-	if (left_type == TYPE_VOID +3 && right_type == TYPE_INTEGER) {
-
-		if (!SetDeferentTypeMulOperator<ButiEngine::Vector4, std::int32_t>(op, arg_compiler) && !SetDeferentTypeDivOperator<ButiEngine::Vector4, std::int32_t>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR4;
-	}
-	if (left_type == TYPE_FLOAT && right_type == TYPE_VECTOR4) {
-		if (!SetDeferentTypeMulOperator<float, ButiEngine::Vector4>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR4;
-	}
-	if (left_type == TYPE_INTEGER && right_type == TYPE_VECTOR4) {
-
-		if (!SetDeferentTypeMulOperator<std::int32_t, ButiEngine::Vector4>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		return TYPE_VECTOR4;
+	std::int32_t systemTypeOpRet = SystemTypeOperatorCheck(op, left_type, right_type, arg_compiler);
+	if (systemTypeOpRet != -1) {
+		return systemTypeOpRet;
 	}
 
 	if (arg_compiler->GetType(left_type)->p_enumTag && right_type == TYPE_INTEGER) {
 		if (op == OP_EQ)
 		{
-			arg_compiler->OpEq();
+			arg_compiler->OpEq<std::int32_t, std::int32_t>();
 		}
 		else if (op == OP_NE) {
-			arg_compiler->OpNe();
+			arg_compiler->OpNe<std::int32_t, std::int32_t>();
 		}
 		return left_type;
 	}
 
 	if (left_type == right_type && op == OP_EQ) {
-		arg_compiler->OpEq();
+		arg_compiler->OpEq<Type_ScriptClass,Type_ScriptClass>();
 		return TYPE_INTEGER;
 	}
 
 	if (left_type == TYPE_VOID) {
 		if (op == OP_EQ && (arg_compiler->GetType(right_type)->isShared || rightNode->GetType(arg_compiler)&TYPE_REF)) {
-			arg_compiler->OpEq();
+			arg_compiler->OpEq<Type_ScriptClass, Type_ScriptClass>();
 		}
 		else if (op == OP_NE) {
-			arg_compiler->OpNe();
+			arg_compiler->OpNe<Type_ScriptClass, Type_ScriptClass>();
 		}
 		return TYPE_INTEGER;
 	}
 	if (right_type == TYPE_VOID) {
 		if (op == OP_EQ && (arg_compiler->GetType(left_type)->isShared || leftNode->GetType(arg_compiler) & TYPE_REF)) {
-			arg_compiler->OpEq();
+			arg_compiler->OpEq<Type_ScriptClass, Type_ScriptClass>();
 		}
 		else if (op == OP_NE) {
-			arg_compiler->OpNe();
+			arg_compiler->OpNe<Type_ScriptClass, Type_ScriptClass>();
 		}
 		return TYPE_INTEGER;
 	}
@@ -981,6 +972,10 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 		break;
 	}
 	return TYPE_STRING;
+
+
+	arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
+	return -1;
 }
 
 // ノードのpop
@@ -990,6 +985,7 @@ std::int32_t Node::Pop(Compiler* arg_compiler) const{
 	arg_compiler->error("内部エラー：計算ノードをpopしています。");
 	return TYPE_INTEGER;
 }
+
 
 //ノードの型チェック
 std::int32_t Node::GetType(Compiler* arg_compiler)const {
@@ -1173,96 +1169,12 @@ std::int32_t Node::Assign(Compiler* arg_compiler) const{
 	std::int32_t right_type_raw = rightNode->Push(arg_compiler) ,right_type=right_type_raw&~TYPE_REF,
 		left_type = left_type_raw & ~TYPE_REF;
 
-
-
-	// float計算ノードの処理
-	if ((left_type == TYPE_FLOAT && right_type == TYPE_FLOAT) || (left_type == TYPE_INTEGER && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_INTEGER)) {
-		if (!SetDefaultAssignOperator<float>(op, arg_compiler) && (!SetModAssignOperator<float>(op, arg_compiler)) && (!SetLogicalAssignOperator(op, arg_compiler))) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
+	std::int32_t systemTypeOpRet = SystemTypeOperatorCheck(op, left_type, right_type, arg_compiler);
+	if (systemTypeOpRet == -1&& op != OP_ASSIGN) {
+		arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
+		return -1;
 	}
 
-	// 整数計算ノードの処理
-	if (left_type == TYPE_INTEGER && right_type == TYPE_INTEGER) {
-		if (!SetDefaultAssignOperator<std::int32_t>(op, arg_compiler) && (!SetModAssignOperator<std::int32_t>(op, arg_compiler)) && (!SetLogicalAssignOperator(op, arg_compiler))) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-
-
-	//Vector2計算ノード
-	if (left_type == TYPE_VECTOR2&& right_type == TYPE_VECTOR2) {
-		if (!SetDefaultAssignOperator<ButiEngine::Vector2>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	if (left_type == TYPE_VECTOR2 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, float>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, float>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler); 
-		return 0;
-	}
-	if (left_type == TYPE_VECTOR2 && right_type == TYPE_INTEGER) {
-
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector2, std::int32_t>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector2, std::int32_t>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	//Vector3計算ノード
-	if (left_type == TYPE_VECTOR3 && right_type == TYPE_VECTOR3) {
-		if (!SetDefaultAssignOperator<ButiEngine::Vector3>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	if (left_type == TYPE_VECTOR3 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, float>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, float>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	if (left_type == TYPE_VECTOR3 && right_type == TYPE_INTEGER) {
-
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector3, std::int32_t>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector3, std::int32_t>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	//Vector4計算ノード
-	if (left_type == TYPE_VECTOR4 && right_type == TYPE_VECTOR4) {
-		if (!SetDefaultAssignOperator<ButiEngine::Vector4>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	if (left_type == TYPE_VECTOR4 && right_type == TYPE_FLOAT) {
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, float>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, float>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
-	if (left_type == TYPE_VECTOR4 && right_type == TYPE_INTEGER) {
-
-		if (!SetDeferentTypeMulAssignOperator<ButiEngine::Vector4, std::int32_t>(op, arg_compiler) && !SetDeferentTypeDivAssignOperator<ButiEngine::Vector4, std::int32_t>(op, arg_compiler)) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
-		}
-		leftNode->Pop(arg_compiler);
-		return 0;
-	}
 
 	if (left_type == TYPE_STRING&& right_type == TYPE_STRING) {
 		switch (op) {
@@ -1297,6 +1209,18 @@ std::int32_t Node::Assign(Compiler* arg_compiler) const{
 	}
 	else if ((arg_compiler->GetType(right_type)->p_enumTag && (left_type == TYPE_INTEGER || arg_compiler->GetType(left_type)->p_enumTag))
 		|| (arg_compiler->GetType(left_type)->p_enumTag && (right_type== TYPE_INTEGER || arg_compiler->GetType(right_type)->p_enumTag))	) {
+		leftNode->Pop(arg_compiler);
+		return 0;
+	}
+	else if (right_type == TYPE_FLOAT && left_type == TYPE_INTEGER)
+	{
+		arg_compiler->OpCast<float, std::int32_t>();
+		leftNode->Pop(arg_compiler);
+		return 0;
+	}
+	else if (left_type== TYPE_FLOAT && right_type== TYPE_INTEGER)
+	{
+		arg_compiler->OpCast<std::int32_t, float>();
 		leftNode->Pop(arg_compiler);
 		return 0;
 	}
@@ -1848,20 +1772,26 @@ std::int32_t Statement_return::Analyze(Compiler* arg_compiler)
 {
 
 	if (arg_compiler->GetCurrentFunctionType() == TYPE_VOID) {	// 戻り値無し
-		if (node != 0) {
+		if (node) {
 			arg_compiler->error("void関数に戻り値が設定されています");
 		}
 		arg_compiler->OpReturn();
 	}
 	else {
-		if (node == 0) {
+		if (!node) {
 			arg_compiler->error("関数の戻り値がありません");
 		}
 		else {
-			std::int32_t node_type = node->Push(arg_compiler);		// 戻り値をpush
-
-			if (!CanTypeCast( node_type ,arg_compiler->GetCurrentFunctionType())) {
+			std::int32_t nodeType = node->Push(arg_compiler);		// 戻り値をpush
+			std::int32_t returnType = arg_compiler->GetCurrentFunctionType();
+			if (!CanTypeCast( nodeType ,returnType)) {
 				arg_compiler->error("戻り値の型が合いません");
+			}
+			if (nodeType == TYPE_INTEGER && returnType == TYPE_FLOAT) {
+				arg_compiler->OpCast<std::int32_t, float>();
+			}
+			if (nodeType == TYPE_FLOAT&& returnType == TYPE_INTEGER) {
+				arg_compiler->OpCast<float,std::int32_t>();
 			}
 		}
 		arg_compiler->OpReturnV();
@@ -2181,6 +2111,9 @@ std::int32_t Node_Member::Pop(Compiler* arg_compiler) const
 		if (type & TYPE_REF) {
 			arg_compiler->PopMemberRef(typeTag->map_memberValue.at(strData).index);
 		}
+		else if(type==TYPE_INTEGER||type==TYPE_FLOAT){
+			arg_compiler->PopMemberValueType(typeTag->map_memberValue.at(strData).index);
+		}
 		else {
 			arg_compiler->PopMember(typeTag->map_memberValue.at(strData).index);
 		}
@@ -2444,7 +2377,7 @@ std::int32_t Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p
 {
 	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
-	arg_compiler->RegistFunction(valueType, name, args, block, accessType,arg_p_funcTable);
+	arg_compiler->RegistFunction(returnType, name, args, block, accessType,arg_p_funcTable);
 	if (!arg_p_funcTable) {
 		arg_compiler->GetCurrentNameSpace()->PushFunction(shared_from_this());
 	}
@@ -2457,7 +2390,7 @@ std::int32_t Function::PushCompiler_sub(Compiler* arg_compiler)
 {
 	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
-	arg_compiler->RegistFunction(valueType, name, args, block, accessType);
+	arg_compiler->RegistFunction(returnType, name, args, block, accessType);
 	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	arg_compiler->PushSubFunction(shared_from_this());
 	return 0;
@@ -2519,7 +2452,7 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 		tag->SetDefinition();	// 定義済みに設定
 	}
 	else {
-		FunctionTag func(valueType, searchName);
+		FunctionTag func(returnType, searchName);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(arg_compiler-> MakeLabel());		// ラベル登録
@@ -2529,7 +2462,7 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 	}
 
 	arg_compiler->PushCurrentFunctionName(searchName);		// 処理中の関数名を登録
-	arg_compiler->PushCurrentFunctionType(  valueType);		// 処理中の関数型を登録
+	arg_compiler->PushCurrentFunctionType(  returnType);		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
 
@@ -2558,7 +2491,7 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 	}
 
 	const VMCode& code = arg_compiler->GetStatement() .back();
-	if (valueType == TYPE_VOID) {
+	if (returnType == TYPE_VOID) {
 		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
 			arg_compiler-> OpReturn();
 	}
@@ -2590,7 +2523,7 @@ void Function::AddSubFunction(Function_t arg_function)
 
 Lambda::Lambda(const std::int32_t arg_type,const std::vector<ArgDefine>& arg_vec_argDefine, Compiler* arg_compiler)
 {
-	valueType = arg_type;
+	returnType = arg_type;
 	args = arg_vec_argDefine;
 
 	lambdaIndex = arg_compiler->GetLambdaCount();
@@ -2599,7 +2532,7 @@ Lambda::Lambda(const std::int32_t arg_type,const std::vector<ArgDefine>& arg_vec
 }
 std::int32_t Lambda::PushCompiler(Compiler* arg_compiler)
 {
-	auto typeTag = arg_compiler->GetType(valueType);
+	auto typeTag = arg_compiler->GetType(returnType);
 
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistLambda(typeTag->GetFunctionObjectReturnType(),name, args, nullptr);
@@ -2611,8 +2544,8 @@ std::int32_t Lambda::PushCompiler(Compiler* arg_compiler)
 }
 std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
 {
-	auto typeTag = arg_compiler->GetType(valueType);
-	valueType = typeTag->GetFunctionObjectReturnType();
+	auto typeTag = arg_compiler->GetType(returnType);
+	returnType = typeTag->GetFunctionObjectReturnType();
 	auto currentNameSpace = arg_compiler->GetCurrentNameSpace();
 	ownNameSpace = ownNameSpace ? ownNameSpace : currentNameSpace;
 	arg_compiler->SetCurrentNameSpace(ownNameSpace);
@@ -2632,7 +2565,7 @@ std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTa
 		tag->SetDefinition();	// 定義済みに設定
 	}
 	else {
-		FunctionTag func(valueType, searchName);
+		FunctionTag func(returnType, searchName);
 		func.SetArgs(args);				// 引数を設定
 		func.SetDefinition();			// 定義済み
 		func.SetIndex(arg_compiler->MakeLabel());		// ラベル登録
@@ -2642,7 +2575,7 @@ std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTa
 	}
 
 	arg_compiler->PushCurrentFunctionName(searchName);		// 処理中の関数名を登録
-	arg_compiler->PushCurrentFunctionType(valueType);		// 処理中の関数型を登録
+	arg_compiler->PushCurrentFunctionType(returnType);		// 処理中の関数型を登録
 
 	// 関数のエントリーポイントにラベルを置く
 
@@ -2682,7 +2615,7 @@ std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTa
 	}
 
 	const VMCode& code = arg_compiler->GetStatement().back();
-	if (valueType == TYPE_VOID) {
+	if (returnType == TYPE_VOID) {
 		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
 			arg_compiler->OpReturn();
 	}

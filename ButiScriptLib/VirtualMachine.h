@@ -106,7 +106,7 @@ namespace ButiScript {
 			push(0);										// プログラム終了位置をpush
 			Execute_(arg_entryPoint);
 
-			auto ret = top().valueData->Get<T>();
+			auto ret = top().Get<T>();
 			valueStack.resize(globalValue_size);
 			return ret;
 		}
@@ -135,26 +135,11 @@ namespace ButiScript {
 			push(0);										// プログラム終了位置をpush
 			Execute_(arg_entryPoint);
 
-			auto ret = top().valueData->Get<T>();
+			auto ret = top().Get<T>();
 			valueStack.resize(globalValue_size);
 			return ret;
 		}
 
-		template<typename T, typename... U>
-		std::shared_ptr<T> Execute_SharedReturn (const std::string& arg_entryPoint, U... argmentValue) {
-
-			stack_base = valueStack.size();						// スタック参照位置初期化
-			std::int32_t pushCount = sizeof...(argmentValue);
-			PushArgments(argmentValue...);
-			push(pushCount);										// mainへの引数カウントをpush
-			push(stack_base);										// stack_baseの初期値をpush
-			push(0);										// プログラム終了位置をpush
-			Execute_(arg_entryPoint);
-
-			auto ret = ((Value_Shared<T>*) top().valueData)->Get();
-			valueStack.resize(globalValue_size);
-			return ret;
-		}
 		template< typename... U>
 		void Execute_void(const std::string& arg_entryPoint, U... argmentValue) {
 
@@ -182,10 +167,9 @@ namespace ButiScript {
 #ifdef _BUTIENGINEBUILD
 				ButiEngine::GUI::Console( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
 #endif
-
 				return;
 			}
-			valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData->Set(value);
+			valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData=ButiEngine::make_value(value);
 		}
 		template<typename T>
 		T& GetGlobalVariable(const std::string arg_variableName) {
@@ -197,7 +181,7 @@ namespace ButiScript {
 				static T temp;
 				return temp;
 			}
-			return valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData->GetRef<T>();
+			return valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].Get<T>();
 		}
 
 #ifdef _BUTIENGINEBUILD
@@ -282,7 +266,7 @@ namespace ButiScript {
 		// 配列からコピーをPush
 		inline void PushGlobalArray(const std::int32_t arg_val)
 		{
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			push(valueStack[(std::int32_t)(arg_val + index)].Clone());
 		}
 
@@ -294,7 +278,7 @@ namespace ButiScript {
 		// ローカルの配列からコピーをPush
 		inline void PushLocalArray(const std::int32_t arg_val)
 		{
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			push(valueStack[arg_val + stack_base + index].Clone());
 		}
 
@@ -306,11 +290,8 @@ namespace ButiScript {
 		//メンバ変数のコピーをpush
 		inline void PushMember( const std::int32_t arg_valueIndex) {
 			auto valueData = top().valueData;
-			valueData->addref();
 			pop();
-			push_clone(valueData->GetMember(arg_valueIndex), valueData->GetMemberType(arg_valueIndex));
-			top().valueData->release();
-			valueData->release();
+			push_clone(valueData.get<IType_hasMember>()->GetMember(arg_valueIndex), valueData.get<IType_hasMember>()->GetMemberType(arg_valueIndex));
 		}
 
 		void PushMember() {
@@ -343,7 +324,7 @@ namespace ButiScript {
 		// 配列から参照をPush
 		inline void PushGlobalArrayRef(const std::int32_t arg_val)
 		{
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			push(valueStack[(std::int32_t)(arg_val + index)]);
 		}
 
@@ -355,7 +336,7 @@ namespace ButiScript {
 		// ローカルの配列から参照をPush
 		inline void PushLocalArrayRef(const std::int32_t arg_val)
 		{
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			push(valueStack[arg_val + stack_base + index]);
 		}
 
@@ -368,10 +349,8 @@ namespace ButiScript {
 		//メンバ変数の参照をpush
 		inline void PushMemberRef( const std::int32_t arg_valueIndex) {
 			auto v = top().valueData;
-			v->addref();
 			pop();
-			push(v->GetMember(arg_valueIndex), v->GetMemberType(arg_valueIndex));
-			v->release();
+			push(v.get<IType_hasMember>()->GetMember(arg_valueIndex), v.get<IType_hasMember>()->GetMemberType(arg_valueIndex));
 		}
 
 		void PushMemberRef() {
@@ -399,7 +378,7 @@ namespace ButiScript {
 			std::int32_t base = arg_val;
 			if ((arg_val & global_flag) == 0)	// local
 				base += +stack_base;
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			push(base + index);
 		}
 		void PushArrayAddr() {
@@ -430,17 +409,28 @@ namespace ButiScript {
 		{
 			auto v = top().valueData;
 			pop();
-			v->GetMember(arg_index)->Set(*top().valueData); pop();
+			v.get<IType_hasMember>()->SetMember(top().valueData.Clone(), arg_index); pop();
 		}
 		void PopMember() {
 			PopMember(Constant<std::int32_t>());
+		}
+		//メンバ変数にPop(int、float)
+		inline void PopMemberValueType(const std::int32_t arg_index)
+		{
+			auto v = top().valueData;
+			pop();
+			auto hasMember = v.get<IType_hasMember>();
+			hasMember->GetMember(arg_index).Write(top().valueData.get()); pop();
+		}
+		void PopMemberValueType() {
+			PopMemberValueType(Constant<std::int32_t>());
 		}
 		//メンバ変数にPop(参照)
 		inline void PopMemberRef(const std::int32_t arg_index)
 		{
 			auto v = top().valueData;
 			pop();
-			v->SetMember(top().valueData, arg_index); pop();
+			v.get<IType_hasMember>()->SetMember(top().valueData, arg_index); pop();
 		}
 		void PopMemberRef() {
 			PopMemberRef(Constant<std::int32_t>());
@@ -449,7 +439,7 @@ namespace ButiScript {
 		// 配列変数にPop
 		inline void PopArray(const std::int32_t arg_val)
 		{
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			valueStack[(std::int32_t)(arg_val + index)] = top(); pop();
 		}
 		void PopArray() {
@@ -459,7 +449,7 @@ namespace ButiScript {
 		// ローカルの配列変数にPop
 		inline void PopLocalArray(const std::int32_t arg_val)
 		{
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			valueStack[arg_val + stack_base + index] = top(); pop();
 		}
 
@@ -470,7 +460,7 @@ namespace ButiScript {
 		// ローカル変数(参照)にPop
 		inline void PopLocalRef(const std::int32_t arg_val)
 		{
-			std::int32_t addr = valueStack[arg_val + stack_base].valueData->Get<std::int32_t>();
+			std::int32_t addr = valueStack[arg_val + stack_base].Get<std::int32_t>();
 			SetRef(addr, top()); pop();
 		}
 		void PopLocalRef() {
@@ -479,8 +469,8 @@ namespace ButiScript {
 		// ローカルの配列変数(参照)にPop
 		inline void PopLocalArrayRef(const std::int32_t arg_val)
 		{
-			std::int32_t addr = valueStack[arg_val + stack_base].valueData->Get<std::int32_t>();
-			std::int32_t index = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t addr = valueStack[arg_val + stack_base].Get<std::int32_t>();
+			std::int32_t index = top().Get<std::int32_t>(); pop();
 			SetRef(addr + index, top()); pop();
 		}
 		void PopLocalArrayRef()
@@ -508,14 +498,14 @@ namespace ButiScript {
 
 		void OpAllocStackEnumType() {
 			std::int32_t type = Constant<std::int32_t>();
-			auto value = Value(Type_Enum(), &shp_data->map_enumTag.at(type));
+			auto value = Value(Type_Enum(0,&shp_data->map_enumTag.at(type)));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
 		//関数オブジェクト型の確保
 		void OpAllocStackFunctionType() {
 			std::int32_t type = Constant<std::int32_t>();
-			auto value = Value(Type_Func(), &shp_data->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,std::int32_t>>());
+			auto value = Value(Type_Function( &shp_data->map_functionJumpPointsTable, std::vector<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
@@ -566,224 +556,194 @@ namespace ButiScript {
 
 		/////////////演算子定義////////////////
 
-		// 単項マイナス
+		// キャスト
+		template<typename BeforeType,typename AfterType>
+		void OpCast()
+		{
+			auto cast= top();
+			pop();
+			push(cast.Cast<BeforeType,AfterType>());
+		}
+
+		// -
+		template<typename T>
 		void OpNeg()
 		{
-			auto negV = top().valueData->Clone();
-			auto type = top().valueType;
-			negV->Nagative();
+			auto negV = top().Clone();
+			negV.Negative<T>();
 			pop();
-			push(negV,type);
-			negV->release();
+			push(negV);
 		}
 
 		// !
+		template<typename T>
 		void OpNot() {
-			auto notV = top().valueData->Clone();
-			auto type = top().valueType;
-			notV->Not();
+			auto notV = top().Clone();
+			notV.Not<T>();
 			pop();
-			push(notV, type);
-			notV->release();
+			push(notV);
 		}
 
 		// ==
+		template<typename LeftType,typename RightType>
 		void OpEq()
 		{
-
-			auto rhs = top().valueData; rhs->addref(); pop();
-			auto lhs = top().valueData; lhs->addref(); pop();
-			push(lhs->Eq(rhs));
-
-			rhs->release();
-			lhs->release();
-
+			auto rhs = top().valueData; pop();
+			auto lhs = top().valueData; pop();
+			push(ButiValueOperator::Equal<LeftType, RightType>(lhs, rhs));
 		}
 
 		// !=
+		template<typename LeftType, typename RightType>
 		void OpNe()
 		{
-			auto rhs = top().valueData; rhs->addref(); pop();
-			auto lhs = top().valueData; lhs->addref(); pop();
-			push(!lhs->Eq(rhs));
-
-			rhs->release();
-			lhs->release();
+			auto rhs = top().valueData; pop();
+			auto lhs = top().valueData; pop();
+			push(!ButiValueOperator::Equal<LeftType, RightType>(lhs, rhs));
 		}
 
 		// >
+		template<typename LeftType, typename RightType>
 		void OpGt()
 		{
-			auto rhs = top().valueData; rhs->addref(); pop();
-			auto lhs = top().valueData; lhs->addref(); pop();
-			push(lhs->Gt(rhs));
-
-			rhs->release();
-			lhs->release();
+			auto rhs = top().valueData; pop();
+			auto lhs = top().valueData; pop();
+			push(ButiValueOperator::GreaterThan<LeftType, RightType>(lhs, rhs));
 		}
 
 		// >=
+		template<typename LeftType, typename RightType>
 		void OpGe()
 		{
-			auto rhs = top().valueData; rhs->addref(); pop();
-			auto lhs = top().valueData; lhs->addref(); pop();
-			push(lhs->Ge(rhs));
-
-			rhs->release();
-			lhs->release();
+			auto rhs = top().valueData; pop();
+			auto lhs = top().valueData; pop();
+			push(ButiValueOperator::GreaterEqual<LeftType, RightType>(lhs, rhs));
 		}
 
 		// <
+		template<typename LeftType, typename RightType>
 		void OpLt()
 		{
-			auto rhs = top().valueData; rhs->addref(); pop();
-			auto lhs = top().valueData; lhs->addref(); pop();
-			push(!lhs->Ge(rhs));
-
-			rhs->release();
-			lhs->release();
+			auto rhs = top().valueData; pop();
+			auto lhs = top().valueData; pop();
+			push(!ButiValueOperator::GreaterEqual<LeftType, RightType>(lhs, rhs));
 		}
 
 		// <=
+		template<typename LeftType, typename RightType>
 		void OpLe()
 		{
-
-			auto rhs = top().valueData; rhs->addref(); pop();
-			auto lhs = top().valueData; lhs->addref(); pop();
-			push(!lhs->Gt(rhs));
-
-			rhs->release();
-			lhs->release();
+			auto rhs = top().valueData; pop();
+			auto lhs = top().valueData; pop();
+			push(!ButiValueOperator::GreaterThan<LeftType, RightType>(lhs, rhs));
 
 		}
 
 		// &&
 		void OpLogAnd()
 		{
-			auto rhs = top().valueData->Get<std::int32_t>(); pop();
-			auto lhs = top().valueData->Get<std::int32_t>(); pop();
+			auto rhs = top().Get<std::int32_t>(); pop();
+			auto lhs = top().Get<std::int32_t>(); pop();
 			push(lhs && rhs);
 		}
 
 		// ||
 		void OpLogOr()
 		{
-			auto rhs = top().valueData->Get<std::int32_t>(); pop();
-			auto lhs = top().valueData->Get<std::int32_t>(); pop();
+			auto rhs = top().Get<std::int32_t>(); pop();
+			auto lhs = top().Get<std::int32_t>(); pop();
 			push(lhs || rhs);
 		}
 
 		// &
 		void OpAnd()
 		{
-			auto rhs = top().valueData->Get<std::int32_t>(); pop();
-			auto lhs = top().valueData->Get<std::int32_t>(); pop();
+			auto rhs = top().Get<std::int32_t>(); pop();
+			auto lhs = top().Get<std::int32_t>(); pop();
 			push(lhs & rhs);
 		}
 
 		// |
 		void OpOr()
 		{
-			auto rhs = top().valueData->Get<std::int32_t>(); pop();
-			auto lhs = top().valueData->Get<std::int32_t>(); pop();
+			auto rhs = top().Get<std::int32_t>(); pop();
+			auto lhs = top().Get<std::int32_t>(); pop();
 			push(lhs | rhs);
 		}
 
 		// <<
 		void OpLeftShift()
 		{
-			auto rhs = top().valueData->Get<std::int32_t>(); pop();
-			auto lhs = top().valueData->Get<std::int32_t>(); pop();
+			auto rhs = top().Get<std::int32_t>(); pop();
+			auto lhs = top().Get<std::int32_t>(); pop();
 			push(lhs << rhs);
 		}
 
 		// >>
 		void OpRightShift()
 		{
-			auto rhs = top().valueData->Get<std::int32_t>(); pop();
-			auto lhs = top().valueData->Get<std::int32_t>(); pop();
+			auto rhs = top().Get<std::int32_t>(); pop();
+			auto lhs = top().Get<std::int32_t>(); pop();
 			push(lhs >> rhs);
 		}
 
 		//++
+		template<typename T>
 		void OpIncrement()
 		{
-			top().valueData->Increment();
-			
+			top().Increment<T>();			
 		}
 		//--
+		template<typename T>
 		void OpDecrement()
 		{
-			top().valueData->Decrement();
+			top().Decrement<T>();
 		}
 
 		// +
-		template<typename T>
+		template<typename LeftType,typename RightType,typename RetType>
 		void OpAdd()
 		{
-			auto rhs = top().valueData->Get<T>(); pop();
-			auto lhs = top().valueData->Get<T>(); pop();
-			push(lhs + rhs);
+			auto rhs = top(); pop();
+			auto lhs = top(); pop();
+			push(ButiValueOperator::Addition<LeftType,RightType,RetType>( lhs , rhs));
 		}
 
 		// -
-		template<typename T>
+		template<typename LeftType, typename RightType, typename RetType>
 		void OpSub()
 		{
-			auto rhs = top().valueData->Get<T>(); pop();
-			auto lhs = top().valueData->Get<T>(); pop();
-			push(lhs - rhs);
+			auto rhs = top(); pop();
+			auto lhs = top(); pop();
+			push(ButiValueOperator::Subtract<LeftType, RightType, RetType>(lhs , rhs));
 		}
 
 		// *
-		template<typename T>
+		template<typename LeftType, typename RightType, typename RetType>
 		void OpMul()
 		{
-			auto rhs = top().valueData->Get<T>(); pop();
-			auto lhs = top().valueData->Get<T>(); pop();
-			push(lhs * rhs);
+			auto rhs = top(); pop();
+			auto lhs = top(); pop();
+			push(ButiValueOperator::Multiple<LeftType, RightType, RetType>(lhs , rhs));
 		}
 
 		// /
-		template<typename T>
+		template<typename LeftType, typename RightType, typename RetType>
 		void OpDiv()
 		{
-			auto rhs = top().valueData->Get<T>(); pop();
-			if (rhs == 0)
-				throw DevideByZero();
-			auto lhs = top().valueData->Get<T>(); pop();
-			push(lhs / rhs);
+			auto rhs = top(); pop();
+			auto lhs = top(); pop();
+			push(ButiValueOperator::Division<LeftType, RightType, RetType>(lhs , rhs));
 		}
 
-		// 異なる型*
-		template<typename T,typename U>
-		void OpMul()
-		{
-			auto rhs = top().valueData->Get<U>(); pop();
-			auto lhs = top().valueData->Get<T>(); pop();
-			push(lhs * rhs);
-		}
-
-		// 異なる型/
-		template<typename T, typename U>
-		void OpDiv()
-		{
-			auto rhs = top().valueData->Get<U>(); pop();
-			if (rhs == 0)
-				throw DevideByZero();
-			auto lhs = top().valueData->Get<T>(); pop();
-			push(lhs / rhs);
-		}
 
 		// %
-		template<typename T>
+		template<typename LeftType, typename RightType>
 		void OpMod()
 		{
-			std::int32_t rhs = top().valueData->Get<std::int32_t>(); pop();
-			if (rhs == 0)
-				throw DevideByZero();
-			std::int32_t lhs = top().valueData->Get<std::int32_t>(); pop();
-			push(lhs % rhs);
+			std::int32_t rhs = top().Get<RightType>(); pop();
+			std::int32_t lhs = top().Get<LeftType>(); pop();
+			push(ButiValueOperator::Mod<LeftType, RightType>(lhs, rhs));
 		}
 
 
@@ -868,7 +828,7 @@ namespace ButiScript {
 		// 真の時ジャンプ
 		inline void OpJmpC(const std::int32_t arg_val)
 		{
-			std::int32_t cond = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t cond = top().Get<std::int32_t>(); pop();
 			if (cond)
 				jmp(arg_val);
 		}
@@ -879,7 +839,7 @@ namespace ButiScript {
 		// 偽の時ジャンプ
 		inline void OpJmpNC(const std::int32_t arg_val)
 		{
-			std::int32_t cond = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t cond = top().Get<std::int32_t>(); pop();
 			if (!cond)
 				jmp(arg_val);
 		}
@@ -890,8 +850,8 @@ namespace ButiScript {
 		// switch文用特殊判定
 		inline void OpTest(const std::int32_t arg_val)
 		{
-			std::int32_t Value = top().valueData->Get<std::int32_t>(); pop();
-			if (Value == top().valueData->Get<std::int32_t>()) {
+			std::int32_t Value = top().Get<std::int32_t>(); pop();
+			if (Value == top().Get<std::int32_t>()) {
 				pop();
 				jmp(arg_val);
 			}
@@ -915,24 +875,24 @@ namespace ButiScript {
 		}
 
 		void OpCallByVariable() {
-			auto functionObject = (ValueData<Type_Func>*)top().valueData; pop();
+			auto& functionObject = top().Get<Type_Function>(); pop();
 			push(stack_base);
 			push(addr());					
 			stack_base = valueStack.size();		
-			for (auto itr = functionObject->vec_referenceValue.begin(), end = functionObject->vec_referenceValue.end(); itr != end; itr++) {
-				push(itr->first,itr->second);
+			for (auto& capturedValue: functionObject.vec_capturedValue) {
+				push(capturedValue.first, capturedValue.second);
 			}
-			auto address = functionObject->Get<std::int32_t>();
-			jmp(address);
+
+			jmp(functionObject.address);
 		}
 
 		// 引数なしリターン
 		void OpReturn()
 		{
 			valueStack.resize(stack_base);		
-			std::int32_t addr = top().valueData->Get<std::int32_t>(); pop();
-			stack_base = top().valueData->Get<std::int32_t>(); pop();
-			std::int32_t arg_count = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t addr = top().Get<std::int32_t>(); pop();
+			stack_base = top().Get<std::int32_t>(); pop();
+			std::int32_t arg_count = top().Get<std::int32_t>(); pop();
 			valueStack.pop(arg_count);
 			jmp(addr);
 		}
@@ -943,9 +903,9 @@ namespace ButiScript {
 			ButiScript::Value result = top(); 
 			pop();
 			valueStack.resize(stack_base);		
-			std::int32_t addr = top().valueData->Get<std::int32_t>(); pop();
-			stack_base = top().valueData->Get<std::int32_t>(); pop();
-			std::int32_t arg_count = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t addr = top().Get<std::int32_t>(); pop();
+			stack_base = top().Get<std::int32_t>(); pop();
+			std::int32_t arg_count = top().Get<std::int32_t>(); pop();
 			valueStack.pop(arg_count);
 			push(result);
 			jmp(addr);
@@ -967,20 +927,19 @@ namespace ButiScript {
 		}
 		//ラムダ式の生成とPush
 		void OpPushLambda() {
-
-			std::int32_t captureListSize = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t captureListSize = top().Get<std::int32_t>(); pop();
 			std::vector<std::int32_t> captureList;
 			for (std::int32_t i = 0; i < captureListSize; i++) {
-				captureList.push_back(top().valueData->Get<std::int32_t>());
+				captureList.push_back(top().Get<std::int32_t>());
 				pop();
 			}
 
-			std::int32_t type = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t type = top().Get<std::int32_t>(); pop();
 			std::int32_t address = Constant<std::int32_t>();
-			auto value = Value(Type_Func(), &shp_data->map_functionJumpPointsTable, std::vector<std::pair< IValueData*,std::int32_t>>());
-			value.valueData->Set(address); 
+			auto value = Value(Type_Function(address, &shp_data->map_functionJumpPointsTable, std::vector<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
+			
 			for (auto itr = captureList.rbegin(), end = captureList.rend(); itr != end;itr++) {
-				((ValueData<Type_Func>*)value.valueData)->AddCapture (valueStack[stack_base+ *itr].valueData, valueStack[stack_base + *itr].valueType);
+				value.valueData.get<Type_Function>()->AddCapture (valueStack[stack_base+ *itr].valueData, valueStack[stack_base + *itr].valueType);
 			}
 			value.SetType(type);
 			this->valueStack.push(value);
@@ -1036,17 +995,17 @@ namespace ButiScript {
 			push(shp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock());
 		}
 		void sys_getKeyboard() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->CheckKey(k);
 			push(res);
 		}
 		void sys_triggerKeyboard() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->TriggerKey(k);
 			push(res);
 		}
 		void sys_releaseKeyboard() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->ReleaseKey(k);
 			push(res);
 		}
@@ -1059,32 +1018,32 @@ namespace ButiScript {
 			push(res);
 		}
 		void sys_getPadButton() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetPadButton((ButiEngine::PadButtons)k);
 			push(res);
 		}
 		void sys_triggerPadButton() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetPadButtonTrigger((ButiEngine::PadButtons)k);
 			push(res);
 		}
 		void sys_releasePadButton() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetPadButtonRelease((ButiEngine::PadButtons)k);
 			push(res);
 		}
 		void sys_getMouseButton() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetMouseButton((ButiEngine::MouseButtons)k);
 			push(res);
 		}
 		void sys_triggerMouseButton() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetMouseTrigger((ButiEngine::MouseButtons)k);
 			push(res);
 		}
 		void sys_releaseMouseButton() {
-			std::int32_t k = top().valueData->Get<std::int32_t>(); pop();
+			std::int32_t k = top().Get<std::int32_t>(); pop();
 			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetMouseReleaseTrigger((ButiEngine::MouseButtons)k);
 			push(res);
 		}
@@ -1125,26 +1084,26 @@ namespace ButiScript {
 			push(res);
 		}
 		void sys_playSE() {
-			auto seName = top().valueData->Get<std::string>(); pop();
-			auto volume = top().valueData->Get<float>(); pop();
+			auto seName = top().Get<std::string>(); pop();
+			auto volume = top().Get<float>(); pop();
 			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), volume);
 		}
 		void sys_playSE_noVolume() {
-			auto seName = top().valueData->Get<std::string>(); pop();
+			auto seName = top().Get<std::string>(); pop();
 			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), 1.0f);
 		}
 		void sys_playBGM() {
-			auto bgmName = top().valueData->Get<std::string>(); pop();
-			auto volume = top().valueData->Get<float>(); pop();
+			auto bgmName = top().Get<std::string>(); pop();
+			auto volume = top().Get<float>(); pop();
 			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), volume);
 		}
 		void sys_playBGM_noVolume() {
-			auto bgmName = top().valueData->Get<std::string>(); pop();
+			auto bgmName = top().Get<std::string>(); pop();
 			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), 1.0f);
 		}
 
 		void sys_printColor() {
-			ButiEngine::Vector4 color=top().valueData->Get<ButiEngine::Vector4>();	pop();
+			ButiEngine::Vector4 color=top().Get<ButiEngine::Vector4>();	pop();
 			auto message = text(top());	pop();
 			ButiEngine::GUI::Console(message,color);
 		}
@@ -1175,7 +1134,7 @@ namespace ButiScript {
 		// 組み込み関数(数値を文字列に変換)
 		void sys_tostr()
 		{
-			auto v = top().valueData->Get<std::string>(); pop();
+			auto v = top().valueData.ToString(); pop();
 			push(v);
 			// 戻り値はスタックに入れる
 		}
@@ -1198,14 +1157,14 @@ namespace ButiScript {
 		template<typename Arg, void(*Function)(Arg) >
 		void sys_func_retNo()
 		{
-			auto arg = top().valueData->Get<Arg>(); pop(); 
+			auto arg = top().Get<Arg>(); pop(); 
 			(*Function)(arg);
 		}
 		//組み込み関数(return 有り)
 		template<typename T, typename Arg, T(*Function)(Arg) >
 		void sys_func_ret()
 		{
-			auto arg = top().valueData->Get<Arg>(); pop();
+			auto arg = top().Get<Arg>(); pop();
 			T ret = (*Function)(arg);
 			push(ret);
 		}
@@ -1213,8 +1172,8 @@ namespace ButiScript {
 		template<typename T, typename Arg1, typename Arg2, T(*Function)(Arg1, Arg2) >
 		void sys_func_ret()
 		{
-			auto arg2 = top().valueData->Get<Arg2>(); pop();
-			auto arg1 = top().valueData->Get<Arg1>(); pop();
+			auto arg2 = top().Get<Arg2>(); pop();
+			auto arg1 = top().Get<Arg1>(); pop();
 			T ret = (*Function)(arg1, arg2);
 			push(ret);
 		}
@@ -1222,9 +1181,9 @@ namespace ButiScript {
 		template<typename T, typename Arg1, typename Arg2, typename Arg3, T(*Function)(Arg1, Arg2, Arg3) >
 		void sys_func_ret()
 		{
-			auto arg3 = top().valueData->Get<Arg3>(); pop();
-			auto arg2 = top().valueData->Get<Arg2>(); pop();
-			auto arg1 = top().valueData->Get<Arg1>(); pop();
+			auto arg3 = top().Get<Arg3>(); pop();
+			auto arg2 = top().Get<Arg2>(); pop();
+			auto arg1 = top().Get<Arg1>(); pop();
 			T ret = (*Function)(arg1, arg2, arg3);
 			push(ret);
 		}
@@ -1234,15 +1193,15 @@ namespace ButiScript {
 
 		template<typename T>
 		T* GetSharedTypePtr() {
-			return &(*((Value_Shared<T>*)top().valueData)->Get());
+			return top().Get<std::shared_ptr< T>>().get();
 		}
 		template<typename T>
 		std::shared_ptr< T>* GetSharedPtr() {
-			return &((Value_Shared<T>*)top().valueData)->Get();
+			return &(top().Get<std::shared_ptr< T>>());
 		}
 		template<typename T>
 		T* GetTypePtr() {
-			return &(top().valueData->GetRef<T>());
+			return &(top().Get<T>());
 		}
 
 		//組み込みメソッド(return 無し)
@@ -1403,21 +1362,6 @@ namespace ButiScript {
 			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
 			this->valueStack.push(value);
 		}
-		template<typename T>
-		void pushSharedValue() {
-			auto value = Value();
-			std::int64_t address = TypeSpecific<T>();
-			value.valueData = new Value_Shared<T>(1);
-			value.SetType(Value::GetTypeIndex(address));
-			this->valueStack.push(value);
-		}
-		template<typename T>
-		void pushSharedValue_ref() {
-			auto value = Value();
-			std::int64_t address = TypeSpecific<T>();
-			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
-			this->valueStack.push(value);
-		}
 		void pushValue(ScriptClassInfo* info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 			auto value = Value(*info,p_vec_scriptClassInfo);
 			this->valueStack.push(value);
@@ -1444,19 +1388,11 @@ namespace ButiScript {
 		void push(const std::string& arg_v) {
 			valueStack.push(ButiScript::Value(arg_v));
 		}
-		template <typename T>
-		void push(std::shared_ptr<T> arg_v) {
-			valueStack.push(ButiScript::Value(arg_v));
-
-			auto ptr = &VirtualMachine::pushSharedValue<T>;
-			auto address = *(std::int64_t*) & (ptr);
-			top().SetTypeIndex(address);
+		void push(ButiEngine::Value_ptr<void>& arg_valueData,const std::int32_t arg_type) {
+			valueStack.push(ButiScript::Value(arg_valueData, arg_type));
 		}
-		void push(IValueData* arg_p_ivalue,const std::int32_t arg_type) {
-			valueStack.push(ButiScript::Value(arg_p_ivalue, arg_type));
-		}
-		void push_clone(IValueData* arg_p_ivalue,const std::int32_t arg_type) {
-			valueStack.push(ButiScript::Value(arg_p_ivalue->Clone(), arg_type));
+		void push_clone(const ButiEngine::Value_ptr<void>& arg_valueData,const std::int32_t arg_type) {
+			valueStack.push(ButiScript::Value(arg_valueData.Clone(), arg_type));
 		}
 		void push(const ButiScript::Value& arg_v) {
 			valueStack.push(arg_v);
@@ -1476,7 +1412,7 @@ namespace ButiScript {
 		ButiScript::Value& top() { 
 			return valueStack.top(); 
 		}
-		std::string text(const ButiScript::Value& arg_v) { return arg_v.valueData->Get<std::string>(); }
+		std::string text(const ButiScript::Value& arg_v) { return arg_v.valueData.ToString(); }
 		const ButiScript::Value& ref_to_value(const std::int32_t arg_addr) const
 		{
 			if (arg_addr & global_flag) {

@@ -1,12 +1,17 @@
 
 function main():int{
-	if(!GetTrue()){
-		print("Yes!\n");
-	}
+	var i:Vector2;
+	var i2:float;
+	i.x+=50;
+	i.y=3.0*5;
+	print(ToString(i)+"\n");
+	i2=i.x*3+i.y;
 
-    return 0;
+    return i2;
 }
-
 function GetTrue():int{
+	return true;
+}
+function GetFalse() : int{
 	return false;
 }
