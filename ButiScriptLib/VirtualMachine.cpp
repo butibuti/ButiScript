@@ -185,20 +185,20 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 
 void ButiScript::VirtualMachine::sys_addEventMessanger()
 {
-	std::string eventName = top().valueData->GetRef<std::string>(); pop();
+	std::string eventName = top().Get<std::string>(); pop();
 	ButiEventSystem::AddEventMessenger<void>(eventName);
 }
 void ButiScript::VirtualMachine::sys_removeEventMessanger()
 {
-	std::string eventName = top().valueData->GetRef<std::string>(); pop();
+	std::string eventName = top().Get<std::string>(); pop();
 	ButiEventSystem::RemoveEventMessenger(eventName);
 }
 
 void ButiScript::VirtualMachine::sys_registEventListner()
 {
-	std::string functionName = top().valueData->GetRef<std::string>(); pop();
-	std::string keyName = top().valueData->GetRef<std::string>(); pop();
-	std::string eventName = top().valueData->GetRef<std::string>(); pop();
+	std::string functionName = top().Get<std::string>(); pop();
+	std::string keyName = top().Get<std::string>(); pop();
+	std::string eventName = top().Get<std::string>(); pop();
 	auto retKey= ButiEventSystem::RegistEventListner(eventName, keyName,
 		std::function<void()>([this,functionName]()->void {
 			this->Execute<void>(functionName);
@@ -208,20 +208,20 @@ void ButiScript::VirtualMachine::sys_registEventListner()
 }
 void ButiScript::VirtualMachine::sys_unregistEventListner()
 {
-	std::string keyName = top().valueData->GetRef<std::string>(); pop();
-	std::string eventName = top().valueData->GetRef<std::string>(); pop();
+	std::string keyName = top().Get<std::string>(); pop();
+	std::string eventName = top().Get<std::string>(); pop();
 	ButiEventSystem::UnRegistEventListner<void>(eventName, keyName);
 
 }
 void ButiScript::VirtualMachine::sys_executeEvent()
 {
-	std::string eventName = top().valueData->GetRef<std::string>(); pop();
+	std::string eventName = top().Get<std::string>(); pop();
 	ButiEventSystem::Execute(eventName);
 }
 
 void ButiScript::VirtualMachine::sys_pushTask()
 {
-	std::string taskName = top().valueData->GetRef<std::string>(); pop();
+	std::string taskName = top().Get<std::string>(); pop();
 	auto clone = Clone();
 	ButiTaskSystem::PushTask(
 		std::function<void()>([clone, taskName]()->void {
@@ -233,7 +233,7 @@ void ButiScript::VirtualMachine::sys_pushTask()
 
 void ButiScript::VirtualMachine::sys_LoadTextureAsync()
 {
-	std::string fileName = top().valueData->GetRef<std::string>(); pop();
+	std::string fileName = top().Get<std::string>(); pop();
 	ButiEngine::GUI::PushNotification(fileName + "Çì«Ç›çûÇ›Ç‹Ç∑");
 	ButiTaskSystem::PushTask(
 		std::function<void()>([this, fileName]()->void {
@@ -244,7 +244,7 @@ void ButiScript::VirtualMachine::sys_LoadTextureAsync()
 }
 void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 {
-	std::string dirName = top().valueData->GetRef<std::string>(); pop();
+	std::string dirName = top().Get<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
 
 		std::vector< std::string> vec_filePathes;
@@ -283,12 +283,12 @@ void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 }
 void ButiScript::VirtualMachine::sys_LoadTexture()
 {
-	std::string fileName = top().valueData->GetRef<std::string>(); pop();
+	std::string fileName = top().Get<std::string>(); pop();
 	this->GetGameObject()->GetResourceContainer()->LoadTexture(fileName);
 }
 void ButiScript::VirtualMachine::sys_LoadWave()
 {
-	std::string dirName = top().valueData->GetRef<std::string>(); pop();
+	std::string dirName = top().Get<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
 
 		std::vector< std::string> vec_filePathes;
@@ -322,12 +322,12 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 }
 void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
-		auto type = valueStack[globalValue_base + index].returnType;
+		auto type = valueStack[globalValue_base + index].valueType;
 		if (type & TYPE_REF) {
 			arg_ref_vec_saveObject.push_back(std::make_shared<GlobalValueSaveObject<Type_Null>>());
 		}
 		else {
-			arg_ref_vec_saveObject.push_back(valueStack[globalValue_base + index].valueData->GetSaveObject());
+			//arg_ref_vec_saveObject.push_back(valueStack[globalValue_base + index].valueData->GetSaveObject());
 		}
 		
 		arg_ref_vec_saveObject.at(index)->SetTypeIndex(type);
@@ -340,21 +340,17 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr<
 		return;
 	}
 	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
-		if (valueStack[globalValue_base + index].returnType != arg_ref_vec_saveObject.at(index)->GetTypeIndex()) {
+		if (valueStack[globalValue_base + index].valueType!= arg_ref_vec_saveObject.at(index)->GetTypeIndex()) {
 			continue;
 		}
-		if (valueStack[globalValue_base + index].valueData) {
-			valueStack[globalValue_base + index].valueData->release();
-		}
 		arg_ref_vec_saveObject.at(index)->SetCompiledData(shp_data);
-		arg_ref_vec_saveObject.at(index)->RestoreValue(&valueStack[globalValue_base + index].valueData);
+		//arg_ref_vec_saveObject.at(index)->RestoreValue(&valueStack[globalValue_base + index].valueData);
 		
 	}
 }
 void ButiScript::VirtualMachine::ShowGUI() {
-	
 	for (auto itr = shp_data->map_addressToValueName.begin(), end = shp_data->map_addressToValueName.end(); itr != end;itr++) {
-		valueStack[globalValue_base + itr->first].valueData->ShowGUI(itr->second);
+		valueStack[globalValue_base + itr->first].valueData.ShowGUI(itr->second);
 	}
 }
 #endif

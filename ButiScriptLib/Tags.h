@@ -285,7 +285,7 @@ bool IsFunctionBlock()const { return isFunction; }
 		void operator()(const std::pair<std::string, ValueTag>& it)
 		{
 #ifdef BUTIGUI_H
-			ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.returnType )+ ", size = " +std::to_string( it.second.currentSize )+ ", global = " + std::to_string( it.second.isGlobal));
+			ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.valueType )+ ", size = " +std::to_string( it.second.currentSize )+ ", global = " + std::to_string( it.second.isGlobal));
 #else
 			std::cout << it.first << ", addr = " << it.second.GetAddress() << ", type = " << it.second.valueType << ", size = " << it.second.currentSize << ", global = " << it.second.isGlobal << std::endl;
 

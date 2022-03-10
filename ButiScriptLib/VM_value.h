@@ -12,7 +12,7 @@
 namespace ButiScript {
 template <typename T>class Type_hasMember;
 }
-#include"ButiPtr.h"
+#include"../../ButiUtil/Util/ButiPtr.h"
 namespace std {
 template<typename T>
 inline std::string to_string(const ButiScript::Type_hasMember<T>& arg_v) {
@@ -51,7 +51,7 @@ public:
 	inline Type_hasMember(const Type_hasMember<T>& arg_v) : T(static_cast<T>(arg_v)) {
 		vec_member.reserve(arg_v.vec_member.size());
 		for (auto& member : arg_v.vec_member) {
-			vec_member.push_back({ ButiEngine::Valu_ptrHelper::CreateSameTypeValuePtr(member.first,reinterpret_cast<std::int8_t*>(this) + (reinterpret_cast<std::int8_t>(member.first.get()) - reinterpret_cast<std::int8_t>(&arg_v))) ,member.second });
+			vec_member.push_back({ ButiEngine::CreateSameTypeValuePtr(member.first,reinterpret_cast<std::int8_t*>(this) + (reinterpret_cast<std::int8_t>(member.first.get()) - reinterpret_cast<std::int8_t>(&arg_v))) ,member.second });
 		}
 	}
 	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
@@ -227,9 +227,7 @@ struct Type_Null {};
 struct Type_Enum {
 	Type_Enum(const std::int32_t arg_value, const EnumTag* arg_p_enumTag)noexcept :value(arg_value), p_enumTag(arg_p_enumTag) {}
 	Type_Enum(const EnumTag* arg_p_enumTag)noexcept:p_enumTag(arg_p_enumTag) {}
-	operator std::int32_t() const {
-		return 0;
-	}
+	
 	std::int32_t value;
 	const EnumTag* p_enumTag;
 };
@@ -248,9 +246,6 @@ struct Type_Function {
 	{}
 	inline void AddCapture(const ButiEngine::Value_ptr<void> arg_value, const std::int32_t arg_type) {
 		vec_capturedValue.push_back({ arg_value,arg_type });
-	}
-	operator std::int32_t() const {
-		return 0;
 	}
 	std::int32_t address;
 	const FunctionTag* p_functionTag;
@@ -342,7 +337,7 @@ public:
 	}
 	GlobalValueSaveObject() {
 	}
-	void RestoreValue(IValueData** arg_v)const override;
+	void RestoreValue(IValueData** arg_v)const override{}
 	std::int32_t GetTypeIndex()const override {
 		return arg_type;
 	}
@@ -387,7 +382,7 @@ private:
 	std::shared_ptr<CompiledData>shp_compiledData;
 };
 template<>
-class GlobalValueSaveObject <Type_Func> :public IGlobalValueSaveObject {
+class GlobalValueSaveObject <Type_Function> :public IGlobalValueSaveObject {
 public:
 	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
 	void RestoreValue(IValueData** arg_v)const override;
@@ -434,7 +429,7 @@ public:
 	}
 	GlobalSharedPtrValueSaveObject() {
 	}
-	void RestoreValue(IValueData** arg_v)const override;
+	void RestoreValue(IValueData** arg_v)const override{}
 	std::int32_t GetTypeIndex()const override {
 		return type;
 	}

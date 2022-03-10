@@ -4,22 +4,23 @@
 
 
 std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
-auto createMemberInstancesRelease = MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #ifdef _BUTIENGINEBUILD
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1, &shp_compiledData->map_enumTag.at(type));
+	//*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1, &shp_compiledData->map_enumTag.at(type));
 }
-void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Func>::RestoreValue(ButiScript::IValueData** arg_v) const
+void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Function>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::ValueData<Type_Func>(1, nullptr, std::vector<std::pair< IValueData*, std::int32_t>>());
+	//*arg_v = new ButiScript::ValueData<Type_Function>(1, nullptr, std::vector<std::pair< IValueData*, std::int32_t>>());
 }
 void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Null>::RestoreValue(ButiScript::IValueData** arg_v) const
 {
-	*arg_v = new ButiScript::ValueData<Type_Null>(1);
+	//*arg_v = new ButiScript::ValueData<Type_Null>(1);
 }
 
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
+#else
+auto createMemberInstancesRelease = MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #endif
 
 std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
@@ -64,7 +65,7 @@ void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_
 		(*itr)->RestoreValue(&member);
 		vec_members.push_back(member);
 	}
-	*arg_v = new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
+	//*arg_v = new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
 
 }
 #endif

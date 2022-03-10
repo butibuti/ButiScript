@@ -991,7 +991,7 @@ namespace ButiScript {
 			push(shp_gameObject);
 		}
 		void sys_get_gameObjectByName() {
-			std::string name = top().valueData->GetRef<std::string>(); pop();
+			std::string name = top().Get<std::string>(); pop();
 			push(shp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock());
 		}
 		void sys_getKeyboard() {
