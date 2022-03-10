@@ -320,31 +320,33 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
 	push(wkp_butiScriptBehavior.lock());
 }
-void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::shared_ptr<ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
 		auto type = valueStack[globalValue_base + index].valueType;
-		if (type & TYPE_REF) {
-			arg_ref_vec_saveObject.push_back(std::make_shared<GlobalValueSaveObject<Type_Null>>());
+		if (type & TYPE_REF|| !valueStack[globalValue_base + index].valueData) {
+			arg_ref_vec_saveObject.push_back({ ButiEngine::make_value<ButiEngine::ValuePtrRestoreObject<Type_Null>>() ,type});
 		}
 		else {
-			//arg_ref_vec_saveObject.push_back(valueStack[globalValue_base + index].valueData->GetSaveObject());
+			arg_ref_vec_saveObject.push_back({ valueStack[globalValue_base + index].valueData.GetRestoreObject(),type });
 		}
-		
-		arg_ref_vec_saveObject.at(index)->SetTypeIndex(type);
 	}
 }
-void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
 	if (globalValue_size - globalValue_base != arg_ref_vec_saveObject.size()) {
 		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
 		
 		return;
 	}
 	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
-		if (valueStack[globalValue_base + index].valueType!= arg_ref_vec_saveObject.at(index)->GetTypeIndex()) {
+		if (valueStack[globalValue_base + index].valueType!= arg_ref_vec_saveObject.at(index).second) {
 			continue;
 		}
-		arg_ref_vec_saveObject.at(index)->SetCompiledData(shp_data);
-		//arg_ref_vec_saveObject.at(index)->RestoreValue(&valueStack[globalValue_base + index].valueData);
+		auto useCompiled = ButiEngine::dynamic_value_ptr_cast<ButiEngine::IUseCompiledData>(arg_ref_vec_saveObject.at(index).first);
+		if (useCompiled)
+		{
+			useCompiled->SetCompiledData(shp_data);
+		}
+		arg_ref_vec_saveObject.at(index).first->RestoreValue(valueStack[globalValue_base + index].valueData);
 		
 	}
 }

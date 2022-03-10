@@ -29,7 +29,7 @@ public:
 	virtual inline const std::int32_t GetMemberType(const std::int32_t arg_index)const = 0;
 	virtual inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index) = 0;
 	template<typename T>
-	void DoSome(){}
+	void DoSome() {}
 	template <typename MemberType, std::int32_t TypeIndex>
 	inline void SetMemberType(const std::int32_t ByteOffset) {
 		SetMemberType_({ ButiEngine::to_value(reinterpret_cast<MemberType*> (reinterpret_cast<std::int8_t*>(this) + ByteOffset)),TypeIndex });
@@ -39,7 +39,7 @@ public:
 		SetMemberType_({ ButiEngine::to_value(reinterpret_cast<MemberType*> (reinterpret_cast<std::int8_t*>(this) + ByteOffset)),TypeIndex });
 	}
 protected:
-	virtual inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)=0;
+	virtual inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType) = 0;
 };
 
 template<typename T>
@@ -65,6 +65,11 @@ public:
 	}
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index).first = arg_data;
+	}
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(static_cast<T&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t>& arg_memberType)override {
@@ -96,6 +101,11 @@ public:
 	}
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index).first = arg_data;
+	}
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(static_cast<ButiEngine::Vector2&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -131,6 +141,11 @@ public:
 	}
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index).first = arg_data;
+	}
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(static_cast<ButiEngine::Vector3&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -168,6 +183,12 @@ public:
 	}
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index).first = arg_data;
+	}
+
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(static_cast<ButiEngine::Vector4&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -207,6 +228,12 @@ public:
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index).first = arg_data;
 	}
+
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(static_cast<ButiEngine::Matrix4x4&>(*this) );
+	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
 		vec_member.push_back(arg_memberType);
@@ -226,8 +253,8 @@ private:
 struct Type_Null {};
 struct Type_Enum {
 	Type_Enum(const std::int32_t arg_value, const EnumTag* arg_p_enumTag)noexcept :value(arg_value), p_enumTag(arg_p_enumTag) {}
-	Type_Enum(const EnumTag* arg_p_enumTag)noexcept:p_enumTag(arg_p_enumTag) {}
-	
+	Type_Enum(const EnumTag* arg_p_enumTag)noexcept :p_enumTag(arg_p_enumTag) {}
+	Type_Enum(){}
 	std::int32_t value;
 	const EnumTag* p_enumTag;
 };
@@ -235,15 +262,16 @@ struct Type_Function {
 	Type_Function(const std::int32_t arg_address, const FunctionTag* arg_p_functionTag, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		:address(arg_address), p_functionTag(arg_p_functionTag), p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
-	Type_Function(const std::int32_t arg_address,const std::map <  std::int32_t, const std::string*>*arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>&arg_capturedValue)noexcept
-		:address(arg_address),  p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
+	Type_Function(const std::int32_t arg_address, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
+		:address(arg_address), p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
-	Type_Function(const FunctionTag * arg_p_functionTag, const std::map <  std::int32_t, const std::string*>*arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>&arg_capturedValue)noexcept
+	Type_Function(const FunctionTag* arg_p_functionTag, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		: p_functionTag(arg_p_functionTag), p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
-	Type_Function(const std::map <  std::int32_t, const std::string*>*arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>&arg_capturedValue)noexcept
+	Type_Function(const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		: p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
+	Type_Function(){}
 	inline void AddCapture(const ButiEngine::Value_ptr<void> arg_value, const std::int32_t arg_type) {
 		vec_capturedValue.push_back({ arg_value,arg_type });
 	}
@@ -252,16 +280,19 @@ struct Type_Function {
 	const std::map <  std::int32_t, const std::string*>* p_functionJumpTable;
 	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_capturedValue;
 };
-struct Type_ScriptClass:public IType_hasMember
+struct Type_ScriptClass :public IType_hasMember
 {
-	Type_ScriptClass(const ScriptClassInfo* arg_info)noexcept :p_classInfo(arg_info) {}
-	Type_ScriptClass(const std::vector<ButiEngine::Value_ptr<void>>& arg_vec_member, const ScriptClassInfo* arg_info)noexcept :vec_member(arg_vec_member), p_classInfo(arg_info){}
-	Type_ScriptClass(const Type_ScriptClass& arg_v):p_classInfo(arg_v.p_classInfo) {
+	Type_ScriptClass(const ScriptClassInfo* arg_info) :p_classInfo(arg_info) {
+		vec_member.resize(arg_info->GetMemberSize());
+	}
+	Type_ScriptClass(const std::vector<ButiEngine::Value_ptr<void>>& arg_vec_member, const ScriptClassInfo* arg_info)noexcept :vec_member(arg_vec_member), p_classInfo(arg_info) {}
+	Type_ScriptClass(const Type_ScriptClass& arg_v) :p_classInfo(arg_v.p_classInfo) {
 		vec_member.reserve(arg_v.vec_member.size());
 		for (auto& member : arg_v.vec_member) {
 			vec_member.push_back(member.Clone());
 		}
 	}
+	Type_ScriptClass()noexcept:vec_member(),p_classInfo(nullptr){}
 	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
 		return vec_member.at(arg_index);
 	}
@@ -274,49 +305,59 @@ struct Type_ScriptClass:public IType_hasMember
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
 		vec_member.at(arg_index) = arg_data;
 	}
-	inline void SetClassInfoUpdate(const std::vector<TypeTag>& arg_types,const std::vector<ScriptClassInfo>& arg_scriptClassInfos,const std::int32_t arg_sysTypeCount,const std::int32_t arg_typeIndex) {
+	inline void SetClassInfoUpdate(const std::vector<TypeTag>& arg_types, const std::vector<ScriptClassInfo>& arg_scriptClassInfos, const std::int32_t arg_sysTypeCount, const std::int32_t arg_typeIndex) {
 
+	}
+	bool ShowGUI(const std::string& arg_label) {
+		bool output = false;
+		if (ButiEngine::GUI::TreeNode(arg_label)) {
+			std::int32_t index = 0;
+			for (auto& member : vec_member)
+			{
+				auto guiRet= member.ShowGUI(p_classInfo->GetMamberName()[index]);
+				output = guiRet ? guiRet : output;
+				index++;
+			}
+			ButiEngine::GUI::TreePop();
+		}
+		return output;
 	}
 	std::vector<ButiEngine::Value_ptr<void>> vec_member;
 	const ScriptClassInfo* p_classInfo;
 protected:
 
-	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
-	}
+	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {	}
 };
 template<typename T>
 std::int64_t TypeSpecific() {
 	static T output[1];
-	return reinterpret_cast<std::int64_t>( output);
+	return reinterpret_cast<std::int64_t>(output);
 }
 #ifdef _BUTIENGINEBUILD
-class IValueData;
-#ifndef IGLOBALVALUESAVEOBJECT_DEFINE
-#define IGLOBALVALUESAVEOBJECT_DEFINE
-class IGlobalValueSaveObject {
-public:
 
-	virtual void RestoreValue(IValueData** arg_v)const = 0;
-	virtual void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) {}
-	virtual std::int32_t GetTypeIndex()const = 0;
-	virtual void SetTypeIndex(const std::int32_t arg_index) = 0;
+}
+namespace ButiEngine{
+class IUseCompiledData {
+public: 
+	virtual void SetCompiledData(std::shared_ptr<ButiScript::CompiledData> arg_shp_data) = 0;
 };
-#endif // !IGLOBALVALUESAVEOBJECT_DEFINE
 
-class GlobalScriptTypeValueSaveObject :public IGlobalValueSaveObject {
+template<>
+class ValuePtrRestoreObject <ButiScript::Type_ScriptClass> :public IValuePtrRestoreObject, public IUseCompiledData {
 public:
-	GlobalScriptTypeValueSaveObject() {}
-	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
-	void RestoreValue(IValueData** arg_v)const override;
-	void Push(std::shared_ptr<IGlobalValueSaveObject> shp_value,const std::int32_t arg_index) {
-		shp_value->SetTypeIndex(arg_index);
-		vec_data.push_back(shp_value);
+	ValuePtrRestoreObject(const ButiScript::Type_ScriptClass& arg_value) {
+		type = arg_value.p_classInfo->GetTypeIndex();
+		std::int32_t memberIndex =0;
+		for (auto& v : arg_value.vec_member) {
+			vec_data.push_back({ v.GetRestoreObject(),arg_value.p_classInfo->GetMemberTypeIndex(memberIndex) });
+			memberIndex++;
+		}
 	}
-	std::int32_t GetTypeIndex()const override {
-		return type;
-	}
-	void SetTypeIndex(const std::int32_t arg_index)override {
-		type = arg_index;
+	ValuePtrRestoreObject() {}
+	void SetCompiledData(std::shared_ptr<ButiScript::CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
+	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
+	void Push(std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t> arg_shp_data) {
+		vec_data.push_back(arg_shp_data);
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
@@ -325,128 +366,66 @@ public:
 		archive(type);
 	}
 private:
-	std::vector<std::shared_ptr<IGlobalValueSaveObject>> vec_data;
-	std::shared_ptr<CompiledData>shp_compiledData;
+	std::vector<std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t>> vec_data;
 	std::int32_t type;
-};
-template<typename T>
-class GlobalValueSaveObject :public IGlobalValueSaveObject {
-public:
-	GlobalValueSaveObject(const T& arg_value) {
-		data = arg_value;
-	}
-	GlobalValueSaveObject() {
-	}
-	void RestoreValue(IValueData** arg_v)const override{}
-	std::int32_t GetTypeIndex()const override {
-		return arg_type;
-	}
-	void SetTypeIndex(const std::int32_t arg_index)override {
-		arg_type = arg_index;
-	}
-	template<class Archive>
-	void serialize(Archive& archive)
-	{
-		archive(data);
-		archive(arg_type);
-	}
-private:
-	T data;
-	std::int32_t arg_type;
+	std::shared_ptr<ButiScript::CompiledData>shp_compiledData;
 };
 template<>
-class GlobalValueSaveObject <Type_Enum> :public IGlobalValueSaveObject {
+class ValuePtrRestoreObject <ButiScript::Type_Enum> :public IValuePtrRestoreObject,public IUseCompiledData {
 public:
-	GlobalValueSaveObject(const std::int32_t& arg_value) {
-		data = arg_value;
+	ValuePtrRestoreObject(const ButiScript::Type_Enum& arg_value) {
+		data = arg_value.value;
+		type = arg_value.p_enumTag->typeIndex;
 	}
-	GlobalValueSaveObject() {
+	ValuePtrRestoreObject() {
 	}
-	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
-	void RestoreValue(IValueData** arg_v)const override;
-	std::int32_t GetTypeIndex()const override {
-		return type;
-	}
-	void SetTypeIndex(const std::int32_t arg_index)override {
-		type = arg_index;
-	}
+	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
 		archive(data);
 		archive(type);
 	}
+	void SetCompiledData(std::shared_ptr<ButiScript::CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
 private:
 	std::int32_t data;
 	std::int32_t type;
-	std::shared_ptr<CompiledData>shp_compiledData;
+	std::shared_ptr<ButiScript::CompiledData>shp_compiledData;
 };
 template<>
-class GlobalValueSaveObject <Type_Function> :public IGlobalValueSaveObject {
+class ValuePtrRestoreObject <ButiScript::Type_Function> :public IValuePtrRestoreObject, public IUseCompiledData {
 public:
-	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
-	void RestoreValue(IValueData** arg_v)const override;
-	std::int32_t GetTypeIndex()const override {
-		return type;
+	ValuePtrRestoreObject(const ButiScript::Type_Function& arg_value) {
+		address = arg_value.address;
 	}
-	void SetTypeIndex(const std::int32_t arg_index)override {
-		type = arg_index;
-	}
+	ValuePtrRestoreObject(){}
+	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(type);
+		archive(address);
 	}
+	void SetCompiledData(std::shared_ptr<ButiScript::CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
 private:
-	std::int32_t type;
-	std::shared_ptr<CompiledData>shp_compiledData;
+	std::int32_t address;
+	std::shared_ptr<ButiScript::CompiledData>shp_compiledData;
 };
 template<>
-class GlobalValueSaveObject <Type_Null> :public IGlobalValueSaveObject {
+class ValuePtrRestoreObject <ButiScript::Type_Null> :public IValuePtrRestoreObject {
 public:
-	void SetCompiledData(std::shared_ptr<CompiledData> arg_shp_data) override { shp_compiledData = arg_shp_data; }
-	void RestoreValue(IValueData** arg_v)const override;
-	std::int32_t GetTypeIndex()const override {
-		return type;
-	}
-	void SetTypeIndex(const std::int32_t arg_index)override {
-		type = arg_index;
-	}
+	ValuePtrRestoreObject(const ButiScript::Type_Null&){}
+	ValuePtrRestoreObject(){}
+	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(type);
 	}
 private:
-	std::int32_t type;
-	std::shared_ptr<CompiledData>shp_compiledData;
-};
-template<typename T>
-class GlobalSharedPtrValueSaveObject :public IGlobalValueSaveObject {
-public:
-	GlobalSharedPtrValueSaveObject(std::shared_ptr<T> arg_value) {
-		data = arg_value;
-	}
-	GlobalSharedPtrValueSaveObject() {
-	}
-	void RestoreValue(IValueData** arg_v)const override{}
-	std::int32_t GetTypeIndex()const override {
-		return type;
-	}
-	void SetTypeIndex(const std::int32_t arg_index)override {
-		type = arg_index;
-	}
-	template<class Archive>
-	void serialize(Archive& archive)
-	{
-		archive(data);
-		archive(type);
-	}
-private:
-	std::shared_ptr<T> data;
-	std::int32_t type;
 };
 
+}
+
+namespace ButiScript{
 #endif //_BUTIENGINEBUILD
 
 

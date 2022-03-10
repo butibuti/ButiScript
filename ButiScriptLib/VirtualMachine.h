@@ -197,8 +197,8 @@ namespace ButiScript {
 		std::shared_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
 			return wkp_butiScriptBehavior.lock();
 		}
-		void RestoreGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
-		void SaveGlobalValue(std::vector<std::shared_ptr< ButiScript::IGlobalValueSaveObject>>& arg_ref_vec_saveObject);
+		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject);
+		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_vec_saveObject);
 		void ShowGUI();
 		std::shared_ptr<CompiledData> GetCompiledData()const { return shp_data; }
 #endif

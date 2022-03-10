@@ -5,18 +5,38 @@
 
 std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
 #ifdef _BUTIENGINEBUILD
-void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Enum>::RestoreValue(ButiScript::IValueData** arg_v) const
-{
-	//*arg_v = new ButiScript::ValueData<Type_Enum>(data, 1, &shp_compiledData->map_enumTag.at(type));
+
+void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_ScriptClass>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
+	auto this_type =& shp_compiledData->vec_scriptClassInfo[type - shp_compiledData->systemTypeCount];
+	Value_ptr<ButiScript::Type_ScriptClass> vlp_scriptClass = make_value<ButiScript::Type_ScriptClass>(this_type);
+	std::int32_t memberIndex=0;
+	for (auto itr = vec_data.begin(), end = vec_data.end(); itr != end; itr++, memberIndex++) {
+		Value_ptr<void> member;
+		 
+		auto useCompiledData = dynamic_value_ptr_cast<IUseCompiledData>(itr->first);
+
+		if (useCompiledData) {
+			useCompiledData->SetCompiledData(shp_compiledData);
+		}
+		(itr->first)->RestoreValue(member);
+		vlp_scriptClass->SetMember(member,memberIndex);
+	}
+	arg_ref_value = vlp_scriptClass;
 }
-void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Function>::RestoreValue(ButiScript::IValueData** arg_v) const
-{
-	//*arg_v = new ButiScript::ValueData<Type_Function>(1, nullptr, std::vector<std::pair< IValueData*, std::int32_t>>());
+void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Enum>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
+	auto this_type = shp_compiledData->vec_types[type].p_enumTag;
+	arg_ref_value = make_value<ButiScript::Type_Enum>(data,this_type);
 }
-void  ButiScript::GlobalValueSaveObject<ButiScript::Type_Null>::RestoreValue(ButiScript::IValueData** arg_v) const
-{
-	//*arg_v = new ButiScript::ValueData<Type_Null>(1);
+void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Function>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
+	
+	arg_ref_value = make_value<ButiScript::Type_Function>(address, &shp_compiledData->map_functionJumpPointsTable, std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>());
 }
+void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Null>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
+
+}
+
+
+//*arg_v = new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
 
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #else
@@ -54,21 +74,7 @@ ButiEngine::Value_ptr<void> CreateScriptValueData(ButiScript::ScriptClassInfo& a
 	//return nullptr;
 }
 
-#ifdef _BUTIENGINEBUILD
 
-void ButiScript::GlobalScriptTypeValueSaveObject::RestoreValue(IValueData** arg_v) const
-{
-	std::vector<ButiScript::IValueData*> vec_members;
-	
-	for (auto itr = vec_data.begin(), end = vec_data.end(); itr != end; itr++) {
-		IValueData* member;
-		(*itr)->RestoreValue(&member);
-		vec_members.push_back(member);
-	}
-	//*arg_v = new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
-
-}
-#endif
 ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
 	
 	valueData = CreateScriptValueData(arg_info,p_vec_scriptClassInfo);
