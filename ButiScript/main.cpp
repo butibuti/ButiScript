@@ -1,4 +1,6 @@
 #include "stdafx.h"
+
+#pragma comment(lib,"ButiUtil.lib")
 #define _CRTDBG_MAP_ALLOC
 class Sample {
 public:

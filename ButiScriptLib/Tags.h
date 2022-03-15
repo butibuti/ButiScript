@@ -62,7 +62,7 @@ public:
 	std::int32_t GetValue(const std::string& arg_identiferName)const {
 		return map_identifers.at(arg_identiferName);
 	}
-	bool ExistenceIdentifers(const std::string& arg_identiferName)const {
+	bool ExistIdentifers(const std::string& arg_identiferName)const {
 		return map_identifers.count(arg_identiferName);
 	}
 	const std::string& GetTypeName()const {
@@ -281,17 +281,16 @@ public:
 
 bool IsFunctionBlock()const { return isFunction; }
 #ifdef	_DEBUG
-	struct DumpAction {
-		void operator()(const std::pair<std::string, ValueTag>& it)
-		{
+
+	void DumpAction(const std::pair<std::string, ValueTag>& it)const
+	{
 #ifdef BUTIGUI_H
-			ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string( it.second.address )+ ", type = " + std::to_string(it.second.valueType )+ ", size = " +std::to_string( it.second.currentSize )+ ", global = " + std::to_string( it.second.isGlobal));
+		ButiEngine::GUI::Console(it.first + ", addr = " + std::to_string(it.second.address) + ", type = " + std::to_string(it.second.valueType) + ", size = " + std::to_string(it.second.currentSize) + ", global = " + std::to_string(it.second.isGlobal));
 #else
-			std::cout << it.first << ", addr = " << it.second.GetAddress() << ", type = " << it.second.valueType << ", size = " << it.second.currentSize << ", global = " << it.second.isGlobal << std::endl;
+		std::cout << it.first << ", addr = " << it.second.GetAddress() << ", type = " << it.second.valueType << ", size = " << it.second.currentSize << ", global = " << it.second.isGlobal << std::endl;
 
 #endif // BUTIGUI_H
 	}
-};
 	void Dump() const
 	{
 #ifdef BUTIGUI_H
@@ -299,7 +298,9 @@ bool IsFunctionBlock()const { return isFunction; }
 #else
 		std::cout << "-------- value --------" << std::endl;
 #endif // BUTIGUI_H
-		std::for_each(map_variables.begin(), map_variables.end(), DumpAction());
+		for (auto& variable : map_variables) {
+			DumpAction(variable);
+		}
 	}
 #endif
 

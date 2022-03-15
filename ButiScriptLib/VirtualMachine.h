@@ -155,7 +155,7 @@ namespace ButiScript {
 		}
 		void AllocGlobalValue();
 		void Clear();
-		bool IsExistFunction(const std::string& arg_functionName)const {
+		bool ExistFunction(const std::string& arg_functionName)const {
 			return shp_data->functions.Find(arg_functionName);
 		}
 		VirtualMachine* Clone();

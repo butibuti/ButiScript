@@ -7,12 +7,12 @@
 #include <string>
 #include"Tags.h"
 #include<mutex>
-#include"../../Header/Common/ButiMath.h"
+#include"ButiMath/ButiMath.h"
 
 namespace ButiScript {
 template <typename T>class Type_hasMember;
 }
-#include"../../ButiUtil/Util/ButiPtr.h"
+#include"ButiUtil/ButiUtil/ButiPtr.h"
 namespace std {
 template<typename T>
 inline std::string to_string(const ButiScript::Type_hasMember<T>& arg_v) {
@@ -310,6 +310,9 @@ struct Type_ScriptClass :public IType_hasMember
 	}
 	bool ShowGUI(const std::string& arg_label) {
 		bool output = false;
+#ifdef _BUTIENGINEBUILD
+
+
 		if (ButiEngine::GUI::TreeNode(arg_label)) {
 			std::int32_t index = 0;
 			for (auto& member : vec_member)
@@ -320,6 +323,7 @@ struct Type_ScriptClass :public IType_hasMember
 			}
 			ButiEngine::GUI::TreePop();
 		}
+#endif // _BUTIENGINEBUILD
 		return output;
 	}
 	std::vector<ButiEngine::Value_ptr<void>> vec_member;

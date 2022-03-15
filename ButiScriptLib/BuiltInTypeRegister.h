@@ -1,7 +1,7 @@
 #ifndef BUTISCRIPTBUILTINTYPEREGISTER
 #define BUTISCRIPTBUILTINTYPEREGISTER
 #include "VirtualMachine.h"
-#include"../../ButiUtil/Util/Helper/StringHelper.h"
+#include"ButiUtil/ButiUtil/Helper/StringHelper.h"
 namespace ButiScript {
 
 class VirtualMachine;

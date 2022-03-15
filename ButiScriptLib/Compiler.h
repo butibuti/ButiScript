@@ -4,7 +4,7 @@
 #include "VirtualMachine.h"
 #include "Node.h"
 #include<unordered_map>
-#include"../../ButiUtil/Util/Helper/StringHelper.h"
+#include"ButiUtil/ButiUtil/Helper/StringHelper.h"
 #include<typeinfo>
 namespace ButiScript {
 

@@ -2261,7 +2261,7 @@ std::int32_t Node_enum::Push(Compiler* arg_compiler) const
 		arg_compiler->error("—ñ‹“Œ^@" + leftNode->GetString() + "‚Í–¢’è‹`‚Å‚·");
 		return -1;
 	}
-	if (!enumType->ExistenceIdentifers(strData)) {
+	if (!enumType->ExistIdentifers(strData)) {
 
 		arg_compiler->error("—ñ‹“Œ^@" + leftNode->GetString()+"."+strData + "‚Í–¢’è‹`‚Å‚·");
 		return -1;

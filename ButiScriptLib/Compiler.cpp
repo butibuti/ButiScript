@@ -218,19 +218,10 @@ void ButiScript::Compiler::ClearGlobalNameSpace()
 
 
 // 外部変数の定義
-struct Define_value {
-	ButiScript::Compiler* p_compiler;
-	std::int32_t valueType;
-	ButiScript::AccessModifier arg_access;
-	Define_value(ButiScript::Compiler* arg_p_comp, const std::int32_t arg_type,ButiScript::AccessModifier arg_access ) : p_compiler(arg_p_comp), valueType(arg_type),arg_access(arg_access)
-	{
-	}
+void DefineValue(ButiScript::Compiler* arg_p_comp, const std::int32_t arg_type, ButiScript::AccessModifier arg_access, ButiScript::Node_t arg_node) {
 
-	void operator()(ButiScript::Node_t node) const
-	{
-		p_compiler->AddValue(valueType, node->GetString(), node->GetLeft(),arg_access);
-	}
-};
+	arg_p_comp->AddValue(arg_type, arg_node->GetString(), arg_node->GetLeft(), arg_access);
+}
 
 void ButiScript::Compiler::AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::int32_t, AccessModifier>>& arg_memberInfo)
 {
@@ -267,7 +258,9 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 
 void ButiScript::Compiler::ValueDefine(std::int32_t arg_type, const std::vector<Node_t>& arg_node, const AccessModifier arg_access)
 {
-	std::for_each(arg_node.begin(), arg_node.end(), Define_value(this, arg_type,arg_access));
+	for (auto& valueNode : arg_node) {
+		DefineValue(this, arg_type, arg_access,valueNode);
+	}
 }
 
 // 関数宣言
@@ -347,7 +340,10 @@ void ButiScript::Compiler::RegistEnumType(const std::string& arg_typeName)
 std::int32_t ButiScript::Compiler::GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const std::int32_t arg_retType)
 {
 	std::vector<std::int32_t> vec_argTypes;
-	std::for_each(arg_vec_argmentTypes.begin(), arg_vec_argmentTypes.end(), [&](const ArgDefine& itr)->void {vec_argTypes.push_back(itr.GetType()); });
+	for (auto& argmentType : arg_vec_argmentTypes) {
+		vec_argTypes.push_back(argmentType.GetType());
+	}
+
 	
 	return GetfunctionTypeIndex(vec_argTypes,arg_retType);
 }
@@ -461,68 +457,51 @@ void ButiScript::Compiler::AllocStack()
 }
 
 // アドレス計算
-struct calc_addr {
-	std::vector<ButiScript::Label>& vec_labels;
-	std::int32_t& pos;
-	calc_addr(std::vector<ButiScript::Label>& arg_vec_labels, std::int32_t& arg_pos) : vec_labels(arg_vec_labels), pos(arg_pos)
-	{
-	}
-	void operator()(const ButiScript::VMCode& code)
-	{
-		if (code.op == ButiScript::VM_MAXCOMMAND) {			// ラベルのダミーコマンド
-			vec_labels[code.GetConstValue<std::int32_t>()].pos = pos;
-		}
-		else {
-			pos += code.size;
-		}
-	}
-};
+void CalcAddress(std::vector<ButiScript::Label>& arg_vec_labels, std::int32_t& arg_pos, const ButiScript::VMCode& arg_code) {
 
-// ジャンプアドレス設定
-struct set_addr {
-	std::vector<ButiScript::Label>& vec_labels;
-	set_addr(std::vector<ButiScript::Label>& labels) : vec_labels(labels)
-	{
+	if (arg_code.op == ButiScript::VM_MAXCOMMAND) {			// ラベルのダミーコマンド
+		arg_vec_labels[arg_code.GetConstValue<std::int32_t>()].pos = arg_pos;
 	}
-	void operator()(ButiScript::VMCode& arg_code)
-	{
-		switch (arg_code.op) {
-		case ButiScript:: VM_JMP:
-		case ButiScript::VM_JMPC:
-		case ButiScript::VM_JMPNC:
-		case ButiScript::VM_TEST:
-		case ButiScript::VM_CALL:
-		case ButiScript::VM_PUSHFUNCTIONOBJECT:
-		case ButiScript::VM_PUSHRAMDA:
-			arg_code.SetConstValue( vec_labels[arg_code.GetConstValue<std::int32_t>()].pos);
-			break;
-		}
+	else {
+		arg_pos += arg_code.size;
 	}
-};
+}
+void SetAddress(std::vector<ButiScript::Label>& arg_vec_labels,   ButiScript::VMCode& arg_code) {
+	switch (arg_code.op) {
+	case ButiScript::VM_JMP:
+	case ButiScript::VM_JMPC:
+	case ButiScript::VM_JMPNC:
+	case ButiScript::VM_TEST:
+	case ButiScript::VM_CALL:
+	case ButiScript::VM_PUSHFUNCTIONOBJECT:
+	case ButiScript::VM_PUSHRAMDA:
+		arg_code.SetConstValue(arg_vec_labels[arg_code.GetConstValue<std::int32_t>()].pos);
+		break;
+	}
+}
 
 std::int32_t ButiScript::Compiler::LabelSetting()
 {
 	// アドレス計算
 	std::int32_t pos = 0;
-	std::for_each(statement.begin(), statement.end(), calc_addr(labels, pos));
-	// ジャンプアドレス設定
-	std::for_each(statement.begin(), statement.end(), set_addr(labels));
+	for (auto& statementItr : statement)
+	{
+		CalcAddress(labels, pos, statementItr);
+	}
+	for (auto& statementItr : statement)
+	{
+		SetAddress(labels,  statementItr);
+	}
 
 	return pos;
 }
 
 // バイナリデータ生成
+std::uint8_t* CodeCopy(std::uint8_t* arg_p_code, const ButiScript::VMCode& arg_code) {
 
-struct copy_code {
-	std::uint8_t* code;
-	copy_code(std::uint8_t* arg_code) : code(arg_code)
-	{
-	}
-	void operator()(const ButiScript::VMCode& arg_code)
-	{
-		code = arg_code.Get(code);
-	}
-};
+	return arg_code.Get(arg_p_code);
+}
+
 
 bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, std::int32_t arg_codeSize)
 {
@@ -572,12 +551,13 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, st
 	if (arg_ref_data.textSize != 0) {
 		memcpy(arg_ref_data.textBuffer, &text_table[0], arg_ref_data.textSize);
 	}
-
-	std::for_each(statement.begin(), statement.end(), copy_code(arg_ref_data.commandTable));
-
-	auto end = statement.end();
-	for (auto itr = statement.begin(); itr != end; itr++) {
-		itr->Release();
+	auto commandStartPtr = arg_ref_data.commandTable;
+	for (auto& statementItr : statement) {
+		arg_ref_data.commandTable=CodeCopy(arg_ref_data.commandTable, statementItr);
+	}
+	arg_ref_data.commandTable = commandStartPtr;
+	for (auto& statementItr : statement) {
+		statementItr.Release();
 	}
 	return true;
 }
