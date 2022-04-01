@@ -36,8 +36,6 @@ void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Null>::RestoreValue(Buti
 }
 
 
-//*arg_v = new ButiScript::ValueData<ButiScript::ScriptClassInfo>(&shp_compiledData->vec_scriptClassInfo[type - shp_compiledData-> systemTypeCount], vec_members, 1);
-
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #else
 auto createMemberInstancesRelease = MemoryReleaser(&p_vec_createMemberInstanceFunction);

@@ -11,6 +11,7 @@
 #include "Parser.h"
 #include "Node.h"
 #include"Compiler.h"
+
 namespace ButiScript{
 
 using iterator_t= boost::spirit::position_iterator<std::string::const_iterator>;
@@ -89,7 +90,7 @@ struct null_node_func {
 	template <typename Ty1>
 	Node_t operator()(Ty1 arg_compiler)const 
 	{
-		return std::make_shared<Node_Null>();
+		return ButiEngine::make_value<Node_Null>();
 	}
 };
 
@@ -162,7 +163,7 @@ struct make_argument_func {
 	template <typename Ty>
 	NodeList_t operator()(const Ty& arg_node) const
 	{
-		return NodeList_t(new NodeList(arg_node));
+		return ButiEngine::make_value< NodeList>(arg_node);
 	}
 };
 
@@ -211,7 +212,7 @@ struct make_decl_func {
 	template <typename Ty>
 	Declaration_t operator()(Ty arg_type) const
 	{
-		return Declaration_t(new Declaration(arg_type));
+		return ButiEngine::make_value< Declaration>(arg_type);
 	}
 };
 
@@ -223,7 +224,7 @@ struct make_decl1_func {
 	template <typename Ty1, typename Ty2>
 	Declaration_t operator()(Ty1 arg_type, const Ty2& arg_node) const
 	{
-		return Declaration_t(new Declaration(arg_type, arg_node));
+		return ButiEngine::make_value<Declaration>(arg_type, arg_node);
 	}
 };
 
@@ -273,7 +274,7 @@ struct make_function_func {
 	template <typename Ty1,typename Ty2>
 	Function_t operator()(const Ty1& arg_name,const Ty2 arg_modifier ) const
 	{
-		return Function_t(new Function(arg_name,arg_modifier));
+		return ButiEngine::make_value<Function>(arg_name,arg_modifier);
 	}
 };
 // ラムダ式の生成
@@ -284,7 +285,8 @@ struct make_lambda_func {
 	template <typename Ty1,typename Ty2>
 	Lambda_t operator()(const Ty1 arg_typeIndex,Ty2 arg_compiler ) const
 	{
-		auto output = Lambda_t(new Lambda(arg_typeIndex.first, arg_typeIndex.second,arg_compiler));
+		Lambda_t output;
+		output= ButiEngine::make_value<Lambda>(arg_typeIndex.first, arg_typeIndex.second, arg_compiler);
 		arg_compiler->PushAnalyzeFunction(output);
 		return output;
 	}
@@ -310,8 +312,8 @@ struct make_class_func {
 	template <typename Ty1, typename Ty2>
 	Class_t operator()(const Ty1& arg_name,Ty2 arg_compiler) const
 	{
-		arg_compiler->PushNameSpace(NameSpace_t(new NameSpace(arg_name)));
-		return Class_t(new Class(arg_name));
+		arg_compiler->PushNameSpace(ButiEngine::make_value< NameSpace>(arg_name));
+		return ButiEngine::make_value<Class>(arg_name);
 	}
 };
 
@@ -359,7 +361,7 @@ struct make_enum_func {
 	template <typename Ty2>
 	Enum_t operator()(const Ty2& arg_name) const
 	{
-		return Enum_t(new Enum(arg_name));
+		return ButiEngine::make_value<Enum>(arg_name);
 	}
 };
 //列挙型の追加
@@ -382,7 +384,7 @@ struct make_namespace_func {
 	template <typename Ty2>
 	NameSpace_t operator()(const Ty2& arg_name) const
 	{
-		return NameSpace_t(new NameSpace(arg_name));
+		return ButiEngine::make_value<NameSpace>(arg_name);
 	}
 };
 
@@ -523,7 +525,7 @@ struct make_block_func {
 	struct result { using type = Block_t; };
 	template<typename Ty1>
 	Block_t operator()(Ty1 arg_compiler)const {
-		return std::make_shared<Block>();
+		return ButiEngine::make_value<Block>();
 	}
 };
 
@@ -624,8 +626,8 @@ namespace ButiClosure {
 		member2 argments;
 	};
 	//ラムダ式定義のクロージャ
-	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, std::int32_t, std::vector<std::int32_t>> {
-		member1 node;
+	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, std::int32_t> {
+		member1 expression;
 		member2 type;
 	};
 	//ラムダ式利用のクロージャ
@@ -1159,9 +1161,9 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			//関数型名
 			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
 
-			lambda = funcType[lambda.node = make_lambda(arg1,self.compiler)] >> block[lambda.node=push_back(lambda.node,arg1)];
+			lambda = funcType[lambda.expression = make_lambda(arg1,self.compiler)] >> block[lambda.expression =push_back(lambda.expression,arg1)];
 
-			lambda_prime = lambda[lambda_prime.node= lambda_node(pushCompiler(arg1, self.compiler),self.compiler)];
+			lambda_prime =  lambda[lambda_prime.node = lambda_node(pushCompiler(arg1, self.compiler), self.compiler)];
 
 			// 関数宣言の引数
 			arg = identifier >> ':'

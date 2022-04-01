@@ -101,8 +101,8 @@ public:
 	const std::string& GetNameString()const;
 	std::string GetGlobalNameString()const;
 	void Regist(Compiler* arg_compiler);
-	void SetParent(std::shared_ptr<NameSpace>arg_parent);
-	std::shared_ptr<NameSpace> GetParent()const;
+	void SetParent(NameSpace_t arg_parent);
+	NameSpace_t GetParent()const;
 	void PushFunction(Function_t arg_func);
 	void PushClass(Class_t arg_class);
 	
@@ -111,12 +111,11 @@ public:
 	void Clear();
 private:
 	std::string name;
-	std::shared_ptr<NameSpace> shp_parentNamespace;
+	NameSpace_t shp_parentNamespace;
 	std::vector<Function_t> vec_analyzeFunctionBuffer;
 	std::vector<Class_t> vec_analyzeClassBuffer;
 };
 
-using NameSpace_t = std::shared_ptr<NameSpace>;
 
 
 // ÉâÉxÉã
@@ -219,7 +218,7 @@ public:
 	}
 
 	// ä÷êîÇÃåüçı
-	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex, const bool arg_isStrict,std::shared_ptr<NameSpace> arg_namespace) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex, const bool arg_isStrict, NameSpace_t arg_namespace) const
 	{
 		const FunctionTag* output=nullptr;
 		const FunctionTag* (FunctionTable::* findMethod)(const std::string&, const std::vector<std::int32_t>&,const TypeTable* )const;
@@ -248,7 +247,7 @@ public:
 		return GetFunctionTag(arg_name+ GetTemplateName(arg_vec_template, &GetTypeTable()), arg_vec_argIndex, arg_isStrict, GetCurrentNameSpace());
 	}
 	// ä÷êîÇÃåüçı
-	const FunctionTag* GetFunctionTag(const std::string& arg_name, std::shared_ptr<NameSpace> arg_namespace) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, NameSpace_t arg_namespace) const
 	{
 		const FunctionTag* output=nullptr;
 		

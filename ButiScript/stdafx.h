@@ -1,3 +1,8 @@
+#ifndef STDAFX_H
+#define STDAFX_H
+
+#include"ButiMemorySystem/ButiMemorySystem/ButiPtr.h"
+#include"ButiMemorySystem/ButiMemorySystem/ButiList.h"
 #ifndef BOOST_INCLUDE_H
 #define BOOST_INCLUDE_H
 #include <boost/bind.hpp>
@@ -30,4 +35,5 @@ public:
 private:
 	T** p_memoryAddress;
 };
+#endif
 #endif

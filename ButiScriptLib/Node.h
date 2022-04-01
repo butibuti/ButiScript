@@ -4,7 +4,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <memory>
+#include"ButiMemorySystem/ButiMemorySystem/ButiPtr.h"
+#include"ButiMemorySystem/ButiMemorySystem/ButiList.h"
 #include"Tags.h"
 namespace ButiScript {
 
@@ -67,11 +68,11 @@ namespace ButiScript {
 	class Node;
 	class NodeList;
 	class Function;
-	using Function_t = std::shared_ptr<Function>;
-	using Node_t = std::shared_ptr<Node>;
-	using NodeList_t = std::shared_ptr<NodeList>;
+	using Function_t = ButiEngine::Value_ptr<Function>;
+	using Node_t = ButiEngine::Value_ptr<Node>;
+	using NodeList_t = ButiEngine::Value_ptr<NodeList>;
 
-	class Node :public std::enable_shared_from_this<Node>{
+	class Node :public ButiEngine::enable_value_from_this<Node>{
 	public:
 		Node(const std::int32_t arg_op, const Node_t& arg_left, const Node_t& arg_right)
 			: op(arg_op), leftNode(arg_left), rightNode(arg_right), num_int(0), num_float(0)
@@ -129,9 +130,9 @@ namespace ButiScript {
 		static Node_t make_node(const std::int32_t arg_op, const float arg_number, const Compiler* arg_compiler)
 		{
 			if (arg_op == OP_FLOAT)
-				return Node_t(new Node(arg_op, arg_number));
+				return ButiEngine::make_value<Node>(arg_op, arg_number);
 
-			return Node_t(new Node(arg_op, (std::int32_t)arg_number));
+			return ButiEngine::make_value<Node>(arg_op, static_cast<std::int32_t>(arg_number));
 		}
 
 		static Node_t make_node(const std::int32_t arg_op, const std::string& arg_str, const Compiler* arg_compiler);
@@ -304,10 +305,10 @@ namespace ButiScript {
 	};
 
 	class Block;
-	using Block_t = std::shared_ptr<Block>;
+	using Block_t = ButiEngine::Value_ptr <Block>;
 
 	class Statement;
-	using Statement_t = std::shared_ptr<Statement>;
+	using Statement_t = ButiEngine::Value_ptr<Statement>;
 
 	// 文
 	class Statement {
@@ -385,7 +386,7 @@ namespace ButiScript {
 	};
 
 	// 関数呼び出し
-	class ccall_statement : public Statement, public  std::enable_shared_from_this<ccall_statement> {
+	class ccall_statement : public Statement, public ButiEngine::enable_value_from_this<ccall_statement> {
 	public:
 		ccall_statement(Node_t arg_node)
 			:  node(arg_node)
@@ -601,7 +602,7 @@ namespace ButiScript {
 		AccessModifier accessType=AccessModifier::Public;
 	};
 
-	using Declaration_t = std::shared_ptr<Declaration>;
+	using Declaration_t = ButiEngine::Value_ptr<Declaration>;
 
 	// ブロック
 
@@ -630,9 +631,9 @@ namespace ButiScript {
 	// 引数
 
 	class NameSpace;
-	using NameSpace_t = std::shared_ptr<NameSpace>;
+	using NameSpace_t = ButiEngine::Value_ptr<NameSpace>;
 	// 関数
-	class Function :public std::enable_shared_from_this<Function>{
+	class Function :public ButiEngine::enable_value_from_this<Function>{
 	public:
 		Function(const std::string& arg_name)
 			: name(arg_name),searchName(arg_name)
@@ -695,9 +696,9 @@ namespace ButiScript {
 		std::int32_t lambdaIndex;
 		std::map<std::string, const ValueTag*> map_lambdaCapture;
 	};
-	using Lambda_t = std::shared_ptr<Lambda>;
+	using Lambda_t = ButiEngine::Value_ptr<Lambda>;
 
-	class Class:public std::enable_shared_from_this<Class> {
+	class Class:public ButiEngine::enable_value_from_this<Class> {
 	public:
 		Class(const std::string& arg_name)
 			: name(arg_name)
@@ -713,7 +714,7 @@ namespace ButiScript {
 		std::vector<Function_t> vec_methods;
 		std::string name;
 	};
-	using Class_t = std::shared_ptr<Class>;
+	using Class_t = ButiEngine::Value_ptr<Class>;
 
 
 
@@ -730,6 +731,6 @@ namespace ButiScript {
 		std::string typeName;
 		std::map<std::string, std::int32_t> map_identifer;
 	};
-	using Enum_t = std::shared_ptr<Enum>;
+	using Enum_t = ButiEngine::Value_ptr<Enum>;
 }
 #endif

@@ -25,7 +25,7 @@ bool CanTypeCast(const std::int32_t arg_left, const std::int32_t arg_right) {
 }
 
 
-const EnumTag* GetEnumType(const Compiler* arg_compiler, Node& arg_leftNode) {
+const EnumTag* GetEnumType(const Compiler* arg_compiler,const Node& arg_leftNode) {
 
 	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string searchName;
@@ -59,14 +59,14 @@ const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& lef
 Node_t Node::make_node(const std::int32_t arg_op, const std::string& arg_str, const Compiler* arg_compiler)
 {
 	if (arg_op == OP_IDENTIFIER)
-		return std::make_shared<Node_value>(arg_str);
+		return ButiEngine::make_value<Node_value>(arg_str);
 
 	if (arg_op == OP_STRING) {
 		std::uint64_t pos = arg_str.rfind('\"');
 		if (pos != std::string::npos)
-			return std::make_shared<Node>(arg_op, arg_str.substr(0, pos));
+			return ButiEngine::make_value<Node>(arg_op, arg_str.substr(0, pos));
 	}
-	return std::make_shared<Node>(arg_op, arg_str);
+	return ButiEngine::make_value<Node>(arg_op, arg_str);
 }
 // 単項演算子のノードを生成
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const Compiler* arg_compiler)
@@ -96,18 +96,18 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const Compile
 		}
 		break;
 	}
-	return std::make_shared<Node>(arg_op, arg_left);
+	return ButiEngine::make_value<Node>(arg_op, arg_left);
 }
 
 
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const std::string arg_memberName,const Compiler* arg_compiler)
 {
 	if (GetEnumType(arg_compiler,*arg_left)) {
-		return  std::make_shared<Node_enum>( arg_left, arg_memberName);
+		return  ButiEngine::make_value<Node_enum>( arg_left, arg_memberName);
 	}
 
 	if (arg_op == OP_MEMBER) {
-		return std::make_shared<Node_Member>(arg_op, arg_left, arg_memberName);
+		return ButiEngine::make_value<Node_Member>(arg_op, arg_left, arg_memberName);
 	}
 	else if (arg_op == OP_METHOD) {
 		return nullptr;
@@ -211,7 +211,7 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 			break;
 
 		default:
-			return Node_t(new Node(arg_op, arg_left, arg_right));
+			return ButiEngine::make_value<Node>(arg_op, arg_left, arg_right);
 		}
 		return arg_left;
 	}
@@ -299,7 +299,7 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 			break;
 
 		default:
-			return Node_t(new Node(arg_op, arg_left, arg_right));
+			return ButiEngine::make_value<Node>(arg_op, arg_left, arg_right);
 		}
 		return arg_left;
 	}
@@ -386,7 +386,7 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 			break;
 
 		default:
-			return Node_t(new Node(arg_op, arg_left, arg_right));
+			return ButiEngine::make_value<Node>(arg_op, arg_left, arg_right);
 		}
 		return arg_left;
 	}
@@ -472,7 +472,7 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 			break;
 
 		default:
-			return Node_t(new Node(arg_op, arg_left, arg_right));
+			return ButiEngine::make_value<Node>(arg_op, arg_left, arg_right);
 		}
 		return arg_left;
 	}
@@ -520,9 +520,9 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 			std::cerr << "文字列同士ではできない計算です。" << std::endl;
 			break;
 		}
-		return Node_t(new Node(OP_INT, Value));
+		return ButiEngine::make_value<Node>(OP_INT, Value);
 	}
-	return Node_t(new Node(arg_op, arg_left, arg_right));
+	return ButiEngine::make_value<Node>(arg_op, arg_left, arg_right);
 }
 
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_right, const Compiler* arg_compiler)
@@ -534,17 +534,17 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 // 引数有り関数ノードの生成
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, NodeList_t arg_list)
 {
-	auto left = std::dynamic_pointer_cast<Node_function>(arg_left);
+	auto left = ButiEngine::dynamic_value_ptr_cast<Node_function>(arg_left);
 	if (left) {
 		left->SetArgmentList(arg_list);
 		return left;
 	}
-	return std::make_shared<Node_function>(arg_op, arg_left, arg_list);
+	return ButiEngine::make_value<Node_function>(arg_op, arg_left, arg_list);
 }
 //テンプレート引数有り関数ノードの生成
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const std::vector<std::int32_t>& arg_templateTypes)
 {
-	return std::make_shared<Node_function>(arg_op, arg_left, arg_templateTypes);
+	return ButiEngine::make_value<Node_function>(arg_op, arg_left, arg_templateTypes);
 }
 
 
@@ -1132,7 +1132,7 @@ void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_ca
 }
 Node_t Node_function::CreateMethod(Node_t arg_node)
 {
-	return std::make_shared<Node_Method>(OP_METHOD,leftNode,arg_node, nodeList, vec_templateTypes);
+	return ButiEngine::make_value<Node_Method>(OP_METHOD,leftNode,arg_node, nodeList, vec_templateTypes);
 }
 //ノードの関数呼び出し型チェック
 std::int32_t Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_argNode, const std::vector<std::int32_t>& arg_vec_temps)const {
@@ -1561,7 +1561,7 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 Node_t Node::CreateMethod(Node_t arg_node)
 {
 	static std::vector<std::int32_t> empty;
-	return std::make_shared<Node_Method>(OP_METHOD, shared_from_this(),arg_node ,nullptr, empty);
+	return ButiEngine::make_value<Node_Method>(OP_METHOD, value_from_this(),arg_node ,nullptr, empty);
 }
 
 void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const
@@ -1610,33 +1610,33 @@ Statement_t Statement::make_statement(const std::int32_t arg_vec_state)
 {
 	switch (arg_vec_state) {
 	case NOP_STATE:
-		return Statement_t(new Statement_nop());
+		return ButiEngine::make_value< Statement_nop>();
 
 	case DEFAULT_STATE:
-		return Statement_t(new Statement_default());
+		return ButiEngine::make_value<Statement_default>();
 
 	case BREAK_STATE:
-		return Statement_t(new Statement_break());
+		return ButiEngine::make_value< Statement_break>();
 
 	case RETURN_STATE: {
-		auto ret = Statement_t(new Statement_return());
+		auto ret = ButiEngine::make_value< Statement_return>();
 
 		return ret;
 	}
 
 
 	case IF_STATE:
-		return Statement_t(new Statement_if());
+		return ButiEngine::make_value<Statement_if>();
 
 	case FOR_STATE:
-		return Statement_t(new Statement_for());
+		return ButiEngine::make_value<Statement_for>();
 
 	case WHILE_STATE:
-		return Statement_t(new Statement_while());
+		return ButiEngine::make_value<Statement_while>();
 	}
 
-	std::cerr << "内部エラー：文ノードミス" << std::endl;
-	return Statement_t(new Statement_nop());
+	std::cerr << "内部エラー：ステートメントノードミス" << std::endl;
+	return ButiEngine::make_value<Statement_nop>();
 }
 
 Statement_t Statement::make_statement(const std::int32_t arg_vec_state, const std::int32_t)
@@ -1649,33 +1649,33 @@ Statement_t Statement::make_statement(const std::int32_t arg_vec_state, Node_t a
 	switch (arg_vec_state) {
 
 	case UNARY_STATE:
-		return Statement_t(new Statement_unary(arg_node));
+		return ButiEngine::make_value<Statement_unary>(arg_node);
 	case ASSIGN_STATE:
-		return Statement_t(new Statement_assign(arg_node));
+		return ButiEngine::make_value<Statement_assign>(arg_node);
 
 	case CASE_STATE:
-		return Statement_t(new Statement_case(arg_node));
+		return ButiEngine::make_value<Statement_case>(arg_node);
 
 	case SWITCH_STATE:
-		return Statement_t(new Statement_switch(arg_node));
+		return ButiEngine::make_value<Statement_switch>(arg_node);
 
 	case CALL_STATE:
-		return Statement_t(new ccall_statement(arg_node));
+		return ButiEngine::make_value<ccall_statement>(arg_node);
 	}
 
 	std::cerr << "内部エラー：文ノードミス" << std::endl;
-	return Statement_t(new Statement_nop());
+	return ButiEngine::make_value<Statement_nop>();
 }
 
 Statement_t Statement::make_statement(const std::int32_t arg_vec_state, Block_t arg_block)
 {
 	switch (arg_vec_state) {
 	case BLOCK_STATE:
-		return Statement_t(new Statement_block(arg_block));
+		return ButiEngine::make_value <Statement_block>(arg_block);
 	}
 
 	std::cerr << "内部エラー：文ノードミス" << std::endl;
-	return Statement_t(new Statement_nop());
+	return ButiEngine::make_value<Statement_nop>();
 }
 
 // nop文
@@ -2254,7 +2254,6 @@ void NodeList::LambdaCapture(std::map<std::string, const ValueTag*>& arg_capture
 }
 std::int32_t Node_enum::Push(Compiler* arg_compiler) const
 {
-
 	auto enumType = GetEnumType(arg_compiler,*leftNode);
 	if (enumType == nullptr) {
 
@@ -2352,7 +2351,7 @@ std::int32_t Class::Analyze(Compiler* arg_compiler)
 
 std::int32_t Class::PushCompiler(Compiler* arg_compiler)
 {
-	arg_compiler->PushAnalyzeClass(shared_from_this());
+	arg_compiler->PushAnalyzeClass(value_from_this());
 	return 0;
 }
 std::int32_t Class::Regist(Compiler* arg_compiler)
@@ -2380,7 +2379,7 @@ std::int32_t Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistFunction(returnType, name, args, block, accessType,arg_p_funcTable);
 	if (!arg_p_funcTable) {
-		arg_compiler->GetCurrentNameSpace()->PushFunction(shared_from_this());
+		arg_compiler->GetCurrentNameSpace()->PushFunction(value_from_this());
 	}
 	searchName =arg_p_funcTable?name:  arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	
@@ -2393,7 +2392,7 @@ std::int32_t Function::PushCompiler_sub(Compiler* arg_compiler)
 	arg_compiler->PopAnalyzeFunction();
 	arg_compiler->RegistFunction(returnType, name, args, block, accessType);
 	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
-	arg_compiler->PushSubFunction(shared_from_this());
+	arg_compiler->PushSubFunction(value_from_this());
 	return 0;
 }
 
@@ -2539,7 +2538,7 @@ std::int32_t Lambda::PushCompiler(Compiler* arg_compiler)
 	arg_compiler->RegistLambda(typeTag->GetFunctionObjectReturnType(),name, args, nullptr);
 	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 
-	arg_compiler->PushSubFunction(shared_from_this());
+	arg_compiler->PushSubFunction(value_from_this());
 
 	return lambdaIndex;
 }

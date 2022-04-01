@@ -70,7 +70,7 @@ void ButiScript::Compiler::RegistDefaultSystems()
 
 
 	//グローバル名前空間の設定
-	globalNameSpace = std::make_shared<NameSpace>("");
+	globalNameSpace = ButiEngine::make_value<NameSpace>("");
 	PushNameSpace(globalNameSpace);
 
 }
@@ -148,7 +148,7 @@ void ButiScript::Compiler::LambdaCountReset()
 
 void ButiScript::Compiler::PushAnalyzeFunction(Function_t arg_function)
 {
-	PushNameSpace(std::make_shared<NameSpace>(arg_function->GetName()));
+	PushNameSpace(ButiEngine::make_value<NameSpace>(arg_function->GetName()));
 	if (vec_parentFunction.size()) {
 		arg_function->SetParent(vec_parentFunction.back());
 	}
@@ -565,7 +565,7 @@ bool ButiScript::Compiler::CreateData(ButiScript::CompiledData& arg_ref_data, st
 void ButiScript::Compiler::PushNameSpace(NameSpace_t arg_namespace)
 {
 	if (!arg_namespace) {
-		arg_namespace = std::make_shared<NameSpace>("");
+		arg_namespace = ButiEngine::make_value<NameSpace>("");
 	}
 	if (currentNameSpace) {
 		arg_namespace->SetParent(currentNameSpace);
@@ -984,15 +984,15 @@ std::string ButiScript::NameSpace::GetGlobalNameString() const
 
 void ButiScript::NameSpace::Regist(Compiler* arg_compiler)
 {
-	arg_compiler->PushNameSpace(std::make_shared<NameSpace>(name));
+	arg_compiler->PushNameSpace(ButiEngine::make_value<NameSpace>(name));
 }
 
-void ButiScript::NameSpace::SetParent(std::shared_ptr<NameSpace> arg_parent)
+void ButiScript::NameSpace::SetParent(NameSpace_t arg_parent)
 {
 	shp_parentNamespace = arg_parent;
 }
 
-std::shared_ptr<ButiScript::NameSpace> ButiScript::NameSpace::GetParent() const
+ButiScript::NameSpace_t ButiScript::NameSpace::GetParent() const
 {
 	return shp_parentNamespace;
 }

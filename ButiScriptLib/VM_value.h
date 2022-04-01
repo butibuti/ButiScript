@@ -12,7 +12,7 @@
 namespace ButiScript {
 template <typename T>class Type_hasMember;
 }
-#include"ButiUtil/ButiUtil/ButiPtr.h"
+#include"ButiMemorySystem/ButiMemorySystem/ButiPtr.h"
 namespace std {
 template<typename T>
 inline std::string to_string(const ButiScript::Type_hasMember<T>& arg_v) {
