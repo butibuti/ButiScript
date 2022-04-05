@@ -1,6 +1,9 @@
 #ifndef STDAFX_H
 #define STDAFX_H
 
+#include <vector>
+#include <string>
+#include"ButiMath/ButiMath.h"
 #include"ButiMemorySystem/ButiMemorySystem/ButiPtr.h"
 #include"ButiMemorySystem/ButiMemorySystem/ButiList.h"
 #ifndef BOOST_INCLUDE_H
@@ -16,8 +19,6 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include <vector>
-#include <string>
 #include <cassert>
 #include <algorithm>
 #include <functional>

@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include"ButiMemorySystem/ButiMemorySystem/ButiPtr.h"
 #pragma comment(lib,"ButiUtil.lib")
 #define _CRTDBG_MAP_ALLOC
 class Sample:public ButiEngine::enable_value_from_this<Sample> {
@@ -14,8 +13,12 @@ public:
 		std::int32_t i= 0;
 	}
 	std::int32_t TestMethod() {
-		std::cout << "Sample::TestMethod() is Called! count:"<<count<<std::endl;
+		std::cout << "Sample::TestMethod() is Called! count:" << count << std::endl;
 		count++;
+		return count;
+	}
+	std::int32_t ShowMethod()const {
+		std::cout << "Sample::TestMethod() is Called! count:" << count << std::endl;
 		return count;
 	}
 };
@@ -23,10 +26,15 @@ std::shared_ptr<Sample> CreateSample() {
 	return std::make_shared<Sample>();
 }
 
+std::shared_ptr<Sample> CreateSampleWithCount(std::int32_t arg_c,float arg_f) {
+	return std::make_shared<Sample>(arg_c*arg_f);
+}
+
 template<typename T> 
 T CreateInstance() { 
 	return T(); 
 }
+
 #include"BuiltInTypeRegister.h"
 #include "Compiler.h"
 std::int32_t main(const std::int32_t argCount, const char* args[])
@@ -35,10 +43,12 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	
 	ButiScript::Compiler driver;
 	ButiScript::SystemTypeRegister::GetInstance()->RegistSharedSystemType<Sample>("Sample", "Sample");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method_ret< Sample, std::int32_t, &Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::shared_ptr<Sample>, &CreateSample >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<std::int32_t, &CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func_ret<float, &CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&Sample::TestMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "TestMethod", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&Sample::ShowMethod, &ButiScript::VirtualMachine::GetSharedTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), TYPE_INTEGER, "ShowMethod", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateSample >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateSampleWithCount >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("Sample"), "CreateSample", "i,f");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
 
 	driver.RegistDefaultSystems();
 	bool compile_result=false;
@@ -61,11 +71,8 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 			{
 
 				ButiScript::VirtualMachine machine(data);
-
 				machine.Initialize();
 				machine.AllocGlobalValue();
-				//machine.SetGlobalVariable(1, "g_i");
-				//machine.SetGlobalVariable(2, "g_i1");
 
 				std::cout << args[i] << "‚ÌmainŽÀs" << std::endl;
 				std::cout << "////////////////////////////////////" << std::endl;
@@ -73,7 +80,6 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 				std::cout << "////////////////////////////////////" << std::endl;
 				std::cout << args[i] << "‚Ìreturn : " << std::to_string(returnCode) << std::endl;
 
-				//p_clone = machine.Clone();
 			}
 
 		}

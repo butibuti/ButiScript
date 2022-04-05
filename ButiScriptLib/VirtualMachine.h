@@ -63,8 +63,40 @@ namespace ButiScript {
 		}
 	};
 
-	// 仮想マシン
+
 	class VirtualMachine {
+	private:
+		template<std::int32_t CurrentArgmentIndex, auto Function>	friend	class SystemFunctionImple;
+
+		template<std::int32_t CurrentArgmentIndex, auto Function>
+		class SystemFunctionImple {
+		public:
+			template< typename... Args>
+			SystemFunctionImple(VirtualMachine& arg_owner, Args... args) :owner(arg_owner) {
+				auto arg = owner.top().Get<ButiTypeDetail::function_argment_type<Function, CurrentArgmentIndex - 1>>(); owner.pop();
+				SystemFunctionImple<CurrentArgmentIndex - 1, Function>(owner, arg, args...);
+			}
+		private:
+			VirtualMachine& owner;
+		};
+		template<auto Function>
+		class SystemFunctionImple<0, Function> {
+		public:
+
+			template< typename... Args>
+			SystemFunctionImple(VirtualMachine& arg_owner, Args... args) :owner(arg_owner) {
+				if constexpr (std::is_void_v<ButiTypeDetail::function_return_type<Function>>) {
+					(*Function)( args...);
+				}
+				else {
+					auto ret = (*Function)( args...);
+					owner.push(ret);
+				}
+			}
+		private:
+			VirtualMachine& owner;
+		};
+
 	public:
 		const static std::int32_t STACK_SIZE = 2048;
 		const static std::int32_t global_flag = 0x4000000;
@@ -98,31 +130,22 @@ namespace ButiScript {
 		template<typename T>
 		T Execute(const std::string& arg_entryPoint) {
 
-			stack_base = valueStack.size();						// スタック参照位置初期化
+			stack_base = valueStack.size();
 			std::int32_t pushCount = 0;
 
-			push(pushCount);										// mainへの引数カウントをpush
-			push(stack_base);										// stack_baseの初期値をpush
-			push(0);										// プログラム終了位置をpush
+			push(pushCount);				
+			push(stack_base);				
+			push(0);						
 			Execute_(arg_entryPoint);
 
-			auto ret = top().Get<T>();
-			valueStack.resize(globalValue_size);
-			return ret;
-		}
-
-		template<>
-		void Execute(const std::string& arg_entryPoint) {
-
-			stack_base = valueStack.size();						// スタック参照位置初期化
-			std::int32_t pushCount = 0;
-
-			push(pushCount);										// mainへの引数カウントをpush
-			push(stack_base);										// stack_baseの初期値をpush
-			push(0);										// プログラム終了位置をpush
-			Execute_(arg_entryPoint);
-
-			valueStack.resize(globalValue_size);
+			if constexpr (std::is_void_v<T>) {
+				valueStack.resize(globalValue_size);
+			}
+			else {
+				auto ret = top().Get<T>();
+				valueStack.resize(globalValue_size);
+				return ret;
+			}
 		}
 		template<typename T, typename... U>
 		T Execute(const std::string& arg_entryPoint, U... argmentValue) {
@@ -134,24 +157,16 @@ namespace ButiScript {
 			push(stack_base);										// stack_baseの初期値をpush
 			push(0);										// プログラム終了位置をpush
 			Execute_(arg_entryPoint);
+			
+			if constexpr (std::is_void_v<T>) {
+				valueStack.resize(globalValue_size);
+			}
+			else {
+				auto ret = top().Get<T>();
+				valueStack.resize(globalValue_size);
+				return ret;
+			}
 
-			auto ret = top().Get<T>();
-			valueStack.resize(globalValue_size);
-			return ret;
-		}
-
-		template< typename... U>
-		void Execute_void(const std::string& arg_entryPoint, U... argmentValue) {
-
-			stack_base = valueStack.size();						// スタック参照位置初期化
-			std::int32_t pushCount = sizeof...(argmentValue);
-			PushArgments(argmentValue...);
-			push(pushCount);										// mainへの引数カウントをpush
-			push(stack_base);										// stack_baseの初期値をpush
-			push(0);										// プログラム終了位置をpush
-			Execute_(arg_entryPoint);
-
-			valueStack.resize(globalValue_size);
 		}
 		void AllocGlobalValue();
 		void Clear();
@@ -169,7 +184,7 @@ namespace ButiScript {
 #endif
 				return;
 			}
-			valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData=ButiEngine::make_value(value);
+			valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData=ButiEngine::make_value<T>(value);
 		}
 		template<typename T>
 		T& GetGlobalVariable(const std::string arg_variableName) {
@@ -1139,55 +1154,23 @@ namespace ButiScript {
 			// 戻り値はスタックに入れる
 		}
 
-		//組み込み関数(return 無し)
-		template< void(*Function)() >
-		void sys_func_retNo()
-		{
-			(*Function)();
-		}
-		//組み込み関数(return 有り)
-		template<typename T, T(*Function)() >
-		void sys_func_ret()
-		{
-			T ret = (*Function)();
-			push(ret);
-		}
+		//組み込み関数
 
-		//組み込み関数(return 無し)
-		template<typename Arg, void(*Function)(Arg) >
-		void sys_func_retNo()
+		template<auto Function >
+		void sys_func()
 		{
-			auto arg = top().Get<Arg>(); pop(); 
-			(*Function)(arg);
+			if constexpr (ButiTypeDetail::function_argment_size<Function>) {
+				SystemFunctionImple< ButiTypeDetail::function_argment_size<Function>, Function>(*this);
+			}
+			else
+			if constexpr (std::is_void_v<ButiTypeDetail::function_return_type<Function>>) {
+				(*Function)();
+			}
+			else {
+				auto ret = (*Function)();
+				push(ret);
+			}
 		}
-		//組み込み関数(return 有り)
-		template<typename T, typename Arg, T(*Function)(Arg) >
-		void sys_func_ret()
-		{
-			auto arg = top().Get<Arg>(); pop();
-			T ret = (*Function)(arg);
-			push(ret);
-		}
-		//組み込み関数(return 有り)
-		template<typename T, typename Arg1, typename Arg2, T(*Function)(Arg1, Arg2) >
-		void sys_func_ret()
-		{
-			auto arg2 = top().Get<Arg2>(); pop();
-			auto arg1 = top().Get<Arg1>(); pop();
-			T ret = (*Function)(arg1, arg2);
-			push(ret);
-		}
-		//組み込み関数(return 有り)
-		template<typename T, typename Arg1, typename Arg2, typename Arg3, T(*Function)(Arg1, Arg2, Arg3) >
-		void sys_func_ret()
-		{
-			auto arg3 = top().Get<Arg3>(); pop();
-			auto arg2 = top().Get<Arg2>(); pop();
-			auto arg1 = top().Get<Arg1>(); pop();
-			T ret = (*Function)(arg1, arg2, arg3);
-			push(ret);
-		}
-		
 
 		/////////////メソッド呼び出し定義////////////////
 
@@ -1204,141 +1187,67 @@ namespace ButiScript {
 			return &(top().Get<T>());
 		}
 
-		//組み込みメソッド(return 無し)
-		template<typename T, void(T::* Method)() ,T*(VirtualMachine::*getValueFunc)() >
-		void sys_method_retNo()
+		//組み込みメソッド
+		template<auto Method, ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)() >
+		void sys_method()
 		{
 			auto v = ((this)->*getValueFunc)();
-			((v)->*Method)();
-			pop();
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)();
+				pop();
+			}
+			else {
+				auto ret = ((v)->*Method)();
+				pop();
+				push(ret);
+			}
 		}
-		template<typename T, void(T::* Method)() const, T* (VirtualMachine::* getValueFunc)() >
-		void sys_method_retNo()
+		template<auto Method, typename CastType, ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)() >
+		void sys_method_cast()
 		{
 			auto v = ((this)->*getValueFunc)();
-			((v)->*Method)();
-			pop();
-		}
-		//組み込みメソッド(return 有り)
-		template<typename T, typename RetType, RetType(T::* Method)(), T* (VirtualMachine::* getValueFunc)() >
-		void sys_method_ret()
-		{
-			auto v = ((this)->*getValueFunc)();
-			RetType ret = ((v)->*Method)();
-			pop();
-			push(ret);
-		}
-		template<typename T, typename RetType, RetType(T::* Method)() const, T* (VirtualMachine::* getValueFunc)() >
-		void sys_method_ret()
-		{
-			auto v = ((this)->*getValueFunc)();
-			RetType ret = ((v)->*Method)();
+			CastType ret =static_cast<CastType>( ((v)->*Method)());
 			pop();
 			push(ret);
 		}
-		template<typename T, typename RetType,typename CastType, RetType(T::* Method)() const, T* (VirtualMachine::* getValueFunc)() >
-		void sys_method_retCast()
+		//組み込みメソッド(引数有り)
+		template<auto Method,  ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)(), 
+			std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method,0>>* (VirtualMachine::* getArgValueFunc)() >
+		void sys_method()
 		{
-			auto v = ((this)->*getValueFunc)();
-			CastType ret =(CastType) ((v)->*Method)();
-			pop();
-			push(ret);
-		}
-#define ArgType(Arg)   typename std::remove_const<typename std::remove_reference< typename std::remove_pointer< Arg >::type>::type>::type
-		//組み込みメソッド(return 無し、引数有り)
-		template<typename T, typename Arg, void(T::* Method)(Arg) const, T* (VirtualMachine::* getValueFunc)(), ArgType(Arg )* (VirtualMachine::* getArgValueFunc)()  >
-		void sys_method_retNo()
-		{
+			auto valueV = top().valueData;
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg = *((this)->*getArgValueFunc)();
-			pop();
-			((v)->*Method)(arg);
-
+			pop(); 
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)(arg);
+			}
+			else {
+				auto ret = ((v)->*Method)(arg);
+				push(ret);
+			}
 		}
-		template<typename T, typename Arg, void(T::* Method)(Arg), T* (VirtualMachine::* getValueFunc)(), ArgType(Arg)* (VirtualMachine::* getArgValueFunc)()  >
-		void sys_method_retNo()
+		//組み込みメソッド(引数2)
+		template<auto Method, ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)()
+			, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>* (VirtualMachine::* getArg2ValueFunc)() >
+		void sys_method()
 		{
-			auto v = ((this)->*getValueFunc)();
-			pop();
-			auto arg = *((this)->*getArgValueFunc)();
-			pop();
-			((v)->*Method)(arg);
-
-		}
-
-		//組み込みメソッド(return 無し、引数2)
-		template<typename T, typename Arg1, typename Arg2, void(T::* Method)(Arg1, Arg2) const, T* (VirtualMachine::* getValueFunc)(), ArgType(Arg1)* (VirtualMachine::* getArg1ValueFunc)(), ArgType(Arg2)* (VirtualMachine::* getArg2ValueFunc)()  >
-		void sys_method_retNo()
-		{
+			auto valueV = top().valueData;
 			auto v = ((this)->*getValueFunc)();
 			pop();
 			auto arg2 =* ((this)->*getArg2ValueFunc)();
 			pop();
 			auto arg1 = *((this)->*getArg1ValueFunc)();
 			pop();
-			((v)->*Method)(arg1, arg2);
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)(arg1,arg2);
+			}
+			else {
+				auto ret = ((v)->*Method)(arg1,arg2);
+				push(ret);
+			}
 
-		}
-
-		template<typename T, typename Arg1, typename Arg2, void(T::* Method)(Arg1, Arg2) , T* (VirtualMachine::* getValueFunc)(), ArgType(Arg1)* (VirtualMachine::* getArg1ValueFunc)(), ArgType(Arg2)* (VirtualMachine::* getArg2ValueFunc)()  >
-		void sys_method_retNo()
-		{
-			auto v = ((this)->*getValueFunc)();
-			pop();
-			auto arg2 = *((this)->*getArg2ValueFunc)();
-			pop();
-			auto arg1 = *((this)->*getArg1ValueFunc)();
-			pop();
-			((v)->*Method)(arg1, arg2);
-
-		}
-
-		//組み込みメソッド(return 有り、引数有り)
-		template<typename T, typename RetType, typename Arg, RetType(T::* Method)(Arg) const, T* (VirtualMachine::* getValueFunc)(), ArgType(Arg)* (VirtualMachine::* getArgValueFunc)()  >
-		void sys_method_ret()
-		{
-			auto v = ((this)->*getValueFunc)();
-			pop();
-			auto arg = *((this)->*getArgValueFunc)();
-			RetType ret = ((v)->*Method)(arg);
-			pop();
-			push(ret);
-		}
-		template<typename T, typename RetType, typename Arg, RetType(T::* Method)(Arg), T* (VirtualMachine::* getValueFunc)(), ArgType(Arg)* (VirtualMachine::* getArgValueFunc)()  >
-		void sys_method_ret()
-		{
-			auto v = ((this)->*getValueFunc)();
-			pop();
-			auto arg =* ((this)->*getArgValueFunc)();
-			RetType ret = ((v)->*Method)(arg);
-			pop();
-			push(ret);
-		}
-		template<typename T, typename RetType, typename Arg1, typename Arg2, RetType(T::* Method)(Arg1, Arg2) const, T* (VirtualMachine::* getValueFunc)(), ArgType(Arg1)* (VirtualMachine::* getArg1ValueFunc)(), ArgType(Arg2)* (VirtualMachine::* getArg2ValueFunc)()  >
-		void sys_method_ret()
-		{
-			auto v = ((this)->*getValueFunc)();
-			pop();
-			auto arg2 = *((this)->*getArg2ValueFunc)();
-			pop();
-			auto arg1 = *((this)->*getArg1ValueFunc)();
-			pop();
-			RetType ret = ((v)->*Method)(arg1, arg2);
-			push(ret);
-		}
-
-		template<typename T, typename RetType, typename Arg1, typename Arg2, RetType(T::* Method)(Arg1, Arg2) , T* (VirtualMachine::* getValueFunc)(), ArgType(Arg1)* (VirtualMachine::* getArg1ValueFunc)(), ArgType(Arg2)* (VirtualMachine::* getArg2ValueFunc)()  >
-		void sys_method_ret()
-		{
-			auto v = ((this)->*getValueFunc)();
-			pop();
-			auto arg2 = *((this)->*getArg2ValueFunc)();
-			pop();
-			auto arg1 = *((this)->*getArg1ValueFunc)();
-			pop();
-			RetType ret = ((v)->*Method)(arg1, arg2);
-			push(ret);
 		}
 
 		template<typename T>
@@ -1470,7 +1379,6 @@ namespace ButiScript {
 		std::weak_ptr < ButiEngine::ButiScriptBehavior >wkp_butiScriptBehavior;
 #endif
 	};
-
 }
 
 
