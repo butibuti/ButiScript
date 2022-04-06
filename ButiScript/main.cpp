@@ -38,7 +38,7 @@ public:
 	~ValueTypeTest() {
 		std::cout << "~ValueTypeTest() called. v:" << v << std::endl;
 	}
-	void SetValue(const std::int32_t arg_v) { v = arg_v; }
+	void SetValue(const std::int32_t& arg_v) { v = arg_v; }
 	void Show()const {
 		std::cout<<"v:" << v << std::endl;
 	}
@@ -71,11 +71,12 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
 
 	ButiScript::SystemTypeRegister::GetInstance()->RegistValueSystemType<ValueTypeTest>("ValueTypeTest", "ValueTypeTest");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue, &ButiScript::VirtualMachine::GetTypePtr ,&ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "i");
+
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue, &ButiScript::VirtualMachine::GetTypePtr<ValueTypeTest>,&ButiScript::VirtualMachine::GetTypePtr<std::int32_t> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "i");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::GetValue, &ButiScript::VirtualMachine::GetTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_INTEGER, "GetValue", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Show, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Show", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&GetValuePtrInstance>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), "CreateValueTest", "");
-	
+	std::_Remove_cvref_t< ButiEngine::Vector3> * v;
 
 	driver.RegistDefaultSystems();
 	g_output = ButiEngine::make_value<ValueTypeTest>();

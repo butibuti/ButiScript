@@ -212,8 +212,9 @@ namespace ButiScript {
 		std::shared_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
 			return wkp_butiScriptBehavior.lock();
 		}
-		void RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject);
-		void SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_vec_saveObject);
+		//Listのcereal対応が完了したら変更
+		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject);
+		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_vec_saveObject);
 		void ShowGUI();
 		std::shared_ptr<CompiledData> GetCompiledData()const { return shp_data; }
 #endif
@@ -1184,7 +1185,7 @@ namespace ButiScript {
 		}
 		template<typename T>
 		T* GetTypePtr() {
-			return &(top().Get<T>());
+			return &(top().Get<std::_Remove_cvref_t< T>>());
 		}
 
 		//組み込みメソッド

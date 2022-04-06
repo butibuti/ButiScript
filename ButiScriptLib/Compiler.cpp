@@ -591,7 +591,7 @@ void ButiScript::Compiler::DebugDump()
 // デバッグダンプ
 {
 	std::string message = "---variables---\n";
-	std::uint64_t vsize = variables.size();
+	std::uint64_t vsize = variables.GetSize();
 	message += "value stack = " + std::to_string(vsize) + '\n';
 	for (std::uint64_t index = 0; index < vsize; index++) {
 		variables[index].Dump();
@@ -606,7 +606,7 @@ void ButiScript::Compiler::DebugDump()
 	};
 
 	std::int32_t	pos = 0;
-	std::uint64_t size = statement.size();
+	std::uint64_t size = statement.GetSize();
 	for (std::uint64_t index = 0; index < size; index++) {
 		message += std::to_string(pos) + ": " + op_name[statement[index].op];
 		if (statement[index].size > 1) {
@@ -806,15 +806,15 @@ std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_file
 	fIn.read((char*)&definedTypeCount, sizeof(definedTypeCount));
 	arg_ref_data.vec_scriptClassInfo.Resize(definedTypeCount);
 	for (std::int32_t index = 0; index < definedTypeCount; index++) {
-		arg_ref_data.vec_scriptClassInfo.at(index).InputFile(fIn);
+		arg_ref_data.vec_scriptClassInfo.At(index).InputFile(fIn);
 	}
 
 	fIn.read((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
 
 	arg_ref_data.systemTypeCount = arg_ref_data.vec_types.GetSize() - definedTypeCount-arg_ref_data.functionTypeCount;
 	for (std::int32_t index = 0; index < definedTypeCount; index++) {
-		arg_ref_data.vec_scriptClassInfo.at(index).SetSystemTypeCount(arg_ref_data.systemTypeCount);
-		arg_ref_data.vec_types.at(arg_ref_data.vec_scriptClassInfo.at(index).GetTypeIndex()).isSystem = false;
+		arg_ref_data.vec_scriptClassInfo.At(index).SetSystemTypeCount(arg_ref_data.systemTypeCount);
+		arg_ref_data.vec_types.At(arg_ref_data.vec_scriptClassInfo.At(index).GetTypeIndex()).isSystem = false;
 	}
 	std::int32_t enumCount =0;
 	fIn.read((char*)&enumCount, sizeof(enumCount));
@@ -825,7 +825,7 @@ std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_file
 		tag.InputFile(fIn);
 		arg_ref_data.map_enumTag.emplace(typeIndex,tag);
 		arg_ref_data.map_enumTag.at(typeIndex).CreateEnumMap();
-		arg_ref_data.vec_types.at(typeIndex).p_enumTag = &arg_ref_data.map_enumTag.at(typeIndex);
+		arg_ref_data.vec_types.At(typeIndex).p_enumTag = &arg_ref_data.map_enumTag.at(typeIndex);
 	}
 
 	arg_ref_data.functions.FileInput(fIn);
