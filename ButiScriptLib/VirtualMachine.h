@@ -39,16 +39,16 @@ namespace ButiScript {
 		std::int32_t textSize;				// テキストサイズ
 		std::int32_t valueSize;			// グローバル変数サイズ
 
-		std::vector<OperationFunction> vec_sysCalls;
-		std::vector<OperationFunction> vec_sysCallMethods;
-		std::vector<TypeTag> vec_types;
+		ButiEngine::List<OperationFunction> list_sysCalls;
+		ButiEngine::List<OperationFunction> list_sysCallMethods;
+		ButiEngine::List<TypeTag> vec_types;
 		std::unordered_map<std::string, std::int32_t> map_entryPoints;
 		std::map< std::int32_t,const std::string*> map_functionJumpPointsTable;
 		std::map<std::string, std::int32_t>map_globalValueAddress;
 		std::map<std::int32_t ,std::string>map_addressToValueName;
 		std::map<std::int32_t, EnumTag> map_enumTag;
 		FunctionTable functions;
-		std::vector<ScriptClassInfo> vec_scriptClassInfo;
+		ButiEngine::List<ScriptClassInfo> vec_scriptClassInfo;
 		std::int32_t systemTypeCount,functionTypeCount;
 		std::string sourceFilePath;
 	};
@@ -212,8 +212,8 @@ namespace ButiScript {
 		std::shared_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
 			return wkp_butiScriptBehavior.lock();
 		}
-		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject);
-		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_vec_saveObject);
+		void RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject);
+		void SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_vec_saveObject);
 		void ShowGUI();
 		std::shared_ptr<CompiledData> GetCompiledData()const { return shp_data; }
 #endif
@@ -520,7 +520,7 @@ namespace ButiScript {
 		//関数オブジェクト型の確保
 		void OpAllocStackFunctionType() {
 			std::int32_t type = Constant<std::int32_t>();
-			auto value = Value(Type_Function( &shp_data->map_functionJumpPointsTable, std::vector<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
+			auto value = Value(Type_Function( &shp_data->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
@@ -943,15 +943,15 @@ namespace ButiScript {
 		//ラムダ式の生成とPush
 		void OpPushLambda() {
 			std::int32_t captureListSize = top().Get<std::int32_t>(); pop();
-			std::vector<std::int32_t> captureList;
+			ButiEngine::List<std::int32_t> captureList;
 			for (std::int32_t i = 0; i < captureListSize; i++) {
-				captureList.push_back(top().Get<std::int32_t>());
+				captureList.Add(top().Get<std::int32_t>());
 				pop();
 			}
 
 			std::int32_t type = top().Get<std::int32_t>(); pop();
 			std::int32_t address = Constant<std::int32_t>();
-			auto value = Value(Type_Function(address, &shp_data->map_functionJumpPointsTable, std::vector<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
+			auto value = Value(Type_Function(address, &shp_data->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
 			
 			for (auto itr = captureList.rbegin(), end = captureList.rend(); itr != end;itr++) {
 				value.valueData.get<Type_Function>()->AddCapture (valueStack[stack_base+ *itr].valueData, valueStack[stack_base + *itr].valueType);
@@ -1257,6 +1257,20 @@ namespace ButiScript {
 			value.SetType(Value::GetTypeIndex(address));
 			this->valueStack.push(value);
 		}
+		template<typename T>
+		void pushValue_valueptr() {
+			auto value = Value();
+			std::int64_t address = TypeSpecific<T>();
+			value.SetType(Value::GetTypeIndex(address));
+			this->valueStack.push(value);
+		}
+		template<typename T>
+		void pushValue_sharedptr() {
+			auto value = Value(std::shared_ptr<T>());
+			std::int64_t address = TypeSpecific<T>();
+			value.SetType(Value::GetTypeIndex(address));
+			this->valueStack.push(value);
+		}
 		template<>
 		void pushValue<Type_Null>() {
 			auto value = Value(Type_Null());
@@ -1268,10 +1282,24 @@ namespace ButiScript {
 		void pushValue_ref() {
 			auto value = Value();
 			std::int64_t address = TypeSpecific<T>();
-			value.SetType(Value::GetTypeIndex(address)|TYPE_REF);
+			value.SetType(Value::GetTypeIndex(address) | TYPE_REF);
 			this->valueStack.push(value);
 		}
-		void pushValue(ScriptClassInfo* info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
+		template<typename T>
+		void pushValue_valueptr_ref() {
+			auto value = Value();
+			std::int64_t address = TypeSpecific<T>();
+			value.SetType(Value::GetTypeIndex(address) | TYPE_REF);
+			this->valueStack.push(value);
+		}
+		template<typename T>
+		void pushValue_sharedptr_ref() {
+			auto value = Value();
+			std::int64_t address = TypeSpecific<T>();
+			value.SetType(Value::GetTypeIndex(address) | TYPE_REF);
+			this->valueStack.push(value);
+		}
+		void pushValue(ScriptClassInfo* info, ButiEngine::List<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 			auto value = Value(*info,p_vec_scriptClassInfo);
 			this->valueStack.push(value);
 		}
@@ -1297,10 +1325,18 @@ namespace ButiScript {
 		void push(const std::string& arg_v) {
 			valueStack.push(ButiScript::Value(arg_v));
 		}
-		void push(ButiEngine::Value_ptr<void>& arg_valueData,const std::int32_t arg_type) {
+		template<typename T>
+		void push(ButiEngine::Value_ptr<T>& arg_valueData) {
+			valueStack.push(ButiScript::Value(arg_valueData,TYPE_VOID));
+		}
+		template<typename T>
+		void push_clone(const ButiEngine::Value_ptr<T>& arg_valueData) {
+			valueStack.push(ButiScript::Value(arg_valueData.Clone(), TYPE_VOID));
+		}
+		void push(ButiEngine::Value_ptr<void>& arg_valueData, const std::int32_t arg_type) {
 			valueStack.push(ButiScript::Value(arg_valueData, arg_type));
 		}
-		void push_clone(const ButiEngine::Value_ptr<void>& arg_valueData,const std::int32_t arg_type) {
+		void push_clone(const ButiEngine::Value_ptr<void>& arg_valueData, const std::int32_t arg_type) {
 			valueStack.push(ButiScript::Value(arg_valueData.Clone(), arg_type));
 		}
 		void push(const ButiScript::Value& arg_v) {
@@ -1364,7 +1400,7 @@ namespace ButiScript {
 		//変数(参照型)の確保関数テーブル
 		OperationFunction* p_pushRefValues = nullptr;
 
-		std::vector<ScriptClassInfo> vec_scriptClassInfo;
+		ButiEngine::List<ScriptClassInfo> vec_scriptClassInfo;
 
 		ButiScript::Stack<ButiScript::Value, STACK_SIZE> valueStack;
 

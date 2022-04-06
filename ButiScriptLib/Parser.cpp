@@ -143,7 +143,7 @@ struct push_back_func {
 		return arg_list;
 	}
 };
-// 値を追加(std::vector)
+// 値を追加(ButiEngine::List)
 struct vector_push_back_func {
 	template <typename Ty1, typename Ty2>
 	struct result { using type = void; };
@@ -151,7 +151,7 @@ struct vector_push_back_func {
 	template <typename Ty1, typename Ty2>
 	void operator()(Ty1& arg_vector, const Ty2& arg_object) const
 	{
-		arg_vector.push_back(arg_object);
+		arg_vector.Add(arg_object);
 	}
 };
 
@@ -589,7 +589,7 @@ namespace ButiClosure {
 	};
 
 	// ノードのクロージャ
-	struct node_val : boost::spirit::closure<node_val, Node_t, std::int32_t, std::string,std::vector<std::int32_t>> {
+	struct node_val : boost::spirit::closure<node_val, Node_t, std::int32_t, std::string,ButiEngine::List<std::int32_t>> {
 		member1 node;
 		member2 Op;
 		member3 name;
@@ -621,7 +621,7 @@ namespace ButiClosure {
 		member1 type;
 	};
 	// 関数型のクロージャ
-	struct type_func_val : boost::spirit::closure<type_func_val, std::pair< std::int32_t, std::vector<ArgDefine>>,std::vector<ArgDefine>> {
+	struct type_func_val : boost::spirit::closure<type_func_val, std::pair< std::int32_t, ButiEngine::List<ArgDefine>>,ButiEngine::List<ArgDefine>> {
 		member1 type;
 		member2 argments;
 	};
@@ -636,7 +636,7 @@ namespace ButiClosure {
 	};
 
 	// 変数定義のクロージャ
-	struct decl_val : boost::spirit::closure<decl_val, Declaration_t, std::int32_t,std::vector< Node_t>,AccessModifier> {
+	struct decl_val : boost::spirit::closure<decl_val, Declaration_t, std::int32_t,ButiEngine::List< Node_t>,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 value;

@@ -60,20 +60,20 @@ void ButiScript::VirtualMachine::Initialize()
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
 
-	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->vec_sysCalls.size());
-	for (std::int32_t index = 0; index < shp_data->vec_sysCalls.size(); index++) {
-		p_syscall[index] = shp_data->vec_sysCalls[index];
+	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->list_sysCalls.GetSize());
+	for (std::int32_t index = 0; index < shp_data->list_sysCalls.GetSize(); index++) {
+		p_syscall[index] = shp_data->list_sysCalls[index];
 	}
 
-	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->vec_sysCallMethods.size());
-	for (std::int32_t index = 0; index < shp_data->vec_sysCallMethods.size(); index++) {
-		p_sysMethodCall[index] = shp_data->vec_sysCallMethods[index];
+	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->list_sysCallMethods.GetSize());
+	for (std::int32_t index = 0; index < shp_data->list_sysCallMethods.GetSize(); index++) {
+		p_sysMethodCall[index] = shp_data->list_sysCallMethods[index];
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.size() ));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.size() ));
-	for (std::int32_t index = 0; index < shp_data->vec_types.size(); index++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.GetSize() ));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.GetSize() ));
+	for (std::int32_t index = 0; index < shp_data->vec_types.GetSize(); index++) {
 
 		p_pushValues[shp_data->vec_types.at(index).typeIndex] = shp_data->vec_types.at(index).typeFunc;
 		p_pushRefValues[shp_data->vec_types.at(index).typeIndex] = shp_data->vec_types.at(index).refTypeFunc;
@@ -107,25 +107,25 @@ bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_dat
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
 
-	p_syscall = (OperationFunction*)malloc(sizeof(OperationFunction) * arg_data->vec_sysCalls.size());
-	for (std::int32_t index = 0; index < arg_data->vec_sysCalls.size(); index++) {
-		p_syscall[index] = arg_data->vec_sysCalls[index];
+	p_syscall = (OperationFunction*)malloc(sizeof(OperationFunction) * arg_data->list_sysCalls.GetSize());
+	for (std::int32_t index = 0; index < arg_data->list_sysCalls.GetSize(); index++) {
+		p_syscall[index] = arg_data->list_sysCalls[index];
 	}
 
-	p_sysMethodCall = (OperationFunction*)malloc(sizeof(OperationFunction) * arg_data->vec_sysCallMethods.size());
-	for (std::int32_t index = 0; index < arg_data->vec_sysCallMethods.size(); index++) {
-		p_sysMethodCall[index] = arg_data->vec_sysCallMethods[index];
+	p_sysMethodCall = (OperationFunction*)malloc(sizeof(OperationFunction) * arg_data->list_sysCallMethods.GetSize());
+	for (std::int32_t index = 0; index < arg_data->list_sysCallMethods.GetSize(); index++) {
+		p_sysMethodCall[index] = arg_data->list_sysCallMethods[index];
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.size()));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.size()));
-	for (std::int32_t index = 0; index < arg_data->vec_types.size(); index++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.GetSize()));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.GetSize()));
+	for (std::int32_t index = 0; index < arg_data->vec_types.GetSize(); index++) {
 
 		p_pushValues[arg_data->vec_types.at(index).typeIndex] = arg_data->vec_types.at(index).typeFunc;
 		p_pushRefValues[arg_data->vec_types.at(index).typeIndex] = arg_data->vec_types.at(index).refTypeFunc;
 	}
-	if (vec_scriptClassInfo.size() != arg_data->vec_scriptClassInfo.size()) {
+	if (vec_scriptClassInfo.GetSize() != arg_data->vec_scriptClassInfo.GetSize()) {
 		output = true;
 	}
 	else {
@@ -247,7 +247,7 @@ void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 	std::string dirName = top().Get<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
 
-		std::vector< std::string> vec_filePathes;
+		ButiEngine::List< std::string> vec_filePathes;
 
 		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
 
@@ -291,7 +291,7 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 	std::string dirName = top().Get<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
 
-		std::vector< std::string> vec_filePathes;
+		ButiEngine::List< std::string> vec_filePathes;
 
 		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
 
@@ -320,7 +320,7 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
 	push(wkp_butiScriptBehavior.lock());
 }
-void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
 		auto type = valueStack[globalValue_base + index].valueType;
 		if (type & TYPE_REF|| !valueStack[globalValue_base + index].valueData) {
@@ -331,7 +331,7 @@ void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngi
 		}
 	}
 }
-void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
 	if (globalValue_size - globalValue_base != arg_ref_vec_saveObject.size()) {
 		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
 		

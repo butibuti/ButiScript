@@ -76,7 +76,7 @@ protected:
 		vec_member.push_back(arg_memberType);
 	}
 private:
-	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
 };
 template<>
 class Type_hasMember< ButiEngine::Vector2> :public ButiEngine::Vector2, public IType_hasMember {
@@ -109,14 +109,14 @@ public:
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
-		vec_member.push_back(arg_memberType);
+		vec_member.Add(arg_memberType);
 	}
 private:
 	inline void SetMembers() {
 		this->SetMemberType<float, vTableSize + sizeof(float) * 0, TYPE_FLOAT>();
 		this->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
 	}
-	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
 };
 template<>
 class Type_hasMember< ButiEngine::Vector3> :public ButiEngine::Vector3, public IType_hasMember {
@@ -149,7 +149,7 @@ public:
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
-		vec_member.push_back(arg_memberType);
+		vec_member.Add(arg_memberType);
 	}
 private:
 	inline void SetMembers() {
@@ -157,7 +157,7 @@ private:
 		this->SetMemberType<float, vTableSize + sizeof(float) * 1, TYPE_FLOAT>();
 		this->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();
 	}
-	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
 };
 
 template<>
@@ -192,7 +192,7 @@ public:
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
-		vec_member.push_back(arg_memberType);
+		vec_member.Add(arg_memberType);
 	}
 private:
 	inline void SetMembers() {
@@ -201,7 +201,7 @@ private:
 		this->SetMemberType<float, vTableSize + sizeof(float) * 2, TYPE_FLOAT>();
 		this->SetMemberType<float, vTableSize + sizeof(float) * 3, TYPE_FLOAT>();
 	}
-	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
 };
 
 template<>
@@ -236,7 +236,7 @@ public:
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
-		vec_member.push_back(arg_memberType);
+		vec_member.Add(arg_memberType);
 	}
 private:
 	inline void SetMembers() {
@@ -247,7 +247,7 @@ private:
 		this->SetMemberType<float, vTableSize + sizeof(float) * 12, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 13, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 14, TYPE_FLOAT>(); this->SetMemberType<float, vTableSize + sizeof(float) * 15, TYPE_FLOAT>();
 
 	}
-	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_member;
 };
 //参照型など実体を持たない変数の初期化に使用
 struct Type_Null {};
@@ -259,53 +259,53 @@ struct Type_Enum {
 	const EnumTag* p_enumTag;
 };
 struct Type_Function {
-	Type_Function(const std::int32_t arg_address, const FunctionTag* arg_p_functionTag, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
+	Type_Function(const std::int32_t arg_address, const FunctionTag* arg_p_functionTag, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		:address(arg_address), p_functionTag(arg_p_functionTag), p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
-	Type_Function(const std::int32_t arg_address, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
+	Type_Function(const std::int32_t arg_address, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		:address(arg_address), p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
-	Type_Function(const FunctionTag* arg_p_functionTag, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
+	Type_Function(const FunctionTag* arg_p_functionTag, const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		: p_functionTag(arg_p_functionTag), p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
-	Type_Function(const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
+	Type_Function(const std::map <  std::int32_t, const std::string*>* arg_jumpTable, const ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>& arg_capturedValue)noexcept
 		: p_functionJumpTable(arg_jumpTable), vec_capturedValue(arg_capturedValue)
 	{}
 	Type_Function(){}
 	inline void AddCapture(const ButiEngine::Value_ptr<void> arg_value, const std::int32_t arg_type) {
-		vec_capturedValue.push_back({ arg_value,arg_type });
+		vec_capturedValue.Add({ arg_value,arg_type });
 	}
 	std::int32_t address;
 	const FunctionTag* p_functionTag;
 	const std::map <  std::int32_t, const std::string*>* p_functionJumpTable;
-	std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_capturedValue;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>> vec_capturedValue;
 };
 struct Type_ScriptClass :public IType_hasMember
 {
 	Type_ScriptClass(const ScriptClassInfo* arg_info) :p_classInfo(arg_info) {
-		vec_member.resize(arg_info->GetMemberSize());
+		vec_member.Resize(arg_info->GetMemberSize());
 	}
-	Type_ScriptClass(const std::vector<ButiEngine::Value_ptr<void>>& arg_vec_member, const ScriptClassInfo* arg_info)noexcept :vec_member(arg_vec_member), p_classInfo(arg_info) {}
+	Type_ScriptClass(const ButiEngine::List<ButiEngine::Value_ptr<void>>& arg_vec_member, const ScriptClassInfo* arg_info)noexcept :vec_member(arg_vec_member), p_classInfo(arg_info) {}
 	Type_ScriptClass(const Type_ScriptClass& arg_v) :p_classInfo(arg_v.p_classInfo) {
-		vec_member.reserve(arg_v.vec_member.size());
+		vec_member.Reserve(arg_v.vec_member.GetSize());
 		for (auto& member : arg_v.vec_member) {
-			vec_member.push_back(member.Clone());
+			vec_member.Add(member.Clone());
 		}
 	}
 	Type_ScriptClass()noexcept:vec_member(),p_classInfo(nullptr){}
 	inline ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)override {
-		return vec_member.at(arg_index);
+		return vec_member.At(arg_index);
 	}
 	inline const ButiEngine::Value_ptr<void>& GetMember(const std::int32_t arg_index)const override {
-		return vec_member.at(arg_index);
+		return vec_member.At(arg_index);
 	}
 	inline const std::int32_t GetMemberType(const std::int32_t arg_index)const {
 		return p_classInfo->GetMemberTypeIndex(arg_index);;
 	}
 	inline void SetMember(ButiEngine::Value_ptr<void> arg_data, const std::int32_t arg_index)override {
-		vec_member.at(arg_index) = arg_data;
+		vec_member.At(arg_index) = arg_data;
 	}
-	inline void SetClassInfoUpdate(const std::vector<TypeTag>& arg_types, const std::vector<ScriptClassInfo>& arg_scriptClassInfos, const std::int32_t arg_sysTypeCount, const std::int32_t arg_typeIndex) {
+	inline void SetClassInfoUpdate(const ButiEngine::List<TypeTag>& arg_types, const ButiEngine::List<ScriptClassInfo>& arg_scriptClassInfos, const std::int32_t arg_sysTypeCount, const std::int32_t arg_typeIndex) {
 
 	}
 	bool ShowGUI(const std::string& arg_label) {
@@ -326,7 +326,7 @@ struct Type_ScriptClass :public IType_hasMember
 #endif // _BUTIENGINEBUILD
 		return output;
 	}
-	std::vector<ButiEngine::Value_ptr<void>> vec_member;
+	ButiEngine::List<ButiEngine::Value_ptr<void>> vec_member;
 	const ScriptClassInfo* p_classInfo;
 protected:
 
@@ -334,7 +334,7 @@ protected:
 };
 template<typename T>
 std::int64_t TypeSpecific() {
-	static T output[1];
+	static T* output[1];
 	return reinterpret_cast<std::int64_t>(output);
 }
 #ifdef _BUTIENGINEBUILD
@@ -370,7 +370,7 @@ public:
 		archive(type);
 	}
 private:
-	std::vector<std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t>> vec_data;
+	ButiEngine::List<std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t>> vec_data;
 	std::int32_t type;
 	std::shared_ptr<ButiScript::CompiledData>shp_compiledData;
 };
@@ -490,7 +490,7 @@ public:
 	constexpr Value(const Type_Null)noexcept:valueType(TYPE_VOID) {}
 
 	//ユーザー定義型として初期化
-	Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* arg_p_vec_scriptClassInfo);
+	Value(ScriptClassInfo& arg_info, ButiEngine::List<ButiScript::ScriptClassInfo>* arg_p_vec_scriptClassInfo);
 
 	//変数を指定して初期化
 	Value( ButiEngine::Value_ptr<void> arg_p_data,const std::int32_t arg_type)
@@ -498,7 +498,11 @@ public:
 		valueData = arg_p_data;
 		valueType = arg_type;
 	}
-
+	Value(ButiEngine::Value_ptr<void> arg_p_data)
+	{
+		valueData = arg_p_data;
+		valueType = TYPE_VOID;
+	}
 	~Value()
 	{
 		clear();
@@ -575,52 +579,40 @@ public:
 	}
 
 	///Vector2等の組み込みクラスの取り出し
-	template <>
-	inline const ButiEngine::Vector2& Get()const {
+	template <>	inline const ButiEngine::Vector2& Get()const {
 		return static_cast<const ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>());
 	}
-	template <>
-	inline ButiEngine::Vector2& Get() {
+	template <>	inline ButiEngine::Vector2& Get() {
 		return static_cast<ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>());
 	}
-	template <>
-	inline void Negative<ButiEngine::Vector2>() {
+	template <>	inline void Negative<ButiEngine::Vector2>() {
 		static_cast<ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>()) = -1 * static_cast<ButiEngine::Vector2&>(*valueData.get<Type_hasMember<ButiEngine::Vector2>>());
 	}
-	template <>
-	inline const ButiEngine::Vector3& Get()const {
+	template <>	inline const ButiEngine::Vector3& Get()const {
 		return static_cast<const ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>());
 	}
-	template <>
-	inline ButiEngine::Vector3& Get() {
+	template <>	inline ButiEngine::Vector3& Get() {
 		return static_cast<ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>());
 	}
-	template <>
-	inline void Negative<ButiEngine::Vector3>() {
+	template <>	inline void Negative<ButiEngine::Vector3>() {
 		static_cast<ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>()) = -1 * static_cast<ButiEngine::Vector3&>(*valueData.get<Type_hasMember<ButiEngine::Vector3>>());
 	}
-	template <>
-	inline const ButiEngine::Vector4& Get()const {
+	template <>	inline const ButiEngine::Vector4& Get()const {
 		return static_cast<const ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>());
 	}
-	template <>
-	inline ButiEngine::Vector4& Get() {
+	template <>	inline ButiEngine::Vector4& Get() {
 		return static_cast<ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>());
 	}
-	template <>
-	inline void Negative<ButiEngine::Vector4>() {
+	template <>	inline void Negative<ButiEngine::Vector4>() {
 		static_cast<ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>()) = -1 * static_cast<ButiEngine::Vector4&>(*valueData.get<Type_hasMember<ButiEngine::Vector4>>());
 	}
-	template <>
-	inline const ButiEngine::Matrix4x4& Get()const {
+	template <>	inline const ButiEngine::Matrix4x4& Get()const {
 		return static_cast<const ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>());
 	}
-	template <>
-	inline ButiEngine::Matrix4x4& Get() {
+	template <>	inline ButiEngine::Matrix4x4& Get() {
 		return static_cast<ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>());
 	}
-	template <>
-	inline void Negative<ButiEngine::Matrix4x4>() {
+	template <>	inline void Negative<ButiEngine::Matrix4x4>() {
 		static_cast<ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>()) = -1 * static_cast<ButiEngine::Matrix4x4&>(*valueData.get<Type_hasMember<ButiEngine::Matrix4x4>>());
 	}
 	ButiEngine::Value_ptr<void> valueData;

@@ -3,7 +3,7 @@
 #include "VirtualMachine.h"
 
 
-std::vector<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
+ButiEngine::List<ButiScript::CreateMemberInstanceFunction>* p_vec_createMemberInstanceFunction = nullptr;
 #ifdef _BUTIENGINEBUILD
 
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_ScriptClass>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
@@ -29,7 +29,7 @@ void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Enum>::RestoreValue(Buti
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Function>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
 	
-	arg_ref_value = make_value<ButiScript::Type_Function>(address, &shp_compiledData->map_functionJumpPointsTable, std::vector<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>());
+	arg_ref_value = make_value<ButiScript::Type_Function>(address, &shp_compiledData->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>());
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Null>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
 
@@ -41,31 +41,31 @@ auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_vec_crea
 auto createMemberInstancesRelease = MemoryReleaser(&p_vec_createMemberInstanceFunction);
 #endif
 
-std::vector<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
+ButiEngine::List<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
 	if (!p_vec_createMemberInstanceFunction) {
-		p_vec_createMemberInstanceFunction = new std::vector<ButiScript::CreateMemberInstanceFunction>();
+		p_vec_createMemberInstanceFunction = new ButiEngine::List<ButiScript::CreateMemberInstanceFunction>();
 	}
 	return *p_vec_createMemberInstanceFunction;
 }
-ButiEngine::Value_ptr<void> CreateScriptValueData(ButiScript::ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
+ButiEngine::Value_ptr<void> CreateScriptValueData(ButiScript::ScriptClassInfo& arg_info, ButiEngine::List<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
 
-	std::vector<ButiEngine::Value_ptr<void>> vec_members;
+	ButiEngine::List<ButiEngine::Value_ptr<void>> vec_members;
 	std::int32_t memberSize = arg_info.GetMemberSize();
 	for (std::int32_t i = 0; i < memberSize; i++) {
 		auto typeIndex = arg_info.GetMemberTypeIndex(i);
 		//ílÇÃê∂ê¨
 		if (! (typeIndex & TYPE_REF) ){
 
-			if (typeIndex < GetCreateMemberInstanceFunction().size()) {
-				vec_members.push_back(GetCreateMemberInstanceFunction()[typeIndex]());
+			if (typeIndex < GetCreateMemberInstanceFunction().GetSize()) {
+				vec_members.Add(GetCreateMemberInstanceFunction()[typeIndex]());
 			}
 			else {
-				vec_members.push_back(CreateScriptValueData(p_vec_scriptClassInfo->at(typeIndex - GetCreateMemberInstanceFunction().size()), p_vec_scriptClassInfo));
+				vec_members.Add(CreateScriptValueData(p_vec_scriptClassInfo->at(typeIndex - GetCreateMemberInstanceFunction().GetSize()), p_vec_scriptClassInfo));
 			}
 		}
 		//éQè∆å^
 		else {
-			vec_members.push_back(ButiEngine::Value_ptr<void>());
+			vec_members.Add(ButiEngine::Value_ptr<void>());
 		}
 	}
 	return ButiEngine::make_value<ButiScript::Type_ScriptClass>(vec_members ,&arg_info);
@@ -73,7 +73,7 @@ ButiEngine::Value_ptr<void> CreateScriptValueData(ButiScript::ScriptClassInfo& a
 }
 
 
-ButiScript::Value::Value(ScriptClassInfo& arg_info, std::vector<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
+ButiScript::Value::Value(ScriptClassInfo& arg_info, ButiEngine::List<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo)	{
 	
 	valueData = CreateScriptValueData(arg_info,p_vec_scriptClassInfo);
 	valueType = arg_info.GetTypeIndex();
@@ -103,7 +103,7 @@ std::int32_t ButiScript::Value::GetTypeIndex(std::int64_t arg_typeFunc)
 
 void ButiScript::PushCreateMemberInstance(CreateMemberInstanceFunction arg_function)
 {
-	GetCreateMemberInstanceFunction().push_back(arg_function);
+	GetCreateMemberInstanceFunction().Add(arg_function);
 }
 
 

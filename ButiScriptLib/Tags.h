@@ -2,6 +2,7 @@
 #ifndef TAGS_H
 #define TAGS_H
 #include"value_type.h"
+#include"ButiMemorySystem/ButiMemorySystem/ButiList.h"
 namespace ButiScript {
 
 class Compiler;
@@ -207,7 +208,7 @@ public:
 	{
 		if (!map_variables.count(arg_name)) {
 			map_variables.emplace(arg_name, ValueTag(addr, arg_type, arg_size, isGlobal,arg_access));
-			vec_variableTypes.push_back(arg_type);
+			list_variableTypes.Add(arg_type);
 			addr += arg_size;
 			return true;
 		}
@@ -224,13 +225,13 @@ public:
 
 	bool add_arg(const std::int32_t arg_type, const std::string& arg_name, const std::int32_t arg_addr)
 	{
-		auto result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public)));
+		auto result = map_variables.insert({ arg_name, ValueTag(arg_addr, arg_type, 1, false,AccessModifier::Public) });
 		argmentsCount++;
 		return result.second;
 	}
 	bool add_capture(const std::int32_t arg_type, const std::string& arg_name, const std::int32_t arg_addr) {
 
-		auto result = map_variables.insert(make_pair(arg_name, ValueTag(arg_addr, arg_type, 1, false, AccessModifier::Public)));
+		auto result = map_variables.insert({ arg_name, ValueTag(arg_addr, arg_type, 1, false, AccessModifier::Public) });
 		addr++;
 		return result.second;
 	}
@@ -306,7 +307,7 @@ bool IsFunctionBlock()const { return isFunction; }
 
 private:
 	std::map <std::string, ValueTag> map_variables;
-	std::vector < std::int32_t> vec_variableTypes;
+	ButiEngine::List< std::int32_t> list_variableTypes;
 	std::int32_t addr,argmentsCount=0;
 	bool	isGlobal,isFunction;
 };
@@ -345,22 +346,22 @@ class FunctionTag {
 		}
 		void SetArg(const std::int32_t arg_type)
 		{
-			vec_args.push_back(arg_type);
+			vec_args.Add(arg_type);
 		}
 
-		void SetArgs(const std::vector<ArgDefine>& arg_vec_args)
+		void SetArgs(const ButiEngine::List<ArgDefine>& arg_vec_args)
 		{
-			std::uint64_t size = arg_vec_args.size();
+			std::uint64_t size = arg_vec_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				vec_args.push_back(arg_vec_args[i].GetType());
+				vec_args.Add(arg_vec_args[i].GetType());
 			}
 		}
 
-		void SetArgs(const std::vector<std::int32_t>& arg_vec_args)
+		void SetArgs(const ButiEngine::List<std::int32_t>& arg_vec_args)
 		{
-			std::uint64_t size = arg_vec_args.size();
+			std::uint64_t size = arg_vec_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				vec_args.push_back(arg_vec_args[i]);
+				vec_args.Add(arg_vec_args[i]);
 			}
 		}
 
@@ -370,18 +371,18 @@ class FunctionTag {
 				return true;
 			}
 
-			auto splited = std::vector<std::string>();
+			auto splited = ButiEngine::List<std::string>();
 			std::int32_t first = 0;
 			std::int32_t last = args.find_first_of(",");
 			if (last == std::string::npos) {
 
-				splited.push_back(args);
+				splited.Add(args);
 			}
 			else {
 				while (first < args.size())
 				{
 					auto subString = args.substr(first, last - first);
-					splited.push_back(subString);
+					splited.Add(subString);
 					first = last + 1;
 					last = args.find_first_of(",", first);
 					if (last == std::string::npos) {
@@ -390,13 +391,13 @@ class FunctionTag {
 				}
 			}
 
-			for (std::int32_t i = 0; i < splited.size(); i++) {
+			for (std::int32_t i = 0; i < splited.GetSize(); i++) {
 				if (!arg_map_argmentChars.count(splited[i])) {
 					return false;
 				}
 				else {
 
-					vec_args.push_back(arg_map_argmentChars.at(splited[i]));
+					vec_args.Add(arg_map_argmentChars.at(splited[i]));
 				}
 
 			}
@@ -404,20 +405,20 @@ class FunctionTag {
 		}
 
 
-		bool CheckArgList(const std::vector<ArgDefine>& arg_vec_args,const TypeTable* arg_typeTable) const
+		bool CheckArgList(const ButiEngine::List<ArgDefine>& arg_vec_args,const TypeTable* arg_typeTable) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.empty())
-				return vec_args.empty();
+			if (arg_vec_args.IsEmpty())
+				return vec_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.size() != vec_args.size())
+			if (arg_vec_args.GetSize() != vec_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 
 			//厳密チェック
-			std::uint64_t size = vec_args.size();
+			std::uint64_t size = vec_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i],arg_typeTable))
 					return false;
@@ -426,19 +427,19 @@ class FunctionTag {
 			return true;
 		}
 
-		bool CheckArgList(const std::vector<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
+		bool CheckArgList(const ButiEngine::List<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.empty())
-				return vec_args.empty();
+			if (arg_vec_args.IsEmpty())
+				return vec_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.size() != vec_args.size())
+			if (arg_vec_args.GetSize() != vec_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 			//厳密チェック
-			std::uint64_t size = vec_args.size();
+			std::uint64_t size = vec_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck(arg_vec_args[i], (std::int32_t)vec_args[i],arg_typeTable))
 					return false;
@@ -447,20 +448,20 @@ class FunctionTag {
 		}
 
 
-		bool CheckArgList_strict(const std::vector<ArgDefine>& arg_vec_args) const
+		bool CheckArgList_strict(const ButiEngine::List<ArgDefine>& arg_vec_args) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.empty())
-				return vec_args.empty();
+			if (arg_vec_args.IsEmpty())
+				return vec_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.size() != vec_args.size())
+			if (arg_vec_args.GetSize() != vec_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 
 			//厳密チェック
-			std::uint64_t size = vec_args.size();
+			std::uint64_t size = vec_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck_strict(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i]))
 					return false;
@@ -469,19 +470,19 @@ class FunctionTag {
 			return true;
 		}
 
-		bool CheckArgList_strict(const std::vector<std::int32_t>& arg_vec_args) const
+		bool CheckArgList_strict(const ButiEngine::List<std::int32_t>& arg_vec_args) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.empty())
-				return vec_args.empty();
+			if (arg_vec_args.IsEmpty())
+				return vec_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.size() != vec_args.size())
+			if (arg_vec_args.GetSize() != vec_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 			//厳密チェック
-			std::uint64_t size = vec_args.size();
+			std::uint64_t size = vec_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
 				if (!TypeCheck_strict(arg_vec_args[i], (std::int32_t)vec_args[i]))
 					return false;
@@ -496,7 +497,7 @@ class FunctionTag {
 			return vec_args[arg_index];
 		}
 
-		std::int32_t ArgSize() const { return (std::int32_t)vec_args.size(); }
+		std::int32_t ArgSize() const { return (std::int32_t)vec_args.GetSize(); }
 
 		void SetIndex(const std::int32_t arg_index) { index = arg_index; }
 		void SetDeclaration() { flags |= flag_declaration; }	// 宣言
@@ -521,7 +522,7 @@ class FunctionTag {
 			arg_fOut.write((char*)&valueType, sizeof(valueType));
 			arg_fOut.write((char*)&flags, sizeof(flags));
 			arg_fOut.write((char*)&index, sizeof(index));
-			std::int32_t argsSize = vec_args.size();
+			std::int32_t argsSize = vec_args.GetSize();
 			arg_fOut.write((char*)&argsSize, sizeof(argsSize));
 			for (std::int32_t i = 0; i < argsSize; i++) {
 				arg_fOut.write((char*)&vec_args[i], sizeof(vec_args[i]));
@@ -539,7 +540,7 @@ class FunctionTag {
 			for (std::int32_t i = 0; i < argsSize; i++) {
 				std::int32_t arg;
 				arg_fIn.read((char*)&arg, sizeof(arg));
-				vec_args.push_back(arg);
+				vec_args.Add(arg);
 			}
 			std::int32_t size = 0;
 			arg_fIn.read((char*)&size, sizeof(size));
@@ -548,18 +549,18 @@ class FunctionTag {
 			name = std::string(buff, size);
 			free(buff);
 		}
-		void SetTemplateType(const std::vector<std::int32_t>& arg_template) { vec_templateTypes = arg_template; }
-		bool IsTemplate()const { return vec_templateTypes.size(); }
+		void SetTemplateType(const ButiEngine::List<std::int32_t>& arg_list_template) {list_templateTypes = arg_list_template; }
+		bool IsTemplate()const { return list_templateTypes.GetSize(); }
 		std::string GetTemplateNames(const TypeTable* arg_table)const;
 		std::int32_t		valueType = 0;
 		std::int32_t		flags = 0;
 		std::int32_t		index = 0;
-		std::vector<std::int32_t>	vec_args;
+		ButiEngine::List<std::int32_t>	vec_args;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
 		bool isLambda=false;
-		std::vector<std::int32_t> vec_captureList;
-		std::vector<std::int32_t> vec_templateTypes;
+		ButiEngine::List<std::int32_t> vec_captureList;
+		ButiEngine::List<std::int32_t> list_templateTypes;
 	};
 
 class FunctionTable {
@@ -581,7 +582,7 @@ class FunctionTable {
 			return &result->second;
 		}
 
-		const FunctionTag* Find_strict(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
+		const FunctionTag* Find_strict(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -597,7 +598,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		FunctionTag* Find_strict(const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
+		FunctionTag* Find_strict(const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
 		{
 			iter itr = map_functions.find(arg_name);
 
@@ -615,7 +616,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		const FunctionTag* Find(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_args,const TypeTable* arg_typeTable) const
+		const FunctionTag* Find(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_args,const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -631,7 +632,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		FunctionTag* Find(const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
+		FunctionTag* Find(const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
 		{
 			iter itr = map_functions.find(arg_name);
 
@@ -750,18 +751,18 @@ public:
 		return vec_memberTypes[arg_index];
 	}
 	std::int32_t GetMemberSize()const {
-		return vec_memberTypes.size();
+		return vec_memberTypes.GetSize();
 	}
 	void SetTypeIndex(const std::int32_t arg_index) {
 		typeIndex = arg_index;
 	}
-	void SetMemberTypes(const std::vector<std::int32_t> arg_vec_types) {
+	void SetMemberTypes(const ButiEngine::List<std::int32_t> arg_vec_types) {
 		vec_memberTypes = arg_vec_types;
 	}
-	void SetMemberNames(const std::vector<std::string> arg_vec_names) {
+	void SetMemberNames(const ButiEngine::List<std::string> arg_vec_names) {
 		vec_memberName = arg_vec_names;
 	}
-	const std::vector<std::string>& GetMamberName()const {
+	const ButiEngine::List<std::string>& GetMamberName()const {
 		return vec_memberName;
 	}
 	void SetClassName(const std::string& arg_className) {
@@ -769,7 +770,7 @@ public:
 	}
 
 	bool operator ==(const ScriptClassInfo& other) const{
-		if ((other.typeIndex != typeIndex) ||(other.systemTypeCount!=systemTypeCount)||(other.vec_memberTypes.size()!=vec_memberTypes.size() )) {
+		if ((other.typeIndex != typeIndex) ||(other.systemTypeCount!=systemTypeCount)||(other.vec_memberTypes.GetSize()!=vec_memberTypes.GetSize() )) {
 			return false;
 		}
 		for (auto itr = vec_memberTypes.begin(), end = vec_memberTypes.end(), otherItr = other.vec_memberTypes.begin(); itr != end; itr++, otherItr++) {
@@ -789,7 +790,7 @@ public:
 		arg_fOut.write((char*)&size, sizeof(std::int32_t));
 		arg_fOut.write(className.c_str(), size);
 		arg_fOut.write((char*)&typeIndex, sizeof(std::int32_t));
-		std::int32_t memberSize = vec_memberTypes.size();
+		std::int32_t memberSize = vec_memberTypes.GetSize();
 		arg_fOut.write((char*)&memberSize, sizeof(std::int32_t));
 		for (std::int32_t i = 0; i < memberSize; i++) {
 			arg_fOut.write((char*)&vec_memberTypes[i], sizeof(std::int32_t));
@@ -812,7 +813,7 @@ public:
 		arg_fIn.read((char*)&typeIndex, sizeof(std::int32_t));
 		std::int32_t memberSize = 0;
 		arg_fIn.read((char*)&memberSize, sizeof(std::int32_t));
-		vec_memberTypes.resize(memberSize);
+		vec_memberTypes.Resize(memberSize);
 		for (std::int32_t i = 0; i < memberSize; i++) {
 			arg_fIn.read((char*)&vec_memberTypes[i], sizeof(std::int32_t));
 		}
@@ -821,7 +822,7 @@ public:
 			arg_fIn.read((char*)&size, sizeof(std::int32_t));
 			char* nameBuff = (char*)malloc(size);
 			arg_fIn.read(nameBuff, size);
-			vec_memberName.push_back(std::string(nameBuff, size));
+			vec_memberName.Add(std::string(nameBuff, size));
 			free(nameBuff);
 		}
 
@@ -831,8 +832,8 @@ public:
 private:
 	std::int32_t typeIndex;
 	std::int32_t systemTypeCount;
-	std::vector<std::int32_t> vec_memberTypes;
-	std::vector<std::string> vec_memberName;
+	ButiEngine::List<std::int32_t> vec_memberTypes;
+	ButiEngine::List<std::string> vec_memberName;
 	std::string className;
 };
 struct MemberValueInfo {
@@ -841,9 +842,9 @@ struct MemberValueInfo {
 	AccessModifier access = AccessModifier::Public;
 };
 struct FunctionObjectTypeData {
-	FunctionObjectTypeData(const std::int32_t arg_retType,const std::vector<std::int32_t>& arg_argTypes):returnType(arg_retType),vec_argTypes(arg_argTypes){}
+	FunctionObjectTypeData(const std::int32_t arg_retType,const ButiEngine::List<std::int32_t>& arg_argTypes):returnType(arg_retType),vec_argTypes(arg_argTypes){}
 	std::int32_t returnType;
-	std::vector<std::int32_t> vec_argTypes;
+	ButiEngine::List<std::int32_t> vec_argTypes;
 };
 struct TypeTag {
 	TypeTag() {}
@@ -876,7 +877,7 @@ struct TypeTag {
 	FunctionObjectTypeData* p_functionObjectData=nullptr;
 	std::int32_t GetFunctionObjectReturnType()const;
 	std::int32_t GetFunctionObjectArgSize()const;
-	const std::vector<std::int32_t>& GetFunctionObjectArgment()const;
+	const ButiEngine::List<std::int32_t>& GetFunctionObjectArgment()const;
 	ScriptClassInfo GetScriptTypeInfo()const {
 		if (isSystem||p_functionObjectData) {
 			//組み込み型なのでスクリプト型定義は作れない
@@ -886,10 +887,10 @@ struct TypeTag {
 		ScriptClassInfo output;
 		output.SetClassName(typeName); 
 		output.SetTypeIndex(typeIndex);
-		std::vector<std::int32_t> vec_types;
-		std::vector<std::string> vec_memberNames;
-		vec_types.resize(map_memberValue.size());
-		vec_memberNames.resize(map_memberValue.size());
+		ButiEngine::List<std::int32_t> vec_types;
+		ButiEngine::List<std::string> vec_memberNames;
+		vec_types.Resize(map_memberValue.size());
+		vec_memberNames.Resize(map_memberValue.size());
 		auto end = map_memberValue.end();
 		for (auto itr = map_memberValue.begin(); itr !=end ; itr++) {
 			vec_types[itr->second.index] = itr->second.type;
@@ -911,13 +912,13 @@ class TypeTable {
 public:
 	void Release();
 	const TypeTag* GetType(const std::int32_t arg_index) const {
-		if (vec_types.size() <= arg_index) {
+		if (vec_types.GetSize() <= arg_index) {
 			return nullptr;
 		}
 		return vec_types[arg_index];
 	}
 	TypeTag* GetType(const std::int32_t arg_index) {
-		if (vec_types.size() <= arg_index) {
+		if (vec_types.GetSize() <= arg_index) {
 			return nullptr;
 		}
 		return vec_types[arg_index];
@@ -938,9 +939,9 @@ public:
 		}
 		return &map_types.at(arg_typename);
 	}
-	const TypeTag* GetFunctionType(const std::vector<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType)const {
+	const TypeTag* GetFunctionType(const ButiEngine::List<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType)const {
 		auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
-		for (auto i = 0; i < arg_argmentTypes.size(); i++) {
+		for (auto i = 0; i < arg_argmentTypes.GetSize(); i++) {
 			functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
 		}
 		if (!map_types.count(functionTypeName)) {
@@ -948,9 +949,9 @@ public:
 		}
 		return &map_types.at(functionTypeName);
 	}
-	TypeTag* GetFunctionType(const std::vector<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType) {
+	TypeTag* GetFunctionType(const ButiEngine::List<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType) {
 		auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
-		for (auto i = 0; i < arg_argmentTypes.size(); i++) {
+		for (auto i = 0; i < arg_argmentTypes.GetSize(); i++) {
 			functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
 		}
 		if (!map_types.count(functionTypeName)) {
@@ -958,9 +959,9 @@ public:
 		}
 		return &map_types.at(functionTypeName);
 	}
-	TypeTag* CreateFunctionType(const std::vector<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType) {
+	TypeTag* CreateFunctionType(const ButiEngine::List<std::int32_t>& arg_argmentTypes, const std::int32_t arg_retType) {
 		auto functionTypeName = "FunctionType:" + std::to_string(arg_retType);
-		for (auto i = 0; i < arg_argmentTypes.size(); i++) {
+		for (auto i = 0; i < arg_argmentTypes.GetSize(); i++) {
 			functionTypeName += "," + std::to_string(arg_argmentTypes[i]);
 		}
 		if (map_types.count(functionTypeName)) {
@@ -970,10 +971,10 @@ public:
 		functionType.typeName = functionTypeName;
 		functionType.argName = functionTypeName;
 
-		functionType.typeIndex = vec_types.size();
+		functionType.typeIndex = vec_types.GetSize();
 		functionType.isSystem = false;
-		if (vec_types.size() <= functionType.typeIndex) {
-			vec_types.resize(functionType.typeIndex + 1);
+		if (vec_types.GetSize() <= functionType.typeIndex) {
+			vec_types.Resize(functionType.typeIndex + 1);
 		}
 		map_argmentChars.emplace(functionTypeName, functionType.typeIndex);
 		map_types.emplace(functionTypeName, functionType);
@@ -988,8 +989,8 @@ public:
 	void RegistType(const TypeTag& arg_type) {
 
 
-		if (vec_types.size() <= arg_type.typeIndex) {
-			vec_types.resize(arg_type.typeIndex + 1);
+		if (vec_types.GetSize() <= arg_type.typeIndex) {
+			vec_types.Resize(arg_type.typeIndex + 1);
 		}
 		map_argmentChars.emplace(arg_type.argName, arg_type.typeIndex);
 		map_types.emplace(arg_type.typeName, arg_type);
@@ -1003,11 +1004,11 @@ public:
 		enumType.typeName = arg_type.GetTypeName();
 		enumType.argName = arg_type.GetTypeName();
 		enumType.p_enumTag = &arg_type;
-		enumType.typeIndex = vec_types.size();
+		enumType.typeIndex = vec_types.GetSize();
 		arg_type.typeIndex = enumType.typeIndex;
 		enumType.isSystem = arg_type.isSystem;
-		if (vec_types.size() <= enumType.typeIndex) {
-			vec_types.resize(enumType.typeIndex + 1);
+		if (vec_types.GetSize() <= enumType.typeIndex) {
+			vec_types.Resize(enumType.typeIndex + 1);
 		}
 		map_argmentChars.emplace(arg_type.GetTypeName(), enumType.typeIndex);
 		map_types.emplace(arg_type.GetTypeName(), enumType);
@@ -1017,15 +1018,15 @@ public:
 		}
 	}
 
-	const std::vector<TypeTag* >& GetSystemType()const {
+	const ButiEngine::List<TypeTag* >& GetSystemType()const {
 		return vec_types;
 	}
 
-	void CreateTypeVec(std::vector<TypeTag>& arg_ref_types) const {
-		arg_ref_types.reserve(vec_types.size());
+	void CreateTypeVec(ButiEngine::List<TypeTag>& arg_ref_types) const {
+		arg_ref_types.Reserve(vec_types.GetSize());
 		auto end = vec_types.end();
 		for (auto itr = vec_types.begin(); itr != end; itr++) {
-			arg_ref_types.push_back(*(*itr));
+			arg_ref_types.Add(*(*itr));
 		}
 
 	}
@@ -1053,7 +1054,7 @@ public:
 		functionTypeCount = 0;
 	}
 	std::int32_t GetSize()const {
-		return vec_types.size();
+		return vec_types.GetSize();
 	}
 	std::int32_t GetSystemTypeSize()const {
 		return systemTypeCount;
@@ -1062,14 +1063,14 @@ public:
 		return functionTypeCount;
 	}
 	std::int32_t GetScriptTypeSize()const {
-		return vec_types.size()-systemTypeCount-functionTypeCount;
+		return vec_types.GetSize()-systemTypeCount-functionTypeCount;
 	}
-	std::vector<ScriptClassInfo> GetScriptClassInfo()const {
-		std::vector<ScriptClassInfo> output;
-		for (std::int32_t i = 0; i < vec_types.size(); i++) {
+	ButiEngine::List<ScriptClassInfo> GetScriptClassInfo()const {
+		ButiEngine::List<ScriptClassInfo> output;
+		for (std::int32_t i = 0; i < vec_types.GetSize(); i++) {
 			if (vec_types[i]->isSystem|| vec_types[i]->p_functionObjectData){ continue; }
 				
-			output.push_back(vec_types[i]->GetScriptTypeInfo());
+			output.Add(vec_types[i]->GetScriptTypeInfo());
 
 		}
 
@@ -1077,7 +1078,7 @@ public:
 	}
 private:
 
-	std::vector<TypeTag* > vec_types;
+	ButiEngine::List<TypeTag* > vec_types;
 	std::map<std::string, std::int32_t> map_argmentChars;
 	std::map<std::string, TypeTag> map_types;
 	std::int32_t systemTypeCount=0,functionTypeCount=0;
@@ -1104,31 +1105,31 @@ inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& 
 {
 	std::string output = name;
 
-	if (vec_args.size()) {
+	if (vec_args.GetSize()) {
 		output += ":";
 	}
 
-	for (std::int32_t i = 0; i < vec_args.size(); i++) {
+	for (std::int32_t i = 0; i < vec_args.GetSize(); i++) {
 		output += arg_typeTable.GetType(vec_args[i] & ~TYPE_REF)->argName;
-		if (i + 1 != vec_args.size()) {
+		if (i + 1 != vec_args.GetSize()) {
 			output += ",";
 		}
 	}
 	return output;
 }
 
-static std::string GetTemplateName(const std::vector<std::int32_t>& arg_vec_temps, const ButiScript::TypeTable* arg_table) {
+static std::string GetTemplateName(const ButiEngine::List<std::int32_t>& arg_list_temps, const ButiScript::TypeTable* arg_table) {
 
 
-	if (!arg_vec_temps.size()) {
+	if (!arg_list_temps.GetSize()) {
 		return "";
 	}
 	std::string output = "<";
-	for (std::int32_t i = 0; i < arg_vec_temps.size(); i++) {
+	for (std::int32_t i = 0; i < arg_list_temps.GetSize(); i++) {
 		if (i != 0) {
 			output += ",";
 		}
-		output += arg_table->GetType(arg_vec_temps[i])->typeName;
+		output += arg_table->GetType(arg_list_temps[i])->typeName;
 	}
 	output += ">";
 	return output;
@@ -1136,6 +1137,6 @@ static std::string GetTemplateName(const std::vector<std::int32_t>& arg_vec_temp
 
 inline std::string ButiScript::FunctionTag::GetTemplateNames(const TypeTable* arg_table) const
 {
-	return GetTemplateName(vec_templateTypes,arg_table);
+	return GetTemplateName(list_templateTypes,arg_table);
 }
 #endif // !TAGS_H

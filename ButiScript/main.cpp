@@ -29,10 +29,30 @@ std::shared_ptr<Sample> CreateSample() {
 std::shared_ptr<Sample> CreateSampleWithCount(std::int32_t arg_c,float arg_f) {
 	return std::make_shared<Sample>(arg_c*arg_f);
 }
-
+class ValueTypeTest {
+public:
+	ValueTypeTest() {
+		v = 0;
+		std::cout << "ValueTypeTest() Called. v:" <<v<< std::endl;
+	}
+	~ValueTypeTest() {
+		std::cout << "~ValueTypeTest() called. v:" << v << std::endl;
+	}
+	void SetValue(const std::int32_t arg_v) { v = arg_v; }
+	void Show()const {
+		std::cout<<"v:" << v << std::endl;
+	}
+	std::int32_t GetValue()const { return v; }
+private:
+	std::int32_t v;
+};
 template<typename T> 
 T CreateInstance() { 
 	return T(); 
+}
+ButiEngine::Value_ptr<ValueTypeTest> g_output=nullptr;
+ButiEngine::Value_ptr<ValueTypeTest> GetValuePtrInstance() {
+	return g_output;
 }
 
 #include"BuiltInTypeRegister.h"
@@ -50,7 +70,16 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});
 
+	ButiScript::SystemTypeRegister::GetInstance()->RegistValueSystemType<ValueTypeTest>("ValueTypeTest", "ValueTypeTest");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue, &ButiScript::VirtualMachine::GetTypePtr ,&ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "i");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::GetValue, &ButiScript::VirtualMachine::GetTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_INTEGER, "GetValue", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Show, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Show", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&GetValuePtrInstance>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), "CreateValueTest", "");
+	
+
 	driver.RegistDefaultSystems();
+	g_output = ButiEngine::make_value<ValueTypeTest>();
+
 	bool compile_result=false;
 	for(std::int32_t i=1;i<argCount;i++)
 	{
@@ -84,7 +113,7 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 
 		}
 	}
-
+	g_output = nullptr;
 	std::system("pause");
 
 

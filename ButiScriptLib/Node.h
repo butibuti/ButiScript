@@ -119,10 +119,10 @@ namespace ButiScript {
 		virtual const ValueTag* GetValueTag(Compiler* arg_compiler)const;
 		virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* arg_compiler)const;
 		virtual std::int32_t EnumType(Compiler* arg_compiler)const {return TYPE_INTEGER;}
-		std::int32_t GetCallType(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg,const std::vector<std::int32_t>& arg_vec_temps)const;
+		std::int32_t GetCallType(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_vec_arg,const ButiEngine::List<std::int32_t>& arg_vec_temps)const;
 
 		std::int32_t Assign(Compiler* arg_compiler) const;
-		std::int32_t Call(Compiler* arg_compiler, const std::string& arg_name, const std::vector<Node_t>* arg_vec_arg, const std::vector<std::int32_t>& arg_vec_temps) const;
+		std::int32_t Call(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_vec_arg, const ButiEngine::List<std::int32_t>& arg_vec_temps) const;
 
 		virtual Node_t CreateMethod(Node_t arg_node);
 
@@ -141,7 +141,7 @@ namespace ButiScript {
 		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_right);
 		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_right,const Compiler* arg_compiler);
 		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, NodeList_t arg_list);
-		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, const std::vector<std::int32_t>& arg_templateTypes);
+		static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, const ButiEngine::List<std::int32_t>& arg_templateTypes);
 
 		void SetLeftNode(Node_t arg_node) { leftNode = arg_node; }
 		void SetRightNode(Node_t arg_node) { rightNode = arg_node; }
@@ -184,21 +184,21 @@ namespace ButiScript {
 	public:
 		NodeList(Node_t arg_node)
 		{
-			vec_args.push_back(arg_node);
+			vec_args.Add(arg_node);
 		}
 
 		NodeList* Add(Node_t arg_add)
 		{
-			vec_args.push_back(arg_add);
+			vec_args.Add(arg_add);
 			return this;
 		}
 
-		std::uint64_t size() const { return vec_args.size(); }
+		std::uint64_t size() const { return vec_args.GetSize(); }
 		Node_t get(std::uint64_t arg_index) const { return vec_args[arg_index]; }
 
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const ;
 	public:
-		std::vector<Node_t> vec_args;
+		ButiEngine::List<Node_t> vec_args;
 	};
 
 	// 関数のノード
@@ -209,7 +209,7 @@ namespace ButiScript {
 			: Node(arg_op, arg_node), nodeList(arg_list)
 		{
 		}
-		Node_function(std::int32_t arg_op, const Node_t& arg_node, const std::vector<std::int32_t>& arg_templateTypes)
+		Node_function(std::int32_t arg_op, const Node_t& arg_node, const ButiEngine::List<std::int32_t>& arg_templateTypes)
 			: Node(arg_op, arg_node), vec_templateTypes(arg_templateTypes)
 		{
 		}
@@ -224,7 +224,7 @@ namespace ButiScript {
 		Node_t CreateMethod(Node_t arg_node)override;
 	private:
 		NodeList_t nodeList;
-		std::vector<std::int32_t> vec_templateTypes;
+		ButiEngine::List<std::int32_t> vec_templateTypes;
 	};
 
 	//メンバ変数へのアクセスノード
@@ -248,7 +248,7 @@ namespace ButiScript {
 	class Node_Method :public Node {
 	public:
 		
-		Node_Method(const std::int32_t arg_op, const Node_t arg_funcNode, const Node_t arg_valueNode, const NodeList_t list, const std::vector<std::int32_t>& arg_templateTypes)
+		Node_Method(const std::int32_t arg_op, const Node_t arg_funcNode, const Node_t arg_valueNode, const NodeList_t list, const ButiEngine::List<std::int32_t>& arg_templateTypes)
 			:Node(arg_op, arg_funcNode,arg_valueNode), nodeList(list),vec_templateTypes(arg_templateTypes)
 		{
 		}
@@ -259,7 +259,7 @@ namespace ButiScript {
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	private:
 		NodeList_t nodeList;
-		std::vector<std::int32_t> vec_templateTypes;
+		ButiEngine::List<std::int32_t> vec_templateTypes;
 	};
 
 	//enum呼び出しのノード
@@ -323,9 +323,9 @@ namespace ButiScript {
 			std::cerr << "内部エラー：Add(node)が呼ばれました" << std::endl;
 		}
 
-		virtual void Add(const std::vector<Node_t >& arg_vec_node)
+		virtual void Add(const ButiEngine::List<Node_t >& arg_vec_node)
 		{
-			std::cerr << "内部エラー：Add(std::vector< node>)が呼ばれました" << std::endl;
+			std::cerr << "内部エラー：Add(ButiEngine::List< node>)が呼ばれました" << std::endl;
 		}
 
 		virtual void Add(const std::int32_t arg_index, Statement_t arg_statement)
@@ -525,7 +525,7 @@ namespace ButiScript {
 
 		void Add(Statement_t arg_statement)
 		{
-			vec_statement.push_back(arg_statement);
+			vec_statement.Add(arg_statement);
 		}
 
 		std::int32_t Analyze(Compiler* arg_compiler);
@@ -533,7 +533,7 @@ namespace ButiScript {
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) override;
 	private:
 		Node_t node;
-		std::vector<Statement_t> vec_statement;
+		ButiEngine::List<Statement_t> vec_statement;
 	};
 
 	// block
@@ -574,16 +574,16 @@ namespace ButiScript {
 
 		void Add(Node_t arg_node)
 		{
-			vec_node.push_back(arg_node);
+			vec_node.Add(arg_node);
 		}
-		void Add(const std::vector<Node_t >& arg_node)
+		void Add(const ButiEngine::List<Node_t >& arg_node)
 		{
 			vec_node=(arg_node);
 		}
 
 		void Add(const std::int32_t arg_type)
 		{
-			vec_argType.push_back(arg_type);
+			vec_argType.Add(arg_type);
 		}
 
 		std::int32_t PushCompiler(Compiler* arg_compiler);
@@ -596,9 +596,9 @@ namespace ButiScript {
 	private:
 		std::int32_t valueType;					
 		bool isFunction;				
-		std::vector<Node_t> vec_node;	
+		ButiEngine::List<Node_t> vec_node;	
 		std::string name;			
-		std::vector<std::int32_t> vec_argType;		
+		ButiEngine::List<std::int32_t> vec_argType;		
 		AccessModifier accessType=AccessModifier::Public;
 	};
 
@@ -610,22 +610,22 @@ namespace ButiScript {
 	public:
 		void Add(const Declaration_t& arg_decl)
 		{
-			vec_decl.push_back(arg_decl);
+			vec_decl.Add(arg_decl);
 		}
 		void Add(const Statement_t& arg_state)
 		{
-			vec_state.push_back(arg_state);
+			vec_state.Add(arg_state);
 		}
 
-		std::int32_t Analyze(Compiler* arg_compiler, std::vector<Function_t>& arg_captureCheck);
+		std::int32_t Analyze(Compiler* arg_compiler, ButiEngine::List<Function_t>& arg_captureCheck);
 		inline std::int32_t Analyze(Compiler* arg_compiler) {
-			static std::vector<Function_t> captureCheckDummy;
+			static ButiEngine::List<Function_t> captureCheckDummy;
 			return Analyze(arg_compiler, captureCheckDummy);
 		}
 		void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) ;
 	private:
-		std::vector<Declaration_t> vec_decl;
-		std::vector<Statement_t> vec_state;
+		ButiEngine::List<Declaration_t> vec_decl;
+		ButiEngine::List<Statement_t> vec_state;
 	};
 
 	// 引数
@@ -650,7 +650,7 @@ namespace ButiScript {
 
 		void Add(ArgDefine arg_argDefine)
 		{
-			args.push_back(arg_argDefine);
+			args.Add(arg_argDefine);
 		}
 
 		void Add(Block_t arg_block)
@@ -678,17 +678,17 @@ namespace ButiScript {
 		Function(){}
 		std::int32_t returnType;
 		std::string name,searchName;
-		std::vector<ArgDefine> args;
+		ButiEngine::List<ArgDefine> args;
 		AccessModifier accessType=AccessModifier::Public;
 		Block_t block;
-		std::vector<Function_t> vec_subFunctions;
+		ButiEngine::List<Function_t> vec_subFunctions;
 		Function_t parentFunction;
 		NameSpace_t ownNameSpace;
 	};
 
 	class Lambda :public Function {
 	public:
-		Lambda(const std::int32_t arg_type,const std::vector<ArgDefine>& arg_args,Compiler* arg_compiler);
+		Lambda(const std::int32_t arg_type,const ButiEngine::List<ArgDefine>& arg_args,Compiler* arg_compiler);
 		std::int32_t PushCompiler(Compiler* arg_compiler);
 		std::int32_t Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable = nullptr);
 		void LambdaCapture(Compiler* arg_compiler)override;
@@ -711,7 +711,7 @@ namespace ButiScript {
 		void SetValue(const std::string& arg_name, const std::int32_t arg_type,const AccessModifier arg_accessType);
 	private:
 		std::map < std::string, std::pair< std::int32_t,AccessModifier>> map_values;
-		std::vector<Function_t> vec_methods;
+		ButiEngine::List<Function_t> vec_methods;
 		std::string name;
 	};
 	using Class_t = ButiEngine::Value_ptr<Class>;

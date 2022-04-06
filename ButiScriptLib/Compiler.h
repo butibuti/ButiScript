@@ -112,8 +112,8 @@ public:
 private:
 	std::string name;
 	NameSpace_t shp_parentNamespace;
-	std::vector<Function_t> vec_analyzeFunctionBuffer;
-	std::vector<Class_t> vec_analyzeClassBuffer;
+	ButiEngine::List<Function_t> vec_analyzeFunctionBuffer;
+	ButiEngine::List<Class_t> vec_analyzeClassBuffer;
 };
 
 
@@ -188,14 +188,14 @@ public:
 
 	void AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::int32_t, AccessModifier>>& arg_memberInfo);
 	void RegistScriptType(const std::string& arg_typeName);
-	const std::vector<TypeTag* >& GetSystemTypes()const {
+	const ButiEngine::List<TypeTag* >& GetSystemTypes()const {
 		return types.GetSystemType();
 	}
 
-	void ValueDefine(const std::int32_t arg_type, const std::vector<Node_t>& node,const AccessModifier arg_access);
-	void FunctionDefine(const std::int32_t arg_type, const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex);
-	FunctionTag* RegistFunction(const std::int32_t arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable=nullptr);
-	void RegistLambda(const std::int32_t arg_type, const std::string& arg_name, const std::vector<ArgDefine>& arg_vec_argDefine,FunctionTable* arg_functionTable);
+	void ValueDefine(const std::int32_t arg_type, const ButiEngine::List<Node_t>& node,const AccessModifier arg_access);
+	void FunctionDefine(const std::int32_t arg_type, const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_argIndex);
+	FunctionTag* RegistFunction(const std::int32_t arg_type, const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_vec_argDefine, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable=nullptr);
+	void RegistLambda(const std::int32_t arg_type, const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_vec_argDefine,FunctionTable* arg_functionTable);
 	void RegistEnum(const std::string& arg_typeName, const std::string& arg_identiferName, const std::int32_t arg_value);
 	void RegistEnumType(const std::string& arg_typeName);
 	const EnumTag* GetEnumTag(const std::string& arg_name) const {
@@ -208,7 +208,7 @@ public:
 	// ì‡ë§ÇÃÉuÉçÉbÉNÇ©ÇÁïœêîåüçı
 	const ValueTag* GetValueTag(const std::string& arg_name) const
 	{
-		std::int32_t size = (std::int32_t)variables.size();
+		std::int32_t size = (std::int32_t)variables.GetSize();
 		for (std::int32_t i = size - 1; i >= 0; i--) {
 			const ValueTag* tag = variables[i].find(arg_name);
 			if (tag)
@@ -218,10 +218,10 @@ public:
 	}
 
 	// ä÷êîÇÃåüçı
-	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex, const bool arg_isStrict, NameSpace_t arg_namespace) const
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_argIndex, const bool arg_isStrict, NameSpace_t arg_namespace) const
 	{
 		const FunctionTag* output=nullptr;
-		const FunctionTag* (FunctionTable::* findMethod)(const std::string&, const std::vector<std::int32_t>&,const TypeTable* )const;
+		const FunctionTag* (FunctionTable::* findMethod)(const std::string&, const ButiEngine::List<std::int32_t>&,const TypeTable* )const;
 		if (arg_isStrict) {
 
 			findMethod = &FunctionTable::Find_strict;
@@ -239,12 +239,12 @@ public:
 		}
 		return output;
 	}
-	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex, const bool arg_isStrict) const {
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_argIndex, const bool arg_isStrict) const {
 		return GetFunctionTag(arg_name, arg_vec_argIndex, arg_isStrict, GetCurrentNameSpace());
 	}
-	const FunctionTag* GetFunctionTag(const std::string& arg_name, const std::vector<std::int32_t>& arg_vec_argIndex, const std::vector<std::int32_t>& arg_vec_template,const bool arg_isStrict) const {
+	const FunctionTag* GetFunctionTag(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_argIndex, const ButiEngine::List<std::int32_t>& arg_list_template,const bool arg_isStrict) const {
 		
-		return GetFunctionTag(arg_name+ GetTemplateName(arg_vec_template, &GetTypeTable()), arg_vec_argIndex, arg_isStrict, GetCurrentNameSpace());
+		return GetFunctionTag(arg_name+ GetTemplateName(arg_list_template, &GetTypeTable()), arg_vec_argIndex, arg_isStrict, GetCurrentNameSpace());
 	}
 	// ä÷êîÇÃåüçı
 	const FunctionTag* GetFunctionTag(const std::string& arg_name, NameSpace_t arg_namespace) const
@@ -263,8 +263,8 @@ public:
 	const FunctionTag* GetFunctionTag(const std::string& arg_name) const {
 		return GetFunctionTag(arg_name, GetCurrentNameSpace());
 	}
-	const FunctionTag* GetFunctionTag(const std::string& arg_name,const std::vector<std::int32_t>& arg_vec_temps) const {
-		return GetFunctionTag(arg_name+GetTemplateName(arg_vec_temps,& GetTypeTable()), GetCurrentNameSpace());
+	const FunctionTag* GetFunctionTag(const std::string& arg_name,const ButiEngine::List<std::int32_t>& arg_list_temps) const {
+		return GetFunctionTag(arg_name+GetTemplateName(arg_list_temps,& GetTypeTable()), GetCurrentNameSpace());
 	}
 
 	const TypeTable& GetTypeTable()const {
@@ -280,12 +280,12 @@ public:
 		}
 		return -1;
 	}
-	std::int32_t GetTypeIndex(const std::pair<std::int32_t, std::vector<ArgDefine>>& arg_funcTypePair) {
+	std::int32_t GetTypeIndex(const std::pair<std::int32_t, ButiEngine::List<ArgDefine>>& arg_funcTypePair) {
 		return arg_funcTypePair.first;
 	}
 	//ä÷êîå^ÇÃåüçı
-	std::int32_t GetfunctionTypeIndex(const std::vector<ArgDefine>& arg_vec_argmentTypes, const std::int32_t arg_retType);
-	std::int32_t GetfunctionTypeIndex(const std::vector<std::int32_t>& arg_vec_argmentTypes, const std::int32_t arg_retType);
+	std::int32_t GetfunctionTypeIndex(const ButiEngine::List<ArgDefine>& arg_vec_argmentTypes, const std::int32_t arg_retType);
+	std::int32_t GetfunctionTypeIndex(const ButiEngine::List<std::int32_t>& arg_vec_argmentTypes, const std::int32_t arg_retType);
 
 	TypeTag* GetType(const std::int32_t arg_index) {
 		return types.GetType(arg_index);
@@ -311,23 +311,23 @@ public:
 	}
 
 	const TypeTag* GetCurrentThisType()const {
-		if (!vec_thisType.size()) {
+		if (!vec_thisType.GetSize()) {
 			return nullptr;
 		}
 
-		return  vec_thisType.back();
+		return  vec_thisType.GetLast();
 	}
 	TypeTag* GetCurrentThisType() {
-		if (!vec_thisType.size()) {
+		if (!vec_thisType.GetSize()) {
 			return nullptr;
 		}
-		return vec_thisType.back();
+		return vec_thisType.GetLast();
 	}
 	void PushCurrentThisType(TypeTag* arg_this) {
-		vec_thisType.push_back(arg_this);
+		vec_thisType.Add(arg_this);
 	}
 	void PopCurrentThisType() {
-		vec_thisType.pop_back();
+		vec_thisType.RemoveLast();
 	}
 
 	// for code generator.
@@ -359,7 +359,7 @@ public:
 	void SetLabel(const std::int32_t arg_label);
 
 	void PushString(const std::string& arg_str);
-	std::int32_t GetCurrentFunctionType() const { return vec_function_type.back(); }
+	std::int32_t GetCurrentFunctionType() const { return vec_function_type.GetLast(); }
 	bool CreateData(ButiScript::CompiledData& arg_ref_data,const std::int32_t arg_codeSize);
 
 	void PushNameSpace(NameSpace_t arg_namespace);
@@ -379,29 +379,29 @@ public:
 	void ClearNameSpace();
 	void Analyze();
 	void IncreaseLambdaCount();
-	std::vector<ValueTable>& GetValueTable() { return variables; }
-	void PushCurrentFunctionType(const std::int32_t arg_type) { vec_function_type.push_back(arg_type); }
-	void PushCurrentFunctionName(const std::string& arg_name) { vec_function_name.push_back( arg_name); }
+	ButiEngine::List<ValueTable>& GetValueTable() { return variables; }
+	void PushCurrentFunctionType(const std::int32_t arg_type) { vec_function_type.Add(arg_type); }
+	void PushCurrentFunctionName(const std::string& arg_name) { vec_function_name.Add( arg_name); }
 	void PopCurrentFunctionType();
 	void PopCurrentFunctionName();
 	FunctionTable& GetFunctions() { return functions; }
-	const std::vector<VMCode>& GetStatement()const { return statement; }
+	const ButiEngine::List<VMCode>& GetStatement()const { return statement; }
 	void ClearGlobalNameSpace();
 private:
 
 	FunctionTable functions;
 	TypeTable types;
 	EnumTable enums;
-	std::vector<Function_t> vec_parentFunction;
-	std::vector< TypeTag*> vec_thisType ;
-	std::vector<ValueTable> variables;
-	std::vector<VMCode> statement;
-	std::vector<Label> labels;
-	std::vector<char> text_table;
-	std::vector<SysFunction> vec_sysCalls;
-	std::vector<SysFunction> vec_sysMethodCalls;
-	std::vector<SysFunction> vec_valueAllocCall;
-	std::vector<SysFunction> vec_refValueAllocCall;
+	ButiEngine::List<Function_t> vec_parentFunction;
+	ButiEngine::List< TypeTag*> vec_thisType ;
+	ButiEngine::List<ValueTable> variables;
+	ButiEngine::List<VMCode> statement;
+	ButiEngine::List<Label> labels;
+	ButiEngine::List<char> text_table;
+	ButiEngine::List<SysFunction> list_sysCalls;
+	ButiEngine::List<SysFunction> list_sysMethodCalls;
+	ButiEngine::List<SysFunction> vec_valueAllocCall;
+	ButiEngine::List<SysFunction> vec_refValueAllocCall;
 	std::map<std::int64_t,std::int32_t> map_sysCallsIndex;
 	std::map<std::int64_t, std::int32_t> map_sysMethodCallsIndex;
 	std::map<std::int64_t, std::int32_t> map_valueAllocCallsIndex;
@@ -409,12 +409,12 @@ private:
 
 	NameSpace_t currentNameSpace = nullptr;
 	NameSpace_t globalNameSpace = nullptr;
-	std::vector<NameSpace_t> vec_namespaces;
+	ButiEngine::List<NameSpace_t> vec_namespaces;
 	std::int32_t break_index;
 	std::int32_t error_count;
 
-	std::vector< std::string >vec_function_name;
-	std::vector<std::int32_t> vec_function_type;
+	ButiEngine::List< std::string >vec_function_name;
+	ButiEngine::List<std::int32_t> vec_function_type;
 	std::int32_t lambdaCount;
 };
 template<typename T>
