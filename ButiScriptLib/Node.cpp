@@ -1029,7 +1029,7 @@ std::int32_t Node::GetType(Compiler* arg_compiler)const {
 			return 0;
 		}
 
-		return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
+		return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 
 	}
 	std::int32_t left_type = leftNode->GetType(arg_compiler);
@@ -1123,7 +1123,7 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 	return valueTag;
 }
 std::int32_t  Node_function::GetType(Compiler* arg_compiler)const {
-	return GetCallType(arg_compiler, leftNode->GetString(), &nodeList->vec_args,vec_templateTypes);
+	return GetCallType(arg_compiler, leftNode->GetString(), &nodeList->list_args,list_templateTypes);
 }
 void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
 {
@@ -1132,15 +1132,15 @@ void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_ca
 }
 Node_t Node_function::CreateMethod(Node_t arg_node)
 {
-	return ButiEngine::make_value<Node_Method>(OP_METHOD,leftNode,arg_node, nodeList, vec_templateTypes);
+	return ButiEngine::make_value<Node_Method>(OP_METHOD,leftNode,arg_node, nodeList, list_templateTypes);
 }
 //ノードの関数呼び出し型チェック
-std::int32_t Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_vec_argNode, const ButiEngine::List<std::int32_t>& arg_list_temps)const {
+std::int32_t Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_argNode, const ButiEngine::List<std::int32_t>& arg_list_temps)const {
 
 	ButiEngine::List<std::int32_t> argTypes;
-	if (arg_vec_argNode) {
-		auto end = arg_vec_argNode->end();
-		for (auto itr = arg_vec_argNode->begin(); itr != end; itr++) {
+	if (arg_list_argNode) {
+		auto end = arg_list_argNode->end();
+		for (auto itr = arg_list_argNode->begin(); itr != end; itr++) {
 			argTypes.Add((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -1315,18 +1315,18 @@ std::int32_t Node_value::Push(Compiler* arg_compiler) const{
 			if (funcTag->isLambda) {
 				arg_compiler->PushConstInt(funcTag->valueType);
 				
-				for (auto itr = funcTag->vec_captureList.begin(),end=funcTag->vec_captureList.end();itr!=end; itr++) {
+				for (auto itr = funcTag->list_captureList.begin(),end=funcTag->list_captureList.end();itr!=end; itr++) {
 					arg_compiler->PushConstInt(*itr);
 				}
 
-				arg_compiler->PushConstInt(funcTag->vec_captureList.GetSize());
+				arg_compiler->PushConstInt(funcTag->list_captureList.GetSize());
 
 				arg_compiler->OpPushLambda(funcTag->GetIndex());
 			}
 			else {
 				arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
 			}
-			return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
+			return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
@@ -1369,7 +1369,7 @@ std::int32_t Node_value::PushClone(Compiler* arg_compiler) const{
 		}
 		else {
 			arg_compiler->OpPushFunctionAddress (funcTag->GetIndex());
-			return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
+			return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 		}
 	}
 	return TYPE_INTEGER;
@@ -1431,7 +1431,7 @@ struct set_arg {
 	Compiler* p_compiler;
 	const ButiEngine::List<std::int32_t>* argTypes_;
 	mutable std::int32_t index_;
-	set_arg(Compiler* arg_p_compiler, const FunctionTag* arg_function) : p_compiler(arg_p_compiler), argTypes_(&arg_function->vec_args), index_(0) {}
+	set_arg(Compiler* arg_p_compiler, const FunctionTag* arg_function) : p_compiler(arg_p_compiler), argTypes_(&arg_function->list_args), index_(0) {}
 	set_arg(Compiler* arg_p_compiler, const ButiEngine::List<std::int32_t>* arg_argTypes) : p_compiler(arg_p_compiler), argTypes_(arg_argTypes), index_(0){}
 
 	void operator()(Node_t arg_node) const
@@ -1483,28 +1483,28 @@ struct set_arg {
 };
 
 // 関数呼び出し
-std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_vec_argNodes,  const ButiEngine::List<std::int32_t>& arg_vec_temps) const
+std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_argNodes,  const ButiEngine::List<std::int32_t>& arg_list_temps) const
 {
 
 	ButiEngine::List<std::int32_t> argTypes;
-	if (arg_vec_argNodes) {
-		auto end = arg_vec_argNodes->end();
-		for (auto itr = arg_vec_argNodes->begin(); itr != end; itr++) {
+	if (arg_list_argNodes) {
+		auto end = arg_list_argNodes->end();
+		for (auto itr = arg_list_argNodes->begin(); itr != end; itr++) {
 			argTypes.Add((*itr)->GetType(arg_compiler));
 		}
 	}
 
 	std::int32_t argSize = argTypes.GetSize();
-	const FunctionTag* functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_vec_temps, true);
+	const FunctionTag* functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_list_temps, true);
 	if (!functionTag) {
-		functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_vec_temps, false);
+		functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_list_temps, false);
 	}
 
 
 	if (functionTag ) {
 		// 引数をpush
-		if (arg_vec_argNodes && functionTag->ArgSize() == argSize) {
-			std::for_each(arg_vec_argNodes->begin(), arg_vec_argNodes->end(), set_arg(arg_compiler, functionTag));
+		if (arg_list_argNodes && functionTag->ArgSize() == argSize) {
+			std::for_each(arg_list_argNodes->begin(), arg_list_argNodes->end(), set_arg(arg_compiler, functionTag));
 		}
 
 		// 引数の数をpush
@@ -1525,9 +1525,9 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 		auto valueType=arg_compiler->GetType(valueTag->valueType);
 		if (valueType->IsFunctionObjectType()) {
 			// 引数をpush
-			if (arg_vec_argNodes && valueType->GetFunctionObjectArgSize() == argSize) {
+			if (arg_list_argNodes && valueType->GetFunctionObjectArgSize() == argSize) {
 				auto valueArgTypes = valueType->GetFunctionObjectArgment();
-				std::for_each(arg_vec_argNodes->begin(), arg_vec_argNodes->end(), set_arg(arg_compiler,&valueArgTypes ));
+				std::for_each(arg_list_argNodes->begin(), arg_list_argNodes->end(), set_arg(arg_compiler,&valueArgTypes ));
 			}
 
 			// 引数の数をpush
@@ -1595,7 +1595,7 @@ void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList
 
 std::int32_t Node_function::Push(Compiler* arg_compiler) const
 {
-	return Call(arg_compiler, leftNode->GetString(), &nodeList->vec_args,vec_templateTypes);
+	return Call(arg_compiler, leftNode->GetString(), &nodeList->list_args,list_templateTypes);
 }
 
 // 関数にpopはできないのでエラーメッセージを出す
@@ -1606,9 +1606,9 @@ std::int32_t Node_function::Pop(Compiler* arg_compiler) const
 }
 
 // 文ノード生成
-Statement_t Statement::make_statement(const std::int32_t arg_vec_state)
+Statement_t Statement::make_statement(const std::int32_t arg_list_state)
 {
-	switch (arg_vec_state) {
+	switch (arg_list_state) {
 	case NOP_STATE:
 		return ButiEngine::make_value< Statement_nop>();
 
@@ -1639,14 +1639,14 @@ Statement_t Statement::make_statement(const std::int32_t arg_vec_state)
 	return ButiEngine::make_value<Statement_nop>();
 }
 
-Statement_t Statement::make_statement(const std::int32_t arg_vec_state, const std::int32_t)
+Statement_t Statement::make_statement(const std::int32_t arg_list_state, const std::int32_t)
 {
-	return make_statement(arg_vec_state);
+	return make_statement(arg_list_state);
 }
 
-Statement_t Statement::make_statement(const std::int32_t arg_vec_state, Node_t arg_node)
+Statement_t Statement::make_statement(const std::int32_t arg_list_state, Node_t arg_node)
 {
-	switch (arg_vec_state) {
+	switch (arg_list_state) {
 
 	case UNARY_STATE:
 		return ButiEngine::make_value<Statement_unary>(arg_node);
@@ -1667,9 +1667,9 @@ Statement_t Statement::make_statement(const std::int32_t arg_vec_state, Node_t a
 	return ButiEngine::make_value<Statement_nop>();
 }
 
-Statement_t Statement::make_statement(const std::int32_t arg_vec_state, Block_t arg_block)
+Statement_t Statement::make_statement(const std::int32_t arg_list_state, Block_t arg_block)
 {
-	switch (arg_vec_state) {
+	switch (arg_list_state) {
 	case BLOCK_STATE:
 		return ButiEngine::make_value <Statement_block>(arg_block);
 	}
@@ -1812,13 +1812,13 @@ std::int32_t Statement_if::Analyze(Compiler* arg_compiler)
 	node->Push(arg_compiler);
 	std::int32_t label1 = arg_compiler->MakeLabel();
 	arg_compiler->OpJmpNC(label1);
-	vec_statement[0]->Analyze(arg_compiler);
+	list_statement[0]->Analyze(arg_compiler);
 
-	if (vec_statement[1]) {
+	if (list_statement[1]) {
 		std::int32_t label2 = arg_compiler->MakeLabel();
 		arg_compiler->OpJmp(label2);
 		arg_compiler->SetLabel(label1);
-		vec_statement[1]->Analyze(arg_compiler);
+		list_statement[1]->Analyze(arg_compiler);
 		arg_compiler->SetLabel(label2);
 	}
 	else {
@@ -1829,9 +1829,9 @@ std::int32_t Statement_if::Analyze(Compiler* arg_compiler)
 
 void Statement_if::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
 {
-	vec_statement[0]->LambdaCapture(arg_captureList, arg_compiler);
-	if (vec_statement[1]) {
-		vec_statement[1]->LambdaCapture(arg_captureList, arg_compiler);
+	list_statement[0]->LambdaCapture(arg_captureList, arg_compiler);
+	if (list_statement[1]) {
+		list_statement[1]->LambdaCapture(arg_captureList, arg_compiler);
 	}
 }
 
@@ -1847,7 +1847,7 @@ std::int32_t Statement_for::Analyze(Compiler* arg_compiler)
 	arg_compiler->SetLabel(label1);
 	node[1]->Push(arg_compiler);
 	arg_compiler->OpJmpNC(label2);
-	vec_statement->Analyze(arg_compiler);
+	list_statement->Analyze(arg_compiler);
 	if (node[2])
 		node[2]->Push(arg_compiler);
 	arg_compiler->OpJmp(label1);
@@ -1875,7 +1875,7 @@ std::int32_t Statement_while::Analyze(Compiler* arg_compiler)
 	arg_compiler->SetLabel(label1);
 	node->Push(arg_compiler);
 	arg_compiler->OpJmpNC(label2);
-	vec_statement->Analyze(arg_compiler);
+	list_statement->Analyze(arg_compiler);
 	arg_compiler->OpJmp(label1);
 	arg_compiler->SetLabel(label2);
 
@@ -1891,20 +1891,20 @@ void Statement_while::LambdaCapture(std::map<std::string, const ValueTag*>& arg_
 // switch文
 std::int32_t Statement_switch::Analyze(Compiler* arg_compiler) 
 {
-	if (!vec_statement.IsEmpty()) {
+	if (!list_statement.IsEmpty()) {
 		node->Push(arg_compiler);
 
 		std::int32_t label = arg_compiler->MakeLabel();		// L0ラベル作成
 		std::int32_t break_label = arg_compiler->SetBreakLabel(label);
 		std::int32_t default_label = label;
 
-		std::for_each(vec_statement.begin(), vec_statement.end(),
+		std::for_each(list_statement.begin(), list_statement.end(),
 			boost::bind(&Statement::Case_Analyze, _1, arg_compiler, &default_label));
 
 		arg_compiler->OpPop();
 		arg_compiler->OpJmp(default_label);
 
-		std::for_each(vec_statement.begin(), vec_statement.end(), boost::bind(&Statement::Analyze, _1, arg_compiler));
+		std::for_each(list_statement.begin(), list_statement.end(), boost::bind(&Statement::Analyze, _1, arg_compiler));
 		arg_compiler->SetLabel(label);
 
 		arg_compiler->SetBreakLabel(break_label);
@@ -1955,7 +1955,7 @@ std::int32_t Block::Analyze(Compiler* arg_compiler, ButiEngine::List<Function_t>
 	{
 
 
-		for (auto itr = vec_decl.begin(), endItr = vec_decl.end(); itr != endItr; itr++) {
+		for (auto itr = list_decl.begin(), endItr = list_decl.end(); itr != endItr; itr++) {
 			(*itr)->Define(arg_compiler);
 		}
 	}
@@ -1964,11 +1964,11 @@ std::int32_t Block::Analyze(Compiler* arg_compiler, ButiEngine::List<Function_t>
 		(*itr)->LambdaCapture(arg_compiler);
 	}
 
-	if (!vec_decl.IsEmpty())
+	if (!list_decl.IsEmpty())
 		arg_compiler->AllocStack();	// スタックフレーム確保
 
 	{
-		for (auto itr = vec_state.begin(), endItr = vec_state.end(); itr != endItr; itr++) {
+		for (auto itr = list_state.begin(), endItr = list_state.end(); itr != endItr; itr++) {
 			if ((ret = (*itr)->Analyze(arg_compiler)) != 0) {
 				return ret;
 			}
@@ -1981,7 +1981,7 @@ std::int32_t Block::Analyze(Compiler* arg_compiler, ButiEngine::List<Function_t>
 
 void Block::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler)
 {
-	for (auto itr = vec_state.begin(), endItr = vec_state.end(); itr != endItr; itr++) {
+	for (auto itr = list_state.begin(), endItr = list_state.end(); itr != endItr; itr++) {
 		(*itr)->LambdaCapture(arg_captureList, arg_compiler);
 	}
 }
@@ -1995,13 +1995,13 @@ std::int32_t Declaration::PushCompiler(Compiler* arg_compiler)
 std::int32_t Declaration::Analyze(Compiler* arg_compiler) 
 {
 	if (isFunction) {		// 関数
-		arg_compiler->FunctionDefine(valueType, name, vec_argType);
+		arg_compiler->FunctionDefine(valueType, name, list_argType);
 	}
 	else {
-		arg_compiler->ValueDefine(valueType, vec_node,accessType);
+		arg_compiler->ValueDefine(valueType, list_node,accessType);
 
 		auto type = arg_compiler->GetType(valueType&~TYPE_REF);
-		std::int32_t size = vec_node.GetSize();
+		std::int32_t size = list_node.GetSize();
 		if (valueType & TYPE_REF) {
 			if (type->isSystem) {
 				for (std::int32_t i = 0; i < size; i++) {
@@ -2054,10 +2054,10 @@ std::int32_t Declaration::Analyze(Compiler* arg_compiler)
 void Declaration::Define(Compiler* arg_compiler)
 {
 	if (isFunction) {		// 関数
-		arg_compiler->FunctionDefine(valueType, name, vec_argType);
+		arg_compiler->FunctionDefine(valueType, name, list_argType);
 	}
 	else {
-		arg_compiler->ValueDefine(valueType, vec_node,accessType);
+		arg_compiler->ValueDefine(valueType, list_node,accessType);
 	}
 }
 std::int32_t Node_Member::Push(Compiler* arg_compiler) const
@@ -2157,8 +2157,8 @@ std::int32_t Node_Method::Push(Compiler* arg_compiler) const
 
 	ButiEngine::List<std::int32_t> argTypes;
 	if (nodeList) {
-		auto end = nodeList->vec_args.end();
-		for (auto itr = nodeList->vec_args.begin(); itr != end; itr++) {
+		auto end = nodeList->list_args.end();
+		for (auto itr = nodeList->list_args.begin(); itr != end; itr++) {
 			argTypes.Add((*itr)->GetType(arg_compiler));
 		}
 	}
@@ -2169,7 +2169,7 @@ std::int32_t Node_Method::Push(Compiler* arg_compiler) const
 
 
 	typeTag = arg_compiler->GetType(rightNode-> GetType(arg_compiler) & ~TYPE_REF);
-	methodTag = typeTag->methods.Find(leftNode->GetString()+GetTemplateName(vec_templateTypes, &arg_compiler->GetTypeTable()), argTypes,&arg_compiler->GetTypeTable());
+	methodTag = typeTag->methods.Find(leftNode->GetString()+GetTemplateName(list_templateTypes, &arg_compiler->GetTypeTable()), argTypes,&arg_compiler->GetTypeTable());
 	if (methodTag->accessType != AccessModifier::Public&&arg_compiler->GetCurrentThisType()!=typeTag) {
 
 		arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
@@ -2190,7 +2190,7 @@ std::int32_t Node_Method::Push(Compiler* arg_compiler) const
 
 	// 引数をpush
 	if (nodeList && methodTag->ArgSize() == argSize) {
-		std::for_each(nodeList->vec_args.begin(), nodeList->vec_args.end(), set_arg(arg_compiler, methodTag));
+		std::for_each(nodeList->list_args.begin(), nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
 	}
 
 
@@ -2225,14 +2225,14 @@ std::int32_t Node_Method::GetType(Compiler* arg_compiler) const
 	ButiEngine::List<std::int32_t> argTypes;
 
 	if (nodeList) {
-		for (auto itr = nodeList->vec_args.begin(), end = nodeList->vec_args.end(); itr != end; itr++) {
+		for (auto itr = nodeList->list_args.begin(), end = nodeList->list_args.end(); itr != end; itr++) {
 			argTypes.Add((*itr)->GetType(arg_compiler));
 		}
 	}
 
 
 	const TypeTag* typeTag = arg_compiler->GetType(rightNode->GetType(arg_compiler) & ~TYPE_REF);
-	const FunctionTag* tag = typeTag->methods.Find(leftNode->GetString() +GetTemplateName(vec_templateTypes, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
+	const FunctionTag* tag = typeTag->methods.Find(leftNode->GetString() +GetTemplateName(list_templateTypes, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
 
 	return tag->valueType;
 }
@@ -2248,7 +2248,7 @@ void Node_Method::LambdaCapture(std::map<std::string, const ValueTag*>& arg_capt
 
 void NodeList::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
 {
-	for (auto itr = vec_args.begin(), end = vec_args.end(); itr != end; itr++) {
+	for (auto itr = list_args.begin(), end = list_args.end(); itr != end; itr++) {
 		(*itr)->LambdaCapture(arg_captureList, arg_compiler);
 	}
 }
@@ -2298,7 +2298,7 @@ std::int32_t Node_FunctionObject::Push(Compiler* arg_compiler) const
 		return -1;
 	}
 	arg_compiler->PushConstInt(funcTag->GetIndex());
-	return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
+	return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 }
 std::int32_t Node_FunctionObject::Pop(Compiler* arg_compiler) const
 {
@@ -2314,7 +2314,7 @@ std::int32_t Node_FunctionObject::GetType(Compiler* arg_compiler) const
 		return 0;
 	}
 
-	return arg_compiler->GetfunctionTypeIndex(funcTag->vec_args, funcTag->valueType);
+	return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 }
 void Enum::SetIdentifer(const std::string& arg_name)
 {
@@ -2341,11 +2341,11 @@ std::int32_t Class::Analyze(Compiler* arg_compiler)
 	auto methodTable = &typeTag->methods;
 
 	arg_compiler->PushCurrentThisType(typeTag);
-	for (auto itr = vec_methods.begin(), end = vec_methods.end(); itr != end; itr++) {
+	for (auto itr = list_methods.begin(), end = list_methods.end(); itr != end; itr++) {
 		(*itr)->Analyze(arg_compiler, methodTable);
 	}
 	arg_compiler->PopCurrentThisType();
-	vec_methods.Clear();
+	list_methods.Clear();
 	return 0;
 }
 
@@ -2364,7 +2364,7 @@ void Class::RegistMethod(Function_t arg_method, Compiler* arg_compiler)
 	auto typeTag = arg_compiler->GetType(name);
 	auto methodTable = &typeTag->methods;
 	arg_method->PushCompiler(arg_compiler,methodTable);
-	vec_methods.Add(arg_method);
+	list_methods.Add(arg_method);
 	
 }
 void Class::SetValue(const std::string& arg_name, const std::int32_t arg_type, const AccessModifier arg_accessType)
@@ -2487,7 +2487,7 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 
 	// 文があれば、文を登録
 	if (block) {
-		std::int32_t ret = block->Analyze(arg_compiler, vec_subFunctions);
+		std::int32_t ret = block->Analyze(arg_compiler, list_subFunctions);
 	}
 
 	const VMCode& code = arg_compiler->GetStatement() .GetLast();
@@ -2502,10 +2502,10 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 	}
 
 
-	for (auto itr = vec_subFunctions.begin(), end = vec_subFunctions.end(); itr != end; itr++) {
+	for (auto itr = list_subFunctions.begin(), end = list_subFunctions.end(); itr != end; itr++) {
 		(*itr)->Analyze(arg_compiler, nullptr);
 	}
-	vec_subFunctions.Clear();
+	list_subFunctions.Clear();
 	arg_compiler->ValueAddressAddition(-address);
 	arg_compiler->BlockOut();		// 変数スタックを減らす
 
@@ -2517,14 +2517,14 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 
 void Function::AddSubFunction(Function_t arg_function)
 {
-	vec_subFunctions.Add(arg_function);
+	list_subFunctions.Add(arg_function);
 }
 
 
-Lambda::Lambda(const std::int32_t arg_type,const ButiEngine::List<ArgDefine>& arg_vec_argDefine, Compiler* arg_compiler)
+Lambda::Lambda(const std::int32_t arg_type,const ButiEngine::List<ArgDefine>& arg_list_argDefine, Compiler* arg_compiler)
 {
 	returnType = arg_type;
-	args = arg_vec_argDefine;
+	args = arg_list_argDefine;
 
 	lambdaIndex = arg_compiler->GetLambdaCount();
 	arg_compiler->IncreaseLambdaCount();
@@ -2605,12 +2605,12 @@ std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTa
 		std::int32_t i = 0;
 		for (auto itr = map_lambdaCapture.begin(), end = map_lambdaCapture.end(); itr!= end;i++, itr++) {
 			add_capture(arg_compiler, arg_compiler->GetValueTable().GetLast(), i)(ArgDefine(itr->second->valueType,arg_compiler->GetCurrentNameSpace()->GetGlobalNameString()+ itr->first));
-			//tag->vec_captureList.push_back(itr->second->GetAddress());
+			//tag->list_captureList.push_back(itr->second->GetAddress());
 		}
 
 		arg_compiler->BlockIn();
 		///
-		std::int32_t ret = block->Analyze(arg_compiler,vec_subFunctions);
+		std::int32_t ret = block->Analyze(arg_compiler,list_subFunctions);
 		arg_compiler->BlockOut();
 	}
 
@@ -2626,10 +2626,10 @@ std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTa
 	}
 
 
-	for (auto itr = vec_subFunctions.begin(), end = vec_subFunctions.end(); itr != end; itr++) {
+	for (auto itr = list_subFunctions.begin(), end = list_subFunctions.end(); itr != end; itr++) {
 		(*itr)->Analyze(arg_compiler, nullptr);
 	}
-	vec_subFunctions.Clear();
+	list_subFunctions.Clear();
 	arg_compiler->ValueAddressAddition(-address);
 	arg_compiler->BlockOut();		// 変数スタックを減らす
 
@@ -2652,7 +2652,7 @@ void Lambda::LambdaCapture(Compiler* arg_compiler)
 		///キャプチャする変数を確保
 		std::int32_t i = 0;
 		for (auto itr = map_lambdaCapture.begin(), end = map_lambdaCapture.end(); itr != end; i++, itr++) {
-			tag->vec_captureList.Add(itr->second->GetAddress());
+			tag->list_captureList.Add(itr->second->GetAddress());
 		}
 
 	}

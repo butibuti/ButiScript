@@ -433,9 +433,9 @@ struct registMethod_func {
 	struct result { using type = void; };
 
 	template <typename Ty1, typename Ty2, typename Ty3>
-	void operator()(const Ty1& arg_vec_decl, Ty2 arg_type, Ty3 arg_compiler) const
+	void operator()(const Ty1& arg_list_decl, Ty2 arg_type, Ty3 arg_compiler) const
 	{
-		arg_type->RegistMethod(arg_vec_decl, arg_compiler);
+		arg_type->RegistMethod(arg_list_decl, arg_compiler);
 	}
 };
 
@@ -538,7 +538,7 @@ const phoenix::function<BindFunctionObject::null_node_func>  null_node =							B
 const phoenix::function<BindFunctionObject::unary_node_func>  unary_node =							BindFunctionObject::unary_node_func();
 const phoenix::function<BindFunctionObject::lambda_node_func>  lambda_node=							BindFunctionObject::lambda_node_func();
 const phoenix::function<BindFunctionObject::push_back_func>  push_back =							BindFunctionObject::push_back_func();
-const phoenix::function<BindFunctionObject::vector_push_back_func>  vec_push_back =					BindFunctionObject::vector_push_back_func();
+const phoenix::function<BindFunctionObject::vector_push_back_func>  list_push_back =					BindFunctionObject::vector_push_back_func();
 const phoenix::function<BindFunctionObject::make_argument_func>  make_argument =					BindFunctionObject::make_argument_func();
 const phoenix::function<BindFunctionObject::make_statement_func>  make_statement =					BindFunctionObject::make_statement_func();
 const phoenix::function<BindFunctionObject::make_statement1_func>  make_statement1 =				BindFunctionObject::make_statement1_func();
@@ -1047,7 +1047,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			// ŠÖ”ŒÄ‚Ño‚µ
 			func_node = (*(nameSpace_call[func_node.name += functionCall_namespace(arg1) ]))>>
 				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1, self.compiler)] >>
-				!( '<'>> type[ vec_push_back(func_node.typeTemplates,arg1) ]>>*(','>> type[vec_push_back(func_node.typeTemplates, arg1)])>>
+				!( '<'>> type[ list_push_back(func_node.typeTemplates,arg1) ]>>*(','>> type[list_push_back(func_node.typeTemplates, arg1)])>>
 					boost::spirit::ch_p('>')[func_node.node = binary_node(OP_FUNCTION, func_node.node,func_node.typeTemplates )]) >>
 				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
 
@@ -1152,14 +1152,14 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 			// •Ï”éŒ¾
 			decl_value = !access[decl_value.accessModifier =arg1]
-				>> "var" >> Value[vec_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.accessModifier), decl_value.value)] >> ';';
+				>> "var" >> Value[list_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.accessModifier), decl_value.value)] >> ';';
 
 
 			// Œ^–¼
 			type = (identifier[type.type = specificType(arg1, self.compiler)] >> !boost::spirit::ch_p('&')[type.type |= TYPE_REF])
 				|funcType[type.type= specificType(arg1,self.compiler)];
 			//ŠÖ”Œ^–¼
-			funcType = '(' >> !(argdef[vec_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
+			funcType = '(' >> !(argdef[list_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
 
 			lambda = funcType[lambda.expression = make_lambda(arg1,self.compiler)] >> block[lambda.expression =push_back(lambda.expression,arg1)];
 

@@ -346,22 +346,22 @@ class FunctionTag {
 		}
 		void SetArg(const std::int32_t arg_type)
 		{
-			vec_args.Add(arg_type);
+			list_args.Add(arg_type);
 		}
 
-		void SetArgs(const ButiEngine::List<ArgDefine>& arg_vec_args)
+		void SetArgs(const ButiEngine::List<ArgDefine>& arg_list_args)
 		{
-			std::uint64_t size = arg_vec_args.GetSize();
+			std::uint64_t size = arg_list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				vec_args.Add(arg_vec_args[i].GetType());
+				list_args.Add(arg_list_args[i].GetType());
 			}
 		}
 
-		void SetArgs(const ButiEngine::List<std::int32_t>& arg_vec_args)
+		void SetArgs(const ButiEngine::List<std::int32_t>& arg_list_args)
 		{
-			std::uint64_t size = arg_vec_args.GetSize();
+			std::uint64_t size = arg_list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				vec_args.Add(arg_vec_args[i]);
+				list_args.Add(arg_list_args[i]);
 			}
 		}
 
@@ -397,7 +397,7 @@ class FunctionTag {
 				}
 				else {
 
-					vec_args.Add(arg_map_argmentChars.at(splited[i]));
+					list_args.Add(arg_map_argmentChars.at(splited[i]));
 				}
 
 			}
@@ -405,86 +405,86 @@ class FunctionTag {
 		}
 
 
-		bool CheckArgList(const ButiEngine::List<ArgDefine>& arg_vec_args,const TypeTable* arg_typeTable) const
+		bool CheckArgList(const ButiEngine::List<ArgDefine>& arg_list_args,const TypeTable* arg_typeTable) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.IsEmpty())
-				return vec_args.IsEmpty();
+			if (arg_list_args.IsEmpty())
+				return list_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.GetSize() != vec_args.GetSize())
+			if (arg_list_args.GetSize() != list_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 
 			//厳密チェック
-			std::uint64_t size = vec_args.GetSize();
+			std::uint64_t size = list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				if (!TypeCheck(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i],arg_typeTable))
+				if (!TypeCheck(arg_list_args[i].GetType(), (std::int32_t)list_args[i],arg_typeTable))
 					return false;
 			}
 
 			return true;
 		}
 
-		bool CheckArgList(const ButiEngine::List<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
+		bool CheckArgList(const ButiEngine::List<std::int32_t>& arg_list_args, const TypeTable* arg_typeTable) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.IsEmpty())
-				return vec_args.IsEmpty();
+			if (arg_list_args.IsEmpty())
+				return list_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.GetSize() != vec_args.GetSize())
+			if (arg_list_args.GetSize() != list_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 			//厳密チェック
-			std::uint64_t size = vec_args.GetSize();
+			std::uint64_t size = list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				if (!TypeCheck(arg_vec_args[i], (std::int32_t)vec_args[i],arg_typeTable))
+				if (!TypeCheck(arg_list_args[i], (std::int32_t)list_args[i],arg_typeTable))
 					return false;
 			}
 			return true;
 		}
 
 
-		bool CheckArgList_strict(const ButiEngine::List<ArgDefine>& arg_vec_args) const
+		bool CheckArgList_strict(const ButiEngine::List<ArgDefine>& arg_list_args) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.IsEmpty())
-				return vec_args.IsEmpty();
+			if (arg_list_args.IsEmpty())
+				return list_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.GetSize() != vec_args.GetSize())
+			if (arg_list_args.GetSize() != list_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 
 			//厳密チェック
-			std::uint64_t size = vec_args.GetSize();
+			std::uint64_t size = list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				if (!TypeCheck_strict(arg_vec_args[i].GetType(), (std::int32_t)vec_args[i]))
+				if (!TypeCheck_strict(arg_list_args[i].GetType(), (std::int32_t)list_args[i]))
 					return false;
 			}
 
 			return true;
 		}
 
-		bool CheckArgList_strict(const ButiEngine::List<std::int32_t>& arg_vec_args) const
+		bool CheckArgList_strict(const ButiEngine::List<std::int32_t>& arg_list_args) const
 		{
 			// 引数が無い場合
-			if (arg_vec_args.IsEmpty())
-				return vec_args.IsEmpty();
+			if (arg_list_args.IsEmpty())
+				return list_args.IsEmpty();
 
 			// 引数の個数が異なる
-			if (arg_vec_args.GetSize() != vec_args.GetSize())
+			if (arg_list_args.GetSize() != list_args.GetSize())
 				return false;
 
 			// 全引数の型をチェック
 			//厳密チェック
-			std::uint64_t size = vec_args.GetSize();
+			std::uint64_t size = list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				if (!TypeCheck_strict(arg_vec_args[i], (std::int32_t)vec_args[i]))
+				if (!TypeCheck_strict(arg_list_args[i], (std::int32_t)list_args[i]))
 					return false;
 			}
 			return true;
@@ -494,10 +494,10 @@ class FunctionTag {
 
 		std::int32_t GetArg(const std::int32_t arg_index) const
 		{
-			return vec_args[arg_index];
+			return list_args[arg_index];
 		}
 
-		std::int32_t ArgSize() const { return (std::int32_t)vec_args.GetSize(); }
+		std::int32_t ArgSize() const { return (std::int32_t)list_args.GetSize(); }
 
 		void SetIndex(const std::int32_t arg_index) { index = arg_index; }
 		void SetDeclaration() { flags |= flag_declaration; }	// 宣言
@@ -522,10 +522,10 @@ class FunctionTag {
 			arg_fOut.write((char*)&valueType, sizeof(valueType));
 			arg_fOut.write((char*)&flags, sizeof(flags));
 			arg_fOut.write((char*)&index, sizeof(index));
-			std::int32_t argsSize = vec_args.GetSize();
+			std::int32_t argsSize = list_args.GetSize();
 			arg_fOut.write((char*)&argsSize, sizeof(argsSize));
 			for (std::int32_t i = 0; i < argsSize; i++) {
-				arg_fOut.write((char*)&vec_args[i], sizeof(vec_args[i]));
+				arg_fOut.write((char*)&list_args[i], sizeof(list_args[i]));
 			}
 			std::int32_t size = name.size();
 			arg_fOut.write((char*)&size, sizeof(size));
@@ -540,7 +540,7 @@ class FunctionTag {
 			for (std::int32_t i = 0; i < argsSize; i++) {
 				std::int32_t arg;
 				arg_fIn.read((char*)&arg, sizeof(arg));
-				vec_args.Add(arg);
+				list_args.Add(arg);
 			}
 			std::int32_t size = 0;
 			arg_fIn.read((char*)&size, sizeof(size));
@@ -555,11 +555,11 @@ class FunctionTag {
 		std::int32_t		valueType = 0;
 		std::int32_t		flags = 0;
 		std::int32_t		index = 0;
-		ButiEngine::List<std::int32_t>	vec_args;
+		ButiEngine::List<std::int32_t>	list_args;
 		std::string name;
 		AccessModifier accessType = AccessModifier::Public;
 		bool isLambda=false;
-		ButiEngine::List<std::int32_t> vec_captureList;
+		ButiEngine::List<std::int32_t> list_captureList;
 		ButiEngine::List<std::int32_t> list_templateTypes;
 	};
 
@@ -582,7 +582,7 @@ class FunctionTable {
 			return &result->second;
 		}
 
-		const FunctionTag* Find_strict(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_args, const TypeTable* arg_typeTable) const
+		const FunctionTag* Find_strict(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_list_args, const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -590,7 +590,7 @@ class FunctionTable {
 			}
 			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList_strict(arg_vec_args)) {
+				if (itr->second.CheckArgList_strict(arg_list_args)) {
 
 					return &itr->second;
 				}
@@ -598,7 +598,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		FunctionTag* Find_strict(const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
+		FunctionTag* Find_strict(const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_list_args, const TypeTable* arg_typeTable)
 		{
 			iter itr = map_functions.find(arg_name);
 
@@ -608,7 +608,7 @@ class FunctionTable {
 
 			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList_strict(arg_vec_args)) {
+				if (itr->second.CheckArgList_strict(arg_list_args)) {
 
 					return &itr->second;
 				}
@@ -616,7 +616,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		const FunctionTag* Find(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_vec_args,const TypeTable* arg_typeTable) const
+		const FunctionTag* Find(const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_list_args,const TypeTable* arg_typeTable) const
 		{
 			const_iter itr = map_functions.find(arg_name);
 			if (itr == map_functions.end()) {
@@ -624,7 +624,7 @@ class FunctionTable {
 			}
 			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList(arg_vec_args,arg_typeTable)) {
+				if (itr->second.CheckArgList(arg_list_args,arg_typeTable)) {
 
 					return &itr->second;
 				}
@@ -632,7 +632,7 @@ class FunctionTable {
 			return nullptr;
 		}
 
-		FunctionTag* Find(const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_vec_args, const TypeTable* arg_typeTable)
+		FunctionTag* Find(const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_list_args, const TypeTable* arg_typeTable)
 		{
 			iter itr = map_functions.find(arg_name);
 
@@ -642,7 +642,7 @@ class FunctionTable {
 
 			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
-				if (itr->second.CheckArgList(arg_vec_args,arg_typeTable)) {
+				if (itr->second.CheckArgList(arg_list_args,arg_typeTable)) {
 
 					return &itr->second;
 				}
@@ -748,32 +748,32 @@ public:
 		return typeIndex;
 	}
 	std::int32_t GetMemberTypeIndex(const std::int32_t arg_index)const {
-		return vec_memberTypes[arg_index];
+		return list_memberTypes[arg_index];
 	}
 	std::int32_t GetMemberSize()const {
-		return vec_memberTypes.GetSize();
+		return list_memberTypes.GetSize();
 	}
 	void SetTypeIndex(const std::int32_t arg_index) {
 		typeIndex = arg_index;
 	}
-	void SetMemberTypes(const ButiEngine::List<std::int32_t> arg_vec_types) {
-		vec_memberTypes = arg_vec_types;
+	void SetMemberTypes(const ButiEngine::List<std::int32_t> arg_list_types) {
+		list_memberTypes = arg_list_types;
 	}
-	void SetMemberNames(const ButiEngine::List<std::string> arg_vec_names) {
-		vec_memberName = arg_vec_names;
+	void SetMemberNames(const ButiEngine::List<std::string> arg_list_names) {
+		list_memberName = arg_list_names;
 	}
 	const ButiEngine::List<std::string>& GetMamberName()const {
-		return vec_memberName;
+		return list_memberName;
 	}
 	void SetClassName(const std::string& arg_className) {
 		className = arg_className;
 	}
 
 	bool operator ==(const ScriptClassInfo& other) const{
-		if ((other.typeIndex != typeIndex) ||(other.systemTypeCount!=systemTypeCount)||(other.vec_memberTypes.GetSize()!=vec_memberTypes.GetSize() )) {
+		if ((other.typeIndex != typeIndex) ||(other.systemTypeCount!=systemTypeCount)||(other.list_memberTypes.GetSize()!=list_memberTypes.GetSize() )) {
 			return false;
 		}
-		for (auto itr = vec_memberTypes.begin(), end = vec_memberTypes.end(), otherItr = other.vec_memberTypes.begin(); itr != end; itr++, otherItr++) {
+		for (auto itr = list_memberTypes.begin(), end = list_memberTypes.end(), otherItr = other.list_memberTypes.begin(); itr != end; itr++, otherItr++) {
 			if ((*itr) != (*otherItr)) {
 				return false;
 			}
@@ -790,15 +790,15 @@ public:
 		arg_fOut.write((char*)&size, sizeof(std::int32_t));
 		arg_fOut.write(className.c_str(), size);
 		arg_fOut.write((char*)&typeIndex, sizeof(std::int32_t));
-		std::int32_t memberSize = vec_memberTypes.GetSize();
+		std::int32_t memberSize = list_memberTypes.GetSize();
 		arg_fOut.write((char*)&memberSize, sizeof(std::int32_t));
 		for (std::int32_t i = 0; i < memberSize; i++) {
-			arg_fOut.write((char*)&vec_memberTypes[i], sizeof(std::int32_t));
+			arg_fOut.write((char*)&list_memberTypes[i], sizeof(std::int32_t));
 		}
 		for (std::int32_t i = 0; i < memberSize; i++) {
-			std::int32_t size = vec_memberName[i].size();
+			std::int32_t size = list_memberName[i].size();
 			arg_fOut.write((char*)&size, sizeof(std::int32_t));
-			arg_fOut.write(vec_memberName[i].c_str(), size);
+			arg_fOut.write(list_memberName[i].c_str(), size);
 		}
 
 	}
@@ -813,16 +813,16 @@ public:
 		arg_fIn.read((char*)&typeIndex, sizeof(std::int32_t));
 		std::int32_t memberSize = 0;
 		arg_fIn.read((char*)&memberSize, sizeof(std::int32_t));
-		vec_memberTypes.Resize(memberSize);
+		list_memberTypes.Resize(memberSize);
 		for (std::int32_t i = 0; i < memberSize; i++) {
-			arg_fIn.read((char*)&vec_memberTypes[i], sizeof(std::int32_t));
+			arg_fIn.read((char*)&list_memberTypes[i], sizeof(std::int32_t));
 		}
 		for (std::int32_t i = 0; i < memberSize; i++) {
 			std::int32_t size = 0;
 			arg_fIn.read((char*)&size, sizeof(std::int32_t));
 			char* nameBuff = (char*)malloc(size);
 			arg_fIn.read(nameBuff, size);
-			vec_memberName.Add(std::string(nameBuff, size));
+			list_memberName.Add(std::string(nameBuff, size));
 			free(nameBuff);
 		}
 
@@ -832,8 +832,8 @@ public:
 private:
 	std::int32_t typeIndex;
 	std::int32_t systemTypeCount;
-	ButiEngine::List<std::int32_t> vec_memberTypes;
-	ButiEngine::List<std::string> vec_memberName;
+	ButiEngine::List<std::int32_t> list_memberTypes;
+	ButiEngine::List<std::string> list_memberName;
 	std::string className;
 };
 struct MemberValueInfo {
@@ -842,9 +842,9 @@ struct MemberValueInfo {
 	AccessModifier access = AccessModifier::Public;
 };
 struct FunctionObjectTypeData {
-	FunctionObjectTypeData(const std::int32_t arg_retType,const ButiEngine::List<std::int32_t>& arg_argTypes):returnType(arg_retType),vec_argTypes(arg_argTypes){}
+	FunctionObjectTypeData(const std::int32_t arg_retType,const ButiEngine::List<std::int32_t>& arg_argTypes):returnType(arg_retType),list_argTypes(arg_argTypes){}
 	std::int32_t returnType;
-	ButiEngine::List<std::int32_t> vec_argTypes;
+	ButiEngine::List<std::int32_t> list_argTypes;
 };
 struct TypeTag {
 	TypeTag() {}
@@ -887,18 +887,18 @@ struct TypeTag {
 		ScriptClassInfo output;
 		output.SetClassName(typeName); 
 		output.SetTypeIndex(typeIndex);
-		ButiEngine::List<std::int32_t> vec_types;
-		ButiEngine::List<std::string> vec_memberNames;
-		vec_types.Resize(map_memberValue.size());
-		vec_memberNames.Resize(map_memberValue.size());
+		ButiEngine::List<std::int32_t> list_types;
+		ButiEngine::List<std::string> list_memberNames;
+		list_types.Resize(map_memberValue.size());
+		list_memberNames.Resize(map_memberValue.size());
 		auto end = map_memberValue.end();
 		for (auto itr = map_memberValue.begin(); itr !=end ; itr++) {
-			vec_types[itr->second.index] = itr->second.type;
-			vec_memberNames[itr->second.index] = itr->first;
+			list_types[itr->second.index] = itr->second.type;
+			list_memberNames[itr->second.index] = itr->first;
 		}
 
-		output.SetMemberTypes(vec_types);
-		output.SetMemberNames(vec_memberNames);
+		output.SetMemberTypes(list_types);
+		output.SetMemberNames(list_memberNames);
 
 		return output;
 
@@ -912,16 +912,16 @@ class TypeTable {
 public:
 	void Release();
 	const TypeTag* GetType(const std::int32_t arg_index) const {
-		if (vec_types.GetSize() <= arg_index) {
+		if (list_types.GetSize() <= arg_index) {
 			return nullptr;
 		}
-		return vec_types[arg_index];
+		return list_types[arg_index];
 	}
 	TypeTag* GetType(const std::int32_t arg_index) {
-		if (vec_types.GetSize() <= arg_index) {
+		if (list_types.GetSize() <= arg_index) {
 			return nullptr;
 		}
-		return vec_types[arg_index];
+		return list_types[arg_index];
 	}
 	const std::map<std::string, std::int32_t>& GetArgmentKeyMap()const {
 		return map_argmentChars;
@@ -971,14 +971,14 @@ public:
 		functionType.typeName = functionTypeName;
 		functionType.argName = functionTypeName;
 
-		functionType.typeIndex = vec_types.GetSize();
+		functionType.typeIndex = list_types.GetSize();
 		functionType.isSystem = false;
-		if (vec_types.GetSize() <= functionType.typeIndex) {
-			vec_types.Resize(functionType.typeIndex + 1);
+		if (list_types.GetSize() <= functionType.typeIndex) {
+			list_types.Resize(functionType.typeIndex + 1);
 		}
 		map_argmentChars.emplace(functionTypeName, functionType.typeIndex);
 		map_types.emplace(functionTypeName, functionType);
-		vec_types[functionType.typeIndex] = &map_types.at(functionTypeName);
+		list_types[functionType.typeIndex] = &map_types.at(functionTypeName);
 		map_types.at(functionTypeName).p_functionObjectData = new FunctionObjectTypeData(arg_retType,arg_argmentTypes);
 
 		functionTypeCount++;
@@ -989,12 +989,12 @@ public:
 	void RegistType(const TypeTag& arg_type) {
 
 
-		if (vec_types.GetSize() <= arg_type.typeIndex) {
-			vec_types.Resize(arg_type.typeIndex + 1);
+		if (list_types.GetSize() <= arg_type.typeIndex) {
+			list_types.Resize(arg_type.typeIndex + 1);
 		}
 		map_argmentChars.emplace(arg_type.argName, arg_type.typeIndex);
 		map_types.emplace(arg_type.typeName, arg_type);
-		vec_types[arg_type.typeIndex] = &map_types.at(arg_type.typeName);
+		list_types[arg_type.typeIndex] = &map_types.at(arg_type.typeName);
 		if (arg_type.isSystem) {
 			systemTypeCount++;
 		}
@@ -1004,28 +1004,28 @@ public:
 		enumType.typeName = arg_type.GetTypeName();
 		enumType.argName = arg_type.GetTypeName();
 		enumType.p_enumTag = &arg_type;
-		enumType.typeIndex = vec_types.GetSize();
+		enumType.typeIndex = list_types.GetSize();
 		arg_type.typeIndex = enumType.typeIndex;
 		enumType.isSystem = arg_type.isSystem;
-		if (vec_types.GetSize() <= enumType.typeIndex) {
-			vec_types.Resize(enumType.typeIndex + 1);
+		if (list_types.GetSize() <= enumType.typeIndex) {
+			list_types.Resize(enumType.typeIndex + 1);
 		}
 		map_argmentChars.emplace(arg_type.GetTypeName(), enumType.typeIndex);
 		map_types.emplace(arg_type.GetTypeName(), enumType);
-		vec_types[enumType.typeIndex] = &map_types.at(arg_type.GetTypeName());
+		list_types[enumType.typeIndex] = &map_types.at(arg_type.GetTypeName());
 		if (arg_type.isSystem) {
 			systemTypeCount++;
 		}
 	}
 
 	const ButiEngine::List<TypeTag* >& GetSystemType()const {
-		return vec_types;
+		return list_types;
 	}
 
 	void CreateTypeVec(ButiEngine::List<TypeTag>& arg_ref_types) const {
-		arg_ref_types.Reserve(vec_types.GetSize());
-		auto end = vec_types.end();
-		for (auto itr = vec_types.begin(); itr != end; itr++) {
+		arg_ref_types.Reserve(list_types.GetSize());
+		auto end = list_types.end();
+		for (auto itr = list_types.begin(); itr != end; itr++) {
 			arg_ref_types.Add(*(*itr));
 		}
 
@@ -1033,9 +1033,9 @@ public:
 
 
 	void Clear_notSystem() {
-		for (auto itr = vec_types.begin(); itr != vec_types.end();) {
+		for (auto itr = list_types.begin(); itr != list_types.end();) {
 			if (!(*itr)->isSystem) {
-				itr = vec_types.erase(itr);
+				itr = list_types.erase(itr);
 			}
 			else {
 				itr++;
@@ -1054,7 +1054,7 @@ public:
 		functionTypeCount = 0;
 	}
 	std::int32_t GetSize()const {
-		return vec_types.GetSize();
+		return list_types.GetSize();
 	}
 	std::int32_t GetSystemTypeSize()const {
 		return systemTypeCount;
@@ -1063,14 +1063,14 @@ public:
 		return functionTypeCount;
 	}
 	std::int32_t GetScriptTypeSize()const {
-		return vec_types.GetSize()-systemTypeCount-functionTypeCount;
+		return list_types.GetSize()-systemTypeCount-functionTypeCount;
 	}
 	ButiEngine::List<ScriptClassInfo> GetScriptClassInfo()const {
 		ButiEngine::List<ScriptClassInfo> output;
-		for (std::int32_t i = 0; i < vec_types.GetSize(); i++) {
-			if (vec_types[i]->isSystem|| vec_types[i]->p_functionObjectData){ continue; }
+		for (std::int32_t i = 0; i < list_types.GetSize(); i++) {
+			if (list_types[i]->isSystem|| list_types[i]->p_functionObjectData){ continue; }
 				
-			output.Add(vec_types[i]->GetScriptTypeInfo());
+			output.Add(list_types[i]->GetScriptTypeInfo());
 
 		}
 
@@ -1078,7 +1078,7 @@ public:
 	}
 private:
 
-	ButiEngine::List<TypeTag* > vec_types;
+	ButiEngine::List<TypeTag* > list_types;
 	std::map<std::string, std::int32_t> map_argmentChars;
 	std::map<std::string, TypeTag> map_types;
 	std::int32_t systemTypeCount=0,functionTypeCount=0;
@@ -1105,13 +1105,13 @@ inline std::string ButiScript::FunctionTag::GetNameWithArgment(const TypeTable& 
 {
 	std::string output = name;
 
-	if (vec_args.GetSize()) {
+	if (list_args.GetSize()) {
 		output += ":";
 	}
 
-	for (std::int32_t i = 0; i < vec_args.GetSize(); i++) {
-		output += arg_typeTable.GetType(vec_args[i] & ~TYPE_REF)->argName;
-		if (i + 1 != vec_args.GetSize()) {
+	for (std::int32_t i = 0; i < list_args.GetSize(); i++) {
+		output += arg_typeTable.GetType(list_args[i] & ~TYPE_REF)->argName;
+		if (i + 1 != list_args.GetSize()) {
 			output += ",";
 		}
 	}

@@ -71,15 +71,15 @@ void ButiScript::VirtualMachine::Initialize()
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.GetSize() ));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->vec_types.GetSize() ));
-	for (std::int32_t index = 0; index < shp_data->vec_types.GetSize(); index++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->list_types.GetSize() ));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->list_types.GetSize() ));
+	for (std::int32_t index = 0; index < shp_data->list_types.GetSize(); index++) {
 
-		p_pushValues[shp_data->vec_types.At(index).typeIndex] = shp_data->vec_types.At(index).typeFunc;
-		p_pushRefValues[shp_data->vec_types.At(index).typeIndex] = shp_data->vec_types.At(index).refTypeFunc;
+		p_pushValues[shp_data->list_types.At(index).typeIndex] = shp_data->list_types.At(index).typeFunc;
+		p_pushRefValues[shp_data->list_types.At(index).typeIndex] = shp_data->list_types.At(index).refTypeFunc;
 	}
 
-	vec_scriptClassInfo = shp_data->vec_scriptClassInfo;
+	list_scriptClassInfo = shp_data->list_scriptClassInfo;
 
 }
 
@@ -118,25 +118,25 @@ bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_dat
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.GetSize()));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->vec_types.GetSize()));
-	for (std::int32_t index = 0; index < arg_data->vec_types.GetSize(); index++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->list_types.GetSize()));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (arg_data->list_types.GetSize()));
+	for (std::int32_t index = 0; index < arg_data->list_types.GetSize(); index++) {
 
-		p_pushValues[arg_data->vec_types.At(index).typeIndex] = arg_data->vec_types.At(index).typeFunc;
-		p_pushRefValues[arg_data->vec_types.At(index).typeIndex] = arg_data->vec_types.At(index).refTypeFunc;
+		p_pushValues[arg_data->list_types.At(index).typeIndex] = arg_data->list_types.At(index).typeFunc;
+		p_pushRefValues[arg_data->list_types.At(index).typeIndex] = arg_data->list_types.At(index).refTypeFunc;
 	}
-	if (vec_scriptClassInfo.GetSize() != arg_data->vec_scriptClassInfo.GetSize()) {
+	if (list_scriptClassInfo.GetSize() != arg_data->list_scriptClassInfo.GetSize()) {
 		output = true;
 	}
 	else {
-		for (auto itr = vec_scriptClassInfo.begin(), end = vec_scriptClassInfo.end(), otherItr = arg_data->vec_scriptClassInfo.begin(); itr != end; itr++, otherItr++) {
+		for (auto itr = list_scriptClassInfo.begin(), end = list_scriptClassInfo.end(), otherItr = arg_data->list_scriptClassInfo.begin(); itr != end; itr++, otherItr++) {
 			if ( *itr!= *otherItr) {
 				output = true;
 				break;
 			}
 		}
 	}
-	vec_scriptClassInfo = arg_data->vec_scriptClassInfo;
+	list_scriptClassInfo = arg_data->list_scriptClassInfo;
 
 	if (output) {
 		Clear();
@@ -145,12 +145,12 @@ bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_dat
 	else {
 		for (std::int32_t index = globalValue_base; index < globalValue_size; index++) {
 			auto typeIndex = valueStack[index].valueType;
-			auto& tag = shp_data->vec_types.At(typeIndex & ~TYPE_REF);
+			auto& tag = shp_data->list_types.At(typeIndex & ~TYPE_REF);
 			if (!tag.isSystem&&!tag.IsFunctionObjectType() ) {
-				(valueStack[index].Get<Type_ScriptClass>()).SetClassInfoUpdate (arg_data->vec_types , vec_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
+				(valueStack[index].Get<Type_ScriptClass>()).SetClassInfoUpdate (arg_data->list_types , list_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
 			}
 			else if(tag.p_enumTag){
-				(valueStack[index].Get<Type_Enum>()).p_enumTag=(arg_data->vec_types.At(typeIndex).p_enumTag);
+				(valueStack[index].Get<Type_Enum>()).p_enumTag=(arg_data->list_types.At(typeIndex).p_enumTag);
 			}
 		}
 	}
@@ -247,7 +247,7 @@ void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 	std::string dirName = top().Get<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
 
-		ButiEngine::List< std::string> vec_filePathes;
+		ButiEngine::List< std::string> list_filePathes;
 
 		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
 
@@ -256,16 +256,16 @@ void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 		for (; itr != end && !err; itr.increment(err)) {
 			const std::filesystem::directory_entry entry = *itr;
 			ButiEngine::GUI::PushNotification(entry.path().string() + u8"を読み込みます");
-			vec_filePathes.Add (StringHelper::Remove(  entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory() ));
+			list_filePathes.Add (StringHelper::Remove(  entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory() ));
 
 		}
 
 		assert(0 && "ResourceContainerのListへの対応がまだです");
 		ButiTaskSystem::PushTask(
-			std::function<void()>([this, vec_filePathes]()->void {
-				//this->GetGameObject()->GetResourceContainer()->LoadSound(vec_filePathes);
+			std::function<void()>([this, list_filePathes]()->void {
+				//this->GetGameObject()->GetResourceContainer()->LoadSound(list_filePathes);
 
-				ButiEngine::GUI::PushNotification(std::to_string(vec_filePathes.GetSize())+ u8"個のwave読み込み終了");
+				ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize())+ u8"個のwave読み込み終了");
 				}
 				)
 		);
@@ -293,7 +293,7 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 	std::string dirName = top().Get<std::string>(); pop();
 	if (*(dirName.end() - 1) == '/') {
 
-		ButiEngine::List< std::string> vec_filePathes;
+		ButiEngine::List< std::string> list_filePathes;
 
 		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
 
@@ -302,13 +302,13 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 		for (; itr != end && !err; itr.increment(err)) {
 			const std::filesystem::directory_entry entry = *itr;
 			ButiEngine::GUI::PushNotification(entry.path().string() + u8"を読み込みます");
-			vec_filePathes.Add(StringHelper::Remove(entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory()));
+			list_filePathes.Add(StringHelper::Remove(entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory()));
 
 		}
 		assert(0 && "ResourceContainerのListへの対応がまだです");
-		//this->GetGameObject()->GetResourceContainer()->LoadSound(vec_filePathes);
+		//this->GetGameObject()->GetResourceContainer()->LoadSound(list_filePathes);
 
-		ButiEngine::GUI::PushNotification(std::to_string(vec_filePathes.GetSize()) + u8"個のwave読み込み終了");
+		ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize()) + u8"個のwave読み込み終了");
 	}
 	else {
 		ButiEngine::GUI::PushNotification(dirName + u8"を読み込みます");
@@ -322,33 +322,33 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
 	push(wkp_butiScriptBehavior.lock());
 }
-void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
+void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
 		auto type = valueStack[globalValue_base + index].valueType;
 		if (type & TYPE_REF|| !valueStack[globalValue_base + index].valueData) {
-			arg_ref_vec_saveObject.push_back({ ButiEngine::make_value<ButiEngine::ValuePtrRestoreObject<Type_Null>>() ,type});
+			arg_ref_list_saveObject.push_back({ ButiEngine::make_value<ButiEngine::ValuePtrRestoreObject<Type_Null>>() ,type});
 		}
 		else {
-			arg_ref_vec_saveObject.push_back({ valueStack[globalValue_base + index].valueData.GetRestoreObject(),type });
+			arg_ref_list_saveObject.push_back({ valueStack[globalValue_base + index].valueData.GetRestoreObject(),type });
 		}
 	}
 }
-void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject) {
-	if (globalValue_size - globalValue_base != arg_ref_vec_saveObject.size()) {
+void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
+	if (globalValue_size - globalValue_base != arg_ref_list_saveObject.size()) {
 		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
 		
 		return;
 	}
 	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
-		if (valueStack[globalValue_base + index].valueType!= arg_ref_vec_saveObject.at(index).second) {
+		if (valueStack[globalValue_base + index].valueType!= arg_ref_list_saveObject.at(index).second) {
 			continue;
 		}
-		auto useCompiled = ButiEngine::dynamic_value_ptr_cast<ButiEngine::IUseCompiledData>(arg_ref_vec_saveObject.at(index).first);
+		auto useCompiled = ButiEngine::dynamic_value_ptr_cast<ButiEngine::IUseCompiledData>(arg_ref_list_saveObject.at(index).first);
 		if (useCompiled)
 		{
 			useCompiled->SetCompiledData(shp_data);
 		}
-		arg_ref_vec_saveObject.at(index).first->RestoreValue(valueStack[globalValue_base + index].valueData);
+		arg_ref_list_saveObject.at(index).first->RestoreValue(valueStack[globalValue_base + index].valueData);
 		
 	}
 }

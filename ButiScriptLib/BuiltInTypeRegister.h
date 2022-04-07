@@ -76,11 +76,11 @@ public:
 
 		std::int32_t index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
-		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.GetSize());
-		vec_valueAllocCall.Add(&VirtualMachine::pushValue<T>);
+		map_valueAllocCallsIndex.emplace(index, list_valueAllocCall.GetSize());
+		list_valueAllocCall.Add(&VirtualMachine::pushValue<T>);
 
-		map_refValueAllocCallsIndex.emplace(index, vec_refValueAllocCall.GetSize());
-		vec_refValueAllocCall.Add(&VirtualMachine::pushValue_ref<T>);
+		map_refValueAllocCallsIndex.emplace(index, list_refValueAllocCall.GetSize());
+		list_refValueAllocCall.Add(&VirtualMachine::pushValue_ref<T>);
 
 		type.typeName = arg_name;
 		type.typeIndex = index;
@@ -114,11 +114,11 @@ public:
 
 		std::int32_t index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
-		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.GetSize());
-		vec_valueAllocCall.Add(&VirtualMachine::pushValue_valueptr< T>);
+		map_valueAllocCallsIndex.emplace(index, list_valueAllocCall.GetSize());
+		list_valueAllocCall.Add(&VirtualMachine::pushValue_valueptr< T>);
 
-		map_refValueAllocCallsIndex.emplace(index, vec_refValueAllocCall.GetSize());
-		vec_refValueAllocCall.Add(&VirtualMachine::pushValue_valueptr_ref<T>);
+		map_refValueAllocCallsIndex.emplace(index, list_refValueAllocCall.GetSize());
+		list_refValueAllocCall.Add(&VirtualMachine::pushValue_valueptr_ref<T>);
 
 		type.typeName = arg_name;
 		type.typeIndex = index;
@@ -151,11 +151,11 @@ public:
 		std::int32_t index = Value::SetTypeIndex(TypeSpecific<T>());
 		type.isSystem = true;
 		type.isShared = true;
-		map_valueAllocCallsIndex.emplace(index, vec_valueAllocCall.GetSize());
-		vec_valueAllocCall.Add(&VirtualMachine::pushValue_sharedptr< T>);
+		map_valueAllocCallsIndex.emplace(index, list_valueAllocCall.GetSize());
+		list_valueAllocCall.Add(&VirtualMachine::pushValue_sharedptr< T>);
 
-		map_refValueAllocCallsIndex.emplace(index, vec_refValueAllocCall.GetSize());
-		vec_refValueAllocCall.Add(&VirtualMachine::pushValue_sharedptr_ref<T>);
+		map_refValueAllocCallsIndex.emplace(index, list_refValueAllocCall.GetSize());
+		list_refValueAllocCall.Add(&VirtualMachine::pushValue_sharedptr_ref<T>);
 
 		type.typeName = arg_name;
 		type.typeIndex = index;
@@ -186,8 +186,8 @@ private:
 
 	EnumTable enums;
 	TypeTable types;
-	ButiEngine::List<SysFunction> vec_valueAllocCall;
-	ButiEngine::List<SysFunction> vec_refValueAllocCall;
+	ButiEngine::List<SysFunction> list_valueAllocCall;
+	ButiEngine::List<SysFunction> list_refValueAllocCall;
 	std::map<std::int64_t, std::int32_t> map_valueAllocCallsIndex;
 	std::map<std::int64_t, std::int32_t> map_refValueAllocCallsIndex;
 };

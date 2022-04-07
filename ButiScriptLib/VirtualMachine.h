@@ -41,14 +41,14 @@ namespace ButiScript {
 
 		ButiEngine::List<OperationFunction> list_sysCalls;
 		ButiEngine::List<OperationFunction> list_sysCallMethods;
-		ButiEngine::List<TypeTag> vec_types;
+		ButiEngine::List<TypeTag> list_types;
 		std::unordered_map<std::string, std::int32_t> map_entryPoints;
 		std::map< std::int32_t,const std::string*> map_functionJumpPointsTable;
 		std::map<std::string, std::int32_t>map_globalValueAddress;
 		std::map<std::int32_t ,std::string>map_addressToValueName;
 		std::map<std::int32_t, EnumTag> map_enumTag;
 		FunctionTable functions;
-		ButiEngine::List<ScriptClassInfo> vec_scriptClassInfo;
+		ButiEngine::List<ScriptClassInfo> list_scriptClassInfo;
 		std::int32_t systemTypeCount,functionTypeCount;
 		std::string sourceFilePath;
 	};
@@ -213,8 +213,8 @@ namespace ButiScript {
 			return wkp_butiScriptBehavior.lock();
 		}
 		//Listのcereal対応が完了したら変更
-		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_vec_saveObject);
-		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_vec_saveObject);
+		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
+		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_list_saveObject);
 		void ShowGUI();
 		std::shared_ptr<CompiledData> GetCompiledData()const { return shp_data; }
 #endif
@@ -430,7 +430,7 @@ namespace ButiScript {
 		void PopMember() {
 			PopMember(Constant<std::int32_t>());
 		}
-		//メンバ変数にPop(int、float)
+		//メンバ変数にPop(std::int32_t、float)
 		inline void PopMemberValueType(const std::int32_t arg_index)
 		{
 			auto v = top().valueData;
@@ -539,7 +539,7 @@ namespace ButiScript {
 		// ローカル変数を確保(スクリプト定義)
 		inline void OpAllocStack_ScriptType(const std::int32_t arg_val)
 		{
-			pushValue(&vec_scriptClassInfo[arg_val],&vec_scriptClassInfo);
+			pushValue(&list_scriptClassInfo[arg_val],&list_scriptClassInfo);
 
 		}
 		void OpAllocStack_ScriptType()
@@ -550,7 +550,7 @@ namespace ButiScript {
 		// ローカル変数(参照型)を確保(スクリプト定義)
 		inline void OpAllocStack_Ref_ScriptType(const std::int32_t arg_val)
 		{
-			pushValue_ref(&vec_scriptClassInfo[arg_val]);
+			pushValue_ref(&list_scriptClassInfo[arg_val]);
 		}
 		void OpAllocStack_Ref_ScriptType()
 		{
@@ -895,7 +895,7 @@ namespace ButiScript {
 			push(stack_base);
 			push(addr());					
 			stack_base = valueStack.size();		
-			for (auto& capturedValue: functionObject.vec_capturedValue) {
+			for (auto& capturedValue: functionObject.list_capturedValue) {
 				push(capturedValue.first, capturedValue.second);
 			}
 
@@ -1300,8 +1300,8 @@ namespace ButiScript {
 			value.SetType(Value::GetTypeIndex(address) | TYPE_REF);
 			this->valueStack.push(value);
 		}
-		void pushValue(ScriptClassInfo* info, ButiEngine::List<ButiScript::ScriptClassInfo>* p_vec_scriptClassInfo) {
-			auto value = Value(*info,p_vec_scriptClassInfo);
+		void pushValue(ScriptClassInfo* info, ButiEngine::List<ButiScript::ScriptClassInfo>* p_list_scriptClassInfo) {
+			auto value = Value(*info,p_list_scriptClassInfo);
 			this->valueStack.push(value);
 		}
 		inline void pushValue_ref(ScriptClassInfo* info) {
@@ -1401,7 +1401,7 @@ namespace ButiScript {
 		//変数(参照型)の確保関数テーブル
 		OperationFunction* p_pushRefValues = nullptr;
 
-		ButiEngine::List<ScriptClassInfo> vec_scriptClassInfo;
+		ButiEngine::List<ScriptClassInfo> list_scriptClassInfo;
 
 		ButiScript::Stack<ButiScript::Value, STACK_SIZE> valueStack;
 
