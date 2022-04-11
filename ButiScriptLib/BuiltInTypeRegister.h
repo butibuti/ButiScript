@@ -145,41 +145,6 @@ public:
 
 	}
 
-	template <typename T>
-	void RegistSharedSystemType(const std::string& arg_name, const std::string& arg_argmentName, const std::string& memberInfo = "") {
-		TypeTag type;
-		std::int32_t index = Value::SetTypeIndex(TypeSpecific<T>());
-		type.isSystem = true;
-		type.isShared = true;
-		map_valueAllocCallsIndex.emplace(index, list_valueAllocCall.GetSize());
-		list_valueAllocCall.Add(&VirtualMachine::pushValue_sharedptr< T>);
-
-		map_refValueAllocCallsIndex.emplace(index, list_refValueAllocCall.GetSize());
-		list_refValueAllocCall.Add(&VirtualMachine::pushValue_sharedptr_ref<T>);
-
-		type.typeName = arg_name;
-		type.typeIndex = index;
-		type.argName = arg_argmentName;
-
-		if (memberInfo.size()) {
-			auto identiferSplited = StringHelper::Split(memberInfo, ",");
-
-			for (std::int32_t i = 0; i < identiferSplited.size(); i++) {
-				auto typeSplited = StringHelper::Split(identiferSplited[i], ":");
-				if (typeSplited.size() != 2) {
-					// "‘g‚Ýž‚ÝŒ^‚Ìƒƒ“ƒo•Ï”‚ÌŽw’è‚ªŠÔˆá‚Á‚Ä‚¢‚Ü‚·"
-					assert(0);
-				}
-				auto memberTypeIndex = types.GetArgmentKeyMap().at(typeSplited[1]);
-				MemberValueInfo info = { i,memberTypeIndex ,AccessModifier::Public };
-				type.map_memberValue.emplace(typeSplited[0], info);
-
-			}
-		}
-		types.RegistType(type);
-		//ƒXƒNƒŠƒvƒg’è‹`‚ÌŒ^‚ªƒƒ“ƒo‚Æ‚µ‚Ä—˜—p‚·‚éŒ^‚Ì“o˜^
-		PushCreateMemberInstance<ButiEngine::Value_ptr<T>>();
-	}
 	std::int32_t GetIndex(const std::string& arg_typeName);
 private:
 	SystemTypeRegister() {}

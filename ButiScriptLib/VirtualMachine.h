@@ -1262,10 +1262,6 @@ namespace ButiScript {
 			value.SetType(Value::GetTypeIndex(address));
 			this->valueStack.push(value);
 		}
-		template<typename T>
-		void pushValue_sharedptr() {
-			assert("nooooooo");
-		}
 		template<>
 		void pushValue<Type_Null>() {
 			auto value = Value(Type_Null());
@@ -1282,13 +1278,6 @@ namespace ButiScript {
 		}
 		template<typename T>
 		void pushValue_valueptr_ref() {
-			auto value = Value();
-			std::int64_t address = TypeSpecific<T>();
-			value.SetType(Value::GetTypeIndex(address) | TYPE_REF);
-			this->valueStack.push(value);
-		}
-		template<typename T>
-		void pushValue_sharedptr_ref() {
 			auto value = Value();
 			std::int64_t address = TypeSpecific<T>();
 			value.SetType(Value::GetTypeIndex(address) | TYPE_REF);

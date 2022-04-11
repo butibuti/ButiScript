@@ -15,7 +15,6 @@
 #include <boost/spirit/include/phoenix1_new.hpp>
 #include <boost/mem_fn.hpp>
 #endif
-#include <memory>
 #include <iostream>
 #include <fstream>
 #include <map>

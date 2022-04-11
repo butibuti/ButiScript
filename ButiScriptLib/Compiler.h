@@ -94,7 +94,7 @@ public:
 };
 
 //–¼‘O‹óŠÔ‚Ì’è‹`
-class NameSpace:std::enable_shared_from_this<NameSpace> {
+class NameSpace:ButiEngine::enable_value_from_this<NameSpace> {
 public:
 	NameSpace(const std::string& arg_name) :name(arg_name) {	}
 

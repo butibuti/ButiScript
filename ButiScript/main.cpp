@@ -22,13 +22,6 @@ public:
 		return count;
 	}
 };
-std::shared_ptr<Sample> CreateSample() {
-	return std::make_shared<Sample>();
-}
-
-std::shared_ptr<Sample> CreateSampleWithCount(std::int32_t arg_c,float arg_f) {
-	return std::make_shared<Sample>(arg_c*arg_f);
-}
 class ValueTypeTest {
 public:
 	ValueTypeTest() {
