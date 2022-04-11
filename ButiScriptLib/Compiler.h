@@ -111,7 +111,7 @@ public:
 	void Clear();
 private:
 	std::string name;
-	NameSpace_t shp_parentNamespace;
+	NameSpace_t vlp_parentNamespace;
 	ButiEngine::List<Function_t> list_analyzeFunctionBuffer;
 	ButiEngine::List<Class_t> list_analyzeClassBuffer;
 };

@@ -971,8 +971,8 @@ const std::string& ButiScript::NameSpace::GetNameString() const
 
 std::string ButiScript::NameSpace::GetGlobalNameString() const
 {
-	if (shp_parentNamespace) {
-		return shp_parentNamespace->GetGlobalNameString() + name+ "::";
+	if (vlp_parentNamespace) {
+		return vlp_parentNamespace->GetGlobalNameString() + name+ "::";
 	}
 
 	if (name.size()==0) {
@@ -989,12 +989,12 @@ void ButiScript::NameSpace::Regist(Compiler* arg_compiler)
 
 void ButiScript::NameSpace::SetParent(NameSpace_t arg_parent)
 {
-	shp_parentNamespace = arg_parent;
+	vlp_parentNamespace = arg_parent;
 }
 
 ButiScript::NameSpace_t ButiScript::NameSpace::GetParent() const
 {
-	return shp_parentNamespace;
+	return vlp_parentNamespace;
 }
 
 void ButiScript::NameSpace::PushFunction(Function_t arg_func)

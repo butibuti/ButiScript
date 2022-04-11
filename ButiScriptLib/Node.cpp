@@ -27,12 +27,12 @@ bool CanTypeCast(const std::int32_t arg_left, const std::int32_t arg_right) {
 
 const EnumTag* GetEnumType(const Compiler* arg_compiler,const Node& arg_leftNode) {
 
-	auto shp_namespace = arg_compiler->GetCurrentNameSpace();
+	auto vlp_namespace = arg_compiler->GetCurrentNameSpace();
 	std::string searchName;
 	const  EnumTag* enumType = nullptr;
 	while (!enumType)
 	{
-		searchName = shp_namespace->GetGlobalNameString() + arg_leftNode.GetString();
+		searchName = vlp_namespace->GetGlobalNameString() + arg_leftNode.GetString();
 
 		enumType = arg_compiler->GetEnumTag(searchName);
 
@@ -40,8 +40,8 @@ const EnumTag* GetEnumType(const Compiler* arg_compiler,const Node& arg_leftNode
 			break;
 		}
 
-		shp_namespace = shp_namespace->GetParent();
-		if (!shp_namespace) {
+		vlp_namespace = vlp_namespace->GetParent();
+		if (!vlp_namespace) {
 			break;
 		}
 

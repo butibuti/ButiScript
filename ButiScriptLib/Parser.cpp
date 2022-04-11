@@ -323,9 +323,9 @@ struct make_classMember_func {
 	struct result { using type = void; };
 
 	template < typename Ty1, typename Ty2>
-	void operator()(Ty1 shp_class, const Ty2& type_and_name) const
+	void operator()(Ty1 vlp_class, const Ty2& type_and_name) const
 	{
-		shp_class->SetValue(type_and_name.name, type_and_name.type, type_and_name.accessType);
+		vlp_class->SetValue(type_and_name.name, type_and_name.type, type_and_name.accessType);
 	}
 };
 

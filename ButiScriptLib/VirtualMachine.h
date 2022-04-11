@@ -103,7 +103,7 @@ namespace ButiScript {
 		const static std::int32_t global_mask = 0x3ffffff;
 
 		VirtualMachine(ButiEngine::Value_ptr<CompiledData> arg_data)
-			: shp_data(arg_data)
+			: vlp_data(arg_data)
 		{
 		}
 		~VirtualMachine()
@@ -171,24 +171,24 @@ namespace ButiScript {
 		void AllocGlobalValue();
 		void Clear();
 		bool ExistFunction(const std::string& arg_functionName)const {
-			return shp_data->functions.Find(arg_functionName);
+			return vlp_data->functions.Find(arg_functionName);
 		}
 		VirtualMachine* Clone();
 
 		template<typename T>
 		void SetGlobalVariable(const T value, const std::string arg_variableName) {
-			if (!shp_data->map_globalValueAddress.count(arg_variableName)) {
+			if (!vlp_data->map_globalValueAddress.count(arg_variableName)) {
 
 #ifdef _BUTIENGINEBUILD
 				ButiEngine::GUI::Console( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
 #endif
 				return;
 			}
-			valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].valueData=ButiEngine::make_value<T>(value);
+			valueStack[globalValue_base + vlp_data->map_globalValueAddress.at(arg_variableName)].valueData=ButiEngine::make_value<T>(value);
 		}
 		template<typename T>
 		T& GetGlobalVariable(const std::string arg_variableName) {
-			if (!shp_data->map_globalValueAddress.count(arg_variableName)) {
+			if (!vlp_data->map_globalValueAddress.count(arg_variableName)) {
 
 #ifdef _BUTIENGINEBUILD
 				ButiEngine::GUI::Console(arg_variableName + "にはアクセスできません", ButiEngine::Vector4(1.0f, 0.8f, 0.8f, 1.0f));
@@ -196,15 +196,15 @@ namespace ButiScript {
 				static T temp;
 				return temp;
 			}
-			return valueStack[globalValue_base + shp_data->map_globalValueAddress.at(arg_variableName)].Get<T>();
+			return valueStack[globalValue_base + vlp_data->map_globalValueAddress.at(arg_variableName)].Get<T>();
 		}
 
 #ifdef _BUTIENGINEBUILD
 		void SetGameObject(ButiEngine::Value_ptr<ButiEngine::GameObject> arg_gameObject) {
-			shp_gameObject = arg_gameObject;
+			vlp_gameObject = arg_gameObject;
 		}
 		ButiEngine::Value_ptr<ButiEngine::GameObject>GetGameObject()const {
-			return shp_gameObject;
+			return vlp_gameObject;
 		}
 		void SetButiScriptBehavior(ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> arg_behavior) {
 			wkp_butiScriptBehavior = arg_behavior;
@@ -216,7 +216,7 @@ namespace ButiScript {
 		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
 		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_list_saveObject);
 		void ShowGUI();
-		ButiEngine::Value_ptr<CompiledData> GetCompiledData()const { return shp_data; }
+		ButiEngine::Value_ptr<CompiledData> GetCompiledData()const { return vlp_data; }
 #endif
 
 		void Initialize();
@@ -514,14 +514,14 @@ namespace ButiScript {
 
 		void OpAllocStackEnumType() {
 			std::int32_t type = Constant<std::int32_t>();
-			auto value = Value(Type_Enum(0,&shp_data->map_enumTag.at(type)));
+			auto value = Value(Type_Enum(0,&vlp_data->map_enumTag.at(type)));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
 		//関数オブジェクト型の確保
 		void OpAllocStackFunctionType() {
 			std::int32_t type = Constant<std::int32_t>();
-			auto value = Value(Type_Function( &shp_data->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
+			auto value = Value(Type_Function( &vlp_data->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
 			value.SetType(type);
 			this->valueStack.push(value);
 		}
@@ -952,7 +952,7 @@ namespace ButiScript {
 
 			std::int32_t type = top().Get<std::int32_t>(); pop();
 			std::int32_t address = Constant<std::int32_t>();
-			auto value = Value(Type_Function(address, &shp_data->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
+			auto value = Value(Type_Function(address, &vlp_data->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>,std::int32_t>>()));
 			
 			for (auto itr = captureList.rbegin(), end = captureList.rend(); itr != end;itr++) {
 				value.valueData.get<Type_Function>()->AddCapture (valueStack[stack_base+ *itr].valueData, valueStack[stack_base + *itr].valueType);
@@ -1004,11 +1004,11 @@ namespace ButiScript {
 		void sys_LoadWave();
 		void sys_getSelfScriptBehavior();
 		void sys_get_ownGameObject() {
-			push(shp_gameObject);
+			push(vlp_gameObject);
 		}
 		void sys_get_gameObjectByName() {
 			std::string name = top().Get<std::string>(); pop();
-			auto obj = shp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock();
+			auto obj = vlp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock();
 			push(obj);
 		}
 		void sys_getKeyboard() {
@@ -1103,20 +1103,20 @@ namespace ButiScript {
 		void sys_playSE() {
 			auto seName = top().Get<std::string>(); pop();
 			auto volume = top().Get<float>(); pop();
-			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), volume);
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), volume);
 		}
 		void sys_playSE_noVolume() {
 			auto seName = top().Get<std::string>(); pop();
-			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), 1.0f);
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), 1.0f);
 		}
 		void sys_playBGM() {
 			auto bgmName = top().Get<std::string>(); pop();
 			auto volume = top().Get<float>(); pop();
-			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), volume);
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), volume);
 		}
 		void sys_playBGM_noVolume() {
 			auto bgmName = top().Get<std::string>(); pop();
-			shp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), 1.0f);
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), 1.0f);
 		}
 
 		void sys_printColor() {
@@ -1369,7 +1369,7 @@ namespace ButiScript {
 		}
 
 	private:
-		ButiEngine::Value_ptr<CompiledData> shp_data;
+		ButiEngine::Value_ptr<CompiledData> vlp_data;
 
 		//コマンド羅列
 		std::uint8_t* commandTable;
@@ -1406,7 +1406,7 @@ namespace ButiScript {
 		//グローバル変数確保の命令数
 		std::int32_t globalValueAllocOpSize=0;
 #ifdef _BUTIENGINEBUILD
-		ButiEngine::Value_ptr<ButiEngine::GameObject> shp_gameObject;
+		ButiEngine::Value_ptr<ButiEngine::GameObject> vlp_gameObject;
 		ButiEngine::Value_weak_ptr < ButiEngine::ButiScriptBehavior >wkp_butiScriptBehavior;
 #endif
 	};

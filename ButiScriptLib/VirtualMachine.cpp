@@ -34,7 +34,7 @@ void ButiScript::VirtualMachine::Clear()
 
 ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 {
-	auto output = new VirtualMachine(shp_data);
+	auto output = new VirtualMachine(vlp_data);
 	output->Initialize();
 
 	output->stack_base = output->valueStack.size();						// スタック参照位置初期化
@@ -50,36 +50,36 @@ ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 
 void ButiScript::VirtualMachine::Initialize()
 {
-	commandTable = shp_data->commandTable;						// プログラム格納位置
-	textBuffer = shp_data->textBuffer;				// テキストデータ格納位置
-	commandSize = shp_data->commandSize;			// プログラムの大きさ
-	textSize = shp_data->textSize;					// データの大きさ
+	commandTable = vlp_data->commandTable;						// プログラム格納位置
+	textBuffer = vlp_data->textBuffer;				// テキストデータ格納位置
+	commandSize = vlp_data->commandSize;			// プログラムの大きさ
+	textSize = vlp_data->textSize;					// データの大きさ
 
 
 	allocCommand_ptr_ = commandTable +1;
 	p_op = (OperationFunction*)malloc(sizeof(OperationFunction) * VM_MAXCOMMAND);
 #include "VM_table.h"
 
-	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->list_sysCalls.GetSize());
-	for (std::int32_t index = 0; index < shp_data->list_sysCalls.GetSize(); index++) {
-		p_syscall[index] = shp_data->list_sysCalls[index];
+	p_syscall=(OperationFunction*)malloc(sizeof(OperationFunction) * vlp_data->list_sysCalls.GetSize());
+	for (std::int32_t index = 0; index < vlp_data->list_sysCalls.GetSize(); index++) {
+		p_syscall[index] = vlp_data->list_sysCalls[index];
 	}
 
-	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * shp_data->list_sysCallMethods.GetSize());
-	for (std::int32_t index = 0; index < shp_data->list_sysCallMethods.GetSize(); index++) {
-		p_sysMethodCall[index] = shp_data->list_sysCallMethods[index];
+	p_sysMethodCall= (OperationFunction*)malloc(sizeof(OperationFunction) * vlp_data->list_sysCallMethods.GetSize());
+	for (std::int32_t index = 0; index < vlp_data->list_sysCallMethods.GetSize(); index++) {
+		p_sysMethodCall[index] = vlp_data->list_sysCallMethods[index];
 	}
 
 
-	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->list_types.GetSize() ));
-	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (shp_data->list_types.GetSize() ));
-	for (std::int32_t index = 0; index < shp_data->list_types.GetSize(); index++) {
+	p_pushValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (vlp_data->list_types.GetSize() ));
+	p_pushRefValues = (OperationFunction*)malloc(sizeof(OperationFunction) * (vlp_data->list_types.GetSize() ));
+	for (std::int32_t index = 0; index < vlp_data->list_types.GetSize(); index++) {
 
-		p_pushValues[shp_data->list_types.At(index).typeIndex] = shp_data->list_types.At(index).typeFunc;
-		p_pushRefValues[shp_data->list_types.At(index).typeIndex] = shp_data->list_types.At(index).refTypeFunc;
+		p_pushValues[vlp_data->list_types.At(index).typeIndex] = vlp_data->list_types.At(index).typeFunc;
+		p_pushRefValues[vlp_data->list_types.At(index).typeIndex] = vlp_data->list_types.At(index).refTypeFunc;
 	}
 
-	list_scriptClassInfo = shp_data->list_scriptClassInfo;
+	list_scriptClassInfo = vlp_data->list_scriptClassInfo;
 
 }
 
@@ -145,7 +145,7 @@ bool ButiScript::VirtualMachine::HotReload(ButiEngine::Value_ptr<CompiledData> a
 	else {
 		for (std::int32_t index = globalValue_base; index < globalValue_size; index++) {
 			auto typeIndex = valueStack[index].valueType;
-			auto& tag = shp_data->list_types.At(typeIndex & ~TYPE_REF);
+			auto& tag = vlp_data->list_types.At(typeIndex & ~TYPE_REF);
 			if (!tag.isSystem&&!tag.IsFunctionObjectType() ) {
 				(valueStack[index].Get<Type_ScriptClass>()).SetClassInfoUpdate (arg_data->list_types , list_scriptClassInfo, arg_data->systemTypeCount,typeIndex);
 			}
@@ -155,13 +155,13 @@ bool ButiScript::VirtualMachine::HotReload(ButiEngine::Value_ptr<CompiledData> a
 		}
 	}
 
-	shp_data = arg_data;
+	vlp_data = arg_data;
 	return output;
 }
 
 void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 {
-	command_ptr_ = commandTable + shp_data->map_entryPoints[entryPoint];
+	command_ptr_ = commandTable + vlp_data->map_entryPoints[entryPoint];
 	stack_base = valueStack.size();
 
 	auto Op=VM_HALT;
@@ -176,7 +176,7 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 		return ;
 	}
 
-	command_ptr_ = commandTable + shp_data->map_entryPoints[entryPoint];	// プログラムカウンター初期化
+	command_ptr_ = commandTable + vlp_data->map_entryPoints[entryPoint];	// プログラムカウンター初期化
 }
 
 
@@ -347,14 +347,14 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiE
 		auto useCompiled = ButiEngine::dynamic_value_ptr_cast<ButiEngine::IUseCompiledData>(arg_ref_list_saveObject.at(index).first);
 		if (useCompiled)
 		{
-			useCompiled->SetCompiledData(shp_data);
+			useCompiled->SetCompiledData(vlp_data);
 		}
 		arg_ref_list_saveObject.at(index).first->RestoreValue(valueStack[globalValue_base + index].valueData);
 		
 	}
 }
 void ButiScript::VirtualMachine::ShowGUI() {
-	for (auto itr = shp_data->map_addressToValueName.begin(), end = shp_data->map_addressToValueName.end(); itr != end;itr++) {
+	for (auto itr = vlp_data->map_addressToValueName.begin(), end = vlp_data->map_addressToValueName.end(); itr != end;itr++) {
 		valueStack[globalValue_base + itr->first].valueData.ShowGUI(itr->second);
 	}
 }

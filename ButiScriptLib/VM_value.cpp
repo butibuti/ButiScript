@@ -7,7 +7,7 @@ ButiEngine::List<ButiScript::CreateMemberInstanceFunction>* p_list_createMemberI
 #ifdef _BUTIENGINEBUILD
 
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_ScriptClass>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
-	auto this_type =& shp_compiledData->list_scriptClassInfo[type - shp_compiledData->systemTypeCount];
+	auto this_type =& vlp_compiledData->list_scriptClassInfo[type - vlp_compiledData->systemTypeCount];
 	Value_ptr<ButiScript::Type_ScriptClass> vlp_scriptClass = make_value<ButiScript::Type_ScriptClass>(this_type);
 	std::int32_t memberIndex=0;
 	for (auto itr = list_data.begin(), end = list_data.end(); itr != end; itr++, memberIndex++) {
@@ -16,7 +16,7 @@ void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_ScriptClass>::RestoreVal
 		auto useCompiledData = dynamic_value_ptr_cast<IUseCompiledData>(itr->first);
 
 		if (useCompiledData) {
-			useCompiledData->SetCompiledData(shp_compiledData);
+			useCompiledData->SetCompiledData(vlp_compiledData);
 		}
 		(itr->first)->RestoreValue(member);
 		vlp_scriptClass->SetMember(member,memberIndex);
@@ -24,12 +24,12 @@ void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_ScriptClass>::RestoreVal
 	arg_ref_value = vlp_scriptClass;
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Enum>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
-	auto this_type = shp_compiledData->list_types[type].p_enumTag;
+	auto this_type = vlp_compiledData->list_types[type].p_enumTag;
 	arg_ref_value = make_value<ButiScript::Type_Enum>(data,this_type);
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Function>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
 	
-	arg_ref_value = make_value<ButiScript::Type_Function>(address, &shp_compiledData->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>());
+	arg_ref_value = make_value<ButiScript::Type_Function>(address, &vlp_compiledData->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>());
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Null>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
 

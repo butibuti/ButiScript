@@ -343,7 +343,7 @@ std::int64_t TypeSpecific() {
 namespace ButiEngine{
 class IUseCompiledData {
 public: 
-	virtual void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_shp_data) = 0;
+	virtual void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data) = 0;
 };
 
 template<>
@@ -358,10 +358,10 @@ public:
 		}
 	}
 	ValuePtrRestoreObject() {}
-	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
+	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data)override { vlp_compiledData = arg_vlp_data; }
 	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
-	void Push(std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t> arg_shp_data) {
-		list_data.push_back(arg_shp_data);
+	void Push(std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t> arg_vlp_data) {
+		list_data.push_back(arg_vlp_data);
 	}
 	template<class Archive>
 	void serialize(Archive& archive)
@@ -372,7 +372,7 @@ public:
 private:
 	std::vector<std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t>> list_data;
 	std::int32_t type;
-	Value_ptr<ButiScript::CompiledData>shp_compiledData;
+	Value_ptr<ButiScript::CompiledData>vlp_compiledData;
 };
 template<>
 class ValuePtrRestoreObject <ButiScript::Type_Enum> :public IValuePtrRestoreObject,public IUseCompiledData {
@@ -390,11 +390,11 @@ public:
 		archive(data);
 		archive(type);
 	}
-	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
+	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data)override { vlp_compiledData = arg_vlp_data; }
 private:
 	std::int32_t data;
 	std::int32_t type;
-	Value_ptr<ButiScript::CompiledData>shp_compiledData;
+	Value_ptr<ButiScript::CompiledData>vlp_compiledData;
 };
 template<>
 class ValuePtrRestoreObject <ButiScript::Type_Function> :public IValuePtrRestoreObject, public IUseCompiledData {
@@ -409,10 +409,10 @@ public:
 	{
 		archive(address);
 	}
-	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_shp_data)override { shp_compiledData = arg_shp_data; }
+	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data)override { vlp_compiledData = arg_vlp_data; }
 private:
 	std::int32_t address;
-	Value_ptr<ButiScript::CompiledData>shp_compiledData;
+	Value_ptr<ButiScript::CompiledData>vlp_compiledData;
 };
 template<>
 class ValuePtrRestoreObject <ButiScript::Type_Null> :public IValuePtrRestoreObject {
