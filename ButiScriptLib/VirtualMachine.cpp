@@ -83,7 +83,7 @@ void ButiScript::VirtualMachine::Initialize()
 
 }
 
-bool ButiScript::VirtualMachine::HotReload(std::shared_ptr<CompiledData> arg_data)
+bool ButiScript::VirtualMachine::HotReload(ButiEngine::Value_ptr<CompiledData> arg_data)
 {
 	bool output = false;
 	free(p_op);
@@ -320,7 +320,8 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 }
 void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
-	push(wkp_butiScriptBehavior.lock());
+	auto this_behavior = wkp_butiScriptBehavior.lock();
+	push(this_behavior);
 }
 void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {

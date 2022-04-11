@@ -102,7 +102,7 @@ namespace ButiScript {
 		const static std::int32_t global_flag = 0x4000000;
 		const static std::int32_t global_mask = 0x3ffffff;
 
-		VirtualMachine(std::shared_ptr<CompiledData> arg_data)
+		VirtualMachine(ButiEngine::Value_ptr<CompiledData> arg_data)
 			: shp_data(arg_data)
 		{
 		}
@@ -200,27 +200,27 @@ namespace ButiScript {
 		}
 
 #ifdef _BUTIENGINEBUILD
-		void SetGameObject(std::shared_ptr<ButiEngine::GameObject> arg_gameObject) {
+		void SetGameObject(ButiEngine::Value_ptr<ButiEngine::GameObject> arg_gameObject) {
 			shp_gameObject = arg_gameObject;
 		}
-		std::shared_ptr<ButiEngine::GameObject>GetGameObject()const {
+		ButiEngine::Value_ptr<ButiEngine::GameObject>GetGameObject()const {
 			return shp_gameObject;
 		}
-		void SetButiScriptBehavior(std::shared_ptr<ButiEngine::ButiScriptBehavior> arg_behavior) {
+		void SetButiScriptBehavior(ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> arg_behavior) {
 			wkp_butiScriptBehavior = arg_behavior;
 		}
-		std::shared_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
+		ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
 			return wkp_butiScriptBehavior.lock();
 		}
 		//Listのcereal対応が完了したら変更
 		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
 		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_list_saveObject);
 		void ShowGUI();
-		std::shared_ptr<CompiledData> GetCompiledData()const { return shp_data; }
+		ButiEngine::Value_ptr<CompiledData> GetCompiledData()const { return shp_data; }
 #endif
 
 		void Initialize();
-		bool HotReload(std::shared_ptr<CompiledData> arg_data);
+		bool HotReload(ButiEngine::Value_ptr<CompiledData> arg_data);
 	private:
 		void Execute_(const std::string& arg_entryPoint );
 
@@ -1008,7 +1008,8 @@ namespace ButiScript {
 		}
 		void sys_get_gameObjectByName() {
 			std::string name = top().Get<std::string>(); pop();
-			push(shp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock());
+			auto obj = shp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock();
+			push(obj);
 		}
 		void sys_getKeyboard() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
@@ -1177,11 +1178,7 @@ namespace ButiScript {
 
 		template<typename T>
 		T* GetSharedTypePtr() {
-			return top().Get<std::shared_ptr< T>>().get();
-		}
-		template<typename T>
-		std::shared_ptr< T>* GetSharedPtr() {
-			return &(top().Get<std::shared_ptr< T>>());
+			return &(top().Get<std::_Remove_cvref_t< T>>());
 		}
 		template<typename T>
 		T* GetTypePtr() {
@@ -1267,10 +1264,7 @@ namespace ButiScript {
 		}
 		template<typename T>
 		void pushValue_sharedptr() {
-			auto value = Value(std::shared_ptr<T>());
-			std::int64_t address = TypeSpecific<T>();
-			value.SetType(Value::GetTypeIndex(address));
-			this->valueStack.push(value);
+			assert("nooooooo");
 		}
 		template<>
 		void pushValue<Type_Null>() {
@@ -1316,11 +1310,11 @@ namespace ButiScript {
 		T Constant(){ T v = *(T*)command_ptr_; command_ptr_ += sizeof(T); return v; }
 
 		std::int32_t addr() const { return (std::int32_t)(command_ptr_ - commandTable); }
-		void jmp(std::int32_t addr) { command_ptr_ = commandTable + addr; }
-		void push(std::int32_t arg_v) {
+		void jmp(const std::int32_t addr) { command_ptr_ = commandTable + addr; }
+		void push(const std::int32_t arg_v) {
 			valueStack.push(ButiScript::Value(arg_v));
 		}
-		void push(float arg_v) {
+		void push(const float arg_v) {
 			valueStack.push(ButiScript::Value(arg_v));
 		}
 		void push(const std::string& arg_v) {
@@ -1375,7 +1369,7 @@ namespace ButiScript {
 		}
 
 	private:
-		std::shared_ptr<CompiledData> shp_data;
+		ButiEngine::Value_ptr<CompiledData> shp_data;
 
 		//コマンド羅列
 		std::uint8_t* commandTable;
@@ -1412,8 +1406,8 @@ namespace ButiScript {
 		//グローバル変数確保の命令数
 		std::int32_t globalValueAllocOpSize=0;
 #ifdef _BUTIENGINEBUILD
-		std::shared_ptr<ButiEngine::GameObject> shp_gameObject;
-		std::weak_ptr < ButiEngine::ButiScriptBehavior >wkp_butiScriptBehavior;
+		ButiEngine::Value_ptr<ButiEngine::GameObject> shp_gameObject;
+		ButiEngine::Value_weak_ptr < ButiEngine::ButiScriptBehavior >wkp_butiScriptBehavior;
 #endif
 	};
 }

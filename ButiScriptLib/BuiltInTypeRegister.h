@@ -178,7 +178,7 @@ public:
 		}
 		types.RegistType(type);
 		//スクリプト定義の型がメンバとして利用する型の登録
-		PushCreateMemberInstance<std::shared_ptr<T>>();
+		PushCreateMemberInstance<ButiEngine::Value_ptr<T>>();
 	}
 	std::int32_t GetIndex(const std::string& arg_typeName);
 private:
