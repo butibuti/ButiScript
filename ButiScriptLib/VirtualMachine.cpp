@@ -320,7 +320,7 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 }
 void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
-	auto this_behavior = wkp_butiScriptBehavior.lock();
+	auto this_behavior = vwp_butiScriptBehavior.lock();
 	push(this_behavior);
 }
 void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {

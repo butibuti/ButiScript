@@ -207,10 +207,10 @@ namespace ButiScript {
 			return vlp_gameObject;
 		}
 		void SetButiScriptBehavior(ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> arg_behavior) {
-			wkp_butiScriptBehavior = arg_behavior;
+			vwp_butiScriptBehavior = arg_behavior;
 		}
 		ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
-			return wkp_butiScriptBehavior.lock();
+			return vwp_butiScriptBehavior.lock();
 		}
 		//List‚Ìcereal‘Î‰‚ªŠ®—¹‚µ‚½‚ç•ÏX
 		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
@@ -1396,7 +1396,7 @@ namespace ButiScript {
 		std::int32_t globalValueAllocOpSize=0;
 #ifdef _BUTIENGINEBUILD
 		ButiEngine::Value_ptr<ButiEngine::GameObject> vlp_gameObject;
-		ButiEngine::Value_weak_ptr < ButiEngine::ButiScriptBehavior >wkp_butiScriptBehavior;
+		ButiEngine::Value_weak_ptr < ButiEngine::ButiScriptBehavior >vwp_butiScriptBehavior;
 #endif
 	};
 }
