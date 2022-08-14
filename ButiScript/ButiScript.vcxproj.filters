@@ -28,7 +28,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="input.bs">
+    <None Include="..\output\Debug\input.bs">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>

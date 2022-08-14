@@ -10,15 +10,14 @@
 
 void ButiScript::VirtualMachine::AllocGlobalValue()
 {
-	stack_base = valueStack.size();						// スタック参照位置初期化
+	stack_base = valueStack.size();
 	globalValue_base = stack_base;
-	//グローバル変数の確保
 	{
 
 		auto buff = command_ptr_;
 		command_ptr_ = allocCommand_ptr_;
 		std::int32_t Op;
-		while ((Op = *command_ptr_++) != VM_HALT) {	// Haltするまでループ
+		while ((Op = *command_ptr_++) != VM_HALT) {
 			globalValueAllocOpSize++;
 			(this->*p_op[Op])();
 		}
@@ -37,7 +36,7 @@ ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 	auto output = new VirtualMachine(vlp_data);
 	output->Initialize();
 
-	output->stack_base = output->valueStack.size();						// スタック参照位置初期化
+	output->stack_base = output->valueStack.size();
 	output->globalValue_base = output->stack_base;
 	{
 		for (std::int32_t i = globalValue_base; i < globalValue_size- globalValue_base  ; i++) {
@@ -50,10 +49,10 @@ ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 
 void ButiScript::VirtualMachine::Initialize()
 {
-	commandTable = vlp_data->commandTable;						// プログラム格納位置
-	textBuffer = vlp_data->textBuffer;				// テキストデータ格納位置
-	commandSize = vlp_data->commandSize;			// プログラムの大きさ
-	textSize = vlp_data->textSize;					// データの大きさ
+	commandTable = vlp_data->commandTable;
+	textBuffer = vlp_data->textBuffer;
+	commandSize = vlp_data->commandSize;
+	textSize = vlp_data->textSize;
 
 
 	allocCommand_ptr_ = commandTable +1;
@@ -97,10 +96,10 @@ bool ButiScript::VirtualMachine::HotReload(ButiEngine::Value_ptr<CompiledData> a
 		output = true;
 	}
 
-	commandTable = arg_data->commandTable;						// プログラム格納位置
-	textBuffer = arg_data->textBuffer;				// テキストデータ格納位置
-	commandSize = arg_data->commandSize;			// プログラムの大きさ
-	textSize = arg_data->textSize;					// データの大きさ
+	commandTable = arg_data->commandTable;
+	textBuffer = arg_data->textBuffer;
+	commandSize = arg_data->commandSize;
+	textSize = arg_data->textSize;
 
 
 	allocCommand_ptr_ = commandTable + 1;
@@ -165,9 +164,8 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 	stack_base = valueStack.size();
 
 	auto Op=VM_HALT;
-	//mainから開始
 	try {
-		while ((Op =static_cast<VM_ENUM> (*command_ptr_++)) != VM_HALT) {	// Haltするまでループ
+		while ((Op =static_cast<VM_ENUM> (*command_ptr_++)) != VM_HALT) {
 			(this->*p_op[Op])();
 		}
 	}
@@ -176,7 +174,7 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 		return ;
 	}
 
-	command_ptr_ = commandTable + vlp_data->map_entryPoints[entryPoint];	// プログラムカウンター初期化
+	command_ptr_ = commandTable + vlp_data->map_entryPoints[entryPoint];
 }
 
 

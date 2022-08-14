@@ -566,10 +566,6 @@ namespace ButiScript {
 		{
 			OpAllocStack_Ref(Constant<std::int32_t>());
 		}
-
-
-
-
 		/////////////演算子定義////////////////
 
 		// キャスト

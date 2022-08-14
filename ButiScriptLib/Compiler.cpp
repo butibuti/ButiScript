@@ -1085,7 +1085,7 @@ ButiScript::SystemTypeRegister* ButiScript::SystemTypeRegister::GetInstance()
 }
 void ButiScript::SystemTypeRegister::SetDefaultSystemType()
 {
-	RegistSystemType<std::int32_t>("std::int32_t", "i");
+	RegistSystemType<std::int32_t>("int", "i");
 	RegistSystemType<float>("float", "f");
 	RegistSystemType<std::string>("string", "s");
 	RegistSystemType<Type_Null>("void", "v");

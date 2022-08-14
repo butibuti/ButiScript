@@ -64,8 +64,7 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::GetValue, &ButiScript::VirtualMachine::GetTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_INTEGER, "GetValue", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Show, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Show", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&GetValuePtrInstance>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), "CreateValueTest", "");
-	std::_Remove_cvref_t< ButiEngine::Vector3> * v;
-
+	
 	driver.RegistDefaultSystems();
 	g_output = ButiEngine::make_value<ValueTypeTest>();
 
@@ -87,7 +86,6 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 			ButiScript::VirtualMachine* p_clone; 
 			std::int32_t returnCode=0;
 			{
-
 				ButiScript::VirtualMachine machine(data);
 				machine.Initialize();
 				machine.AllocGlobalValue();
