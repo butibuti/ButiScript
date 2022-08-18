@@ -183,10 +183,15 @@ void ButiScript::Compiler::ClearNameSpace()
 void ButiScript::Compiler::Analyze()
 {
 	auto nameSpaceBuffer = currentNameSpace;
-	for (auto namespaceItr = list_namespaces.begin(), namespaceEnd = list_namespaces.end(); namespaceItr != namespaceEnd; namespaceItr++) {
-		currentNameSpace = (*namespaceItr);
-		(*namespaceItr)->AnalyzeClasses(this);
-		(*namespaceItr)->AnalyzeFunctions(this);
+	for (auto namespaceItr : list_namespaces) {
+		currentNameSpace = namespaceItr;
+		namespaceItr->DeclareClasses(this);
+	}
+	for (auto namespaceItr : list_namespaces) {
+		namespaceItr->AnalyzeClasses(this);
+	}
+	for (auto namespaceItr : list_namespaces) {
+		namespaceItr->AnalyzeFunctions(this);
 	}
 	currentNameSpace = nameSpaceBuffer;
 }
@@ -218,29 +223,26 @@ void ButiScript::Compiler::ClearGlobalNameSpace()
 
 
 // 外部変数の定義
-void DefineValue(ButiScript::Compiler* arg_p_comp, const std::int32_t arg_type, ButiScript::AccessModifier arg_access, ButiScript::Node_t arg_node) {
+void DefineValue(ButiScript::Compiler* arg_p_comp, const std::int32_t arg_type, ButiScript::AccessModifier arg_access,const std::string& arg_varName ) {
 
-	arg_p_comp->AddValue(arg_type, arg_node->GetString(), arg_node->GetLeft(), arg_access);
+	arg_p_comp->AddValue(arg_type, arg_varName, arg_access);
 }
 
-void ButiScript::Compiler::AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::int32_t, AccessModifier>>& arg_memberInfo)
+void ButiScript::Compiler::AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::string, AccessModifier>>& arg_memberInfo)
 {
-	auto typeTag = GetType(arg_typeName);
-	if (arg_memberInfo.size()) {
-		auto memberInfoEnd = arg_memberInfo.end();
-		std::int32_t memberIndex = 0;
-		for (auto itr = arg_memberInfo.begin(); itr != memberInfoEnd; memberIndex++,itr++) {
-			if (typeTag->typeIndex == itr->second.first) {
-				error("クラス "+itr->first + "が自身と同じ型をメンバ変数として保持しています。");
-			}
-			MemberValueInfo info = { memberIndex ,itr->second.first,itr->second.second };
-			typeTag->map_memberValue.emplace(itr->first, info);
-
+	auto typeTag = GetType(arg_typeName)?GetType(arg_typeName): RegistScriptType(arg_typeName);
+	std::int32_t memberIndex = 0;
+	for (auto& itr : arg_memberInfo) {
+		if (typeTag->typeIndex == GetTypeIndex(itr.second.first)) {
+			error("クラス " + itr.first + "が自身と同じ型をメンバ変数として保持しています。");
 		}
+		MemberValueInfo info = { memberIndex ,GetTypeIndex(itr.second.first),itr.second.second };
+		typeTag->map_memberValue.emplace(itr.first, info);
+		memberIndex++;
 	}
 }
 
-void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
+ButiScript::TypeTag* ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 {
 
 	TypeTag type;
@@ -254,12 +256,13 @@ void ButiScript::Compiler::RegistScriptType(const std::string& arg_typeName)
 
 
 	types.RegistType(type);
+	return GetType(arg_typeName);
 }
 
-void ButiScript::Compiler::ValueDefine(std::int32_t arg_type, const ButiEngine::List<Node_t>& arg_node, const AccessModifier arg_access)
+void ButiScript::Compiler::ValueDefine(std::int32_t arg_type, const ButiEngine::List<std::string>& arg_varName, const AccessModifier arg_access)
 {
-	for (auto& valueNode : arg_node) {
-		DefineValue(this, arg_type, arg_access,valueNode);
+	for (auto& name: arg_varName) {
+		DefineValue(this, arg_type, arg_access,name);
 	}
 }
 
@@ -358,22 +361,13 @@ std::int32_t ButiScript::Compiler::GetfunctionTypeIndex(const ButiEngine::List<s
 
 
 // 変数の登録
-void ButiScript::Compiler::AddValue(const std::int32_t arg_typeIndex, const std::string& arg_name, Node_t arg_node ,const AccessModifier arg_access)
+void ButiScript::Compiler::AddValue(const std::int32_t arg_typeIndex, const std::string& arg_name, const AccessModifier arg_access)
 {
 	std::string valueName = GetCurrentNameSpace()->GetGlobalNameString() + arg_name;
-	std::int32_t size = 1;
-	if (arg_node) {
-		if (arg_node->Op() != OP_INT) {
-			error("配列のサイズは定数で指定してください。");
-		}
-		else if (arg_node->GetNumber() <= 0) {
-			error("配列のサイズは１以上の定数が必要です。");
-		}
-		size = arg_node->GetNumber();
-	}
+	
 
 	ValueTable& values = variables.GetLast();
-	if (!values.Add(arg_typeIndex, valueName, arg_access,size)) {
+	if (!values.Add(arg_typeIndex, valueName, arg_access,1)) {
 		error("変数 " + valueName + " は既に登録されています。");
 	}
 }
@@ -666,15 +660,12 @@ std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_file
 		return 1;
 	}
 
-
 	std::int32_t sourceFilePathStrSize = 0;
 	fIn.read((char*)&sourceFilePathStrSize, sizeof(sourceFilePathStrSize));
 	char* sourceFilePathStrBuff = (char*)malloc(sourceFilePathStrSize);
 	fIn.read(sourceFilePathStrBuff, sourceFilePathStrSize);
 	arg_ref_data.sourceFilePath = std::string(sourceFilePathStrBuff, sourceFilePathStrSize);
 	free(sourceFilePathStrBuff);
-
-
 	fIn.read((char*)&arg_ref_data.commandSize, sizeof(std::int32_t));
 	arg_ref_data.commandTable = (std::uint8_t*)malloc(arg_ref_data.commandSize);
 	fIn.read((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
@@ -903,9 +894,6 @@ std::int32_t ButiScript::Compiler::OutputCompiledData(const std::string& arg_fil
 			index = map_refValueAllocCallsIndex.at(p_type->typeIndex);
 		}
 		fOut.write((char*)&index, sizeof(index));
-
-
-
 		fOut.write((char*)&p_type->typeIndex, sizeof(p_type->typeIndex));
 
 		std::int32_t typeMapSize = p_type->map_memberValue.size();
@@ -953,9 +941,9 @@ std::int32_t ButiScript::Compiler::OutputCompiledData(const std::string& arg_fil
 
 	std::int32_t enumCount = arg_ref_data.map_enumTag.size();
 	fOut.write((char*)&enumCount, sizeof(enumCount));
-	for (auto itr = arg_ref_data.map_enumTag.begin(), end = arg_ref_data.map_enumTag.end(); itr != end; itr++) {
-		fOut.write((char*)&itr->first,sizeof(std::int32_t));
-		itr->second.OutputFile(fOut);
+	for (auto& itr : arg_ref_data.map_enumTag) {
+		fOut.write((char*)&itr.first,sizeof(std::int32_t));
+		itr.second.OutputFile(fOut);
 
 	}
 	arg_ref_data.functions.FileOutput(fOut);
@@ -1011,15 +999,22 @@ void ButiScript::NameSpace::PushClass(Class_t arg_class)
 
 void ButiScript::NameSpace::AnalyzeFunctions(Compiler* arg_compiler)
 {
-	for (auto itr = list_analyzeFunctionBuffer.begin(), end = list_analyzeFunctionBuffer.end(); itr != end; itr++) {
-		(*itr)->Analyze(arg_compiler, nullptr);
+	for (auto itr :list_analyzeFunctionBuffer) {
+		itr->Analyze(arg_compiler, nullptr);
 	}
 }
 
 void ButiScript::NameSpace::AnalyzeClasses(Compiler* arg_compiler)
 {
-	for (auto itr = list_analyzeClassBuffer.begin(), end = list_analyzeClassBuffer.end(); itr != end; itr++) {
-		(*itr)->Analyze(arg_compiler);
+	for (auto itr :list_analyzeClassBuffer) {
+		itr->Analyze(arg_compiler);
+	}
+}
+
+void ButiScript::NameSpace::DeclareClasses(Compiler* arg_compiler)
+{
+	for (auto itr : list_analyzeClassBuffer) {
+		itr->Regist(arg_compiler);
 	}
 }
 

@@ -56,16 +56,16 @@ const error_p syntax_error_p = error_parser("文法エラー");
 
 //メンバ変数の情報
 struct MemberValue {
-	MemberValue(const std::int32_t arg_index,const std::string& arg_name,const AccessModifier arg_accessType) {
-		type= arg_index;
+	MemberValue(const std::string& arg_typeName,const std::string& arg_name,const AccessModifier arg_accessType) {
+		typeName= arg_typeName;
 		name = arg_name;
-		if ((std::int32_t)arg_accessType <= (std::int32_t)AccessModifier::Protected && (std::int32_t)arg_accessType >= (std::int32_t)AccessModifier::Public) {
+		if (static_cast<std::int32_t>(arg_accessType) <=static_cast<std::int32_t>(AccessModifier::Protected )
+			&& static_cast<std::int32_t>(arg_accessType) >= static_cast<std::int32_t>(AccessModifier::Public)) {
 			accessType = arg_accessType;
 		}
 	}
 	MemberValue(){}
-	std::int32_t type;
-	std::string name;
+	std::string name,typeName;
 	AccessModifier accessType=AccessModifier::Public;
 };
 
@@ -83,6 +83,7 @@ struct unary_node_func {
 	}
 }; 
 
+//nullノードの作成
 struct null_node_func {
 	template <typename Ty1>
 	struct result { using type = Node_t; };
@@ -118,6 +119,16 @@ struct binary_node_func_useDriver {
 	}
 };
 
+struct node_to_funcCall {
+	template <typename Ty1>
+	struct result { using type = Node_t; };
+
+	template <typename Ty1>
+	Node_t operator()(Ty1 arg_node) const
+	{
+		return arg_node->ToFunctionCall();
+	}
+};
 
 //ラムダ式を値として利用するノードを生成する
 struct lambda_node_func {
@@ -254,18 +265,6 @@ struct arg_name_func {
 	}
 };
 
-//関数、変数呼び出し時に名前空間を保持する
-struct call_namespace_func {
-	template < typename Ty2>
-	struct result { using type = std::string; };
-
-	template <typename Ty2>
-	std::string operator()(const Ty2& arg_name) const
-	{
-		return arg_name + "::";
-	}
-};
-
 // 関数の生成
 struct make_function_func {
 	template < typename Ty1,typename Ty2>
@@ -283,10 +282,11 @@ struct make_lambda_func {
 	struct result { using type = Lambda_t; };
 
 	template <typename Ty1,typename Ty2>
-	Lambda_t operator()(const Ty1 arg_typeIndex,Ty2 arg_compiler ) const
+	Lambda_t operator()(const Ty1 arg_typeName,Ty2 arg_compiler ) const
 	{
 		Lambda_t output;
-		output= ButiEngine::make_value<Lambda>(arg_typeIndex.first, arg_typeIndex.second, arg_compiler);
+		assert(0 && "まだ");
+		//output= ButiEngine::make_value<Lambda>(arg_typeIndex.first, arg_typeIndex.second, arg_compiler);
 		arg_compiler->PushAnalyzeFunction(output);
 		return output;
 	}
@@ -312,8 +312,10 @@ struct make_class_func {
 	template <typename Ty1, typename Ty2>
 	Class_t operator()(const Ty1& arg_name,Ty2 arg_compiler) const
 	{
-		arg_compiler->PushNameSpace(ButiEngine::make_value< NameSpace>(arg_name));
-		return ButiEngine::make_value<Class>(arg_name);
+		arg_compiler->PushNameSpace(ButiEngine::make_value<NameSpace>(arg_name));
+		auto output = ButiEngine::make_value<Class>(arg_name);
+		output->PushCompiler(arg_compiler);
+		return output;
 	}
 };
 
@@ -325,7 +327,7 @@ struct make_classMember_func {
 	template < typename Ty1, typename Ty2>
 	void operator()(Ty1 vlp_class, const Ty2& type_and_name) const
 	{
-		vlp_class->SetValue(type_and_name.name, type_and_name.type, type_and_name.accessType);
+		vlp_class->SetValue(type_and_name.name, type_and_name.typeName, type_and_name.accessType);
 	}
 };
 
@@ -396,7 +398,7 @@ struct setFunctionType_func {
 	template <typename Ty1, typename Ty2,typename Ty3>
 	Function_t operator()(Ty1& arg_decl, Ty2 arg_type,Ty3 arg_compiler) const
 	{
-		arg_decl->set_type(arg_type);
+		arg_decl->SetReturnTypeName(arg_type);
 		arg_compiler->PushAnalyzeFunction(arg_decl);
 		return arg_decl;
 	}
@@ -481,7 +483,20 @@ struct	specificFunctionType_func {
 	template <typename Ty1, typename Ty2, typename Ty3>
 	std::int32_t operator()(const Ty1& arg_retType, const Ty2& arg_args, Ty3 arg_compiler) const
 	{
-		return  arg_compiler->GetfunctionTypeIndex(arg_args, arg_retType);
+		assert(0 && "まだ");
+		return  0;//arg_compiler->GetfunctionTypeIndex(arg_args, arg_retType);
+	}
+};
+//型の特定
+struct	makeFunctionTypeStr_func {
+	template <typename Ty1, typename Ty2>
+	struct result { using type = std::string; };
+
+	template <typename Ty1, typename Ty2>
+	std::string operator()(const Ty1& arg_retType, const Ty2& arg_args) const
+	{
+		assert(0&&"まだ");
+		return  std::to_string(arg_retType);
 	}
 };
 
@@ -498,7 +513,7 @@ struct analyze_func {
 	}
 };
 // 関数、ラムダ登録
-struct pushConpiler_func {
+struct pushCompiler_func {
 	template <typename Ty1, typename Ty2>
 	struct result { using type = std::int32_t; };
 
@@ -509,7 +524,7 @@ struct pushConpiler_func {
 	}
 };
 // ブロック内関数登録
-struct pushConpiler_sub_func {
+struct pushCompiler_sub_func {
 	template <typename Ty1, typename Ty2>
 	struct result { using type = std::int32_t; };
 
@@ -534,6 +549,7 @@ struct make_block_func {
 // phoenixが使用する無名関数用の関数
 const phoenix::function<BindFunctionObject::binary_node_func>  binary_node =						BindFunctionObject::binary_node_func();
 const phoenix::function<BindFunctionObject::binary_node_func_useDriver>		binary_node_comp =		BindFunctionObject::binary_node_func_useDriver();
+const phoenix::function<BindFunctionObject::node_to_funcCall>  node_to_funcCall = BindFunctionObject::node_to_funcCall();
 const phoenix::function<BindFunctionObject::null_node_func>  null_node =							BindFunctionObject::null_node_func();
 const phoenix::function<BindFunctionObject::unary_node_func>  unary_node =							BindFunctionObject::unary_node_func();
 const phoenix::function<BindFunctionObject::lambda_node_func>  lambda_node=							BindFunctionObject::lambda_node_func();
@@ -559,15 +575,15 @@ const phoenix::function<BindFunctionObject::make_pair_func>  make_pair =							B
 const phoenix::function<BindFunctionObject::make_memberValue_func>  make_memberValue =				BindFunctionObject::make_memberValue_func();
 const phoenix::function<BindFunctionObject::setFunctionType_func>  set_functionType =				BindFunctionObject::setFunctionType_func();
 const phoenix::function<BindFunctionObject::specificType_func>  specificType =						BindFunctionObject::specificType_func();
-const phoenix::function<BindFunctionObject::specificFunctionType_func>  specificFunctionType =		BindFunctionObject::specificFunctionType_func();
+const phoenix::function<BindFunctionObject::specificFunctionType_func>  specificFunctionType = BindFunctionObject::specificFunctionType_func();
+const phoenix::function<BindFunctionObject::makeFunctionTypeStr_func>  makeFunctionTypeStr =		BindFunctionObject::makeFunctionTypeStr_func();
 const phoenix::function<BindFunctionObject::accessModifier_func>  specificAccessModifier =			BindFunctionObject::accessModifier_func();
 const phoenix::function<BindFunctionObject::analyze_func>  analyze =								BindFunctionObject::analyze_func();
-const phoenix::function<BindFunctionObject::pushConpiler_sub_func>  pushCompiler_sub =				BindFunctionObject::pushConpiler_sub_func();
-const phoenix::function<BindFunctionObject::pushConpiler_func>  pushCompiler =						BindFunctionObject::pushConpiler_func();
+const phoenix::function<BindFunctionObject::pushCompiler_sub_func>  pushCompiler_sub =				BindFunctionObject::pushCompiler_sub_func();
+const phoenix::function<BindFunctionObject::pushCompiler_func>  pushCompiler =						BindFunctionObject::pushCompiler_func();
 const phoenix::function<BindFunctionObject::regist_func>  regist =									BindFunctionObject::regist_func();
 const phoenix::function<BindFunctionObject::registMethod_func>  registMethod =						BindFunctionObject::registMethod_func();
 const phoenix::function<BindFunctionObject::pop_nameSpace_func>  popNameSpace =						BindFunctionObject::pop_nameSpace_func();
-const phoenix::function<BindFunctionObject::call_namespace_func>  functionCall_namespace =			BindFunctionObject::call_namespace_func();
 const phoenix::function<BindFunctionObject::cout_func>  cout =										BindFunctionObject::cout_func();
 const phoenix::function<BindFunctionObject::make_block_func>  make_block=							BindFunctionObject::make_block_func();
 
@@ -589,27 +605,19 @@ namespace ButiClosure {
 	};
 
 	// ノードのクロージャ
-	struct node_val : boost::spirit::closure<node_val, Node_t, std::int32_t, std::string,ButiEngine::List<std::int32_t>> {
+	struct node_val : boost::spirit::closure<node_val, Node_t, std::int32_t, std::string,ButiEngine::List<std::string>> {
 		member1 node;
 		member2 Op;
 		member3 name;
 		member4 typeTemplates;
 	};
-	// メンバ呼び出しのクロージャ
-	struct callmember_val : boost::spirit::closure<callmember_val, Node_t, std::int32_t, std::string> {
-		member1 memberNode;
-		member1 valueNode;
-		member2 Op;
-		member3 name;
-	};
-
 	// 名前空間のクロージャ
 	struct namespace_val : boost::spirit::closure<namespace_val,  std::string> {
 		member1 name;
 	};
-	// ノードのクロージャ
+	// ノードリストのクロージャ
 	struct nodelist_val : boost::spirit::closure<nodelist_val, NodeList_t, std::int32_t> {
-		member1 node;
+		member1 nodeList;
 		member2 Op;
 	};
 	// 文のクロージャ
@@ -617,16 +625,16 @@ namespace ButiClosure {
 		member1 statement;
 	};
 	// 型のクロージャ
-	struct type_val : boost::spirit::closure<type_val, std::int32_t> {
+	struct type_val : boost::spirit::closure<type_val, std::string> {
 		member1 type;
 	};
 	// 関数型のクロージャ
-	struct type_func_val : boost::spirit::closure<type_func_val, std::pair< std::int32_t, ButiEngine::List<ArgDefine>>,ButiEngine::List<ArgDefine>> {
+	struct type_func_val : boost::spirit::closure<type_func_val, std::string,ButiEngine::List<ArgDefine>> {
 		member1 type;
 		member2 argments;
 	};
 	//ラムダ式定義のクロージャ
-	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, std::int32_t> {
+	struct lambda_val :boost::spirit::closure<lambda_val, Lambda_t, std::string> {
 		member1 expression;
 		member2 type;
 	};
@@ -636,15 +644,15 @@ namespace ButiClosure {
 	};
 
 	// 変数定義のクロージャ
-	struct decl_val : boost::spirit::closure<decl_val, Declaration_t, std::int32_t,ButiEngine::List< Node_t>,AccessModifier> {
+	struct decl_val : boost::spirit::closure<decl_val, Declaration_t, std::string,ButiEngine::List< std::string>,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 value;
-		member4 accessModifier  ;
+		member4 accessModifier;
 	};
 
 	// 関数定義のクロージャ
-	struct func_val : boost::spirit::closure<func_val, Function_t, std::int32_t, std::string,AccessModifier> {
+	struct func_val : boost::spirit::closure<func_val, Function_t, std::string, std::string,AccessModifier> {
 		member1 node;
 		member2 type;
 		member3 name;
@@ -681,270 +689,6 @@ namespace ButiClosure {
 	};
 }
 
-//型登録
-struct typeRegist_grammer : public boost::spirit::grammar<typeRegist_grammer> {
-	typeRegist_grammer(Compiler* arg_compiler)
-		:compiler(arg_compiler)
-	{
-	}
-	Compiler* compiler;
-	template <typename ScannerT>
-	struct definition {
-
-		boost::spirit::rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
-		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
-		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
-		boost::spirit::rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
-		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
-		boost::spirit::rule<ScannerT>	decl_value,decl_classMember,Value, function, decl_function, argdef, type,funcType,string_node, number, floatNumber, func_node, prime, unary, mul_expr, add_expr, shift_expr, bit_expr, equ_expr,
-			and_expr, expr, assign, argument, statement, arg, decl_func, callMember, block, input, ident,lambda,null,access;
-
-		boost::spirit::symbols<> keywords,boolean;
-		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
-		boost::spirit::dynamic_distinct_parser<ScannerT> keyword_p;
-		definition(typeRegist_grammer const& self)
-			:keyword_p(boost::spirit::alnum_p | '_')
-		{
-			using phoenix::arg1;
-			using phoenix::arg2;
-			using phoenix::var;
-			using phoenix::new_;
-			using phoenix::construct_;
-
-			keywords = "if", "for", "while", "switch", "case", "default", "break", "return", "namespace","true","false","class", "null", "function","public","private","var";
-
-
-			// 識別子
-			ident = boost::spirit::lexeme_d[
-				((boost::spirit::alpha_p | '_') >> *(boost::spirit::alnum_p | '_')) - (keywords >> boost::spirit::anychar_p - (boost::spirit::alnum_p | '_'))
-			];
-			// 識別子（クロージャに登録）
-			identifier = ident[identifier.str = construct_<std::string>(arg1, arg2)];
-
-			null =boost::spirit::str_p( "null");
-
-			Enum = "enum" >> identifier[Enum.enum_t = make_enum(arg1)] >> "{" >>
-				!identifier[add_enum(Enum.enum_t, arg1)]
-				>> *(',' >> identifier[add_enum(Enum.enum_t, arg1)]) >>
-				"}";
-
-			//整数
-			number = boost::spirit::uint_p| boolean;
-			boolean =  "true", "false";
-			//浮動小数
-			floatNumber = boost::spirit::strict_real_p;
-
-			// 文字列
-			string_node = boost::spirit::lexeme_d[
-				boost::spirit::confix_p(boost::spirit::ch_p('"'), *boost::spirit::c_escape_ch_p, '"')
-			];
-
-
-			//名前空間からの呼び出し
-			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
-
-			// 変数
-			Value = (*(nameSpace_call)) >>
-				identifier;
-
-			// 関数の引数
-			argument = expr
-				>> *(',' >> expr);
-
-			// 関数呼び出し
-			func_node = *(identifier >> "::") >> identifier >>
-				!('<' >> type>> *(',' >> type) >>'>') >>
-				'(' >> !argument >> ')';
-
-			//メンバ呼び出し
-			callMember = (Value >> "." >> (func_node | identifier) >> *("." >> (func_node | identifier)))|
-				(func_node >> ".">> (func_node|identifier)>>  *("." >> (func_node | identifier)) )
-				;
-
-			// 計算のprimeノード
-			prime = lambda
-				|callMember
-				| func_node
-				| Value
-				| floatNumber
-				| number
-				| string_node
-				|null
-				| '(' >> expr >> ')'
-				;
-
-			// 単項演算子
-			unary = '-' >> prime
-				| '!' >> prime
-				| prime>>!( boost::spirit::str_p("++")  | boost::spirit::str_p("--"));
-
-			// 二項演算子（*, /, %）
-			mul_op.add("*", OP_MUL)("/", OP_DIV)("%", OP_MOD);
-			mul_expr = unary
-				>> *(mul_op
-					>> unary);
-
-			// 二項演算子（+, -）
-			add_op.add("+", OP_ADD)("-", OP_SUB);
-			add_expr = mul_expr
-				>> *(add_op
-					>> mul_expr);
-
-			// 二項演算子（<<, >>）
-			shift_op.add("<<", OP_LSHIFT)(">>", OP_RSHIFT);
-			shift_expr = add_expr
-				>> *(shift_op
-					>> add_expr);
-
-			// 二項演算子（&, |）
-			bit_op.add("&", OP_AND)("|", OP_OR);
-			bit_expr = shift_expr
-				>> *(bit_op
-					>> shift_expr);
-
-			// 二項演算子（比較）
-			equ_op.add("==", OP_EQ)("!=", OP_NE)(">=", OP_GE)(">", OP_GT)("<=", OP_LE)("<", OP_LT);
-			equ_expr = bit_expr
-				>> !(equ_op
-					>> bit_expr);
-
-			// 二項演算子（&&）
-			and_expr = equ_expr
-				>> *("&&" >> equ_expr);
-
-			// 二項演算子（||）
-			expr = and_expr
-				>> *("||" >> and_expr);
-
-			// 代入
-			assign_op.add
-			("=", OP_ASSIGN)
-				("+=", OP_ADD_ASSIGN)
-				("-=", OP_SUB_ASSIGN)
-				("*=", OP_MUL_ASSIGN)
-				("/=", OP_DIV_ASSIGN)
-				("%=", OP_MOD_ASSIGN)
-				("&=", OP_AND_ASSIGN)
-				("|=", OP_OR_ASSIGN)
-				("<<=", OP_LSHIFT_ASSIGN)
-				(">>=", OP_RSHIFT_ASSIGN);
-			assign = (callMember | Value)
-				>> assign_op
-				>> (expr);
-
-			access = (boost::spirit::str_p("private") | boost::spirit::str_p("public"));
-
-			// 変数宣言
-			decl_value = !access >> "var" >> Value % ',' >> ':' >> type >> ';';
-
-			// 型名
-			type = identifier >> !boost::spirit::ch_p('&')
-				| funcType;
-			//関数型名
-			funcType = '(' >> !(arg % ',') >> ')' >> "=>" >> type;
-
-			lambda = funcType >> block;
-
-			// 関数宣言の引数
-			arg = identifier >> ':'
-				>> type
-				>> !boost::spirit::str_p("[]");
-
-			// 関数宣言
-			decl_func = identifier
-				>> '(' >> !(arg % ',') >> ')' >> ":" >> type >> ';';
-
-			// 関数定義の引数
-			argdef = identifier >> ':'
-				>> type
-				>> !boost::spirit::str_p("[]");
-
-			// 関数定義
-			function = !access >> identifier
-				>> '(' >> !(argdef% ',') >> ')' >>
-				':' >> type
-				>> block;
-
-			//関数宣言
-			decl_function =!access>> "function" >> function;
-
-			// 文ブロック
-			block = boost::spirit::ch_p('{')
-				>> *(statement
-					| decl_value)
-				>> '}';
-			//クラスのメンバー定義
-			decl_classMember = !access >> identifier
-				>> ':' >> type >> ';';
-
-			//クラス定義
-			define_class = "class" >> identifier[define_class.Class = make_class(arg1,self.compiler)] >> "{" >>
-				*(decl_classMember
-					| function)
-				>> boost::spirit::ch_p('}')[popNameSpace(self.compiler)];
-			// 文
-			statement = boost::spirit::ch_p(';')
-				| assign >> ';'
-				| boost::spirit::str_p("case") >> expr >> ':'
-				| boost::spirit::str_p("default") >> ':'
-				| boost::spirit::str_p("break") >> ';'
-				| boost::spirit::str_p("return")
-				>> !expr >> ';'
-				| boost::spirit::str_p("if")
-				>> '(' >> expr >> ')'
-				>> statement
-				>> !("else"
-					>> statement)
-
-				| boost::spirit::str_p("for") >> '('
-				>> !(assign) >> ';'
-				>> expr >> ';'
-				>> !(assign | func_node | callMember| unary) >> ')'
-				>> statement
-
-				| boost::spirit::str_p("while") >> '('
-				>> expr >> ')'
-				>> statement
-				| boost::spirit::str_p("switch") >> '('
-				>> expr >> ')'
-				>> '{'
-				>> *statement
-				>> '}'
-				| func_node >> ';'
-				| callMember >> ';'
-				| unary >> ';'
-				| decl_function
-				| block
-				;
-
-			nameSpace = boost::spirit::str_p("namespace") >> identifier[regist(make_namespace(arg1), self.compiler)] >> "{"
-				>> *(define_class[regist(arg1, self.compiler)]
-					| Enum[analyze(arg1, self.compiler)]
-					| decl_function
-					| decl_func
-					| decl_value
-					| nameSpace[popNameSpace(self.compiler)]) >> "}";
-
-			// 入力された構文
-			input = *(define_class[regist(arg1, self.compiler)]
-				| Enum[analyze(arg1, self.compiler)]
-				| decl_function
-				| decl_func
-				| decl_value
-				| nameSpace[popNameSpace(self.compiler)]
-				|lambda
-				| syntax_error_p
-				);
-		}
-
-		boost::spirit::rule<ScannerT> const& start() const
-		{
-			return input;
-		}
-	};
-};
-
-
 // 関数、クラス解析
 struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> {
 	funcAnalyze_grammer(Compiler* arg_compiler)
@@ -955,42 +699,27 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 	template <typename ScannerT>
 	struct definition {
 
-		boost::spirit::rule<ScannerT, ButiClosure::string_val::context_t>	identifier;
-		boost::spirit::rule<ScannerT, ButiClosure::string_val::context_t>	string_node;
+		boost::spirit::rule<ScannerT, ButiClosure::string_val::context_t>	identifier,string_node;
 		boost::spirit::rule<ScannerT, ButiClosure::number_val::context_t>	number;
 		boost::spirit::rule<ScannerT, ButiClosure::float_val::context_t>	floatNumber;
-		boost::spirit::rule<ScannerT, ButiClosure::type_val::context_t>		type;
+		boost::spirit::rule<ScannerT, ButiClosure::type_val::context_t>		type,arg;
 		boost::spirit::rule<ScannerT, ButiClosure::type_func_val::context_t>		funcType;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		func_node;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		Value;
-		boost::spirit::rule<ScannerT, ButiClosure::callmember_val::context_t> callMember;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		prime;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		unary;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		mul_expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		add_expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		shift_expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		bit_expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		equ_expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		and_expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		expr;
-		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		assign;
+		boost::spirit::rule<ScannerT, ButiClosure::node_val::context_t>		
+			Value,prime,unary,mul_expr,add_expr,shift_expr,bit_expr,equ_expr,and_expr,expr,assign;
 		boost::spirit::rule<ScannerT, ButiClosure::nodelist_val::context_t>	argument;
 		boost::spirit::rule<ScannerT, ButiClosure::state_val::context_t>	statement;
-		boost::spirit::rule<ScannerT, ButiClosure::func_val::context_t>		function;
-		boost::spirit::rule<ScannerT, ButiClosure::func_val::context_t>		decl_function;
+		boost::spirit::rule<ScannerT, ButiClosure::func_val::context_t>		function,decl_function;
 		boost::spirit::rule<ScannerT, ButiClosure::class_val::context_t>		define_class;
-		boost::spirit::rule<ScannerT, ButiClosure::type_val::context_t>		arg;
-		boost::spirit::rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value;
-		boost::spirit::rule<ScannerT, ButiClosure::decl_val::context_t>		decl_func;
+		boost::spirit::rule<ScannerT, ButiClosure::decl_val::context_t>		decl_value,decl_func;
 		boost::spirit::rule<ScannerT, ButiClosure::argdef_val::context_t>	argdef;
 		boost::spirit::rule<ScannerT, ButiClosure::block_val::context_t>	block;
 		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace;
-		boost::spirit::rule<ScannerT, ButiClosure::namespace_val::context_t>	nameSpace_call;
 		boost::spirit::rule<ScannerT, ButiClosure::lambda_prime_val::context_t>	lambda_prime;
 		boost::spirit::rule<ScannerT, ButiClosure::lambda_val::context_t>		lambda;
 		boost::spirit::rule<ScannerT, ButiClosure::classMember_val::context_t>		decl_classMember;
 		boost::spirit::rule<ScannerT, ButiClosure::access_val::context_t>		access;
-		boost::spirit::rule<ScannerT>							input, Enum,null;
+		boost::spirit::rule<ScannerT, ButiClosure::enum_val::context_t>		Enum;
+		boost::spirit::rule<ScannerT>							input, null;
 		boost::spirit::rule<ScannerT>							ident;
 
 		boost::spirit::symbols<> keywords,boolean;
@@ -1014,13 +743,10 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			identifier = ident[identifier.str = construct_<std::string>(arg1, arg2)];
 			
 
-			Enum = "enum" >> identifier >> "{" >>
-				identifier
-				>> *(',' >> identifier) >>
+			Enum = "enum" >> identifier[Enum.enum_t = make_enum(arg1)] >> "{" >>
+				!identifier[add_enum(Enum.enum_t, arg1)]
+				>> *(',' >> identifier[add_enum(Enum.enum_t, arg1)]) >>
 				"}";
-
-			//名前空間からの呼び出し
-			nameSpace_call = identifier[nameSpace_call.name = arg1] >> "::";
 
 			//整数
 			number = boost::spirit::uint_p[number.number = arg1]|boolean[number.number=arg1];
@@ -1035,55 +761,23 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			];
 			null = boost::spirit::str_p("null");
 
-			// 変数
-			Value = (*(nameSpace_call[Value.name += functionCall_namespace(arg1)])) >>
-				identifier[Value.node = unary_node(OP_IDENTIFIER, Value.name+ arg1, self.compiler)]
-				>> !('[' >> expr[Value.node = binary_node(OP_ARRAY, Value.node, arg1)] >> ']');
+			// 値呼び出し
+			Value = *(identifier[Value.node = binary_node(OP_REFFERENCE, Value.node, arg1)]>>
+				!(!('<' >> type[list_push_back(Value.typeTemplates, arg1)] >> *(',' >> type[list_push_back(Value.typeTemplates, arg1)]) >>
+					boost::spirit::ch_p('>')[Value.node = binary_node(OP_FUNCTION, Value.node, Value.typeTemplates)])
+					>>boost::spirit::ch_p('(')[Value.node=node_to_funcCall(Value.node)]>>
+					!argument[Value.node = binary_node(OP_FUNCTION, Value.node, arg1)]>>')') % ".");
 
 			// 関数の引数
-			argument = expr[argument.node = make_argument(arg1)]
-				>> *(',' >> expr[argument.node = push_back(argument.node, arg1)]);
-
-			// 関数呼び出し
-			func_node = (*(nameSpace_call[func_node.name += functionCall_namespace(arg1) ]))>>
-				identifier[func_node.node = unary_node(OP_FUNCTION, func_node.name+arg1, self.compiler)] >>
-				!( '<'>> type[ list_push_back(func_node.typeTemplates,arg1) ]>>*(','>> type[list_push_back(func_node.typeTemplates, arg1)])>>
-					boost::spirit::ch_p('>')[func_node.node = binary_node(OP_FUNCTION, func_node.node,func_node.typeTemplates )]) >>
-				'(' >> !argument[func_node.node = binary_node(OP_FUNCTION, func_node.node, arg1)] >> ')';
-
-
-			//メンバ呼び出し
-			callMember = (Value[callMember.valueNode = arg1] >> "."
-				>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]
-				>> !(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
-				>> *("." >>
-					identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)] >>
-					!(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
-					))
-				| (func_node[callMember.valueNode = arg1] >> "."
-					>> identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]
-					>> !(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
-					>> *("." >>
-						identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)] >>
-						!(boost::spirit::ch_p('(')[callMember.memberNode = unary_node(OP_METHOD, callMember.memberNode, self.compiler)] >> !argument[callMember.memberNode = binary_node(OP_METHOD, callMember.memberNode, arg1)] >> ')')
-						))
-				
-				;
-
-			callMember = (Value[callMember.valueNode = arg1] >> "." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.valueNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]) >>
-				*("." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.memberNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)]))) |
-				(func_node[callMember.valueNode = arg1] >> "." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.valueNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.valueNode, arg1, self.compiler)]) >>
-					*("." >> (func_node[callMember.memberNode = binary_node_comp(OP_METHOD, callMember.memberNode, arg1, self.compiler)] | identifier[callMember.memberNode = binary_node_comp(OP_MEMBER, callMember.memberNode, arg1, self.compiler)])))
-				;
-
+			argument = expr[argument.nodeList = make_argument(arg1)]
+				>> *(',' >> expr[argument.nodeList = push_back(argument.nodeList, arg1)]);
+			
 			// 計算のprimeノード
 			prime = lambda_prime[prime.node=arg1]
-				| callMember[prime.node = arg1]
-				|func_node[prime.node = arg1]
-				| Value[prime.node = arg1]
 				| floatNumber[prime.node = unary_node(OP_FLOAT, arg1, self.compiler)]
 				| number[prime.node = unary_node(OP_INT, arg1, self.compiler)]
 				| string_node[prime.node = unary_node(OP_STRING, arg1, self.compiler)]
+				| Value[prime.node = arg1]
 				|null[prime.node=null_node(self.compiler)]
 				| '(' >> expr[prime.node = arg1] >> ')'
 				;
@@ -1144,7 +838,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				("|=", OP_OR_ASSIGN)
 				("<<=", OP_LSHIFT_ASSIGN)
 				(">>=", OP_RSHIFT_ASSIGN);
-			assign = (callMember[assign.node = arg1]|Value[assign.node = arg1] )
+			assign = (Value[assign.node = arg1] )
 				>> assign_op[assign.Op = arg1]
 				>> expr[assign.node = binary_node(assign.Op, assign.node, arg1)];
 
@@ -1152,14 +846,14 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 
 			// 変数宣言
 			decl_value = !access[decl_value.accessModifier =arg1]
-				>> "var" >> Value[list_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.accessModifier), decl_value.value)] >> ';';
+				>> "var" >> identifier[list_push_back(decl_value.value, arg1)] % ',' >> ':' >> type[decl_value.node = push_back(make_decl1(arg1, decl_value.accessModifier), decl_value.value)] >> ';';
 
 
 			// 型名
-			type = (identifier[type.type = specificType(arg1, self.compiler)] >> !boost::spirit::ch_p('&')[type.type |= TYPE_REF])
-				|funcType[type.type= specificType(arg1,self.compiler)];
+			type = (identifier[type.type = arg1] >> !boost::spirit::ch_p('&')[type.type+= "&"])
+				|funcType[type.type= arg1];
 			//関数型名
-			funcType = '(' >> !(argdef[list_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = make_pair(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
+			funcType = '(' >> !(argdef[list_push_back(funcType.argments,arg1)] % ',') >> ')' >> "=>" >> type[funcType.type = makeFunctionTypeStr(specificFunctionType(arg1, funcType.argments, self.compiler), funcType.argments)];
 
 			lambda = funcType[lambda.expression = make_lambda(arg1,self.compiler)] >> block[lambda.expression =push_back(lambda.expression,arg1)];
 
@@ -1168,7 +862,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			// 関数宣言の引数
 			arg = identifier >> ':'
 				>> type[arg.type = arg1]
-				>> !boost::spirit::str_p("[]")[arg.type |= TYPE_REF];
+				>> !boost::spirit::str_p("[]")[arg.type += "&"];
 
 			// 関数宣言
 			decl_func =  identifier[decl_func.node = make_decl1(decl_func.type, arg1)]
@@ -1223,7 +917,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				| boost::spirit::str_p("for")[statement.statement = make_statement(FOR_STATE)] >> '('
 				>> !(assign[statement.statement = add_statement(statement.statement, 0, arg1)] ) >> ';'
 				>> expr[statement.statement = add_statement(statement.statement, 1, arg1)] >> ';'
-				>> !(assign[statement.statement = add_statement(statement.statement, 2, arg1)] | func_node[statement.statement = add_statement(statement.statement, 2, arg1)]| unary[statement.statement = add_statement(statement.statement, 2, arg1)] ) >> ')'
+				>> !(assign[statement.statement = add_statement(statement.statement, 2, arg1)] |unary[statement.statement = add_statement(statement.statement, 2, arg1)] ) >> ')'
 				>> statement[statement.statement = push_back(statement.statement, arg1)]
 
 
@@ -1235,27 +929,25 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				>> '{'
 				>> *statement[statement.statement = push_back(statement.statement, arg1)]
 				>> '}'
-				| (callMember[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| decl_function[statement.statement = make_statement1(NOP_STATE, pushCompiler_sub(arg1, self.compiler))]
-				| (func_node[statement.statement = make_statement1(CALL_STATE, arg1)] >> ';')
 				| block[statement.statement = make_statement1(BLOCK_STATE, arg1)]
 				| unary[statement.statement = make_statement1(UNARY_STATE, arg1)] >> ';'
 				;
 
 
 			nameSpace = boost::spirit::str_p("namespace") >> identifier[regist(make_namespace(arg1), self.compiler)] >> "{"
-				>> *(define_class[pushCompiler(arg1,self.compiler)]
-					|Enum
+				>> *(define_class
+					|Enum[analyze(arg1, self.compiler)]
 					|decl_function[pushCompiler(arg1, self.compiler)]
-					| decl_func[analyze(arg1, self.compiler)]
+					| decl_func
 					| decl_value[analyze(arg1, self.compiler)]
 					| nameSpace[popNameSpace(self.compiler)]) >> "}";
 
 			// 入力された構文
-			input = *(define_class[pushCompiler(arg1, self.compiler)]
-				|Enum
+			input = *(define_class
+				|Enum[analyze(arg1, self.compiler)]
 				|decl_function[pushCompiler(arg1, self.compiler)]
-				| decl_func[analyze(arg1, self.compiler)]
+				| decl_func
 				| decl_value[analyze(arg1, self.compiler)]
 				| nameSpace[popNameSpace(self.compiler)]
 				| syntax_error_p
@@ -1325,19 +1017,8 @@ bool ButiScript::ScriptParse(const std::string& arg_filePath, Compiler* arg_comp
 	begin.set_tabchars(4);
 
 	funcAnalyze_grammer	gr(arg_compiler);
-	typeRegist_grammer	gr_typeRegist(arg_compiler);
 	skip_parser skip_p;
-	boost::spirit::parse_info<iterator_t> info = parse(begin, end, gr_typeRegist, skip_p);
-	if (!(info.hit && (info.full || skip_all(info.stop, end, skip_p)))) {
-		arg_compiler->error("クラス構文解析失敗");
-
-		arg_compiler->ClearNameSpace();
-		arg_compiler->LambdaCountReset();
-		arg_compiler->ClearGlobalNameSpace();
-		return false;
-	}
-	arg_compiler->ClearNameSpace();
-	info = parse(begin, end, gr, skip_p);
+	boost::spirit::parse_info<iterator_t> info = parse(begin, end, gr, skip_p);
 	arg_compiler->OpHalt();
 	arg_compiler->LambdaCountReset();
 	arg_compiler->Analyze();

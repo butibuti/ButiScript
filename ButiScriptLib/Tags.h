@@ -23,14 +23,9 @@ public:
 	{
 	}
 
-	ArgDefine(const std::int32_t arg_type)
-		: valueType(arg_type)
-	{
-	}
-	ArgDefine(const std::int32_t arg_type, const std::string& arg_name)
-		: valueType(arg_type), name(arg_name)
-	{
-	}
+	ArgDefine(const std::int32_t arg_type): valueType(arg_type){}
+	ArgDefine(const std::int32_t arg_type, const std::string& arg_name) :valueType(arg_type), name(arg_name) {}
+	ArgDefine(const std::string& arg_valueTypeName, const std::string& arg_name):valueTypeName(arg_valueTypeName), name(arg_name){}
 
 	void SetRef()
 	{
@@ -42,12 +37,18 @@ public:
 		name = arg_name;
 	}
 
+	void SetTypeName(const std::string& arg_name)
+	{
+		valueTypeName= arg_name;
+	}
+
 	std::int32_t GetType() const { return valueType; }
 	const std::string& GetName() const { return name; }
+	const std::string& GetTypeName() const { return valueTypeName; }
 
 private:
 	std::int32_t valueType;
-	std::string name;
+	std::string name,valueTypeName;
 };
 class EnumTag {
 public:

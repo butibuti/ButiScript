@@ -2,7 +2,7 @@
 #define BUTISCRIPTCOMPILER_H
 
 #include "VirtualMachine.h"
-#include "Node.h"
+#include "Declaration.h"
 #include<unordered_map>
 #include"ButiUtil/ButiUtil/Helper/StringHelper.h"
 #include<typeinfo>
@@ -106,8 +106,9 @@ public:
 	void PushFunction(Function_t arg_func);
 	void PushClass(Class_t arg_class);
 	
-	void AnalyzeFunctions(Compiler* c);
-	void AnalyzeClasses(Compiler* c);
+	void AnalyzeFunctions(Compiler* arg_c);
+	void AnalyzeClasses(Compiler* arg_c);
+	void DeclareClasses(Compiler* arg_c);
 	void Clear();
 private:
 	std::string name;
@@ -186,13 +187,13 @@ public:
 
 
 
-	void AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::int32_t, AccessModifier>>& arg_memberInfo);
-	void RegistScriptType(const std::string& arg_typeName);
+	void AnalyzeScriptType(const std::string& arg_typeName, const std::map < std::string, std::pair< std::string, AccessModifier>>& arg_memberInfo);
+	TypeTag* RegistScriptType(const std::string& arg_typeName);
 	const ButiEngine::List<TypeTag* >& GetSystemTypes()const {
 		return types.GetSystemType();
 	}
 
-	void ValueDefine(const std::int32_t arg_type, const ButiEngine::List<Node_t>& node,const AccessModifier arg_access);
+	void ValueDefine(const std::int32_t arg_type, const ButiEngine::List<std::string>& arg_varName,const AccessModifier arg_access);
 	void FunctionDefine(const std::int32_t arg_type, const std::string& arg_name, const ButiEngine::List<std::int32_t>& arg_list_argIndex);
 	FunctionTag* RegistFunction(const std::int32_t arg_type, const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_list_argDefine, Block_t arg_block, const AccessModifier arg_access,FunctionTable* arg_funcTable=nullptr);
 	void RegistLambda(const std::int32_t arg_type, const std::string& arg_name, const ButiEngine::List<ArgDefine>& arg_list_argDefine,FunctionTable* arg_functionTable);
@@ -354,7 +355,7 @@ public:
 
 	std::int32_t MakeLabel();
 
-	void AddValue(const std::int32_t arg_typeIndex, const std::string& arg_name, Node_t arg_node, const AccessModifier arg_access);
+	void AddValue(const std::int32_t arg_typeIndex, const std::string& arg_name, const AccessModifier arg_access);
 
 	void SetLabel(const std::int32_t arg_label);
 
@@ -407,15 +408,12 @@ private:
 	std::map<std::int64_t, std::int32_t> map_valueAllocCallsIndex;
 	std::map<std::int64_t,std::int32_t> map_refValueAllocCallsIndex;
 
-	NameSpace_t currentNameSpace = nullptr;
-	NameSpace_t globalNameSpace = nullptr;
+	NameSpace_t currentNameSpace = nullptr, globalNameSpace = nullptr;
 	ButiEngine::List<NameSpace_t> list_namespaces;
-	std::int32_t break_index;
-	std::int32_t error_count;
+	std::int32_t break_index, error_count, lambdaCount;
 
 	ButiEngine::List< std::string >list_function_name;
 	ButiEngine::List<std::int32_t> list_function_type;
-	std::int32_t lambdaCount;
 };
 template<typename T>
 struct CompilerSystemTypeRegister {

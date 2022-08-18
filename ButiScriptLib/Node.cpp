@@ -9,12 +9,11 @@
 #include <boost/mem_fn.hpp>
 #endif
 #include "Node.h"
+#include "Declaration.h"
 #include "compiler.h"
 
 
 namespace ButiScript {
-const char* thisPtrName = "this";
-const std::int32_t argmentAddressStart=-4;
 bool CanTypeCast(const std::int32_t arg_left, const std::int32_t arg_right) {
 	if (arg_left == TYPE_STRING || arg_right == TYPE_STRING) {
 		if (arg_left != arg_right) {
@@ -58,9 +57,6 @@ const FunctionTag* GetFunctionType(const Compiler* arg_compiler, const Node& lef
 // 変数ノードを生成
 Node_t Node::make_node(const std::int32_t arg_op, const std::string& arg_str, const Compiler* arg_compiler)
 {
-	if (arg_op == OP_IDENTIFIER)
-		return ButiEngine::make_value<Node_value>(arg_str);
-
 	if (arg_op == OP_STRING) {
 		std::uint64_t pos = arg_str.rfind('\"');
 		if (pos != std::string::npos)
@@ -98,24 +94,6 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const Compile
 	}
 	return ButiEngine::make_value<Node>(arg_op, arg_left);
 }
-
-
-Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const std::string arg_memberName,const Compiler* arg_compiler)
-{
-	if (GetEnumType(arg_compiler,*arg_left)) {
-		return  ButiEngine::make_value<Node_enum>( arg_left, arg_memberName);
-	}
-
-	if (arg_op == OP_MEMBER) {
-		return ButiEngine::make_value<Node_Member>(arg_op, arg_left, arg_memberName);
-	}
-	else if (arg_op == OP_METHOD) {
-		return nullptr;
-	}
-	return nullptr;
-}
-
-
 
 
 // 二項演算子のノードを生成
@@ -525,26 +503,30 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 	return ButiEngine::make_value<Node>(arg_op, arg_left, arg_right);
 }
 
-Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_right, const Compiler* arg_compiler)
+Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_refference,const std::string &arg_str)
 {
-	assert(arg_op == OP_METHOD);
-	return	arg_right->CreateMethod(arg_left);
+	if (!arg_refference) {
+		return ButiEngine::make_value<Node_value>(arg_str);
+	}
+	else {
+		return ButiEngine::make_value<Node_value>(arg_str, arg_refference);
+	}
+	return nullptr;
 }
 
 // 引数有り関数ノードの生成
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, NodeList_t arg_list)
 {
-	auto left = ButiEngine::dynamic_value_ptr_cast<Node_function>(arg_left);
-	if (left) {
-		left->SetArgmentList(arg_list);
-		return left;
-	}
-	return ButiEngine::make_value<Node_function>(arg_op, arg_left, arg_list);
+	auto left = arg_left ? arg_left : ButiEngine::make_value<Node_value>("");
+	left->SetArgmentList(arg_list);
+	return left;
 }
-//テンプレート引数有り関数ノードの生成
-Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const ButiEngine::List<std::int32_t>& arg_templateTypes)
+//テンプレート引数有りノードの生成
+Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const ButiEngine::List<std::string>& arg_templateTypes)
 {
-	return ButiEngine::make_value<Node_function>(arg_op, arg_left, arg_templateTypes);
+	auto left = arg_left ? arg_left : ButiEngine::make_value<Node_value>("");
+	left->SetTemplateList(arg_templateTypes);
+	return left;
 }
 
 
@@ -974,7 +956,7 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 	return TYPE_STRING;
 
 
-	arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
+	arg_compiler->error("プログラムエラー：処理できない計算ノードがありました。");
 	return -1;
 }
 
@@ -982,7 +964,7 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 // 計算ノードはpopできない
 
 std::int32_t Node::Pop(Compiler* arg_compiler) const{
-	arg_compiler->error("内部エラー：計算ノードをpopしています。");
+	arg_compiler->error("プログラムエラー：計算ノードをpopしています。");
 	return TYPE_INTEGER;
 }
 
@@ -1018,19 +1000,7 @@ std::int32_t Node::GetType(Compiler* arg_compiler)const {
 		return GetCallType(arg_compiler, strData, nullptr, {});
 	}
 	if (op == OP_IDENTIFIER) {
-		const ValueTag* valueTag = GetValueTag(arg_compiler);
-		if (valueTag)  {
-			return valueTag->valueType;
-		}
-		auto funcTag = GetFunctionType(arg_compiler, *this);
-
-		if (!funcTag) {
-			arg_compiler->error(GetString() + "は未定義です");
-			return 0;
-		}
-
-		return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
-
+		assert(0 && "ここ通る？");
 	}
 	std::int32_t left_type = leftNode->GetType(arg_compiler);
 	std::int32_t right_type = rightNode->GetType(arg_compiler);
@@ -1122,20 +1092,21 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 	}
 	return valueTag;
 }
-std::int32_t  Node_function::GetType(Compiler* arg_compiler)const {
-	return GetCallType(arg_compiler, leftNode->GetString(), &nodeList->list_args,list_templateTypes);
-}
-void Node_function::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
-{
-	leftNode->LambdaCapture(arg_captureList, arg_compiler);
-	nodeList->LambdaCapture(arg_captureList, arg_compiler);
-}
-Node_t Node_function::CreateMethod(Node_t arg_node)
-{
-	return ButiEngine::make_value<Node_Method>(OP_METHOD,leftNode,arg_node, nodeList, list_templateTypes);
-}
 //ノードの関数呼び出し型チェック
 std::int32_t Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_argNode, const ButiEngine::List<std::int32_t>& arg_list_temps)const {
+	if (m_vlp_refference) {
+		ButiEngine::List<std::int32_t> argTypes;
+
+		if (arg_list_argNode) {
+			for (auto itr:*arg_list_argNode) {
+				argTypes.Add(itr->GetType(arg_compiler));
+			}
+		}
+		const TypeTag* typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		const FunctionTag* tag = typeTag->methods.Find(strData + GetTemplateName(arg_list_temps, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
+
+		return tag->valueType;
+	}
 
 	ButiEngine::List<std::int32_t> argTypes;
 	if (arg_list_argNode) {
@@ -1171,7 +1142,7 @@ std::int32_t Node::Assign(Compiler* arg_compiler) const{
 	if (op != OP_ASSIGN) {
 		right_type = SystemTypeOperatorCheck(op - OP_ASSIGN + OP_DECREMENT, left_type, right_type, arg_compiler);
 		if (right_type == -1 ) {
-			arg_compiler->error("内部エラー：処理できない計算ノードがありました。");
+			arg_compiler->error("プログラムエラー：処理できない計算ノードがありました。");
 			return -1;
 		}
 	}
@@ -1241,7 +1212,7 @@ std::int32_t Node_Null::Push(Compiler* arg_compiler) const
 const ValueTag* Node_value::GetValueTag(Compiler* arg_compiler) const{
 
 	if (op != OP_IDENTIFIER) {
-		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
+		arg_compiler->error("プログラムエラー：変数ノードに変数以外が登録されています。");
 		return nullptr;
 	}
 
@@ -1276,154 +1247,257 @@ const ValueTag* Node_value::GetValueTag(Compiler* arg_compiler) const{
 	}
 }
 
-// 変数ノードのpush
+// 値ノードのpush
 std::int32_t Node_value::Push(Compiler* arg_compiler) const{
-	if (op != OP_IDENTIFIER) {
-		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
-	}
-	else {
-		const ValueTag* valueTag = GetValueTag(arg_compiler);
-		if(valueTag)
-		{
-			if (valueTag->isGlobal) {		// グローバル変数
-				if (leftNode) {		// 配列
-					leftNode->Push(arg_compiler);
-					arg_compiler->PushGlobalArrayRef(valueTag->GetAddress());
-				}
-				else {
-					arg_compiler->PushGlobalValueRef(valueTag->GetAddress());
-				}
-			}
-			else {					// ローカル変数
-				if (leftNode) {		// 配列
-					leftNode->Push(arg_compiler);
-					arg_compiler->PushLocalArrayRef(valueTag->GetAddress());
-				}
-				else {
-					arg_compiler->PushLocalRef(valueTag->GetAddress());
-				}
-			}
-			return valueTag->valueType & ~TYPE_REF;
+	if (m_vlp_refference) {
+		m_vlp_refference->Push(arg_compiler);
+		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
 		}
-		const auto funcTag = GetFunctionType(arg_compiler, *this);
-
-		if (!funcTag) {
-			arg_compiler->error(GetString() + "は未定義です");
-			return -1;
+		if (ButiEngine::dynamic_value_ptr_cast<Node_functionCall>(m_vlp_refference)) {
+			arg_compiler->PushMember(typeTag->map_memberValue.at(strData).index);
 		}
 		else {
-			if (funcTag->isLambda) {
-				arg_compiler->PushConstInt(funcTag->valueType);
-				
-				for (auto itr = funcTag->list_captureList.begin(),end=funcTag->list_captureList.end();itr!=end; itr++) {
-					arg_compiler->PushConstInt(*itr);
-				}
+			arg_compiler->PushMemberRef(typeTag->map_memberValue.at(strData).index);
+		}
+		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
+	}
 
-				arg_compiler->PushConstInt(funcTag->list_captureList.GetSize());
+	if (auto thisType = arg_compiler->GetCurrentThisType()) {
+		if (!thisType->map_memberValue.count(strData)) {
+			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
+			return -1;
+		}
+		arg_compiler->PushMember(thisType->map_memberValue.at(strData).index);
+		return thisType->map_memberValue.at(strData).type;
+	}
 
-				arg_compiler->OpPushLambda(funcTag->GetIndex());
+	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	if (valueTag)
+	{
+		if (valueTag->isGlobal) {		// グローバル変数
+			if (leftNode) {		// 配列
+				leftNode->Push(arg_compiler);
+				arg_compiler->PushGlobalArrayRef(valueTag->GetAddress());
 			}
 			else {
-				arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
+				arg_compiler->PushGlobalValueRef(valueTag->GetAddress());
 			}
-			return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 		}
+		else {					// ローカル変数
+			if (leftNode) {		// 配列
+				leftNode->Push(arg_compiler);
+				arg_compiler->PushLocalArrayRef(valueTag->GetAddress());
+			}
+			else {
+				arg_compiler->PushLocalRef(valueTag->GetAddress());
+			}
+		}
+		return valueTag->valueType & ~TYPE_REF;
+	}
+	const auto funcTag = GetFunctionType(arg_compiler, *this);
+
+	if (!funcTag) {
+		arg_compiler->error(GetString() + "は未定義です");
+		return -1;
+	}
+	else {
+		if (funcTag->isLambda) {
+			arg_compiler->PushConstInt(funcTag->valueType);
+
+			for (auto itr = funcTag->list_captureList.begin(), end = funcTag->list_captureList.end(); itr != end; itr++) {
+				arg_compiler->PushConstInt(*itr);
+			}
+
+			arg_compiler->PushConstInt(funcTag->list_captureList.GetSize());
+
+			arg_compiler->OpPushLambda(funcTag->GetIndex());
+		}
+		else {
+			arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
+		}
+		return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 	}
 	return TYPE_INTEGER;
 }
 
 std::int32_t Node_value::PushClone(Compiler* arg_compiler) const{
-	if (op != OP_IDENTIFIER) {
-		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
-	}
-	else {
-		const ValueTag* valueTag = GetValueTag(arg_compiler);
-		if(valueTag)
-		{
-			if (valueTag->isGlobal) {		// グローバル変数
-				if (leftNode) {		// 配列
-					leftNode->Push(arg_compiler);
-					arg_compiler->PushGlobalArray(valueTag->GetAddress());
-				}
-				else {
-					arg_compiler->PushGlobalValue(valueTag->GetAddress());
-				}
-			}
-			else {					// ローカル変数
-				if (leftNode) {		// 配列
-					leftNode->Push(arg_compiler);
-					arg_compiler->PushLocalArray(valueTag->GetAddress());
-				}
-				else {
-					arg_compiler->PushLocal(valueTag->GetAddress());
-				}
-			}
-			return valueTag->valueType & ~TYPE_REF;
+
+	if (m_vlp_refference) {
+		m_vlp_refference->Push(arg_compiler);
+		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
 		}
+		arg_compiler->PushMember(typeTag->map_memberValue.at(strData).index);
+		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
+	}
 
-		const auto funcTag = GetFunctionType(arg_compiler, *this);
-
-		if (!funcTag) {
-			arg_compiler->error(GetString() + "は未定義です");
+	if (auto thisType = arg_compiler->GetCurrentThisType()) {
+		if (!thisType->map_memberValue.count(strData)) {
+			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
 			return -1;
 		}
-		else {
-			arg_compiler->OpPushFunctionAddress (funcTag->GetIndex());
-			return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
-		}
+		arg_compiler->PushMember(thisType->map_memberValue.at(strData).index);
+		return thisType->map_memberValue.at(strData).type;
 	}
-	return TYPE_INTEGER;
+	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	if (valueTag)
+	{
+		if (valueTag->isGlobal) {		// グローバル変数
+			if (leftNode) {		// 配列
+				leftNode->Push(arg_compiler);
+				arg_compiler->PushGlobalArray(valueTag->GetAddress());
+			}
+			else {
+				arg_compiler->PushGlobalValue(valueTag->GetAddress());
+			}
+		}
+		else {					// ローカル変数
+			if (leftNode) {		// 配列
+				leftNode->Push(arg_compiler);
+				arg_compiler->PushLocalArray(valueTag->GetAddress());
+			}
+			else {
+				arg_compiler->PushLocal(valueTag->GetAddress());
+			}
+		}
+		return valueTag->valueType & ~TYPE_REF;
+	}
+
+	const auto funcTag = GetFunctionType(arg_compiler, *this);
+	if (!funcTag) {
+		arg_compiler->error(GetString() + "は未定義です");
+		return -1;
+	}
+	else {
+		arg_compiler->OpPushFunctionAddress(funcTag->GetIndex());
+		return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
+	}
 }
 
 // 変数ノードのpop
 std::int32_t Node_value::Pop(Compiler* arg_compiler) const{
-	if (op != OP_IDENTIFIER) {
-		arg_compiler->error("内部エラー：変数ノードに変数以外が登録されています。");
-	}
-	else {
-		const ValueTag* valueTag = GetValueTag(arg_compiler);
-		if(valueTag)
-		{
-			if (valueTag->isGlobal) {		// グローバル変数
-				if (leftNode) {		// 配列
-					leftNode->Push(arg_compiler);
-					arg_compiler->PopArray(valueTag->GetAddress());
-				}
-				else {
-					arg_compiler->PopValue(valueTag->GetAddress());
-				}
-			}
-			else {					// ローカル変数
-				if (leftNode) {		// 配列
-					leftNode->Push(arg_compiler);
-					arg_compiler->PopLocalArray(valueTag->GetAddress());
-				}
-				else {
-					arg_compiler->PopLocal(valueTag->GetAddress());
-				}
-			}
-			return valueTag->valueType & ~TYPE_REF;
+	if (m_vlp_refference) {
+		//型
+		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
 		}
-		const auto funcTag = GetFunctionType(arg_compiler, *this);
 
-		if (!funcTag) {
-			arg_compiler->error(GetString() + "は未定義です");
-			return -1;
+		m_vlp_refference->Push(arg_compiler);
+		auto type = typeTag->map_memberValue.at(strData).type;
+		if (type & TYPE_REF) {
+			arg_compiler->PopMemberRef(typeTag->map_memberValue.at(strData).index);
+		}
+		else if (type == TYPE_INTEGER || type == TYPE_FLOAT) {
+			arg_compiler->PopMemberValueType(typeTag->map_memberValue.at(strData).index);
 		}
 		else {
-			arg_compiler->error(GetString() + "は定数です");
+			arg_compiler->PopMember(typeTag->map_memberValue.at(strData).index);
+		}
+		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
+	}
+
+	if (auto thisType = arg_compiler->GetCurrentThisType()) {
+		if (!thisType->map_memberValue.count(strData)) {
+			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
 			return -1;
 		}
+		auto type = thisType->map_memberValue.at(strData).type,index= thisType->map_memberValue.at(strData).index;
+		if (type & TYPE_REF) {
+			arg_compiler->PopMemberRef(index);
+		}
+		else if (type == TYPE_INTEGER || type == TYPE_FLOAT) {
+			arg_compiler->PopMemberValueType(index);
+		}
+		else {
+			arg_compiler->PopMember(index);
+		}
+		return type&~TYPE_REF;
 	}
-	return TYPE_INTEGER;
+	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	if (valueTag)
+	{
+		if (valueTag->isGlobal) {		// グローバル変数
+			if (leftNode) {		// 配列
+				leftNode->Push(arg_compiler);
+				arg_compiler->PopArray(valueTag->GetAddress());
+			}
+			else {
+				arg_compiler->PopValue(valueTag->GetAddress());
+			}
+		}
+		else {					// ローカル変数
+			if (leftNode) {		// 配列
+				leftNode->Push(arg_compiler);
+				arg_compiler->PopLocalArray(valueTag->GetAddress());
+			}
+			else {
+				arg_compiler->PopLocal(valueTag->GetAddress());
+			}
+		}
+		return valueTag->valueType & ~TYPE_REF;
+	}
+	const auto funcTag = GetFunctionType(arg_compiler, *this);
+
+	if (!funcTag) {
+		arg_compiler->error(GetString() + "は未定義です");
+		return -1;
+	}
+	else {
+		arg_compiler->error(GetString() + "は定数です");
+		return -1;
+	}
+}
+
+std::int32_t Node_value::GetType(Compiler* arg_compiler) const
+{//変数のメンバ変数
+	if (m_vlp_refference) {
+		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		if (!typeTag->map_memberValue.count(strData)) {
+			arg_compiler->error("構文エラー：" + typeTag->typeName + "にメンバ変数" + strData + "は存在しません");
+			return -1;
+		}
+		return typeTag->map_memberValue.at(strData).type;
+	}
+	if (auto thisType= arg_compiler->GetCurrentThisType()) {
+		if (!thisType->map_memberValue.count(strData)) {
+			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
+			return -1;
+		}
+		return thisType->map_memberValue.at(strData).type;
+	}
+
+	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	if (valueTag) {
+		return valueTag->valueType;
+	}
+	auto funcTag = GetFunctionType(arg_compiler, *this);
+
+	if (!funcTag) {
+		arg_compiler->error(GetString() + "は未定義です");
+		return 0;
+	}
+
+	return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
 }
 
 void Node_value::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
 {
+	if (m_vlp_refference) {
+		m_vlp_refference->LambdaCapture(arg_captureList,arg_compiler);
+	}
 	const ValueTag* valueTag = GetValueTag(arg_compiler);
 	if (valueTag && !valueTag->isGlobal) {
 		arg_captureList.emplace(GetString(), valueTag);
 	}
+}
+
+Node_t Node_value::ToFunctionCall() const
+{
+	return ButiEngine::make_value<Node_functionCall>(strData, m_vlp_refference);
 }
 
 // 関数呼び出し
@@ -1432,7 +1506,7 @@ struct set_arg {
 	const ButiEngine::List<std::int32_t>* argTypes_;
 	mutable std::int32_t index_;
 	set_arg(Compiler* arg_p_compiler, const FunctionTag* arg_function) : p_compiler(arg_p_compiler), argTypes_(&arg_function->list_args), index_(0) {}
-	set_arg(Compiler* arg_p_compiler, const ButiEngine::List<std::int32_t>* arg_argTypes) : p_compiler(arg_p_compiler), argTypes_(arg_argTypes), index_(0){}
+	set_arg(Compiler* arg_p_compiler, const ButiEngine::List<std::int32_t>* arg_argTypes) : p_compiler(arg_p_compiler), argTypes_(arg_argTypes), index_(0) {}
 
 	void operator()(Node_t arg_node) const
 	{
@@ -1449,7 +1523,7 @@ struct set_arg {
 					p_compiler->error("変数 " + arg_node->GetString() + " は定義されていません。");
 				}
 				else {
-					if (!TypeCheck(tag->valueType ,type,&p_compiler->GetTypeTable()) ){
+					if (!TypeCheck(tag->valueType, type, &p_compiler->GetTypeTable())) {
 						p_compiler->error("引数の型が合いません。");
 					}
 
@@ -1475,12 +1549,102 @@ struct set_arg {
 			}
 		}
 		else {
-			if (!TypeCheck( arg_node->PushClone(p_compiler), type,& p_compiler->GetTypeTable())) {
+			if (!TypeCheck(arg_node->PushClone(p_compiler), type, &p_compiler->GetTypeTable())) {
 				p_compiler->error("引数の型が合いません。");
 			}
 		}
 	}
 };
+std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
+{
+	ButiEngine::List<std::int32_t> temp;
+	if (m_vlp_refference) {
+		ButiEngine::List<std::int32_t> argTypes;
+		if (m_nodeList) {
+			for (auto itr: m_nodeList->list_args) {
+				argTypes.Add(itr->GetType(arg_compiler));
+			}
+		}
+
+		std::int32_t argSize = argTypes.GetSize();
+		const TypeTag* typeTag = nullptr;
+		const FunctionTag* methodTag = nullptr;
+
+
+		typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		methodTag = typeTag->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
+		if (methodTag->accessType != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+
+			arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
+		}
+
+		if (methodTag == nullptr) {
+			std::string message = "";
+			if (argSize) {
+				for (std::int32_t i = 0; i < argSize; i++) {
+					message += arg_compiler->GetTypeName(argTypes[i]) + " ";
+				}
+				message += "を引数にとる";
+			}
+			message += "関数" + strData + "は未宣言です";
+			arg_compiler->error(message);
+			return -1;
+		}
+
+		// 引数をpush
+		if (m_nodeList && methodTag->ArgSize() == argSize) {
+			std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
+		}
+
+
+		m_vlp_refference->Push(arg_compiler);
+
+
+		if (methodTag->IsSystem()) {
+			// 引数の数をpush
+			arg_compiler->PushConstInt(argSize);
+			arg_compiler->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
+		}
+		else {
+			// 引数の数+thisをpush
+			arg_compiler->PushConstInt(argSize + 1);
+			arg_compiler->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
+		}
+
+
+		return methodTag->valueType;
+	}
+
+	return Call(arg_compiler, strData, &m_nodeList->list_args, temp);
+}
+std::int32_t Node_functionCall::PushClone(Compiler* arg_compiler) const
+{
+	return Push(arg_compiler);
+}
+std::int32_t Node_functionCall::Pop(Compiler* arg_compiler) const
+{
+	arg_compiler->error("プログラムエラー：関数ノードをpopした");
+	return TYPE_INTEGER;
+}
+std::int32_t Node_functionCall::GetType(Compiler* arg_compiler) const
+{
+	ButiEngine::List<std::int32_t> temp;
+	return GetCallType(arg_compiler, strData, &m_nodeList->list_args, temp);
+}
+void Node_functionCall::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	if (m_vlp_refference) {
+		if (m_nodeList) {
+			m_nodeList->LambdaCapture(arg_captureList, arg_compiler);
+		}
+		m_vlp_refference->LambdaCapture(arg_captureList, arg_compiler);
+	}
+	else {
+		leftNode->LambdaCapture(arg_captureList, arg_compiler);
+		m_nodeList->LambdaCapture(arg_captureList, arg_compiler);
+	}
+}
+
 
 // 関数呼び出し
 std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_argNodes,  const ButiEngine::List<std::int32_t>& arg_list_temps) const
@@ -1488,9 +1652,8 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 
 	ButiEngine::List<std::int32_t> argTypes;
 	if (arg_list_argNodes) {
-		auto end = arg_list_argNodes->end();
-		for (auto itr = arg_list_argNodes->begin(); itr != end; itr++) {
-			argTypes.Add((*itr)->GetType(arg_compiler));
+		for (auto itr :*arg_list_argNodes) {
+			argTypes.Add(itr->GetType(arg_compiler));
 		}
 	}
 
@@ -1558,12 +1721,6 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 	return -1;
 }
 
-Node_t Node::CreateMethod(Node_t arg_node)
-{
-	static ButiEngine::List<std::int32_t> empty;
-	return ButiEngine::make_value<Node_Method>(OP_METHOD, value_from_this(),arg_node ,nullptr, empty);
-}
-
 void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const
 {
 	if (leftNode) {
@@ -1591,18 +1748,6 @@ void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList
 		}
 	}
 
-}
-
-std::int32_t Node_function::Push(Compiler* arg_compiler) const
-{
-	return Call(arg_compiler, leftNode->GetString(), &nodeList->list_args,list_templateTypes);
-}
-
-// 関数にpopはできないのでエラーメッセージを出す
-std::int32_t Node_function::Pop(Compiler* arg_compiler) const
-{
-	arg_compiler->error("内部エラー：関数ノードをpopした");
-	return TYPE_INTEGER;
 }
 
 // 文ノード生成
@@ -1635,7 +1780,7 @@ Statement_t Statement::make_statement(const std::int32_t arg_list_state)
 		return ButiEngine::make_value<Statement_while>();
 	}
 
-	std::cerr << "内部エラー：ステートメントノードミス" << std::endl;
+	std::cerr << "プログラムエラー：ステートメントノードミス" << std::endl;
 	return ButiEngine::make_value<Statement_nop>();
 }
 
@@ -1663,7 +1808,7 @@ Statement_t Statement::make_statement(const std::int32_t arg_list_state, Node_t 
 		return ButiEngine::make_value<ccall_statement>(arg_node);
 	}
 
-	std::cerr << "内部エラー：文ノードミス" << std::endl;
+	std::cerr << "プログラムエラー：文ノードミス" << std::endl;
 	return ButiEngine::make_value<Statement_nop>();
 }
 
@@ -1674,7 +1819,7 @@ Statement_t Statement::make_statement(const std::int32_t arg_list_state, Block_t
 		return ButiEngine::make_value <Statement_block>(arg_block);
 	}
 
-	std::cerr << "内部エラー：文ノードミス" << std::endl;
+	std::cerr << "プログラムエラー：文ノードミス" << std::endl;
 	return ButiEngine::make_value<Statement_nop>();
 }
 
@@ -1952,26 +2097,21 @@ std::int32_t Statement_unary::Analyze(Compiler* arg_compiler)
 std::int32_t Block::Analyze(Compiler* arg_compiler, ButiEngine::List<Function_t>& arg_captureCheck)
 {
 	auto ret = 0;
-	{
-
-
-		for (auto itr = list_decl.begin(), endItr = list_decl.end(); itr != endItr; itr++) {
-			(*itr)->Define(arg_compiler);
-		}
+	for (auto itr : list_decl) {
+		itr->Define(arg_compiler);
 	}
 
-	for (auto itr = arg_captureCheck.begin(), end = arg_captureCheck.end(); itr != end;itr++) {
-		(*itr)->LambdaCapture(arg_compiler);
+	for (auto itr : arg_captureCheck) {
+		itr->LambdaCapture(arg_compiler);
 	}
 
-	if (!list_decl.IsEmpty())
-		arg_compiler->AllocStack();	// スタックフレーム確保
+	if (!list_decl.IsEmpty()) {
+		arg_compiler->AllocStack();
+	}
 
-	{
-		for (auto itr = list_state.begin(), endItr = list_state.end(); itr != endItr; itr++) {
-			if ((ret = (*itr)->Analyze(arg_compiler)) != 0) {
-				return ret;
-			}
+	for (auto itr : list_state) {
+		if ((ret = itr->Analyze(arg_compiler)) != 0) {
+			return ret;
 		}
 	}
 
@@ -1994,14 +2134,15 @@ std::int32_t Declaration::PushCompiler(Compiler* arg_compiler)
 // 宣言の解析
 std::int32_t Declaration::Analyze(Compiler* arg_compiler) 
 {
-	if (isFunction) {		// 関数
-		arg_compiler->FunctionDefine(valueType, name, list_argType);
+	auto valueType = arg_compiler->GetTypeIndex(valueTypeName);
+	if (isFunction) {// 関数
+		arg_compiler->FunctionDefine(valueType, list_names[0], list_argType);
 	}
 	else {
-		arg_compiler->ValueDefine(valueType, list_node,accessType);
+		arg_compiler->ValueDefine(valueType, list_names,accessType);
 
 		auto type = arg_compiler->GetType(valueType&~TYPE_REF);
-		std::int32_t size = list_node.GetSize();
+		std::int32_t size = list_names.GetSize();
 		if (valueType & TYPE_REF) {
 			if (type->isSystem) {
 				for (std::int32_t i = 0; i < size; i++) {
@@ -2054,196 +2195,11 @@ std::int32_t Declaration::Analyze(Compiler* arg_compiler)
 void Declaration::Define(Compiler* arg_compiler)
 {
 	if (isFunction) {		// 関数
-		arg_compiler->FunctionDefine(valueType, name, list_argType);
+		arg_compiler->FunctionDefine(arg_compiler->GetTypeIndex(valueTypeName), list_names[0], list_argType);
 	}
 	else {
-		arg_compiler->ValueDefine(valueType, list_node,accessType);
+		arg_compiler->ValueDefine(arg_compiler->GetTypeIndex(valueTypeName), list_names,accessType);
 	}
-}
-std::int32_t Node_Member::Push(Compiler* arg_compiler) const
-{
-	if (op != OP_MEMBER) {
-		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
-	}
-	else {
-		leftNode->Push(arg_compiler);
-		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
-		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-			arg_compiler->error(typeTag->typeName+"の" + strData + "にアクセス出来ません");
-		}
-
-		arg_compiler->PushMemberRef(typeTag->map_memberValue.at(strData).index);
-		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
-	}
-	return -1;
-}
-std::int32_t Node_Member::PushClone(Compiler* arg_compiler) const
-{
-	if (op != OP_MEMBER) {
-		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
-	}
-	else {
-		leftNode->Push(arg_compiler);
-		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler) & ~TYPE_REF);
-		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
-		}
-		arg_compiler->PushMember(typeTag->map_memberValue.at(strData).index);
-		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
-
-	}
-	return -1;
-}
-std::int32_t Node_Member::Pop(Compiler* arg_compiler) const
-{
-	if (op != OP_MEMBER) {
-		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
-	}
-	else {
-
-		//型
-		auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler)&~TYPE_REF);
-		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-			arg_compiler->error(typeTag->typeName + "の" + strData + "にアクセス出来ません");
-		}
-		
-		leftNode->Push(arg_compiler);
-		auto type = typeTag->map_memberValue.at(strData).type;
-		if (type & TYPE_REF) {
-			arg_compiler->PopMemberRef(typeTag->map_memberValue.at(strData).index);
-		}
-		else if(type==TYPE_INTEGER||type==TYPE_FLOAT){
-			arg_compiler->PopMemberValueType(typeTag->map_memberValue.at(strData).index);
-		}
-		else {
-			arg_compiler->PopMember(typeTag->map_memberValue.at(strData).index);
-		}
-
-		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
-		
-	}
-	return TYPE_INTEGER;
-}
-std::int32_t Node_Member::GetType(Compiler* arg_compiler) const
-{
-	if (op != OP_MEMBER) {
-		arg_compiler->error("内部エラー：メンバ変数ノードにメンバ変数以外が登録されています。");
-	}
-	else {
-		//変数のメンバ変数
-		if (leftNode->Op() == OP_IDENTIFIER|| leftNode->Op() == OP_MEMBER||leftNode->Op()==OP_METHOD ||leftNode->Op()==OP_FUNCTION ) {
-			{
-
-				//型
-				auto typeTag = arg_compiler->GetType(leftNode->GetType(arg_compiler)&~TYPE_REF);
-				if (!typeTag->map_memberValue.count(strData)) {
-					arg_compiler->error("構文エラー："+typeTag->typeName+"にメンバ変数"+strData+"は存在しません");
-					return -1;
-				}
-				return typeTag->map_memberValue.at(strData).type;
-			}
-		}
-	}
-}
-void Node_Member::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
-{
-	leftNode->LambdaCapture(arg_captureList, arg_compiler);
-}
-std::int32_t Node_Method::Push(Compiler* arg_compiler) const
-{
-	if (op != OP_METHOD) {
-		arg_compiler->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
-	}
-
-	ButiEngine::List<std::int32_t> argTypes;
-	if (nodeList) {
-		auto end = nodeList->list_args.end();
-		for (auto itr = nodeList->list_args.begin(); itr != end; itr++) {
-			argTypes.Add((*itr)->GetType(arg_compiler));
-		}
-	}
-
-	std::int32_t argSize = argTypes.GetSize();
-	const TypeTag* typeTag = nullptr;
-	const FunctionTag* methodTag = nullptr;
-
-
-	typeTag = arg_compiler->GetType(rightNode-> GetType(arg_compiler) & ~TYPE_REF);
-	methodTag = typeTag->methods.Find(leftNode->GetString()+GetTemplateName(list_templateTypes, &arg_compiler->GetTypeTable()), argTypes,&arg_compiler->GetTypeTable());
-	if (methodTag->accessType != AccessModifier::Public&&arg_compiler->GetCurrentThisType()!=typeTag) {
-
-		arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
-	}
-
-	if (methodTag == nullptr) {
-		std::string message = "";
-		if (argSize) {
-			for (std::int32_t i = 0; i < argSize; i++) {
-				message += arg_compiler->GetTypeName(argTypes[i]) + " ";
-			}
-			message += "を引数にとる";
-		}
-		message += "関数" + strData + "は未宣言です";
-		arg_compiler->error(message);
-		return -1;
-	}
-
-	// 引数をpush
-	if (nodeList && methodTag->ArgSize() == argSize) {
-		std::for_each(nodeList->list_args.begin(), nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
-	}
-
-
-	rightNode->Push(arg_compiler);
-
-
-	if (methodTag->IsSystem()) {
-		// 引数の数をpush
-		arg_compiler->PushConstInt(argSize);
-		arg_compiler->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
-	}
-	else {
-		// 引数の数+thisをpush
-		arg_compiler->PushConstInt(argSize+1);
-		arg_compiler->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
-	}
-
-
-	return methodTag->valueType;
-}
-std::int32_t Node_Method::Pop(Compiler* arg_compiler) const
-{
-	arg_compiler->error("内部エラー：メンバ関数ノードをpop");
-	return TYPE_INTEGER;
-}
-std::int32_t Node_Method::GetType(Compiler* arg_compiler) const
-{
-	if (op != OP_METHOD) {
-		arg_compiler->error("内部エラー：メンバ関数ノードにメンバ関数以外が登録されています。");
-	}
-
-	ButiEngine::List<std::int32_t> argTypes;
-
-	if (nodeList) {
-		for (auto itr = nodeList->list_args.begin(), end = nodeList->list_args.end(); itr != end; itr++) {
-			argTypes.Add((*itr)->GetType(arg_compiler));
-		}
-	}
-
-
-	const TypeTag* typeTag = arg_compiler->GetType(rightNode->GetType(arg_compiler) & ~TYPE_REF);
-	const FunctionTag* tag = typeTag->methods.Find(leftNode->GetString() +GetTemplateName(list_templateTypes, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
-
-	return tag->valueType;
-}
-void Node_Method::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
-{
-	if (nodeList) {
-		nodeList->LambdaCapture(arg_captureList, arg_compiler);
-	}
-
-
-	leftNode->LambdaCapture(arg_captureList, arg_compiler);
 }
 
 void NodeList::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
@@ -2271,7 +2227,7 @@ std::int32_t Node_enum::Push(Compiler* arg_compiler) const
 }
 std::int32_t Node_enum::Pop(Compiler* arg_compiler) const
 {
-	arg_compiler->error("内部エラー：列挙型ノードをpop");
+	arg_compiler->error("プログラムエラー：列挙型ノードをpop");
 	return -1;
 }
 std::int32_t Node_enum::GetType(Compiler* arg_compiler) const
@@ -2302,7 +2258,7 @@ std::int32_t Node_FunctionObject::Push(Compiler* arg_compiler) const
 }
 std::int32_t Node_FunctionObject::Pop(Compiler* arg_compiler) const
 {
-	arg_compiler->error("内部エラー：関数型ノードをpop");
+	arg_compiler->error("プログラムエラー：関数型ノードをpop");
 	return -1;
 }
 std::int32_t Node_FunctionObject::GetType(Compiler* arg_compiler) const
@@ -2315,346 +2271,5 @@ std::int32_t Node_FunctionObject::GetType(Compiler* arg_compiler) const
 	}
 
 	return arg_compiler->GetfunctionTypeIndex(funcTag->list_args, funcTag->valueType);
-}
-void Enum::SetIdentifer(const std::string& arg_name)
-{
-	map_identifer.emplace(arg_name, map_identifer.size());
-}
-void Enum::SetIdentifer(const std::string& arg_name, const std::int32_t arg_value)
-{
-	map_identifer.emplace(arg_name, arg_value);
-}
-std::int32_t Enum::Analyze(Compiler* arg_compiler)
-{
-	arg_compiler->RegistEnumType(typeName);
-	auto tag = arg_compiler->GetEnumTag(arg_compiler->GetCurrentNameSpace()->GetGlobalNameString()+ typeName);
-	auto end = map_identifer.end();
-	for (auto itr = map_identifer.begin(); itr != end; itr++) {
-		tag->SetValue(itr->first, itr->second);
-	}
-	return 0;
-}
-std::int32_t Class::Analyze(Compiler* arg_compiler)
-{
-	arg_compiler->AnalyzeScriptType(name, map_values);
-	auto typeTag = arg_compiler->GetType(name);
-	auto methodTable = &typeTag->methods;
-
-	arg_compiler->PushCurrentThisType(typeTag);
-	for (auto itr = list_methods.begin(), end = list_methods.end(); itr != end; itr++) {
-		(*itr)->Analyze(arg_compiler, methodTable);
-	}
-	arg_compiler->PopCurrentThisType();
-	list_methods.Clear();
-	return 0;
-}
-
-std::int32_t Class::PushCompiler(Compiler* arg_compiler)
-{
-	arg_compiler->PushAnalyzeClass(value_from_this());
-	return 0;
-}
-std::int32_t Class::Regist(Compiler* arg_compiler)
-{
-	arg_compiler->RegistScriptType(name);
-	return 0;
-}
-void Class::RegistMethod(Function_t arg_method, Compiler* arg_compiler)
-{
-	auto typeTag = arg_compiler->GetType(name);
-	auto methodTable = &typeTag->methods;
-	arg_method->PushCompiler(arg_compiler,methodTable);
-	list_methods.Add(arg_method);
-	
-}
-void Class::SetValue(const std::string& arg_name, const std::int32_t arg_type, const AccessModifier arg_accessType)
-{
-	std::pair<std::int32_t, AccessModifier> v = { arg_type,arg_accessType };
-	map_values.emplace(arg_name,v);
-}
-
-std::int32_t Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p_funcTable )
-{
-	ownNameSpace = arg_compiler->GetCurrentNameSpace();
-	arg_compiler->PopAnalyzeFunction();
-	arg_compiler->RegistFunction(returnType, name, args, block, accessType,arg_p_funcTable);
-	if (!arg_p_funcTable) {
-		arg_compiler->GetCurrentNameSpace()->PushFunction(value_from_this());
-	}
-	searchName =arg_p_funcTable?name:  arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
-	
-	return 0;
-}
-
-std::int32_t Function::PushCompiler_sub(Compiler* arg_compiler)
-{
-	ownNameSpace = arg_compiler->GetCurrentNameSpace();
-	arg_compiler->PopAnalyzeFunction();
-	arg_compiler->RegistFunction(returnType, name, args, block, accessType);
-	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
-	arg_compiler->PushSubFunction(value_from_this());
-	return 0;
-}
-
-
-// 引数の変数名を登録
-struct add_value {
-	ButiScript::Compiler* p_compiler;
-	ButiScript::ValueTable& values;
-	std::int32_t addr;
-	add_value(ButiScript::Compiler* arg_p_comp, ButiScript::ValueTable& arg_values, const std::int32_t arg_addres = argmentAddressStart) : p_compiler(arg_p_comp), values(arg_values), addr(arg_addres)
-	{
-	}
-
-	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
-	{
-		if (!values.add_arg(arg_argDefine.GetType(), arg_argDefine.GetName(), addr)) {
-			p_compiler->error("引数 " + arg_argDefine.GetName() + " は既に登録されています。");
-		}
-	}
-};
-// キャプチャ変数を登録
-struct add_capture {
-	ButiScript::Compiler* p_compiler;
-	ButiScript::ValueTable& values;
-	std::int32_t addr;
-	add_capture(ButiScript::Compiler* arg_p_comp, ButiScript::ValueTable& arg_values, const std::int32_t arg_addres = argmentAddressStart) : p_compiler(arg_p_comp), values(arg_values), addr(arg_addres)
-	{
-	}
-
-	void operator()(const ButiScript::ArgDefine& arg_argDefine) const
-	{
-		if (!values.add_capture(arg_argDefine.GetType(), arg_argDefine.GetName(), addr)) {
-			p_compiler->error("キャプチャ変数 " + arg_argDefine.GetName() + " は既に登録されています。");
-		}
-	}
-};
-
-// 関数の解析
-std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
-{
-	auto currentNameSpace = arg_compiler->GetCurrentNameSpace();
-	ownNameSpace =ownNameSpace?ownNameSpace: currentNameSpace;
-	arg_compiler->SetCurrentNameSpace(ownNameSpace);
-	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
-
-
-	FunctionTag* tag = p_functable->Find_strict(searchName, args,&arg_compiler->GetTypeTable());
-	if (tag) {
-		if (tag->IsDefinition()) {
-			arg_compiler-> error("関数 " + searchName+ " は既に定義されています");
-			return 0;
-		}
-		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
-			arg_compiler-> error("関数 " + searchName + " に異なる型の引数が指定されています");
-			return 0;
-		}
-		tag->SetDefinition();	// 定義済みに設定
-	}
-	else {
-		FunctionTag func(returnType, searchName);
-		func.SetArgs(args);				// 引数を設定
-		func.SetDefinition();			// 定義済み
-		func.SetIndex(arg_compiler-> MakeLabel());		// ラベル登録
-		tag = p_functable->Add(searchName, func,&arg_compiler->GetTypeTable());
-		if (tag == nullptr)
-			arg_compiler->error("内部エラー：関数テーブルに登録できません");
-	}
-
-	arg_compiler->PushCurrentFunctionName(searchName);		// 処理中の関数名を登録
-	arg_compiler->PushCurrentFunctionType(  returnType);		// 処理中の関数型を登録
-
-	// 関数のエントリーポイントにラベルを置く
-
-	arg_compiler->SetLabel(tag->GetIndex());
-
-	arg_compiler-> BlockIn(false,true);		// 変数スタックを増やす
-
-	// 引数リストを登録
-	std::int32_t address = argmentAddressStart;
-	//メンバ関数の場合thisを引数に追加
-	if (arg_p_funcTable) {
-		ArgDefine argDef(arg_compiler-> GetCurrentThisType()->typeIndex, thisPtrName);
-		add_value(arg_compiler, arg_compiler->GetValueTable() .GetLast(), address)(argDef);
-		address--;
-	}
-	
-	for (auto itr = args.rbegin(), endItr = args.rend(); itr != endItr; itr++) {
-		add_value(arg_compiler, arg_compiler->GetValueTable().GetLast(), address)(*itr);
-		address--;
-	}
-	arg_compiler->ValueAddressSubtract(address);
-
-	// 文があれば、文を登録
-	if (block) {
-		std::int32_t ret = block->Analyze(arg_compiler, list_subFunctions);
-	}
-
-	const VMCode& code = arg_compiler->GetStatement() .GetLast();
-	if (returnType == TYPE_VOID) {
-		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
-			arg_compiler-> OpReturn();
-	}
-	else {
-		if (code.op != VM_RETURNV) {
-			arg_compiler->error("関数 " + searchName + " の最後にreturn文が有りません。");
-		}
-	}
-
-
-	for (auto itr = list_subFunctions.begin(), end = list_subFunctions.end(); itr != end; itr++) {
-		(*itr)->Analyze(arg_compiler, nullptr);
-	}
-	list_subFunctions.Clear();
-	arg_compiler->ValueAddressAddition(-address);
-	arg_compiler->BlockOut();		// 変数スタックを減らす
-
-	arg_compiler->PopCurrentFunctionName();		// 処理中の関数名を消去
-	arg_compiler->PopCurrentFunctionType();		
-	arg_compiler->SetCurrentNameSpace(currentNameSpace);
-	return 0;
-}
-
-void Function::AddSubFunction(Function_t arg_function)
-{
-	list_subFunctions.Add(arg_function);
-}
-
-
-Lambda::Lambda(const std::int32_t arg_type,const ButiEngine::List<ArgDefine>& arg_list_argDefine, Compiler* arg_compiler)
-{
-	returnType = arg_type;
-	args = arg_list_argDefine;
-
-	lambdaIndex = arg_compiler->GetLambdaCount();
-	arg_compiler->IncreaseLambdaCount();
-	name = "@lambda:" + std::to_string(lambdaIndex);
-}
-std::int32_t Lambda::PushCompiler(Compiler* arg_compiler)
-{
-	auto typeTag = arg_compiler->GetType(returnType);
-
-	arg_compiler->PopAnalyzeFunction();
-	arg_compiler->RegistLambda(typeTag->GetFunctionObjectReturnType(),name, args, nullptr);
-	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
-
-	arg_compiler->PushSubFunction(value_from_this());
-
-	return lambdaIndex;
-}
-std::int32_t Lambda::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_funcTable)
-{
-	auto typeTag = arg_compiler->GetType(returnType);
-	returnType = typeTag->GetFunctionObjectReturnType();
-	auto currentNameSpace = arg_compiler->GetCurrentNameSpace();
-	ownNameSpace = ownNameSpace ? ownNameSpace : currentNameSpace;
-	arg_compiler->SetCurrentNameSpace(ownNameSpace);
-	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
-
-
-	FunctionTag* tag = p_functable->Find_strict(searchName, args, & arg_compiler->GetTypeTable());
-	if (tag) {
-		if (tag->IsDefinition()) {
-			arg_compiler->error("関数 " + searchName + " は既に定義されています");
-			return 0;
-		}
-		if (tag->IsDeclaration() && !tag->CheckArgList_strict(args)) {
-			arg_compiler->error("関数 " + searchName + " に異なる型の引数が指定されています");
-			return 0;
-		}
-		tag->SetDefinition();	// 定義済みに設定
-	}
-	else {
-		FunctionTag func(returnType, searchName);
-		func.SetArgs(args);				// 引数を設定
-		func.SetDefinition();			// 定義済み
-		func.SetIndex(arg_compiler->MakeLabel());		// ラベル登録
-		tag = p_functable->Add(searchName, func,& arg_compiler->GetTypeTable());
-		if (tag == nullptr)
-			arg_compiler->error("内部エラー：関数テーブルに登録できません");
-	}
-
-	arg_compiler->PushCurrentFunctionName(searchName);		// 処理中の関数名を登録
-	arg_compiler->PushCurrentFunctionType(returnType);		// 処理中の関数型を登録
-
-	// 関数のエントリーポイントにラベルを置く
-
-	arg_compiler->SetLabel(tag->GetIndex());
-
-	arg_compiler->BlockIn(false, true);		// 変数スタックを増やす
-
-	// 引数リストを登録
-	std::int32_t address = argmentAddressStart;
-	//メンバ関数の場合thisを引数に追加
-	if (arg_p_funcTable) {
-		ArgDefine argDef(arg_compiler->GetCurrentThisType()->typeIndex, thisPtrName);
-		add_value(arg_compiler, arg_compiler->GetValueTable().GetLast(), address)(argDef);
-		address--;
-	}
-
-	for (auto itr = args.rbegin(), endItr = args.rend(); itr != endItr; itr++) {
-		add_value(arg_compiler, arg_compiler->GetValueTable().GetLast(), address)(*itr);
-		address--;
-	}
-	arg_compiler->ValueAddressSubtract(address);
-
-	// 文があれば、文を登録
-	if (block) {
-
-		///キャプチャする変数を確保
-		std::int32_t i = 0;
-		for (auto itr = map_lambdaCapture.begin(), end = map_lambdaCapture.end(); itr!= end;i++, itr++) {
-			add_capture(arg_compiler, arg_compiler->GetValueTable().GetLast(), i)(ArgDefine(itr->second->valueType,arg_compiler->GetCurrentNameSpace()->GetGlobalNameString()+ itr->first));
-			//tag->list_captureList.push_back(itr->second->GetAddress());
-		}
-
-		arg_compiler->BlockIn();
-		///
-		std::int32_t ret = block->Analyze(arg_compiler,list_subFunctions);
-		arg_compiler->BlockOut();
-	}
-
-	const VMCode& code = arg_compiler->GetStatement().GetLast();
-	if (returnType == TYPE_VOID) {
-		if (code.op != VM_RETURN)		// returnが無ければreturnを追加
-			arg_compiler->OpReturn();
-	}
-	else {
-		if (code.op != VM_RETURNV) {
-			arg_compiler->error("関数 " + searchName + " の最後にreturn文が有りません。");
-		}
-	}
-
-
-	for (auto itr = list_subFunctions.begin(), end = list_subFunctions.end(); itr != end; itr++) {
-		(*itr)->Analyze(arg_compiler, nullptr);
-	}
-	list_subFunctions.Clear();
-	arg_compiler->ValueAddressAddition(-address);
-	arg_compiler->BlockOut();		// 変数スタックを減らす
-
-	arg_compiler->PopCurrentFunctionName();		// 処理中の関数名を消去
-	arg_compiler->PopCurrentFunctionType();
-	arg_compiler->SetCurrentNameSpace(currentNameSpace);
-
-	return lambdaIndex;
-}
-void Lambda::LambdaCapture(Compiler* arg_compiler)
-{
-	if (block) {
-
-		FunctionTable* p_functable = &arg_compiler->GetFunctions();
-
-
-		FunctionTag* tag = p_functable->Find_strict(searchName, args, &arg_compiler->GetTypeTable());
-		block->LambdaCapture(map_lambdaCapture, arg_compiler);
-
-		///キャプチャする変数を確保
-		std::int32_t i = 0;
-		for (auto itr = map_lambdaCapture.begin(), end = map_lambdaCapture.end(); itr != end; i++, itr++) {
-			tag->list_captureList.Add(itr->second->GetAddress());
-		}
-
-	}
 }
 }
