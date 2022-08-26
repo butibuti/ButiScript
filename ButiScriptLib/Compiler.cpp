@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Compiler.h"
+#include "Node.h"
 #include"BuiltInTypeRegister.h"
 #include"VirtualMachine.h"
 #include <iomanip>
@@ -29,7 +30,7 @@ ButiScript::AccessModifier ButiScript::StringToAccessModifier(const std::string&
 
 // コンストラクタ
 ButiScript:: Compiler::Compiler()
-	: break_index(-1), error_count(0)
+	: breakIndex(-1), errorCount(0)
 {
 }
 
@@ -79,22 +80,14 @@ void ButiScript::Compiler::RegistDefaultSystems()
 bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
 {
 
+	Clear();
 	//変数テーブルをセット
 	variables.Add(ValueTable());
 	variables[0].set_global();
 	OpHalt();
 	bool result = ScriptParse(arg_filePath, this);	// 構文解析
-
 	if (!result) {
-
-		labels.Clear();
-		statement.Clear();
-		text_table.Clear();
-		variables.Clear();
-		functions.Clear_notSystem();
-		types.Clear_notSystem();
-		enums.Clear_notSystem();
-		error_count = 0;
+		Clear();
 		return true;// パーサーエラー
 	}
 
@@ -102,15 +95,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 	CreateData(arg_ref_data, code_size);				// バイナリ生成
 
 	arg_ref_data.sourceFilePath = arg_filePath;
-
-	labels.Clear();
-	statement.Clear();
-	text_table.Clear();
-	variables.Clear();
-	functions.Clear_notSystem();
-	types.Clear_notSystem();
-	enums.Clear_notSystem();
-
+	Clear();
 	return false;
 }
 
@@ -119,7 +104,7 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 void ButiScript::Compiler::error(const std::string& arg_message)
 {
 	std::cerr << arg_message << std::endl;
-	error_count++;
+	errorCount++;
 }
 
 void ButiScript::Compiler::ClearStatement()
@@ -176,6 +161,9 @@ void ButiScript::Compiler::PushAnalyzeClass(Class_t arg_class)
 
 void ButiScript::Compiler::ClearNameSpace()
 {
+	for (auto analyzeNamespace: list_namespaces) {
+		analyzeNamespace->Clear();
+	}
 	list_namespaces.Clear();
 	list_namespaces.Add(globalNameSpace);
 }
@@ -188,11 +176,23 @@ void ButiScript::Compiler::Analyze()
 		namespaceItr->DeclareClasses(this);
 	}
 	for (auto namespaceItr : list_namespaces) {
+		currentNameSpace = namespaceItr;
+		namespaceItr->DeclareValues(this);
+	}
+	OpHalt();
+	for (auto namespaceItr : list_namespaces) {
+		currentNameSpace = namespaceItr;
+		namespaceItr->DeclareFunctions(this);
+	}
+	for (auto namespaceItr : list_namespaces) {
+		currentNameSpace = namespaceItr;
 		namespaceItr->AnalyzeClasses(this);
 	}
 	for (auto namespaceItr : list_namespaces) {
+		currentNameSpace = namespaceItr;
 		namespaceItr->AnalyzeFunctions(this);
 	}
+
 	currentNameSpace = nameSpaceBuffer;
 }
 
@@ -218,6 +218,25 @@ void ButiScript::Compiler::PopCurrentFunctionName()
 void ButiScript::Compiler::ClearGlobalNameSpace()
 {
 	globalNameSpace->Clear();
+}
+
+std::int32_t ButiScript::Compiler::AddFunction(Function_t arg_function)
+{
+	if (currentNameSpace) {
+		currentNameSpace->PushFunction(arg_function);
+		PopNameSpace();
+		return 0;
+	}
+	return -1;
+}
+
+std::int32_t ButiScript::Compiler::AddValue(Declaration_t arg_valueDecl)
+{
+	if (currentNameSpace) {
+		currentNameSpace->PushValue(arg_valueDecl);
+		return 0;
+	}
+	return -1;
 }
 
 
@@ -398,10 +417,10 @@ void ButiScript::Compiler::PushString(const std::string& arg_str)
 
 bool ButiScript::Compiler::JmpBreakLabel()
 {
-	if (break_index < 0) {
+	if (breakIndex < 0) {
 		return false;
 	}
-	OpJmp(break_index);
+	OpJmp(breakIndex);
 	return true;
 }
 
@@ -826,6 +845,18 @@ std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_file
 	return 0;
 }
 
+void ButiScript::Compiler::Clear()
+{
+	labels.Clear();
+	statement.Clear();
+	text_table.Clear();
+	variables.Clear();
+	functions.Clear_notSystem();
+	types.Clear_notSystem();
+	enums.Clear_notSystem();
+	errorCount = 0;
+}
+
 std::int32_t ButiScript::Compiler::OutputCompiledData(const std::string& arg_filePath, const ButiScript::CompiledData& arg_ref_data)
 {
 
@@ -977,12 +1008,22 @@ void ButiScript::NameSpace::Regist(Compiler* arg_compiler)
 
 void ButiScript::NameSpace::SetParent(NameSpace_t arg_parent)
 {
-	vlp_parentNamespace = arg_parent;
+	if (arg_parent->GetParent().get() != this && arg_parent.get() != this) {
+		vlp_parentNamespace = arg_parent;
+	}
+	else {
+		assert(0);
+	}
 }
 
 ButiScript::NameSpace_t ButiScript::NameSpace::GetParent() const
 {
 	return vlp_parentNamespace;
+}
+
+void ButiScript::NameSpace::PushValue(Declaration_t arg_value)
+{
+	list_analyzeGlobalValueBuffer.Add(arg_value);
 }
 
 void ButiScript::NameSpace::PushFunction(Function_t arg_func)
@@ -999,7 +1040,7 @@ void ButiScript::NameSpace::PushClass(Class_t arg_class)
 
 void ButiScript::NameSpace::AnalyzeFunctions(Compiler* arg_compiler)
 {
-	for (auto itr :list_analyzeFunctionBuffer) {
+	for (auto itr : list_analyzeFunctionBuffer) {
 		itr->Analyze(arg_compiler, nullptr);
 	}
 }
@@ -1008,6 +1049,20 @@ void ButiScript::NameSpace::AnalyzeClasses(Compiler* arg_compiler)
 {
 	for (auto itr :list_analyzeClassBuffer) {
 		itr->Analyze(arg_compiler);
+	}
+}
+
+void ButiScript::NameSpace::DeclareValues(Compiler* arg_compiler)
+{
+	for (auto itr : list_analyzeGlobalValueBuffer) {
+		itr->Analyze(arg_compiler);
+	}
+}
+
+void ButiScript::NameSpace::DeclareFunctions(Compiler* arg_compiler)
+{
+	for (auto itr : list_analyzeFunctionBuffer) {
+		itr->PushCompiler(arg_compiler, nullptr);
 	}
 }
 
@@ -1020,8 +1075,15 @@ void ButiScript::NameSpace::DeclareClasses(Compiler* arg_compiler)
 
 void ButiScript::NameSpace::Clear()
 {
+	for (auto analyzeClass : list_analyzeClassBuffer) {
+		analyzeClass->Release();
+	}
+	for (auto analyzeFunction: list_analyzeFunctionBuffer) {
+		analyzeFunction->Release();
+	}
 	list_analyzeClassBuffer.Clear();
 	list_analyzeFunctionBuffer.Clear();
+	list_analyzeGlobalValueBuffer.Clear();
 }
 
 
@@ -1256,6 +1318,14 @@ void ButiScript::TypeTable::Release() {
 	map_types.clear();
 	map_argmentChars.clear();
 	list_types.Clear();
+}
+
+void ButiScript::ArgDefine::SpecficType(const Compiler* arg_compiler)
+{
+	valueType = arg_compiler->GetTypeIndex(StringHelper::Remove( valueTypeName,"&"));
+	if (StringHelper::Contains(valueTypeName, "&")) {
+		SetRef();
+	}
 }
 
 #ifndef _BUTIENGINEBUILD

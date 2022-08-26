@@ -1173,7 +1173,7 @@ namespace ButiScript {
 		/////////////メソッド呼び出し定義////////////////
 
 		template<typename T>
-		T* GetSharedTypePtr() {
+		T* GetValueTypePtr() {
 			return &(top().Get<std::_Remove_cvref_t< T>>());
 		}
 		template<typename T>

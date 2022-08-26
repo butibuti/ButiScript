@@ -14,10 +14,12 @@ class NameSpace;
 class Class;
 class Block;
 class Function;
+class Declaration;
 using NameSpace_t = ButiEngine::Value_ptr<NameSpace>;
 using Class_t = ButiEngine::Value_ptr<Class>;
 using Block_t = ButiEngine::Value_ptr<Block>;
 using Function_t = ButiEngine::Value_ptr<Function>;
+using Declaration_t = ButiEngine::Value_ptr<Declaration>;
 // ä÷êî
 class Function :public ButiEngine::enable_value_from_this<Function> {
 public:
@@ -60,8 +62,16 @@ public:
 			accessType = arg_access;
 		}
 	}
+	void Release() { 
+		block = nullptr; 
+		parentFunction = nullptr; 
+		args.Clear();
+		ownNameSpace = nullptr;
+		list_subFunctions.Clear();
+	}
 protected:
 	Function() {}
+	void SpecficArgmentType(const Compiler* arg_compiler);
 	std::string name, searchName,returnTypeName;
 	ButiEngine::List<ArgDefine> args;
 	AccessModifier accessType = AccessModifier::Public;
@@ -94,6 +104,10 @@ public:
 	std::int32_t PushCompiler(Compiler* arg_compiler);
 	void RegistMethod(Function_t arg_method, Compiler* arg_compiler);
 	void SetValue(const std::string& arg_name, const std::string& arg_typeName, const AccessModifier arg_accessType);
+	void Release() {
+		map_values.clear();
+		list_methods.Clear();
+	}
 private:
 	std::map < std::string, std::pair< std::string, AccessModifier>> map_values;
 	ButiEngine::List<Function_t> list_methods;

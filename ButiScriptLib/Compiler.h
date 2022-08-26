@@ -103,18 +103,22 @@ public:
 	void Regist(Compiler* arg_compiler);
 	void SetParent(NameSpace_t arg_parent);
 	NameSpace_t GetParent()const;
+	void PushValue(Declaration_t arg_value);
 	void PushFunction(Function_t arg_func);
 	void PushClass(Class_t arg_class);
 	
-	void AnalyzeFunctions(Compiler* arg_c);
-	void AnalyzeClasses(Compiler* arg_c);
-	void DeclareClasses(Compiler* arg_c);
+	void AnalyzeFunctions(Compiler* arg_compiler);
+	void AnalyzeClasses(Compiler* arg_compiler);
+	void DeclareValues(Compiler* arg_compiler);
+	void DeclareFunctions(Compiler* arg_compiler);
+	void DeclareClasses(Compiler* arg_compiler);
 	void Clear();
 private:
 	std::string name;
 	NameSpace_t vlp_parentNamespace;
 	ButiEngine::List<Function_t> list_analyzeFunctionBuffer;
 	ButiEngine::List<Class_t> list_analyzeClassBuffer;
+	ButiEngine::List<Declaration_t> list_analyzeGlobalValueBuffer;
 };
 
 
@@ -181,6 +185,7 @@ public:
 	/// <returns>ê¨å˜/é∏îs</returns>
 	std::int32_t InputCompiledData(const std::string& arg_filePath,ButiScript::CompiledData& arg_ref_data);
 
+	void Clear();
 #ifdef	_DEBUG
 	void DebugDump();
 #endif
@@ -272,17 +277,24 @@ public:
 		return types;
 	}
 
-
 	//å^ÇÃåüçı
 	std::int32_t GetTypeIndex(const std::string& arg_typeName)const {
-		auto tag = types.GetType(arg_typeName);
-		if (tag) {
-			return tag->typeIndex;
+		if (arg_typeName[arg_typeName.size() - 1] == '&') {
+
+			auto tag = types.GetType(StringHelper::Remove(arg_typeName, "&"));
+			return tag ? tag->typeIndex|TYPE_REF : -1;
 		}
-		return -1;
+		auto tag = types.GetType(arg_typeName);
+		return tag ? tag->typeIndex : -1;
 	}
 	std::int32_t GetTypeIndex(const std::pair<std::int32_t, ButiEngine::List<ArgDefine>>& arg_funcTypePair) {
 		return arg_funcTypePair.first;
+	}
+
+	void TemplateTypeStrToTypeIndex(const ButiEngine::List<std::string>& arg_list_str, ButiEngine::List<std::int32_t>& arg_output)const {
+		for (auto& argStr : arg_list_str) {
+			arg_output.Add(GetTypeIndex(argStr));
+		}
 	}
 	//ä÷êîå^ÇÃåüçı
 	std::int32_t GetfunctionTypeIndex(const ButiEngine::List<ArgDefine>& arg_list_argmentTypes, const std::int32_t arg_retType);
@@ -330,7 +342,6 @@ public:
 	void PopCurrentThisType() {
 		list_thisType.RemoveLast();
 	}
-
 	// for code generator.
 #define	VM_CREATE
 #include "VM_create.h"
@@ -347,8 +358,8 @@ public:
 
 	std::int32_t SetBreakLabel(const std::int32_t arg_label)
 	{
-		std::int32_t old_index = break_index;
-		break_index = arg_label;
+		std::int32_t old_index = breakIndex;
+		breakIndex = arg_label;
 		return old_index;
 	}
 	bool JmpBreakLabel();
@@ -388,6 +399,14 @@ public:
 	FunctionTable& GetFunctions() { return functions; }
 	const ButiEngine::List<VMCode>& GetStatement()const { return statement; }
 	void ClearGlobalNameSpace();
+	void SetCurrentThisLocation(const std::int32_t arg_location) { 
+		currentThisLocation = arg_location; 
+	}
+	std::int32_t GetCurrentThisLocation()const { 
+		return currentThisLocation;
+	}
+	std::int32_t AddFunction(Function_t arg_function);
+	std::int32_t AddValue(Declaration_t arg_valueDecl);
 private:
 
 	FunctionTable functions;
@@ -410,7 +429,7 @@ private:
 
 	NameSpace_t currentNameSpace = nullptr, globalNameSpace = nullptr;
 	ButiEngine::List<NameSpace_t> list_namespaces;
-	std::int32_t break_index, error_count, lambdaCount;
+	std::int32_t breakIndex, errorCount, lambdaCount,currentThisLocation;
 
 	ButiEngine::List< std::string >list_function_name;
 	ButiEngine::List<std::int32_t> list_function_type;

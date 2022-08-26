@@ -273,7 +273,8 @@ struct make_function_func {
 	template <typename Ty1,typename Ty2>
 	Function_t operator()(const Ty1& arg_name,const Ty2 arg_modifier ) const
 	{
-		return ButiEngine::make_value<Function>(arg_name,arg_modifier);
+		auto output = ButiEngine::make_value<Function>(arg_name, arg_modifier);
+		return output;
 	}
 };
 // ラムダ式の生成
@@ -386,7 +387,8 @@ struct make_namespace_func {
 	template <typename Ty2>
 	NameSpace_t operator()(const Ty2& arg_name) const
 	{
-		return ButiEngine::make_value<NameSpace>(arg_name);
+		auto output = ButiEngine::make_value<NameSpace>(arg_name);
+		return output;
 	}
 };
 
@@ -520,7 +522,7 @@ struct pushCompiler_func {
 	template <typename Ty1, typename Ty2>
 	std::int32_t operator()(Ty1 arg_decl, Ty2 arg_compiler) const
 	{
-		return arg_decl->PushCompiler(arg_compiler);
+		return arg_compiler->AddFunction(arg_decl);
 	}
 };
 // ブロック内関数登録
@@ -532,6 +534,17 @@ struct pushCompiler_sub_func {
 	std::int32_t operator()(Ty1 arg_decl, Ty2 arg_compiler) const
 	{
 		return arg_decl->PushCompiler_sub(arg_compiler);
+	}
+};
+// ブロック内関数登録
+struct pushCompiler_value {
+	template <typename Ty1, typename Ty2>
+	struct result { using type = std::int32_t; };
+
+	template <typename Ty1, typename Ty2>
+	std::int32_t operator()(Ty1 arg_decl, Ty2 arg_compiler) const
+	{
+		return arg_compiler->AddValue(arg_decl);
 	}
 };
 //ブロック作成
@@ -580,7 +593,8 @@ const phoenix::function<BindFunctionObject::makeFunctionTypeStr_func>  makeFunct
 const phoenix::function<BindFunctionObject::accessModifier_func>  specificAccessModifier =			BindFunctionObject::accessModifier_func();
 const phoenix::function<BindFunctionObject::analyze_func>  analyze =								BindFunctionObject::analyze_func();
 const phoenix::function<BindFunctionObject::pushCompiler_sub_func>  pushCompiler_sub =				BindFunctionObject::pushCompiler_sub_func();
-const phoenix::function<BindFunctionObject::pushCompiler_func>  pushCompiler =						BindFunctionObject::pushCompiler_func();
+const phoenix::function<BindFunctionObject::pushCompiler_func>  pushCompiler = BindFunctionObject::pushCompiler_func();
+const phoenix::function<BindFunctionObject::pushCompiler_value>  pushCompiler_value =				BindFunctionObject::pushCompiler_value();
 const phoenix::function<BindFunctionObject::regist_func>  regist =									BindFunctionObject::regist_func();
 const phoenix::function<BindFunctionObject::registMethod_func>  registMethod =						BindFunctionObject::registMethod_func();
 const phoenix::function<BindFunctionObject::pop_nameSpace_func>  popNameSpace =						BindFunctionObject::pop_nameSpace_func();
@@ -723,7 +737,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 		boost::spirit::rule<ScannerT>							ident;
 
 		boost::spirit::symbols<> keywords,boolean;
-		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op;
+		boost::spirit::symbols<> mul_op, add_op, shift_op, bit_op, equ_op, assign_op,and_op,or_op;
 		boost::spirit::dynamic_distinct_parser<ScannerT> keyword_p;
 
 		definition(funcAnalyze_grammer const& self)
@@ -762,7 +776,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			null = boost::spirit::str_p("null");
 
 			// 値呼び出し
-			Value = *(identifier[Value.node = binary_node(OP_REFFERENCE, Value.node, arg1)]>>
+			Value = +(identifier[Value.node = binary_node(OP_REFFERENCE, Value.node, arg1)]>>
 				!(!('<' >> type[list_push_back(Value.typeTemplates, arg1)] >> *(',' >> type[list_push_back(Value.typeTemplates, arg1)]) >>
 					boost::spirit::ch_p('>')[Value.node = binary_node(OP_FUNCTION, Value.node, Value.typeTemplates)])
 					>>boost::spirit::ch_p('(')[Value.node=node_to_funcCall(Value.node)]>>
@@ -809,7 +823,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 			// 二項演算子（&, |）
 			bit_op.add("&", OP_AND)("|", OP_OR);
 			bit_expr = shift_expr[bit_expr.node = arg1]
-				>> *(bit_op[bit_expr.Op = arg1]
+				>> !(bit_op[bit_expr.Op = arg1]
 					>> shift_expr[bit_expr.node = binary_node(bit_expr.Op, bit_expr.node, arg1)]);
 
 			// 二項演算子（比較）
@@ -819,12 +833,13 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 					>> bit_expr[equ_expr.node = binary_node(equ_expr.Op, equ_expr.node, arg1)]);
 
 			// 二項演算子（&&）
+			and_op.add("&&", OP_LOGAND);
 			and_expr = equ_expr[and_expr.node = arg1]
-				>> *("&&" >> equ_expr[and_expr.node = binary_node(OP_LOGAND, and_expr.node, arg1)]);
+				>> !(and_op[and_expr.Op=arg1] >> equ_expr[and_expr.node = binary_node(and_expr.Op, and_expr.node, arg1)]);
 
 			// 二項演算子（||）
 			expr = and_expr[expr.node = arg1]
-				>> *("||" >> and_expr[expr.node = binary_node(OP_LOGOR, expr.node, arg1)]);
+				>> !("||" >> and_expr[expr.node = binary_node(OP_LOGOR, expr.node, arg1)]);
 
 			// 代入
 			assign_op.add
@@ -940,7 +955,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 					|Enum[analyze(arg1, self.compiler)]
 					|decl_function[pushCompiler(arg1, self.compiler)]
 					| decl_func
-					| decl_value[analyze(arg1, self.compiler)]
+					| decl_value[pushCompiler_value(arg1, self.compiler)]
 					| nameSpace[popNameSpace(self.compiler)]) >> "}";
 
 			// 入力された構文
@@ -948,7 +963,7 @@ struct funcAnalyze_grammer : public boost::spirit::grammar<funcAnalyze_grammer> 
 				|Enum[analyze(arg1, self.compiler)]
 				|decl_function[pushCompiler(arg1, self.compiler)]
 				| decl_func
-				| decl_value[analyze(arg1, self.compiler)]
+				| decl_value[pushCompiler_value(arg1, self.compiler)]
 				| nameSpace[popNameSpace(self.compiler)]
 				| syntax_error_p
 				);
@@ -1019,7 +1034,6 @@ bool ButiScript::ScriptParse(const std::string& arg_filePath, Compiler* arg_comp
 	funcAnalyze_grammer	gr(arg_compiler);
 	skip_parser skip_p;
 	boost::spirit::parse_info<iterator_t> info = parse(begin, end, gr, skip_p);
-	arg_compiler->OpHalt();
 	arg_compiler->LambdaCountReset();
 	arg_compiler->Analyze();
 	arg_compiler->ClearNameSpace();

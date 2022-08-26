@@ -59,10 +59,13 @@ Node_t Node::make_node(const std::int32_t arg_op, const std::string& arg_str, co
 {
 	if (arg_op == OP_STRING) {
 		std::uint64_t pos = arg_str.rfind('\"');
-		if (pos != std::string::npos)
-			return ButiEngine::make_value<Node>(arg_op, arg_str.substr(0, pos));
+		if (pos != std::string::npos) {
+			auto output = ButiEngine::make_value<Node>(arg_op, arg_str.substr(0, pos));
+			return output;
+		}
 	}
-	return ButiEngine::make_value<Node>(arg_op, arg_str);
+	auto output = ButiEngine::make_value<Node>(arg_op, arg_str);
+	return output;
 }
 // 単項演算子のノードを生成
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, const Compiler* arg_compiler)
@@ -505,13 +508,9 @@ Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_left, Node_t arg_ri
 
 Node_t Node::make_node(const std::int32_t arg_op, Node_t arg_refference,const std::string &arg_str)
 {
-	if (!arg_refference) {
-		return ButiEngine::make_value<Node_value>(arg_str);
-	}
-	else {
-		return ButiEngine::make_value<Node_value>(arg_str, arg_refference);
-	}
-	return nullptr;
+	auto output = arg_refference ? ButiEngine::make_value<Node_value>(arg_str, arg_refference):ButiEngine::make_value<Node_value>(arg_str);
+
+	return output;
 }
 
 // 引数有り関数ノードの生成
@@ -869,7 +868,8 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 		return TYPE_STRING;
 
 	case OP_FUNCTION:
-		return Call(arg_compiler, strData, nullptr, {});
+		assert("プログラムエラー：不正なノード");
+		return -1;
 	}
 
 	std::int32_t left_type = leftNode->Push(arg_compiler);
@@ -995,12 +995,6 @@ std::int32_t Node::GetType(Compiler* arg_compiler)const {
 
 	case OP_STRING:
 		return TYPE_STRING;
-
-	case OP_FUNCTION:
-		return GetCallType(arg_compiler, strData, nullptr, {});
-	}
-	if (op == OP_IDENTIFIER) {
-		assert(0 && "ここ通る？");
 	}
 	std::int32_t left_type = leftNode->GetType(arg_compiler);
 	std::int32_t right_type = rightNode->GetType(arg_compiler);
@@ -1014,7 +1008,8 @@ std::int32_t Node::GetType(Compiler* arg_compiler)const {
 	if (left_type == TYPE_VECTOR2 && right_type == TYPE_VECTOR2) {
 		return TYPE_VECTOR2;
 	}
-	if ((left_type == TYPE_VECTOR2 && right_type == TYPE_FLOAT)|| (left_type == TYPE_FLOAT && right_type == TYPE_VECTOR2)) {
+	if ((left_type == TYPE_VECTOR2 && right_type == TYPE_FLOAT) || (left_type == TYPE_FLOAT && right_type == TYPE_VECTOR2)
+		|| (left_type == TYPE_VECTOR2 && right_type == TYPE_INTEGER) || (left_type == TYPE_INTEGER&& right_type == TYPE_VECTOR2)) {
 		return TYPE_VECTOR2;
 	}
 
@@ -1087,46 +1082,8 @@ const ValueTag* Node::GetValueTag(const std::string& arg_name, Compiler* arg_com
 		}
 
 	}
-	if (!valueTag) {
-		//arg_compiler->error("変数 " + valueName + " は定義されていません。");
-	}
 	return valueTag;
 }
-//ノードの関数呼び出し型チェック
-std::int32_t Node::GetCallType(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_argNode, const ButiEngine::List<std::int32_t>& arg_list_temps)const {
-	if (m_vlp_refference) {
-		ButiEngine::List<std::int32_t> argTypes;
-
-		if (arg_list_argNode) {
-			for (auto itr:*arg_list_argNode) {
-				argTypes.Add(itr->GetType(arg_compiler));
-			}
-		}
-		const TypeTag* typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
-		const FunctionTag* tag = typeTag->methods.Find(strData + GetTemplateName(arg_list_temps, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
-
-		return tag->valueType;
-	}
-
-	ButiEngine::List<std::int32_t> argTypes;
-	if (arg_list_argNode) {
-		auto end = arg_list_argNode->end();
-		for (auto itr = arg_list_argNode->begin(); itr != end; itr++) {
-			argTypes.Add((*itr)->GetType(arg_compiler));
-		}
-	}
-	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
-	const FunctionTag* tag= arg_compiler->GetFunctionTag(arg_name, argTypes, arg_list_temps, true);
-	if (!tag) {
-		tag= arg_compiler->GetFunctionTag(arg_name, argTypes,arg_list_temps, false);
-	}
-
-	if (tag == nullptr) {
-		return -1;
-	}
-	return tag->valueType;
-}
-
 // 代入文
 std::int32_t Node::Assign(Compiler* arg_compiler) const{
 	std::int32_t left_type_raw;
@@ -1209,47 +1166,47 @@ std::int32_t Node_Null::Push(Compiler* arg_compiler) const
 	arg_compiler->PushNull();
 	return TYPE_VOID;
 }
-const ValueTag* Node_value::GetValueTag(Compiler* arg_compiler) const{
+const ValueTag* Node_value::GetValueTag(const std::string& arg_searchStr, Compiler* arg_compiler) const{
 
-	if (op != OP_IDENTIFIER) {
-		arg_compiler->error("プログラムエラー：変数ノードに変数以外が登録されています。");
-		return nullptr;
-	}
+	std::string  valueName;
+	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
+	const ValueTag* valueTag = nullptr;
 
-	else {
-
-		std::string  valueName;
-		NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
-		const ValueTag* valueTag = nullptr;
-
-		while (!valueTag)
-		{
-			if (currentsearchNameSpace) {
-				valueName = currentsearchNameSpace->GetGlobalNameString() + strData;
-			}
-			else {
-				valueName = strData;
-			}
-
-			valueTag = arg_compiler->GetValueTag(valueName);
-			if (currentsearchNameSpace) {
-				currentsearchNameSpace = currentsearchNameSpace->GetParent();
-			}
-			else {
-				break;
-			}
-
+	while (!valueTag)
+	{
+		if (currentsearchNameSpace) {
+			valueName = currentsearchNameSpace->GetGlobalNameString() + arg_searchStr;
 		}
-		if (!valueTag) {
-			//arg_compiler->error("変数 " + valueName + " は定義されていません。");
+		else {
+			valueName = arg_searchStr;
 		}
-		return valueTag;
+
+		valueTag = arg_compiler->GetValueTag(valueName);
+		if (currentsearchNameSpace) {
+			currentsearchNameSpace = currentsearchNameSpace->GetParent();
+		}
+		else {
+			break;
+		}
+
 	}
+	if (!valueTag) {
+		//arg_compiler->error("変数 " + valueName + " は定義されていません。");
+	}
+	return valueTag;
 }
 
 // 値ノードのpush
 std::int32_t Node_value::Push(Compiler* arg_compiler) const{
-	if (m_vlp_refference) {
+	if (m_vlp_refference && !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
+		if (auto enumType = arg_compiler->GetEnumTag(m_vlp_refference->GetString())) {
+			if (enumType->ExistIdentifers(strData)) {
+				arg_compiler->PushConstInt(enumType->GetValue(strData));
+				return TYPE_INTEGER;
+			}
+			arg_compiler->error(strData + "は" + enumType->GetTypeName() + "に存在しません");
+			return -1;
+		}
 		m_vlp_refference->Push(arg_compiler);
 		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
@@ -1263,17 +1220,18 @@ std::int32_t Node_value::Push(Compiler* arg_compiler) const{
 		}
 		return   typeTag->map_memberValue.at(strData).type & ~TYPE_REF;
 	}
+	
+
 
 	if (auto thisType = arg_compiler->GetCurrentThisType()) {
-		if (!thisType->map_memberValue.count(strData)) {
-			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
-			return -1;
+		if (thisType->map_memberValue.count(strData)) {
+			arg_compiler->PushLocalRef(arg_compiler->GetCurrentThisLocation());
+			arg_compiler->PushMemberRef(thisType->map_memberValue.at(strData).index);
+			return thisType->map_memberValue.at(strData).type;
 		}
-		arg_compiler->PushMember(thisType->map_memberValue.at(strData).index);
-		return thisType->map_memberValue.at(strData).type;
 	}
 
-	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	const ValueTag* valueTag = GetValueTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData:strData, arg_compiler);
 	if (valueTag)
 	{
 		if (valueTag->isGlobal) {		// グローバル変数
@@ -1323,8 +1281,15 @@ std::int32_t Node_value::Push(Compiler* arg_compiler) const{
 }
 
 std::int32_t Node_value::PushClone(Compiler* arg_compiler) const{
-
-	if (m_vlp_refference) {
+	if (m_vlp_refference && !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
+		if (auto enumType = arg_compiler->GetEnumTag(m_vlp_refference->GetString())) {
+			if (enumType->ExistIdentifers(strData)) {
+				arg_compiler->PushConstInt(enumType->GetValue(strData));
+				return TYPE_INTEGER;
+			}
+			arg_compiler->error(strData + "は" + enumType->GetTypeName() + "に存在しません");
+			return -1;
+		}
 		m_vlp_refference->Push(arg_compiler);
 		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
@@ -1335,14 +1300,13 @@ std::int32_t Node_value::PushClone(Compiler* arg_compiler) const{
 	}
 
 	if (auto thisType = arg_compiler->GetCurrentThisType()) {
-		if (!thisType->map_memberValue.count(strData)) {
-			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
-			return -1;
+		if (thisType->map_memberValue.count(strData)) {
+			arg_compiler->PushLocalRef(arg_compiler->GetCurrentThisLocation());
+			arg_compiler->PushMember(thisType->map_memberValue.at(strData).index);
+			return thisType->map_memberValue.at(strData).type;
 		}
-		arg_compiler->PushMember(thisType->map_memberValue.at(strData).index);
-		return thisType->map_memberValue.at(strData).type;
 	}
-	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	const ValueTag* valueTag = GetValueTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, arg_compiler);
 	if (valueTag)
 	{
 		if (valueTag->isGlobal) {		// グローバル変数
@@ -1365,7 +1329,6 @@ std::int32_t Node_value::PushClone(Compiler* arg_compiler) const{
 		}
 		return valueTag->valueType & ~TYPE_REF;
 	}
-
 	const auto funcTag = GetFunctionType(arg_compiler, *this);
 	if (!funcTag) {
 		arg_compiler->error(GetString() + "は未定義です");
@@ -1379,7 +1342,12 @@ std::int32_t Node_value::PushClone(Compiler* arg_compiler) const{
 
 // 変数ノードのpop
 std::int32_t Node_value::Pop(Compiler* arg_compiler) const{
-	if (m_vlp_refference) {
+	if (m_vlp_refference && !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
+		if (auto enumType = arg_compiler->GetEnumTag(m_vlp_refference->GetString())) {
+			arg_compiler->error("enumへのpopは不可能です");
+			return -1;
+		}
+
 		//型
 		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		if (typeTag->map_memberValue.at(strData).access != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
@@ -1401,23 +1369,24 @@ std::int32_t Node_value::Pop(Compiler* arg_compiler) const{
 	}
 
 	if (auto thisType = arg_compiler->GetCurrentThisType()) {
-		if (!thisType->map_memberValue.count(strData)) {
-			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
-			return -1;
+		if (thisType->map_memberValue.count(strData)) {
+			arg_compiler->PushLocalRef(arg_compiler->GetCurrentThisLocation());
+			auto type = thisType->map_memberValue.at(strData).type, index = thisType->map_memberValue.at(strData).index;
+			if (type & TYPE_REF) {
+				arg_compiler->PopMemberRef(index);
+			}
+			else if (type == TYPE_INTEGER || type == TYPE_FLOAT) {
+				arg_compiler->PopMemberValueType(index);
+			}
+			else {
+				arg_compiler->PopMember(index);
+			}
+			return type & ~TYPE_REF;
 		}
-		auto type = thisType->map_memberValue.at(strData).type,index= thisType->map_memberValue.at(strData).index;
-		if (type & TYPE_REF) {
-			arg_compiler->PopMemberRef(index);
-		}
-		else if (type == TYPE_INTEGER || type == TYPE_FLOAT) {
-			arg_compiler->PopMemberValueType(index);
-		}
-		else {
-			arg_compiler->PopMember(index);
-		}
-		return type&~TYPE_REF;
 	}
-	const ValueTag* valueTag = GetValueTag(arg_compiler);
+
+
+	const ValueTag* valueTag = GetValueTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, arg_compiler);
 	if (valueTag)
 	{
 		if (valueTag->isGlobal) {		// グローバル変数
@@ -1440,21 +1409,22 @@ std::int32_t Node_value::Pop(Compiler* arg_compiler) const{
 		}
 		return valueTag->valueType & ~TYPE_REF;
 	}
-	const auto funcTag = GetFunctionType(arg_compiler, *this);
+	//const auto funcTag = GetFunctionType(arg_compiler, *this);
 
-	if (!funcTag) {
-		arg_compiler->error(GetString() + "は未定義です");
-		return -1;
-	}
-	else {
-		arg_compiler->error(GetString() + "は定数です");
-		return -1;
-	}
+	arg_compiler->error(GetString() + "は定数です");
+	return -1;
 }
 
 std::int32_t Node_value::GetType(Compiler* arg_compiler) const
 {//変数のメンバ変数
-	if (m_vlp_refference) {
+	if (m_vlp_refference&&!m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
+		if (auto enumType = arg_compiler->GetEnumTag(m_vlp_refference->GetString())) {
+			if (enumType->ExistIdentifers(strData)) {
+				return enumType->typeIndex;
+			}
+			arg_compiler->error(strData + "は" + enumType->GetTypeName() + "に存在しません");
+			return -1;
+		}
 		auto typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		if (!typeTag->map_memberValue.count(strData)) {
 			arg_compiler->error("構文エラー：" + typeTag->typeName + "にメンバ変数" + strData + "は存在しません");
@@ -1463,14 +1433,12 @@ std::int32_t Node_value::GetType(Compiler* arg_compiler) const
 		return typeTag->map_memberValue.at(strData).type;
 	}
 	if (auto thisType= arg_compiler->GetCurrentThisType()) {
-		if (!thisType->map_memberValue.count(strData)) {
-			arg_compiler->error("構文エラー：" + thisType->typeName + "にメンバ変数" + strData + "は存在しません");
-			return -1;
+		if (thisType->map_memberValue.count(strData)) {
+			return thisType->map_memberValue.at(strData).type;
 		}
-		return thisType->map_memberValue.at(strData).type;
 	}
 
-	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	const ValueTag* valueTag = GetValueTag(m_vlp_refference?m_vlp_refference->ToNameSpaceString()+strData : strData, arg_compiler);
 	if (valueTag) {
 		return valueTag->valueType;
 	}
@@ -1489,7 +1457,7 @@ void Node_value::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captu
 	if (m_vlp_refference) {
 		m_vlp_refference->LambdaCapture(arg_captureList,arg_compiler);
 	}
-	const ValueTag* valueTag = GetValueTag(arg_compiler);
+	const ValueTag* valueTag = GetValueTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, arg_compiler);
 	if (valueTag && !valueTag->isGlobal) {
 		arg_captureList.emplace(GetString(), valueTag);
 	}
@@ -1497,7 +1465,19 @@ void Node_value::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captu
 
 Node_t Node_value::ToFunctionCall() const
 {
-	return ButiEngine::make_value<Node_functionCall>(strData, m_vlp_refference);
+	return ButiEngine::make_value<Node_functionCall>(strData, m_vlp_refference,m_list_templateTypeNames);
+}
+
+bool Node_value::IsNameSpaceNode(Compiler* arg_compiler) const
+{
+	if (m_vlp_refference&&!m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
+		return false;
+	}
+	bool output = false;
+	if (auto thisType = arg_compiler->GetCurrentThisType()) {
+		output |= thisType->map_memberValue.count(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData);
+	}
+	return  !(GetValueTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, arg_compiler) || arg_compiler->GetEnumTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData) || output);
 }
 
 // 関数呼び出し
@@ -1518,8 +1498,8 @@ struct set_arg {
 			else {
 				std::string  valueName;
 				NameSpace_t currentsearchNameSpace = p_compiler->GetCurrentNameSpace();
-				const ValueTag* tag = arg_node->GetValueTag(p_compiler);
-				if (tag == nullptr) {
+				const ValueTag* tag = arg_node->GetValueTag(arg_node->GetString(), p_compiler);
+				if (!tag) {
 					p_compiler->error("変数 " + arg_node->GetString() + " は定義されていません。");
 				}
 				else {
@@ -1558,26 +1538,20 @@ struct set_arg {
 std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 {
 	ButiEngine::List<std::int32_t> temp;
-	if (m_vlp_refference) {
+	arg_compiler->TemplateTypeStrToTypeIndex(m_list_templateTypeNames, temp);
+	if (m_vlp_refference&& !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
 		ButiEngine::List<std::int32_t> argTypes;
 		if (m_nodeList) {
 			for (auto itr: m_nodeList->list_args) {
 				argTypes.Add(itr->GetType(arg_compiler));
 			}
 		}
-
 		std::int32_t argSize = argTypes.GetSize();
 		const TypeTag* typeTag = nullptr;
 		const FunctionTag* methodTag = nullptr;
-
-
 		typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		methodTag = typeTag->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
-		if (methodTag->accessType != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
-
-			arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
-		}
-
+		
 		if (methodTag == nullptr) {
 			std::string message = "";
 			if (argSize) {
@@ -1590,7 +1564,9 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 			arg_compiler->error(message);
 			return -1;
 		}
-
+		if (methodTag->accessType != AccessModifier::Public && arg_compiler->GetCurrentThisType() != typeTag) {
+			arg_compiler->error(typeTag->typeName + "　の" + methodTag->name + "()はアクセス出来ません");
+		}
 		// 引数をpush
 		if (m_nodeList && methodTag->ArgSize() == argSize) {
 			std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
@@ -1610,64 +1586,60 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 			arg_compiler->PushConstInt(argSize + 1);
 			arg_compiler->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
 		}
-
-
 		return methodTag->valueType;
 	}
-
-	return Call(arg_compiler, strData, &m_nodeList->list_args, temp);
-}
-std::int32_t Node_functionCall::PushClone(Compiler* arg_compiler) const
-{
-	return Push(arg_compiler);
-}
-std::int32_t Node_functionCall::Pop(Compiler* arg_compiler) const
-{
-	arg_compiler->error("プログラムエラー：関数ノードをpopした");
-	return TYPE_INTEGER;
-}
-std::int32_t Node_functionCall::GetType(Compiler* arg_compiler) const
-{
-	ButiEngine::List<std::int32_t> temp;
-	return GetCallType(arg_compiler, strData, &m_nodeList->list_args, temp);
-}
-void Node_functionCall::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
-{
-	if (m_vlp_refference) {
+	//メソッドからメソッドを呼び出す
+	if (auto thisType = arg_compiler->GetCurrentThisType()) {
+		ButiEngine::List<std::int32_t> argTypes;
 		if (m_nodeList) {
-			m_nodeList->LambdaCapture(arg_captureList, arg_compiler);
+			for (auto itr : m_nodeList->list_args) {
+				argTypes.Add(itr->GetType(arg_compiler));
+			}
 		}
-		m_vlp_refference->LambdaCapture(arg_captureList, arg_compiler);
-	}
-	else {
-		leftNode->LambdaCapture(arg_captureList, arg_compiler);
-		m_nodeList->LambdaCapture(arg_captureList, arg_compiler);
-	}
-}
+		if (auto methodTag=thisType->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable())) {
+			
+			std::int32_t argSize = argTypes.GetSize();
+			// 引数をpush
+			if (m_nodeList) {
+				std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
+			}
+
+			arg_compiler->PushLocalRef(arg_compiler->GetCurrentThisLocation());
 
 
-// 関数呼び出し
-std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_argNodes,  const ButiEngine::List<std::int32_t>& arg_list_temps) const
-{
+			if (methodTag->IsSystem()) {
+				// 引数の数をpush
+				arg_compiler->PushConstInt(argSize);
+				arg_compiler->OpSysMethodCall(methodTag->GetIndex());		// 組み込みメソッド
+			}
+			else {
+				// 引数の数+thisをpush
+				arg_compiler->PushConstInt(argSize + 1);
+				arg_compiler->OpCall(methodTag->GetIndex());			// スクリプト上のメソッド
+			}
+			return methodTag->valueType;
+		}
+	}
 
 	ButiEngine::List<std::int32_t> argTypes;
-	if (arg_list_argNodes) {
-		for (auto itr :*arg_list_argNodes) {
+	if (m_nodeList) {
+		for (auto itr : m_nodeList->list_args) {
 			argTypes.Add(itr->GetType(arg_compiler));
 		}
 	}
 
 	std::int32_t argSize = argTypes.GetSize();
-	const FunctionTag* functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_list_temps, true);
+	const FunctionTag* functionTag = arg_compiler->GetFunctionTag(m_vlp_refference? m_vlp_refference->ToNameSpaceString()+strData:strData, argTypes, temp, true);
 	if (!functionTag) {
-		functionTag = arg_compiler->GetFunctionTag(arg_name, argTypes, arg_list_temps, false);
+		functionTag = arg_compiler->GetFunctionTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData
+			: strData, argTypes, temp, false);
 	}
 
 
-	if (functionTag ) {
+	if (functionTag) {
 		// 引数をpush
-		if (arg_list_argNodes && functionTag->ArgSize() == argSize) {
-			std::for_each(arg_list_argNodes->begin(), arg_list_argNodes->end(), set_arg(arg_compiler, functionTag));
+		if (m_nodeList && functionTag->ArgSize() == argSize) {
+			std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, functionTag));
 		}
 
 		// 引数の数をpush
@@ -1683,14 +1655,14 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 		return functionTag->valueType;
 	}
 	//関数型変数からの呼び出し
-	auto valueTag = GetValueTag(arg_name, arg_compiler);
+	auto valueTag = GetValueTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData: strData, arg_compiler);
 	if (valueTag) {
-		auto valueType=arg_compiler->GetType(valueTag->valueType);
+		auto valueType = arg_compiler->GetType(valueTag->valueType);
 		if (valueType->IsFunctionObjectType()) {
 			// 引数をpush
-			if (arg_list_argNodes && valueType->GetFunctionObjectArgSize() == argSize) {
+			if (m_nodeList && valueType->GetFunctionObjectArgSize() == argSize) {
 				auto valueArgTypes = valueType->GetFunctionObjectArgment();
-				std::for_each(arg_list_argNodes->begin(), arg_list_argNodes->end(), set_arg(arg_compiler,&valueArgTypes ));
+				std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, &valueArgTypes));
 			}
 
 			// 引数の数をpush
@@ -1699,7 +1671,7 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 
 				arg_compiler->PushGlobalValueRef(valueTag->GetAddress());
 			}
-			else {		
+			else {
 
 				arg_compiler->PushLocalRef(valueTag->GetAddress());
 			}
@@ -1712,13 +1684,94 @@ std::int32_t Node::Call(Compiler* arg_compiler, const std::string& arg_name, con
 	std::string message = "";
 	if (argSize) {
 		for (std::int32_t i = 0; i < argSize; i++) {
-			message += arg_compiler->GetTypeName(argTypes[i]) + " ";
+			if (i >= 0 && i < argTypes.GetSize()) {
+				message += arg_compiler->GetTypeName(argTypes[i]) + " ";
+			}
+			else {
+				message += "不明な型 ";
+			}
 		}
 		message += "を引数にとる";
 	}
-	message += "関数" + arg_name + "は未宣言です";
+	message += "関数" +( m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData: strData) + "は未宣言です";
 	arg_compiler->error(message);
 	return -1;
+}
+std::int32_t Node_functionCall::PushClone(Compiler* arg_compiler) const
+{
+	return Push(arg_compiler);
+}
+std::int32_t Node_functionCall::Pop(Compiler* arg_compiler) const
+{
+	arg_compiler->error("プログラムエラー：関数ノードをpopした");
+	return TYPE_INTEGER;
+}
+std::int32_t Node_functionCall::GetType(Compiler* arg_compiler) const
+{
+	ButiEngine::List<std::int32_t> temp;
+	arg_compiler->TemplateTypeStrToTypeIndex(m_list_templateTypeNames, temp);
+	if (m_vlp_refference && !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
+		ButiEngine::List<std::int32_t> argTypes;
+
+		if (m_nodeList) {
+			for (auto itr : m_nodeList->list_args) {
+				argTypes.Add(itr->GetType(arg_compiler));
+			}
+		}
+		const TypeTag* typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
+		const FunctionTag* tag = typeTag->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
+
+		return tag->valueType;
+	}
+	//メソッドからメソッドを呼び出す
+	if (auto thisType = arg_compiler->GetCurrentThisType()) {
+		ButiEngine::List<std::int32_t> argTypes;
+		if (m_nodeList) {
+			for (auto itr : m_nodeList->list_args) {
+				argTypes.Add(itr->GetType(arg_compiler));
+			}
+		}
+		if (auto methodTag = thisType->methods.Find(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable())) {
+			return methodTag->valueType;
+		}
+	}
+
+	ButiEngine::List<std::int32_t> argTypes;
+	if (m_nodeList) {
+		for (auto itr: m_nodeList->list_args) {
+			argTypes.Add(itr->GetType(arg_compiler));
+		}
+	}
+	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
+	const FunctionTag* tag = arg_compiler->GetFunctionTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, argTypes, temp, true);
+	if (!tag) {
+		tag = arg_compiler->GetFunctionTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, argTypes, temp, false);
+	}
+
+	if (tag == nullptr) {
+		return -1;
+	}
+	return tag->valueType;
+}
+
+void Node_functionCall::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const
+{
+	if (m_vlp_refference) {
+		if (m_nodeList) {
+			m_nodeList->LambdaCapture(arg_captureList, arg_compiler);
+		}
+		m_vlp_refference->LambdaCapture(arg_captureList, arg_compiler);
+	}
+	else {
+		leftNode->LambdaCapture(arg_captureList, arg_compiler);
+		m_nodeList->LambdaCapture(arg_captureList, arg_compiler);
+	}
+}
+
+void Node_functionCall::SetArgmentList(NodeList_t arg_List)
+{
+	m_nodeList = arg_List;
+	m_nodeList->Reverse();
 }
 
 void Node::LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList,Compiler* arg_compiler) const
@@ -2207,42 +2260,6 @@ void NodeList::LambdaCapture(std::map<std::string, const ValueTag*>& arg_capture
 	for (auto itr = list_args.begin(), end = list_args.end(); itr != end; itr++) {
 		(*itr)->LambdaCapture(arg_captureList, arg_compiler);
 	}
-}
-std::int32_t Node_enum::Push(Compiler* arg_compiler) const
-{
-	auto enumType = GetEnumType(arg_compiler,*leftNode);
-	if (enumType == nullptr) {
-
-		arg_compiler->error("列挙型　" + leftNode->GetString() + "は未定義です");
-		return -1;
-	}
-	if (!enumType->ExistIdentifers(strData)) {
-
-		arg_compiler->error("列挙型　" + leftNode->GetString()+"."+strData + "は未定義です");
-		return -1;
-	}
-	arg_compiler->PushConstInt( enumType->GetValue(strData));
-
-	return TYPE_INTEGER;
-}
-std::int32_t Node_enum::Pop(Compiler* arg_compiler) const
-{
-	arg_compiler->error("プログラムエラー：列挙型ノードをpop");
-	return -1;
-}
-std::int32_t Node_enum::GetType(Compiler* arg_compiler) const
-{
-	auto enumType = GetEnumType(arg_compiler, *leftNode);
-	return enumType->typeIndex;
-}
-std::int32_t Node_enum::EnumType(Compiler* arg_compiler) const
-{
-	auto type=arg_compiler->GetType(leftNode->GetString());
-	if (!type) {
-		arg_compiler->error("列挙型　" + leftNode->GetString() + "." + strData + "は未定義です");
-		return 0;
-	}
-	return type->typeIndex;
 }
 
 std::int32_t Node_FunctionObject::Push(Compiler* arg_compiler) const

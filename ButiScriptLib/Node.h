@@ -11,7 +11,7 @@ namespace ButiScript {
 class Compiler;
 #include"value_type.h"
 
-	// ノードの命令
+// ノードの命令
 enum OPCODE {
 	OP_NEG,
 	OP_NOT,
@@ -98,12 +98,8 @@ public:
 	virtual const ValueTag* GetValueTag(Compiler* arg_compiler)const;
 	virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* arg_compiler)const;
 	virtual std::int32_t EnumType(Compiler* arg_compiler)const { return TYPE_INTEGER; }
-	std::int32_t GetCallType(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_arg, const ButiEngine::List<std::int32_t>& arg_list_temps)const;
-
+	
 	std::int32_t Assign(Compiler* arg_compiler) const;
-	std::int32_t Call(Compiler* arg_compiler, const std::string& arg_name, const ButiEngine::List<Node_t>* arg_list_arg, const ButiEngine::List<std::int32_t>& arg_list_temps) const;
-
-
 	virtual void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const;
 	static Node_t make_node(const std::int32_t arg_op, const float arg_number, const Compiler* arg_compiler)
 	{
@@ -119,7 +115,8 @@ public:
 	static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, const std::string& arg_str);
 	static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, NodeList_t arg_list);
 	static Node_t make_node(const std::int32_t arg_op, Node_t arg_left, const ButiEngine::List<std::string>& arg_templateTypes);
-
+	std::string ToNameSpaceString()const { return m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData+"::" : strData+"::"; }
+	virtual bool IsNameSpaceNode(Compiler* arg_compiler)const { return false; }
 	void SetLeftNode(Node_t arg_node) { leftNode = arg_node; }
 	void SetRightNode(Node_t arg_node) { rightNode = arg_node; }
 	void SetRefferenceNode(Node_t arg_node) { m_vlp_refference = arg_node; }
@@ -140,8 +137,7 @@ protected:
 //Nullのノード
 class Node_Null :public Node {
 public:
-	Node_Null() :Node(OP_NULL, "null") {
-	}
+	Node_Null() :Node(OP_NULL, "null") {}
 	std::int32_t Push(Compiler* arg_compiler)const override;
 };
 
@@ -153,21 +149,23 @@ public:
 	{
 		m_vlp_refference = arg_refference;
 	};
-	const ValueTag* GetValueTag(Compiler* arg_compiler)const override;
+	const ValueTag* GetValueTag(const std::string& arg_searchStr,Compiler* arg_compiler)const override;
 	std::int32_t Push(Compiler* arg_compiler) const override;
 	std::int32_t PushClone(Compiler* arg_compiler) const override;
 	std::int32_t Pop(Compiler* arg_compiler) const override;
 	std::int32_t GetType(Compiler* arg_compiler)const override;
 	void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 	Node_t ToFunctionCall()const override;
+	bool IsNameSpaceNode(Compiler* arg_compiler)const override;
 };
 
 // 関数呼び出しノード
 class Node_functionCall : public Node {
 public:
-	Node_functionCall(const std::string& arg_name, Node_t arg_refference) : Node(OP_FUNCTION, arg_name)
+	Node_functionCall(const std::string& arg_name, Node_t arg_refference,const ButiEngine::List<std::string>& arg_templateList) : Node(OP_FUNCTION, arg_name)
 	{
 		m_vlp_refference = arg_refference;
+		m_list_templateTypeNames = arg_templateList;
 	};
 	std::int32_t Push(Compiler* arg_compiler) const override;
 	std::int32_t PushClone(Compiler* arg_compiler) const override;
@@ -175,9 +173,7 @@ public:
 	std::int32_t GetType(Compiler* arg_compiler)const override;
 	void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const override;
 
-	void SetArgmentList(NodeList_t arg_List)override {
-		m_nodeList = arg_List;
-	}
+	void SetArgmentList(NodeList_t arg_List)override;
 private:
 	NodeList_t m_nodeList;
 };
@@ -205,21 +201,11 @@ public:
 	Node_t get(std::uint64_t arg_index) const { return list_args[arg_index]; }
 
 	void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const;
+	void Reverse() {
+		std::reverse(list_args.begin(), list_args.end());
+	}
 public:
 	ButiEngine::List<Node_t> list_args;
-};
-
-//enum呼び出しのノード
-class Node_enum :public Node {
-public:
-	Node_enum(const Node_t arg_enumTypeNode, const std::string& arg_identiferName) : Node(OP_INT, arg_enumTypeNode) {
-		strData = arg_identiferName;
-	}
-
-	virtual std::int32_t Push(Compiler* arg_compiler) const;
-	virtual std::int32_t Pop(Compiler* arg_compiler) const;
-	std::int32_t GetType(Compiler* arg_compiler)const override;
-	std::int32_t EnumType(Compiler* arg_compiler)const override;
 };
 
 //関数オブジェクトのノード

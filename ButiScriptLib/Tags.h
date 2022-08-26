@@ -45,7 +45,7 @@ public:
 	std::int32_t GetType() const { return valueType; }
 	const std::string& GetName() const { return name; }
 	const std::string& GetTypeName() const { return valueTypeName; }
-
+	void SpecficType(const Compiler* arg_compiler);
 private:
 	std::int32_t valueType;
 	std::string name,valueTypeName;
@@ -442,7 +442,7 @@ class FunctionTag {
 			//厳密チェック
 			std::uint64_t size = list_args.GetSize();
 			for (std::uint64_t i = 0; i < size; i++) {
-				if (!TypeCheck(arg_list_args[i], (std::int32_t)list_args[i],arg_typeTable))
+				if (!TypeCheck(arg_list_args[i], static_cast<std::int32_t>(list_args[i]),arg_typeTable))
 					return false;
 			}
 			return true;
@@ -626,7 +626,6 @@ class FunctionTable {
 			auto end = map_functions.upper_bound(arg_name);
 			for (; itr != end; itr++) {
 				if (itr->second.CheckArgList(arg_list_args,arg_typeTable)) {
-
 					return &itr->second;
 				}
 			}
@@ -1088,6 +1087,9 @@ private:
 bool TypeCheck(const std::int32_t arg_left, const std::int32_t arg_right, const TypeTable* arg_table) {
 	std::int32_t left = arg_left & ~TYPE_REF;
 	std::int32_t right = arg_right & ~TYPE_REF;
+	if (!arg_table->GetType(left) || !arg_table->GetType(right)) {
+		return false;
+	}
 	//同じ型のチェック
 	if (left == right) {
 		return true;

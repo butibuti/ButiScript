@@ -40,8 +40,10 @@ std::int32_t Class::Analyze(Compiler* arg_compiler)
 	auto typeTag = arg_compiler->GetType(name);
 	auto methodTable = &typeTag->methods;
 	arg_compiler->PushCurrentThisType(typeTag);
-	for (auto itr:list_methods) {
+	for (auto itr : list_methods) {
 		(itr)->PushCompiler(arg_compiler, methodTable);
+	}
+	for (auto itr : list_methods) {
 		(itr)->Analyze(arg_compiler, methodTable);
 	}
 	arg_compiler->PopCurrentThisType();
@@ -73,10 +75,9 @@ std::int32_t Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p
 {
 	ownNameSpace = arg_compiler->GetCurrentNameSpace();
 	arg_compiler->PopAnalyzeFunction();
+	SpecficArgmentType(arg_compiler);
 	arg_compiler->RegistFunction(arg_compiler->GetTypeIndex(returnTypeName), name, args, block, accessType, arg_p_funcTable);
-	if (!arg_p_funcTable) {
-		arg_compiler->GetCurrentNameSpace()->PushFunction(value_from_this());
-	}
+	
 	searchName = arg_p_funcTable ? name : arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 
 	return 0;
@@ -85,7 +86,8 @@ std::int32_t Function::PushCompiler(Compiler* arg_compiler, FunctionTable* arg_p
 std::int32_t Function::PushCompiler_sub(Compiler* arg_compiler)
 {
 	ownNameSpace = arg_compiler->GetCurrentNameSpace();
-	arg_compiler->PopAnalyzeFunction();
+	arg_compiler->PopAnalyzeFunction(); 
+	SpecficArgmentType(arg_compiler);
 	arg_compiler->RegistFunction(arg_compiler->GetTypeIndex(returnTypeName), name, args, block, accessType);
 	searchName = arg_compiler->GetCurrentNameSpace()->GetGlobalNameString() + name;
 	arg_compiler->PushSubFunction(value_from_this());
@@ -134,7 +136,7 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 	arg_compiler->SetCurrentNameSpace(ownNameSpace);
 	FunctionTable* p_functable = arg_p_funcTable ? arg_p_funcTable : &arg_compiler->GetFunctions();
 	auto returnTypeIndex = arg_compiler->GetTypeIndex(returnTypeName);
-
+	
 	FunctionTag* tag = p_functable->Find_strict(searchName, args, &arg_compiler->GetTypeTable());
 	if (tag) {
 		if (tag->IsDefinition()) {
@@ -181,6 +183,7 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 	}
 	arg_compiler->ValueAddressSubtract(address);
 
+	arg_compiler->SetCurrentThisLocation(-4);
 	// •¶‚ª‚ ‚ê‚ÎA•¶‚ð“o˜^
 	if (block) {
 		std::int32_t ret = block->Analyze(arg_compiler, list_subFunctions);
@@ -214,6 +217,13 @@ std::int32_t Function::Analyze(Compiler* arg_compiler, FunctionTable* arg_p_func
 void Function::AddSubFunction(Function_t arg_function)
 {
 	list_subFunctions.Add(arg_function);
+}
+
+void Function::SpecficArgmentType(const Compiler* arg_compiler)
+{
+	for (auto&& arg : args) {
+		arg.SpecficType(arg_compiler);
+	}
 }
 
 
