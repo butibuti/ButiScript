@@ -115,9 +115,9 @@ void ButiScript::Compiler::ClearStatement()
 std::string ButiScript::Compiler::GetTypeName(const std::int32_t arg_type) const
 {
 	std::int32_t type = arg_type & ~TYPE_REF;
-	std::string output = "";
 	
-	output = types.GetType(type)->typeName;
+	std::string output = types.GetType(type) ? types.GetType(type)->typeName: "";
+	
 
 	if (arg_type&TYPE_REF) {
 		output += "&";

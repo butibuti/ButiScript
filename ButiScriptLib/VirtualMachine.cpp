@@ -316,6 +316,12 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 		ButiEngine::GUI::PushNotification(dirName + u8"ÇÃì«Ç›çûÇ›èIóπ");
 	}
 }
+void ButiScript::VirtualMachine::sys_addGameObjectFromCereal()
+{
+	std::string name = top().Get<std::string>(); pop();
+	auto obj= vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name);
+	push(obj);
+}
 void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
 	auto this_behavior = vwp_butiScriptBehavior.lock();

@@ -998,6 +998,7 @@ namespace ButiScript {
 		void sys_LoadWavesAsync();
 		void sys_LoadTexture();
 		void sys_LoadWave();
+		void sys_addGameObjectFromCereal();
 		void sys_getSelfScriptBehavior();
 		void sys_get_ownGameObject() {
 			push(vlp_gameObject);

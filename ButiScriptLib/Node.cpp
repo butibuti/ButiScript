@@ -1485,13 +1485,15 @@ struct set_arg {
 	Compiler* p_compiler;
 	const ButiEngine::List<std::int32_t>* argTypes_;
 	mutable std::int32_t index_;
-	set_arg(Compiler* arg_p_compiler, const FunctionTag* arg_function) : p_compiler(arg_p_compiler), argTypes_(&arg_function->list_args), index_(0) {}
+	bool isSystem = false;
+	set_arg(Compiler* arg_p_compiler, const FunctionTag* arg_function,const bool arg_isSystem) : p_compiler(arg_p_compiler), argTypes_(&arg_function->list_args), index_(0),isSystem(arg_isSystem) {}
 	set_arg(Compiler* arg_p_compiler, const ButiEngine::List<std::int32_t>* arg_argTypes) : p_compiler(arg_p_compiler), argTypes_(arg_argTypes), index_(0) {}
 
 	void operator()(Node_t arg_node) const
 	{
-		std::int32_t type = (*argTypes_)[index_++];
-		if ((type & TYPE_REF) != 0) {		// 参照
+		std::int32_t type = (*argTypes_)[isSystem?(index_): (argTypes_->GetSize()-1- (index_))];
+		index_++;
+		if ((type & TYPE_REF)) {		// 参照
 			if (arg_node->Op() != OP_IDENTIFIER) {
 				p_compiler->error("参照型引数に、変数以外は指定できません。");
 			}
@@ -1539,20 +1541,24 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 {
 	ButiEngine::List<std::int32_t> temp;
 	arg_compiler->TemplateTypeStrToTypeIndex(m_list_templateTypeNames, temp);
-	if (m_vlp_refference&& !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
-		ButiEngine::List<std::int32_t> argTypes;
-		if (m_nodeList) {
-			for (auto itr: m_nodeList->list_args) {
-				argTypes.Add(itr->GetType(arg_compiler));
-			}
+
+	ButiEngine::List<std::int32_t> argTypes;
+	ButiEngine::List<Node_t> reversedArgNode;
+	if (m_nodeList) {
+		reversedArgNode = m_nodeList->list_args;
+		std::reverse(reversedArgNode.begin(), reversedArgNode.end());
+		for (auto itr : reversedArgNode) {
+			argTypes.Add(itr->GetType(arg_compiler));
 		}
-		std::int32_t argSize = argTypes.GetSize();
+	}
+	std::int32_t argSize = argTypes.GetSize();
+	if (m_vlp_refference&& !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
 		const TypeTag* typeTag = nullptr;
 		const FunctionTag* methodTag = nullptr;
 		typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		methodTag = typeTag->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
 		
-		if (methodTag == nullptr) {
+		if (!methodTag) {
 			std::string message = "";
 			if (argSize) {
 				for (std::int32_t i = 0; i < argSize; i++) {
@@ -1569,9 +1575,9 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 		}
 		// 引数をpush
 		if (m_nodeList && methodTag->ArgSize() == argSize) {
-			std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
+			std::for_each(methodTag->IsSystem() ? reversedArgNode.begin() : m_nodeList->list_args.begin(),
+				methodTag->IsSystem() ? reversedArgNode.end() : m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag, methodTag->IsSystem()));
 		}
-
 
 		m_vlp_refference->Push(arg_compiler);
 
@@ -1590,18 +1596,12 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 	}
 	//メソッドからメソッドを呼び出す
 	if (auto thisType = arg_compiler->GetCurrentThisType()) {
-		ButiEngine::List<std::int32_t> argTypes;
-		if (m_nodeList) {
-			for (auto itr : m_nodeList->list_args) {
-				argTypes.Add(itr->GetType(arg_compiler));
-			}
-		}
 		if (auto methodTag=thisType->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable())) {
 			
-			std::int32_t argSize = argTypes.GetSize();
 			// 引数をpush
 			if (m_nodeList) {
-				std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag));
+				std::for_each(methodTag->IsSystem()?reversedArgNode.begin(): m_nodeList->list_args.begin(),
+					methodTag->IsSystem() ? reversedArgNode.end() : m_nodeList->list_args.end(), set_arg(arg_compiler, methodTag,methodTag->IsSystem()));
 			}
 
 			arg_compiler->PushLocalRef(arg_compiler->GetCurrentThisLocation());
@@ -1621,14 +1621,7 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 		}
 	}
 
-	ButiEngine::List<std::int32_t> argTypes;
-	if (m_nodeList) {
-		for (auto itr : m_nodeList->list_args) {
-			argTypes.Add(itr->GetType(arg_compiler));
-		}
-	}
 
-	std::int32_t argSize = argTypes.GetSize();
 	const FunctionTag* functionTag = arg_compiler->GetFunctionTag(m_vlp_refference? m_vlp_refference->ToNameSpaceString()+strData:strData, argTypes, temp, true);
 	if (!functionTag) {
 		functionTag = arg_compiler->GetFunctionTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData
@@ -1639,7 +1632,8 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 	if (functionTag) {
 		// 引数をpush
 		if (m_nodeList && functionTag->ArgSize() == argSize) {
-			std::for_each(m_nodeList->list_args.begin(), m_nodeList->list_args.end(), set_arg(arg_compiler, functionTag));
+			std::for_each(functionTag->IsSystem()?reversedArgNode.begin(): m_nodeList->list_args.begin(), 
+				functionTag->IsSystem() ? reversedArgNode.end() : m_nodeList->list_args.end(), set_arg(arg_compiler, functionTag,functionTag->IsSystem()));
 		}
 
 		// 引数の数をpush
@@ -1684,7 +1678,7 @@ std::int32_t Node_functionCall::Push(Compiler* arg_compiler) const
 	std::string message = "";
 	if (argSize) {
 		for (std::int32_t i = 0; i < argSize; i++) {
-			if (i >= 0 && i < argTypes.GetSize()) {
+			if (argTypes[i] >= 0 && i < argTypes.GetSize()) {
 				message += arg_compiler->GetTypeName(argTypes[i]) + " ";
 			}
 			else {

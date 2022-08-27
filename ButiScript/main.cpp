@@ -1,27 +1,7 @@
 #include "stdafx.h"
 #pragma comment(lib,"ButiUtil.lib")
 #define _CRTDBG_MAP_ALLOC
-class Sample:public ButiEngine::enable_value_from_this<Sample> {
-public:
-	std::int32_t count = 0;
-	Sample() {
-	}
-	Sample(const std::int32_t arg) {
-		count = arg;
-	}
-	~Sample() {	
-		std::int32_t i= 0;
-	}
-	std::int32_t TestMethod() {
-		std::cout << "Sample::TestMethod() is Called! count:" << count << std::endl;
-		count++;
-		return count;
-	}
-	std::int32_t ShowMethod()const {
-		std::cout << "Sample::TestMethod() is Called! count:" << count << std::endl;
-		return count;
-	}
-};
+
 class ValueTypeTest {
 public:
 	ValueTypeTest() {
@@ -39,6 +19,9 @@ public:
 		v = arg_t; 
 	}
 	std::int32_t GetValue()const { return v; }
+	std::int32_t SetValueMul(const float arg_f, const std::int32_t arg_i) {
+		return v = arg_f * arg_i;
+	}
 private:
 	std::int32_t v;
 };
@@ -49,6 +32,9 @@ T CreateInstance() {
 ButiEngine::Value_ptr<ValueTypeTest> g_output=nullptr;
 ButiEngine::Value_ptr<ValueTypeTest> GetValuePtrInstance() {
 	return g_output;
+}
+float Ease(const float arg_f, const std::int32_t arg_ease) {
+	return 0;
 }
 
 #include"BuiltInTypeRegister.h"
@@ -67,7 +53,9 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue<float>, &ButiScript::VirtualMachine::GetTypePtr<ValueTypeTest>, &ButiScript::VirtualMachine::GetTypePtr<float> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "f", {TYPE_FLOAT});
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::GetValue, &ButiScript::VirtualMachine::GetTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_INTEGER, "GetValue", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Show, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Show", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValueMul, &ButiScript::VirtualMachine::GetTypePtr, &ButiScript::VirtualMachine::GetTypePtr, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValueMul", "f,i");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&GetValuePtrInstance>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), "CreateValueTest", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&Ease>, TYPE_FLOAT, "Ease", "f,i");
 	
 	driver.RegistDefaultSystems();
 	g_output = ButiEngine::make_value<ValueTypeTest>();

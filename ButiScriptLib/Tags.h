@@ -912,13 +912,13 @@ class TypeTable {
 public:
 	void Release();
 	const TypeTag* GetType(const std::int32_t arg_index) const {
-		if (list_types.GetSize() <= arg_index) {
+		if (list_types.GetSize() <= arg_index||arg_index<0) {
 			return nullptr;
 		}
 		return list_types[arg_index];
 	}
 	TypeTag* GetType(const std::int32_t arg_index) {
-		if (list_types.GetSize() <= arg_index) {
+		if (list_types.GetSize() <= arg_index || arg_index < 0) {
 			return nullptr;
 		}
 		return list_types[arg_index];
