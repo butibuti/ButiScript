@@ -183,7 +183,9 @@ public:
 	/// <param name="arg_filePath">ファイルパス</param>
 	/// <param name="arg_ref_data">コンパイル済みデータの出力先</param>
 	/// <returns>成功/失敗</returns>
-	std::int32_t InputCompiledData(const std::string& arg_filePath,ButiScript::CompiledData& arg_ref_data);
+	std::int32_t InputCompiledData(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data);
+	std::int32_t InputCompiledData(const char* arg_dataPtr,const std::int32_t arg_size,ButiScript::CompiledData& arg_ref_data);
+	std::int32_t InputCompiledData(ButiEngine::Value_ptr<ButiEngine::IBinaryReader> arg_reader, ButiScript::CompiledData& arg_ref_data);
 
 	void Clear();
 #ifdef	_DEBUG

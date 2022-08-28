@@ -672,77 +672,88 @@ void ButiScript::Compiler::DebugDump()
 
 std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
 {
-	std::ifstream fIn;
-	fIn.open(arg_filePath,std::ios::binary);
-	if (!fIn.is_open()) {
-		fIn.close();
-		return 1;
+	try
+	{
+		auto reader =ButiEngine::ObjectFactory::Create< ButiEngine::BinaryReader_File>();
+		if (!reader->ReadStart(arg_filePath)) {
+			return -1;
+		}
+		InputCompiledData(reader, arg_ref_data);
+
 	}
+	catch (const std::exception&)
+	{
+		return -1;
+	}
+	return 0;
+}
 
-	std::int32_t sourceFilePathStrSize = 0;
-	fIn.read((char*)&sourceFilePathStrSize, sizeof(sourceFilePathStrSize));
-	char* sourceFilePathStrBuff = (char*)malloc(sourceFilePathStrSize);
-	fIn.read(sourceFilePathStrBuff, sourceFilePathStrSize);
-	arg_ref_data.sourceFilePath = std::string(sourceFilePathStrBuff, sourceFilePathStrSize);
-	free(sourceFilePathStrBuff);
-	fIn.read((char*)&arg_ref_data.commandSize, sizeof(std::int32_t));
-	arg_ref_data.commandTable = (std::uint8_t*)malloc(arg_ref_data.commandSize);
-	fIn.read((char*)arg_ref_data.commandTable, arg_ref_data.commandSize);
+std::int32_t ButiScript::Compiler::InputCompiledData(const char* arg_dataPtr, const std::int32_t arg_size, ButiScript::CompiledData& arg_ref_data)
+{
+	try
+	{
+		auto reader = ButiEngine::ObjectFactory::Create< ButiEngine::BinaryReader_Memory>(arg_dataPtr,arg_size);
+		InputCompiledData(reader, arg_ref_data);
 
-	fIn.read((char*)&arg_ref_data.textSize, sizeof(std::int32_t));
-	arg_ref_data.textBuffer = (char*)malloc(arg_ref_data.textSize);
-	fIn.read((char*)arg_ref_data.textBuffer, arg_ref_data.textSize);
+	}
+	catch (const std::exception&)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+std::int32_t ButiScript::Compiler::InputCompiledData(ButiEngine::Value_ptr<ButiEngine::IBinaryReader> reader, ButiScript::CompiledData& arg_ref_data)
+{
+	std::int32_t sourceFilePathStrSize = reader->ReadVariable<std::int32_t>();
+
+	arg_ref_data.sourceFilePath = reader->ReadCharactor(sourceFilePathStrSize);
+	arg_ref_data.commandSize = reader->ReadVariable<std::int32_t>();
+	arg_ref_data.commandTable = reinterpret_cast<std::uint8_t*>(reader->ReadData(arg_ref_data.commandSize));
+
+	arg_ref_data.textSize = reader->ReadVariable<std::int32_t>();
+	arg_ref_data.textBuffer = reinterpret_cast<char*>(reader->ReadData(arg_ref_data.textSize));
 
 
-	fIn.read((char*)&arg_ref_data.valueSize, sizeof(std::int32_t));
 
-	std::int32_t sysCallSize=0;
-	fIn.read((char*)&sysCallSize, sizeof(std::int32_t));
+	arg_ref_data.valueSize = reader->ReadVariable<std::int32_t>();
+
+	std::int32_t sysCallSize = 0;
+	sysCallSize = reader->ReadVariable<std::int32_t>();
 	for (std::int32_t count = 0; count < sysCallSize; count++) {
-		std::int32_t index=0;
-		fIn.read((char*)&index, sizeof(index));
+		std::int32_t index = reader->ReadVariable<std::int32_t>();
 		SysFunction sysFunc = list_sysCalls[index];
 		arg_ref_data.list_sysCalls.Add(sysFunc);
 	}
 
 
 
-	fIn.read((char*)&sysCallSize, sizeof(std::int32_t));
+	sysCallSize = reader->ReadVariable<std::int32_t>();
 	for (std::int32_t count = 0; count < sysCallSize; count++) {
-		std::int32_t index = 0;
-		fIn.read((char*)&index, sizeof(index));
+		std::int32_t index = reader->ReadVariable<std::int32_t>();
 		SysFunction sysFunc = list_sysMethodCalls[index];
 		arg_ref_data.list_sysCallMethods.Add(sysFunc);
 	}
 
 
-	fIn.read((char*)&sysCallSize, sizeof(std::int32_t));
+	sysCallSize = reader->ReadVariable<std::int32_t>();
 	for (std::int32_t count = 0; count < sysCallSize; count++) {
 		TypeTag typeTag;
 
-		std::int32_t size=0;
-		fIn.read((char*)&size, sizeof(size));
-		char* p_strBuff = (char*)malloc(size);
-		fIn.read(p_strBuff, size);
-		typeTag.argName =std::string( p_strBuff,size);
-		free(p_strBuff);
+		std::int32_t size = reader->ReadVariable<std::int32_t>();
+		typeTag.argName = reader->ReadCharactor(size);
 
-		fIn.read((char*)&size, sizeof(size));
-		p_strBuff = (char*)malloc(size);
-		fIn.read(p_strBuff, size);
-		typeTag.typeName = std::string(p_strBuff, size);
-		free(p_strBuff);
+		size = reader->ReadVariable<std::int32_t>();
+		typeTag.typeName = reader->ReadCharactor(size);
 
-		std::int32_t index = 0;
-		fIn.read((char*)&index, sizeof(index));
-		SysFunction sysFunc=nullptr;
-		if (index < list_valueAllocCall.GetSize()&&index>=0) {
+		std::int32_t index = reader->ReadVariable<std::int32_t>();
+		SysFunction sysFunc = nullptr;
+		if (index < list_valueAllocCall.GetSize() && index >= 0) {
 			sysFunc = list_valueAllocCall[index];
 		}
 		typeTag.typeFunc = sysFunc;
 
-		index = 0;
-		fIn.read((char*)&index, sizeof(index));
+		index = reader->ReadVariable<std::int32_t>();
 		if (index < list_refValueAllocCall.GetSize() && index >= 0) {
 			sysFunc = list_refValueAllocCall[index];
 		}
@@ -750,46 +761,33 @@ std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_file
 
 
 
+		typeTag.typeIndex = reader->ReadVariable<std::int32_t>();
 
-		fIn.read((char*)&typeTag.typeIndex, sizeof(std::int32_t));
+		std::int32_t typeMapSize = reader->ReadVariable<std::int32_t>();
 
-		std::int32_t typeMapSize = 0;
-		fIn.read((char*)&typeMapSize, sizeof(typeMapSize));
+		for (std::int32_t j = 0; j < typeMapSize; j++) {
+			std::int32_t size = reader->ReadVariable<std::int32_t>();
+			std::string typeNameStr = reader->ReadCharactor(size);
 
-		for (std::int32_t j=0; j < typeMapSize;j++) {
-			std::int32_t size =0;
-			std::string typeNameStr;
-			MemberValueInfo memberInfo;
-			fIn.read((char*)&size, sizeof(size));
-			char* p_strBuff = (char*)malloc(size);
-			free(p_strBuff);
-			fIn.read(p_strBuff, size);
-			typeNameStr = std::string(p_strBuff,size);
-			fIn.read((char*)&memberInfo, sizeof(memberInfo));
+			MemberValueInfo memberInfo = reader->ReadVariable<MemberValueInfo >();
 			typeTag.map_memberValue.emplace(typeNameStr, memberInfo);
 		}
 
-		typeTag.methods.FileInput(fIn);
+		typeTag.methods.FileInput(reader);
 		typeTag.isSystem = true;
 		arg_ref_data.list_types.Add(typeTag);
 	}
 
 
-	std::int32_t entryPointsSize = 0;
-	fIn.read((char*)&entryPointsSize, sizeof(entryPointsSize));
-	
-	for (std::int32_t count = 0; count < entryPointsSize;count++) {
-		
+	std::int32_t entryPointsSize = reader->ReadVariable<std::int32_t>();
 
-		std::int32_t size =0, entryPoint = 0;
+	for (std::int32_t count = 0; count < entryPointsSize; count++) {
 
-		fIn.read((char*)&size, sizeof(size));
-		char* buff = (char*)malloc(size);
-		fIn.read(buff, size);
-		std::string name = std::string(buff, size);
-		free(buff); 
-		fIn.read((char*)&entryPoint, sizeof(std::int32_t));
-		std::int32_t current = fIn.tellg();
+
+		std::int32_t size = reader->ReadVariable<std::int32_t>();
+
+		std::string name = reader->ReadCharactor(size);
+		auto entryPoint = reader->ReadVariable<std::int32_t>();
 		arg_ref_data.map_entryPoints.emplace(name, entryPoint);
 
 	}
@@ -798,51 +796,38 @@ std::int32_t ButiScript::Compiler::InputCompiledData(const std::string& arg_file
 		arg_ref_data.map_functionJumpPointsTable.emplace(entryPointItr->second, &entryPointItr->first);
 	}
 
-	std::int32_t publicGlobalValue = 0;
-	fIn.read((char*)&publicGlobalValue, sizeof(publicGlobalValue));
+	std::int32_t publicGlobalValue = reader->ReadVariable<std::int32_t>();
 	for (std::int32_t count = 0; count < publicGlobalValue; count++) {
-		std::int32_t strSize = 0;
-		fIn.read((char*)&strSize, sizeof(std::int32_t));
-		char* strBuff = (char*)malloc(strSize);
-		fIn.read(strBuff, strSize);
-		std::int32_t address = 0;
-		fIn.read((char*)&address, sizeof(std::int32_t));
-		arg_ref_data.map_globalValueAddress.emplace(std::string(strBuff, strSize), address);
-		arg_ref_data.map_addressToValueName.emplace(address, std::string(strBuff, strSize));
-		free(strBuff);
+		std::int32_t strSize = reader->ReadVariable<std::int32_t>();
+		auto str = reader->ReadCharactor(strSize);
+		std::int32_t address = reader->ReadVariable<std::int32_t>();
+		arg_ref_data.map_globalValueAddress.emplace(str, address);
+		arg_ref_data.map_addressToValueName.emplace(address, str);
 	}
 
-	std::int32_t definedTypeCount = 0;
-	fIn.read((char*)&definedTypeCount, sizeof(definedTypeCount));
+	std::int32_t definedTypeCount = reader->ReadVariable<std::int32_t>();
 	arg_ref_data.list_scriptClassInfo.Resize(definedTypeCount);
 	for (std::int32_t index = 0; index < definedTypeCount; index++) {
-		arg_ref_data.list_scriptClassInfo.At(index).InputFile(fIn);
+		arg_ref_data.list_scriptClassInfo.At(index).InputFile(reader);
 	}
-
-	fIn.read((char*)&arg_ref_data.functionTypeCount, sizeof(arg_ref_data.functionTypeCount));
-
-	arg_ref_data.systemTypeCount = arg_ref_data.list_types.GetSize() - definedTypeCount-arg_ref_data.functionTypeCount;
+	arg_ref_data.functionTypeCount = reader->ReadVariable<std::int32_t>();
+	arg_ref_data.systemTypeCount = arg_ref_data.list_types.GetSize() - definedTypeCount - arg_ref_data.functionTypeCount;
 	for (std::int32_t index = 0; index < definedTypeCount; index++) {
 		arg_ref_data.list_scriptClassInfo.At(index).SetSystemTypeCount(arg_ref_data.systemTypeCount);
 		arg_ref_data.list_types.At(arg_ref_data.list_scriptClassInfo.At(index).GetTypeIndex()).isSystem = false;
 	}
-	std::int32_t enumCount =0;
-	fIn.read((char*)&enumCount, sizeof(enumCount));
-	for (std::int32_t index = 0; index < enumCount;index++) {
+	std::int32_t enumCount = reader->ReadVariable<std::int32_t>();
+	for (std::int32_t index = 0; index < enumCount; index++) {
 		EnumTag tag;
-		std::int32_t typeIndex = 0;
-		fIn.read((char*)&typeIndex, sizeof(std::int32_t));
-		tag.InputFile(fIn);
-		arg_ref_data.map_enumTag.emplace(typeIndex,tag);
+		std::int32_t typeIndex = reader->ReadVariable<std::int32_t>();
+		tag.InputFile(reader);
+		arg_ref_data.map_enumTag.emplace(typeIndex, tag);
 		arg_ref_data.map_enumTag.at(typeIndex).typeIndex = typeIndex;
 		arg_ref_data.map_enumTag.at(typeIndex).CreateEnumMap();
 		arg_ref_data.list_types.At(typeIndex).p_enumTag = &arg_ref_data.map_enumTag.at(typeIndex);
 	}
 
-	arg_ref_data.functions.FileInput(fIn);
-
-	fIn.close();
-
+	arg_ref_data.functions.FileInput(reader);
 	return 0;
 }
 

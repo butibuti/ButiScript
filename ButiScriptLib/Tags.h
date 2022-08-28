@@ -88,24 +88,14 @@ public:
 
 		}
 	}
-	void InputFile(std::ifstream& arg_in) {
-		std::int32_t nameSize = 0;
-		arg_in.read((char*)&nameSize, sizeof(std::int32_t));
-		char* buff =(char*) malloc(nameSize);
-		arg_in.read(buff, nameSize);
-		type_Name = std::string(buff,nameSize);
-		delete buff;
-		std::int32_t identSize = 0;
-		arg_in.read((char*)&identSize, sizeof(std::int32_t));
+	void InputFile(ButiEngine::Value_ptr<ButiEngine::IBinaryReader> arg_reader) {
+		std::int32_t nameSize= arg_reader->ReadVariable<std::int32_t>();
+		type_Name = arg_reader->ReadCharactor(nameSize);
+		std::int32_t identSize = arg_reader->ReadVariable<std::int32_t>();
 		for (std::int32_t i = 0; i < identSize;i++) {
-			std::int32_t identiferSize = 0;
-			arg_in.read((char*)&identiferSize, sizeof(std::int32_t));
-			buff = (char*)malloc(identiferSize);
-			arg_in.read(buff, identiferSize);
-			auto identifer = std::string(buff,identiferSize);
-			delete buff;
-			std::int32_t value = 0;
-			arg_in.read((char*)&value, sizeof(std::int32_t));
+			std::int32_t identiferSize = arg_reader->ReadVariable<std::int32_t>();
+			auto identifer =arg_reader->ReadCharactor(identiferSize);
+			std::int32_t value = arg_reader->ReadVariable<std::int32_t>();
 			map_identifers.emplace(identifer, value);
 		}
 	}
@@ -532,23 +522,17 @@ class FunctionTag {
 			arg_fOut.write((char*)&size, sizeof(size));
 			arg_fOut.write(name.c_str(), (size));
 		}
-		void FileInput(std::ifstream& arg_fIn) {
-			arg_fIn.read((char*)&valueType, sizeof(valueType));
-			arg_fIn.read((char*)&flags, sizeof(flags));
-			arg_fIn.read((char*)&index, sizeof(index));
-			std::int32_t argsSize = 0;
-			arg_fIn.read((char*)&argsSize, sizeof(argsSize));
+		void FileInput(ButiEngine::Value_ptr<ButiEngine::IBinaryReader> arg_reader) {
+			valueType = arg_reader->ReadVariable<std::int32_t>();
+			flags = arg_reader->ReadVariable<std::int32_t>();
+			index = arg_reader->ReadVariable<std::int32_t>();
+			std::int32_t argsSize = arg_reader->ReadVariable<std::int32_t>();
 			for (std::int32_t i = 0; i < argsSize; i++) {
-				std::int32_t arg;
-				arg_fIn.read((char*)&arg, sizeof(arg));
+				std::int32_t arg=arg_reader->ReadVariable<std::int32_t>();
 				list_args.Add(arg);
 			}
-			std::int32_t size = 0;
-			arg_fIn.read((char*)&size, sizeof(size));
-			char* buff=(char*)malloc(size);
-			arg_fIn.read(buff, (size));
-			name = std::string(buff, size);
-			free(buff);
+			std::int32_t size = arg_reader->ReadVariable<std::int32_t>();
+			name = arg_reader->ReadCharactor(size);
 		}
 		void SetTemplateType(const ButiEngine::List<std::int32_t>& arg_list_template) {list_templateTypes = arg_list_template; }
 		bool IsTemplate()const { return list_templateTypes.GetSize(); }
@@ -710,20 +694,13 @@ class FunctionTable {
 
 		}
 
-		void FileInput(std::ifstream& arg_fIn) {
-			std::int32_t functionsSize = 0;
-			arg_fIn.read((char*)&functionsSize, sizeof(functionsSize));
-
+		void FileInput(ButiEngine::Value_ptr<ButiEngine::IBinaryReader> arg_reader) {
+			std::int32_t functionsSize = arg_reader->ReadVariable<std::int32_t>();
 			for (std::int32_t i = 0; i < functionsSize; i++) {
-				std::int32_t size = 0;
-				std::string functionStr;
-				arg_fIn.read((char*)&size, sizeof(size));
-				char* p_buff = (char*)malloc(size);
-				arg_fIn.read(p_buff, size);
-				functionStr =std::string( p_buff,size);
-				free(p_buff);
+				std::int32_t size = arg_reader->ReadVariable<std::int32_t>();
+				std::string functionStr = arg_reader->ReadCharactor(size);
 				FunctionTag tag(functionStr);
-				tag.FileInput(arg_fIn);
+				tag.FileInput(arg_reader);
 				map_functions.emplace(functionStr, tag);
 			}
 
@@ -802,28 +779,19 @@ public:
 		}
 
 	}
-	void InputFile(std::ifstream& arg_fIn) {
-		std::int32_t size = 0;
-		arg_fIn.read((char*)&size, sizeof(std::int32_t));
-		char* nameBuff = (char*)malloc(size);
-		arg_fIn.read(nameBuff, size);
-		className = std::string(nameBuff, size);
-		free(nameBuff);
+	void InputFile(ButiEngine::Value_ptr<ButiEngine::IBinaryReader> arg_reader) {
+		std::int32_t size = arg_reader->ReadVariable<std::int32_t>();
+		className = arg_reader->ReadCharactor(size);
 
-		arg_fIn.read((char*)&typeIndex, sizeof(std::int32_t));
-		std::int32_t memberSize = 0;
-		arg_fIn.read((char*)&memberSize, sizeof(std::int32_t));
+		typeIndex= arg_reader->ReadVariable<std::int32_t>();
+		std::int32_t memberSize = arg_reader->ReadVariable<std::int32_t>();
 		list_memberTypes.Resize(memberSize);
 		for (std::int32_t i = 0; i < memberSize; i++) {
-			arg_fIn.read((char*)&list_memberTypes[i], sizeof(std::int32_t));
+			list_memberTypes[i] = arg_reader->ReadVariable<std::int32_t>();
 		}
 		for (std::int32_t i = 0; i < memberSize; i++) {
-			std::int32_t size = 0;
-			arg_fIn.read((char*)&size, sizeof(std::int32_t));
-			char* nameBuff = (char*)malloc(size);
-			arg_fIn.read(nameBuff, size);
-			list_memberName.Add(std::string(nameBuff, size));
-			free(nameBuff);
+			std::int32_t size = arg_reader->ReadVariable<std::int32_t>();
+			list_memberName.Add(arg_reader->ReadCharactor(size));
 		}
 
 	}
