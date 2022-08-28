@@ -824,7 +824,11 @@ namespace ButiScript {
 			push(lhs + rhs);
 		}
 
-
+		//nullかどうかのチェック
+		void OpNullCheck() {
+			auto topValue = top().valueData; pop();
+			push(topValue != nullptr);
+		}
 
 
 		/////////////アドレス操作定義////////////////
@@ -1174,19 +1178,19 @@ namespace ButiScript {
 		/////////////メソッド呼び出し定義////////////////
 
 		template<typename T>
-		T* GetValueTypePtr() {
+		T* GetPtr() {
 			return &(top().Get<std::_Remove_cvref_t< T>>());
 		}
 		template<typename T>
-		T* GetTypePtr() {
-			return &(top().Get<std::_Remove_cvref_t< T>>());
+		ButiEngine::Value_ptr<T> GetValuePtr() {
+			return ButiEngine::static_value_ptr_cast<T> (top().valueData);
 		}
 
 		//組み込みメソッド
-		template<auto Method, ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)() >
+		template<auto Method>
 		void sys_method()
 		{
-			auto v = ((this)->*getValueFunc)();
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
 				((v)->*Method)();
 				pop();
@@ -1197,24 +1201,38 @@ namespace ButiScript {
 				push(ret);
 			}
 		}
-		template<auto Method, typename CastType, ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)() >
+		template<auto Method, typename CastType>
 		void sys_method_cast()
 		{
-			auto v = ((this)->*getValueFunc)();
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			CastType ret =static_cast<CastType>( ((v)->*Method)());
 			pop();
 			push(ret);
 		}
 		//組み込みメソッド(引数有り)
-		template<auto Method,  ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)(), 
-			std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method,0>>* (VirtualMachine::* getArgValueFunc)() >
-		void sys_method()
+		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArgValueFunc)() >
+			void sys_method()
 		{
-			auto valueV = top().valueData;
-			auto v = ((this)->*getValueFunc)();
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
 			auto arg = *((this)->*getArgValueFunc)();
-			pop(); 
+			pop();
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)(arg);
+			}
+			else {
+				auto ret = ((v)->*Method)(arg);
+				push(ret);
+			}
+		}
+		//組み込みメソッド(引数有り)
+		template<auto Method,std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>> (VirtualMachine::* getArgValueFunc)() >
+			void sys_method()
+		{
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
+			pop();
+			auto arg = ((this)->*getArgValueFunc)();
+			pop();
 			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
 				((v)->*Method)(arg);
 			}
@@ -1224,26 +1242,82 @@ namespace ButiScript {
 			}
 		}
 		//組み込みメソッド(引数2)
-		template<auto Method, ButiTypeDetail::member_function_class_type<Method>* (VirtualMachine::* getValueFunc)()
-			, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>* (VirtualMachine::* getArg2ValueFunc)() >
-		void sys_method()
+		template<auto Method,std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>* (VirtualMachine::* getArg2ValueFunc)() >
+			void sys_method()
 		{
-			auto valueV = top().valueData;
-			auto v = ((this)->*getValueFunc)();
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
-			auto arg2 =* ((this)->*getArg2ValueFunc)();
+			auto arg2 = *((this)->*getArg2ValueFunc)();
 			pop();
 			auto arg1 = *((this)->*getArg1ValueFunc)();
 			pop();
 			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
-				((v)->*Method)(arg1,arg2);
+				((v)->*Method)(arg1, arg2);
 			}
 			else {
-				auto ret = ((v)->*Method)(arg1,arg2);
+				auto ret = ((v)->*Method)(arg1, arg2);
 				push(ret);
 			}
 
 		}
+		//組み込みメソッド(引数2)
+		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>(VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>(VirtualMachine::* getArg2ValueFunc)() >
+			void sys_method()
+		{
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
+			pop();
+			auto arg2 = ((this)->*getArg2ValueFunc)();
+			pop();
+			auto arg1 = ((this)->*getArg1ValueFunc)();
+			pop();
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)(arg1, arg2);
+			}
+			else {
+				auto ret = ((v)->*Method)(arg1, arg2);
+				push(ret);
+			}
+
+		}
+		//組み込みメソッド(引数2)
+		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>(VirtualMachine::* getArg2ValueFunc)() >
+			void sys_method()
+		{
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
+			pop();
+			auto arg2 = ((this)->*getArg2ValueFunc)();
+			pop();
+			auto arg1 = *((this)->*getArg1ValueFunc)();
+			pop();
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)(arg1, arg2);
+			}
+			else {
+				auto ret = ((v)->*Method)(arg1, arg2);
+				push(ret);
+			}
+
+		}
+		//組み込みメソッド(引数2)
+		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>> (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>*(VirtualMachine::* getArg2ValueFunc)() >
+			void sys_method()
+		{
+			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
+			pop();
+			auto arg2 = *((this)->*getArg2ValueFunc)();
+			pop();
+			auto arg1 = ((this)->*getArg1ValueFunc)();
+			pop();
+			if constexpr (std::is_void_v<ButiTypeDetail::member_function_return_type<Method>>) {
+				((v)->*Method)(arg1, arg2);
+			}
+			else {
+				auto ret = ((v)->*Method)(arg1, arg2);
+				push(ret);
+			}
+
+		}
+
 
 		template<typename T>
 		void pushValue() {

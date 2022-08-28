@@ -97,7 +97,6 @@ public:
 
 	virtual const ValueTag* GetValueTag(Compiler* arg_compiler)const;
 	virtual const ValueTag* GetValueTag(const std::string& arg_name, Compiler* arg_compiler)const;
-	virtual std::int32_t EnumType(Compiler* arg_compiler)const { return TYPE_INTEGER; }
 	
 	std::int32_t Assign(Compiler* arg_compiler) const;
 	virtual void LambdaCapture(std::map<std::string, const ValueTag*>& arg_captureList, Compiler* arg_compiler) const;

@@ -823,8 +823,12 @@ std::int32_t Node::Push(Compiler* arg_compiler) const{
 		}
 		else if (typeIndex== TYPE_FLOAT) {
 			arg_compiler->OpNot<float>();
-		}		
-		return typeIndex_raw;
+		}
+		else {
+			arg_compiler->OpNullCheck();
+			arg_compiler->OpNot<std::int32_t>();
+			return TYPE_INTEGER;
+		}
 	}
 	case OP_INCREMENT: 
 	{
@@ -1096,6 +1100,11 @@ std::int32_t Node::Assign(Compiler* arg_compiler) const{
 	}
 	std::int32_t right_type_raw = rightNode->Push(arg_compiler) ,right_type=right_type_raw&~TYPE_REF,
 		left_type = left_type_raw & ~TYPE_REF;
+	if (right_type_raw == -1 || left_type_raw == -1) {
+		arg_compiler->error("無効な代入があります");
+		return -1;
+	}
+
 	if (op != OP_ASSIGN) {
 		right_type = SystemTypeOperatorCheck(op - OP_ASSIGN + OP_DECREMENT, left_type, right_type, arg_compiler);
 		if (right_type == -1 ) {
@@ -1128,7 +1137,7 @@ std::int32_t Node::Assign(Compiler* arg_compiler) const{
 		leftNode->Pop(arg_compiler);
 		return 0;
 	}
-	else if (rightNode->EnumType(arg_compiler) == left_type) {
+	else if (arg_compiler->GetType(right_type)->p_enumTag&& left_type==TYPE_INTEGER) {
 		leftNode->Pop(arg_compiler);
 		return 0;
 	}
@@ -1704,14 +1713,18 @@ std::int32_t Node_functionCall::GetType(Compiler* arg_compiler) const
 {
 	ButiEngine::List<std::int32_t> temp;
 	arg_compiler->TemplateTypeStrToTypeIndex(m_list_templateTypeNames, temp);
-	if (m_vlp_refference && !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
-		ButiEngine::List<std::int32_t> argTypes;
 
-		if (m_nodeList) {
-			for (auto itr : m_nodeList->list_args) {
-				argTypes.Add(itr->GetType(arg_compiler));
-			}
+	ButiEngine::List<std::int32_t> argTypes;
+	ButiEngine::List<Node_t> reversedArgNode;
+	if (m_nodeList) {
+		reversedArgNode = m_nodeList->list_args;
+		std::reverse(reversedArgNode.begin(), reversedArgNode.end());
+		for (auto itr : reversedArgNode) {
+			argTypes.Add(itr->GetType(arg_compiler));
 		}
+	}
+	std::int32_t argSize = argTypes.GetSize();
+	if (m_vlp_refference && !m_vlp_refference->IsNameSpaceNode(arg_compiler)) {
 		const TypeTag* typeTag = arg_compiler->GetType(m_vlp_refference->GetType(arg_compiler) & ~TYPE_REF);
 		const FunctionTag* tag = typeTag->methods.Find(strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable());
 
@@ -1719,23 +1732,11 @@ std::int32_t Node_functionCall::GetType(Compiler* arg_compiler) const
 	}
 	//メソッドからメソッドを呼び出す
 	if (auto thisType = arg_compiler->GetCurrentThisType()) {
-		ButiEngine::List<std::int32_t> argTypes;
-		if (m_nodeList) {
-			for (auto itr : m_nodeList->list_args) {
-				argTypes.Add(itr->GetType(arg_compiler));
-			}
-		}
 		if (auto methodTag = thisType->methods.Find(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData + GetTemplateName(temp, &arg_compiler->GetTypeTable()), argTypes, &arg_compiler->GetTypeTable())) {
 			return methodTag->valueType;
 		}
 	}
 
-	ButiEngine::List<std::int32_t> argTypes;
-	if (m_nodeList) {
-		for (auto itr: m_nodeList->list_args) {
-			argTypes.Add(itr->GetType(arg_compiler));
-		}
-	}
 	NameSpace_t currentsearchNameSpace = arg_compiler->GetCurrentNameSpace();
 	const FunctionTag* tag = arg_compiler->GetFunctionTag(m_vlp_refference ? m_vlp_refference->ToNameSpaceString() + strData : strData, argTypes, temp, true);
 	if (!tag) {
@@ -2001,7 +2002,10 @@ void Statement_return::LambdaCapture(std::map<std::string, const ValueTag*>& arg
 // if文
 std::int32_t Statement_if::Analyze(Compiler* arg_compiler) 
 {
-	node->Push(arg_compiler);
+	auto checkExceptionType =node->Push(arg_compiler);
+	if (checkExceptionType != TYPE_INTEGER && checkExceptionType != TYPE_FLOAT) {
+		arg_compiler->OpNullCheck();
+	}
 	std::int32_t label1 = arg_compiler->MakeLabel();
 	arg_compiler->OpJmpNC(label1);
 	list_statement[0]->Analyze(arg_compiler);

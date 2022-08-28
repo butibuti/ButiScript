@@ -161,6 +161,7 @@ VMCODE_TUV0(VM_MULMAT4VEC3, OpMul, ButiEngine::Matrix4x4, ButiEngine::Vector3, B
 VMCODE_TUV0(VM_MULMAT4VEC4, OpMul, ButiEngine::Matrix4x4, ButiEngine::Vector4, ButiEngine::Vector4)
 VMCODE_TUV0(VM_MULVEC3MAT4, OpMul, ButiEngine::Vector3, ButiEngine::Matrix4x4, ButiEngine::Vector3)
 VMCODE_TUV0(VM_MULVEC4MAT4, OpMul, ButiEngine::Vector4, ButiEngine::Matrix4x4, ButiEngine::Vector4)
+VMCODE0(VM_NULLCHECK, OpNullCheck)
 VMCODE0(VM_STREQ, OpStrEq)
 VMCODE0(VM_STRNE, OpStrNe)
 VMCODE0(VM_STRGT, OpStrGt)

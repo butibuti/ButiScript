@@ -16,11 +16,14 @@ public:
 	}
 	template <typename T>
 	void SetValue(const T arg_t) { 
-		v = arg_t; 
+		v = arg_t;
 	}
 	std::int32_t GetValue()const { return v; }
 	std::int32_t SetValueMul(const float arg_f, const std::int32_t arg_i) {
 		return v = arg_f * arg_i;
+	}
+	void Copy(ButiEngine::Value_ptr<ValueTypeTest> arg_t) {
+		v = arg_t->v;
 	}
 private:
 	std::int32_t v;
@@ -49,14 +52,14 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 
 	ButiScript::SystemTypeRegister::GetInstance()->RegistValueSystemType<ValueTypeTest>("ValueTypeTest", "ValueTypeTest");
 
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue<std::int32_t>, &ButiScript::VirtualMachine::GetTypePtr<ValueTypeTest>, &ButiScript::VirtualMachine::GetTypePtr<std::int32_t> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "i", { TYPE_INTEGER });
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue<float>, &ButiScript::VirtualMachine::GetTypePtr<ValueTypeTest>, &ButiScript::VirtualMachine::GetTypePtr<float> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "f", {TYPE_FLOAT});
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::GetValue, &ButiScript::VirtualMachine::GetTypePtr  >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_INTEGER, "GetValue", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Show, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Show", "");
-	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValueMul, &ButiScript::VirtualMachine::GetTypePtr, &ButiScript::VirtualMachine::GetTypePtr, &ButiScript::VirtualMachine::GetTypePtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValueMul", "f,i");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue<std::int32_t>,  &ButiScript::VirtualMachine::GetPtr<std::int32_t> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "i", { TYPE_INTEGER });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValue<float>,  &ButiScript::VirtualMachine::GetPtr<float> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValue", "f", { TYPE_FLOAT });
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Copy,  &ButiScript::VirtualMachine::GetValuePtr<ValueTypeTest> >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Copy", "ValueTypeTest");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::GetValue>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_INTEGER, "GetValue", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::Show >, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "Show", "");
+	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValueMul, &ButiScript::VirtualMachine::GetPtr, &ButiScript::VirtualMachine::GetPtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValueMul", "f,i");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&GetValuePtrInstance>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), "CreateValueTest", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&Ease>, TYPE_FLOAT, "Ease", "f,i");
-	
 	driver.RegistDefaultSystems();
 	g_output = ButiEngine::make_value<ValueTypeTest>();
 
