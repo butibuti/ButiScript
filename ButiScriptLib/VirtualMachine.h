@@ -1101,23 +1101,27 @@ namespace ButiScript {
 			float res = ButiEngine::GameDevice::GetInput()->GetRightTrigger();
 			push(res);
 		}
-		void sys_playSE() {
+		ButiSound::Resource_Sound_t GetTopSound() {
 			auto seName = top().Get<std::string>(); pop();
+			return vlp_gameObject->GetApplication().lock()->GetResourceContainer()->GetSound(ButiEngine::SoundTag(seName));
+		}
+		void sys_playSE() {
+			auto sound = GetTopSound();
 			auto volume = top().Get<float>(); pop();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), volume);
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(sound, volume);
 		}
 		void sys_playSE_noVolume() {
-			auto seName = top().Get<std::string>(); pop();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(ButiEngine::SoundTag(seName), 1.0f);
+			auto sound = GetTopSound();
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(sound, 1.0f);
 		}
 		void sys_playBGM() {
-			auto bgmName = top().Get<std::string>(); pop();
+			auto sound = GetTopSound();
 			auto volume = top().Get<float>(); pop();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), volume);
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(sound, volume);
 		}
 		void sys_playBGM_noVolume() {
-			auto bgmName = top().Get<std::string>(); pop();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(ButiEngine::SoundTag(bgmName), 1.0f);
+			auto sound = GetTopSound();
+			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(sound, 1.0f);
 		}
 
 		void sys_printColor() {
@@ -1213,6 +1217,7 @@ namespace ButiScript {
 		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArgValueFunc)() >
 			void sys_method()
 		{
+				auto value = top().valueData;
 			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
 			auto arg = *((this)->*getArgValueFunc)();
@@ -1245,6 +1250,7 @@ namespace ButiScript {
 		template<auto Method,std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>* (VirtualMachine::* getArg2ValueFunc)() >
 			void sys_method()
 		{
+			auto value = top().valueData;
 			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
 			auto arg2 = *((this)->*getArg2ValueFunc)();
@@ -1264,6 +1270,8 @@ namespace ButiScript {
 		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>(VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>(VirtualMachine::* getArg2ValueFunc)() >
 			void sys_method()
 		{
+
+			auto value = top().valueData;
 			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
 			auto arg2 = ((this)->*getArg2ValueFunc)();
@@ -1283,6 +1291,7 @@ namespace ButiScript {
 		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>>* (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>(VirtualMachine::* getArg2ValueFunc)() >
 			void sys_method()
 		{
+			auto value = top().valueData;
 			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
 			auto arg2 = ((this)->*getArg2ValueFunc)();
@@ -1302,6 +1311,7 @@ namespace ButiScript {
 		template<auto Method, std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 0>> (VirtualMachine::* getArg1ValueFunc)(), std::_Remove_cvref_t<ButiTypeDetail::member_function_argment_type<Method, 1>>*(VirtualMachine::* getArg2ValueFunc)() >
 			void sys_method()
 		{
+				auto value = top().valueData;
 			auto v = GetPtr<ButiTypeDetail::member_function_class_type<Method>>();
 			pop();
 			auto arg2 = *((this)->*getArg2ValueFunc)();
