@@ -6,6 +6,7 @@
 #include <iomanip>
 #include "Parser.h"
 #include<direct.h>
+#include"ButiUtil/ButiUtil/ObjectFactory.h"
 auto baseFunc = &ButiScript::VirtualMachine::Initialize;
 const char* thisPtrName = "this";
 constexpr std::int32_t functionStackSize = 4;

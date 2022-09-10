@@ -3,6 +3,7 @@
 #define TAGS_H
 #include"value_type.h"
 #include"ButiMemorySystem/ButiMemorySystem/ButiList.h"
+#include"ButiUtil/ButiUtil/BinaryObject.h"
 namespace ButiScript {
 
 class Compiler;

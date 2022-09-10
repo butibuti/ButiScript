@@ -1,8 +1,7 @@
 #include "stdafx.h"
-#pragma comment(lib,"ButiUtil.lib")
 #define _CRTDBG_MAP_ALLOC
 
-class ValueTypeTest {
+class ValueTypeTest:public ButiEngine::enable_value_from_this<ValueTypeTest> {
 public:
 	ValueTypeTest() {
 		v = 0;
@@ -39,13 +38,22 @@ ButiEngine::Value_ptr<ValueTypeTest> GetValuePtrInstance() {
 float Ease(const float arg_f, const std::int32_t arg_ease) {
 	return 0;
 }
+void T(){}
+
+auto p_t = &T;
 
 #include"BuiltInTypeRegister.h"
 #include "Compiler.h"
 std::int32_t main(const std::int32_t argCount, const char* args[])
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	
+	{
+
+		auto v = ButiEngine::make_value<ValueTypeTest>();
+		std::vector<ButiEngine::Value_ptr<ValueTypeTest>> map_v;
+		map_v.push_back(v);
+	}
+
 	ButiScript::Compiler driver;
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});

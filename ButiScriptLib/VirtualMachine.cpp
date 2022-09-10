@@ -319,7 +319,7 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 void ButiScript::VirtualMachine::sys_addGameObjectFromCereal()
 {
 	std::string name = top().Get<std::string>(); pop();
-	auto obj= vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name);
+	auto obj= vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name).lock();
 	push(obj);
 }
 void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
