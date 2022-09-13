@@ -73,7 +73,7 @@ namespace ButiScript {
 		public:
 			template< typename... Args>
 			SystemFunctionImple(VirtualMachine& arg_owner, Args... args) :owner(arg_owner) {
-				auto arg = owner.top().Get<ButiTypeDetail::function_argment_type<Function, CurrentArgmentIndex - 1>>(); owner.pop();
+				auto arg = owner.top().Get<std::_Remove_cvref_t< ButiTypeDetail::function_argment_type<Function, CurrentArgmentIndex - 1>>>(); owner.pop();
 				SystemFunctionImple<CurrentArgmentIndex - 1, Function>(owner, arg, args...);
 			}
 		private:
@@ -991,6 +991,7 @@ namespace ButiScript {
 
 #ifdef _BUTIENGINEBUILD
 
+		void sys_setIsRemove();
 		void sys_addEventMessanger();
 		void sys_removeEventMessanger();
 		void sys_registEventListner();
@@ -1003,6 +1004,8 @@ namespace ButiScript {
 		void sys_LoadTexture();
 		void sys_LoadWave();
 		void sys_addGameObjectFromCereal();
+		void sys_addGameObjectFromCereal_transform();
+		void sys_getCamera();
 		void sys_getSelfScriptBehavior();
 		void sys_get_ownGameObject() {
 			push(vlp_gameObject);

@@ -181,6 +181,12 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 
 #ifdef _BUTIENGINEBUILD
 
+void ButiScript::VirtualMachine::sys_setIsRemove()
+{
+	bool isRemove =static_cast<bool>( top().Get<std::int32_t>()); pop();
+	vwp_butiScriptBehavior.lock()->SetIsRemove(isRemove);
+}
+
 void ButiScript::VirtualMachine::sys_addEventMessanger()
 {
 	std::string eventName = top().Get<std::string>(); pop();
@@ -322,6 +328,19 @@ void ButiScript::VirtualMachine::sys_addGameObjectFromCereal()
 	auto obj= vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name).lock();
 	push(obj);
 }
+void ButiScript::VirtualMachine::sys_addGameObjectFromCereal_transform()
+{
+	auto transform = GetValuePtr<ButiEngine::Transform>(); pop();
+	std::string name = top().Get<std::string>(); pop();
+	auto obj = vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name,transform).lock();
+	push(obj);
+}
+void ButiScript::VirtualMachine::sys_getCamera()
+{
+	std::string name = top().Get<std::string>(); pop();
+	auto obj = vlp_gameObject->GetGameObjectManager().lock()->GetScene().lock()->GetCamera(name);
+	push(obj);
+}
 void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 {
 	auto this_behavior = vwp_butiScriptBehavior.lock();
@@ -359,7 +378,9 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiE
 }
 void ButiScript::VirtualMachine::ShowGUI() {
 	for (auto itr = vlp_data->map_addressToValueName.begin(), end = vlp_data->map_addressToValueName.end(); itr != end;itr++) {
-		valueStack[globalValue_base + itr->first].valueData.ShowGUI(itr->second);
+		if (valueStack[globalValue_base + itr->first].valueData.ShowGUI(itr->second) == -1) {
+			ButiEngine::GUI::Text(itr->second + u8":‘Î‰ž‚µ‚Ä‚¢‚È‚¢Œ^‚Å‚·");
+		}
 	}
 }
 #endif
