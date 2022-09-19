@@ -38,10 +38,24 @@ ButiEngine::Value_ptr<ValueTypeTest> GetValuePtrInstance() {
 float Ease(const float arg_f, const std::int32_t arg_ease) {
 	return 0;
 }
-void T(){}
 
-auto p_t = &T;
+class SingleType{
+public:
+	SingleType(std::int32_t arg_i) {
+		i = arg_i;
+	}
+	std::int32_t i;
+};
 
+class TypeTest {
+public:
+	using single = SingleType;
+};
+template<typename T>
+void Method()
+{
+	auto vlp_i = ButiEngine::make_value<typename T::single>(12);
+}
 #include"BuiltInTypeRegister.h"
 #include "Compiler.h"
 std::int32_t main(const std::int32_t argCount, const char* args[])
@@ -53,7 +67,7 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 		std::vector<ButiEngine::Value_ptr<ValueTypeTest>> map_v;
 		map_v.push_back(v);
 	}
-
+	Method<TypeTest>();
 	ButiScript::Compiler driver;
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<std::int32_t>>, TYPE_INTEGER, "CreateInstance", "", { TYPE_INTEGER });
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&CreateInstance<float>>, TYPE_FLOAT, "CreateInstance", "", {TYPE_FLOAT});

@@ -259,7 +259,7 @@ void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 
 		for (; itr != end && !err; itr.increment(err)) {
 			const std::filesystem::directory_entry entry = *itr;
-			ButiEngine::GUI::PushNotification(entry.path().string() + u8"を読み込みます");
+			ButiEngine::GUI::PushNotification(entry.path().string() + "を読み込みます");
 			list_filePathes.Add (StringHelper::Remove(  entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory() ));
 
 		}
@@ -269,19 +269,19 @@ void ButiScript::VirtualMachine::sys_LoadWaveAsync()
 			std::function<void()>([this, list_filePathes]()->void {
 				//this->GetGameObject()->GetResourceContainer()->LoadSound(list_filePathes);
 
-				ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize())+ u8"個のwave読み込み終了");
+				ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize())+ "個のwave読み込み終了");
 				}
 				)
 		);
 	}
 	else {
-		ButiEngine::GUI::PushNotification(dirName + u8"を読み込みます");
+		ButiEngine::GUI::PushNotification(dirName + "を読み込みます");
 		ButiTaskSystem::PushTask(
 			std::function<void()>([this, dirName]()->void {
 
 				this->GetGameObject()->GetResourceContainer()->LoadSound(dirName);
 
-				ButiEngine::GUI::PushNotification(dirName + u8"の読み込み終了");
+				ButiEngine::GUI::PushNotification(dirName + "の読み込み終了");
 				}
 				)
 		);
@@ -305,21 +305,21 @@ void ButiScript::VirtualMachine::sys_LoadWave()
 
 		for (; itr != end && !err; itr.increment(err)) {
 			const std::filesystem::directory_entry entry = *itr;
-			ButiEngine::GUI::PushNotification(entry.path().string() + u8"を読み込みます");
+			ButiEngine::GUI::PushNotification(entry.path().string() + "を読み込みます");
 			list_filePathes.Add(StringHelper::Remove(entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory()));
 
 		}
 		assert(0 && "ResourceContainerのListへの対応がまだです");
 		//this->GetGameObject()->GetResourceContainer()->LoadSound(list_filePathes);
 
-		ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize()) + u8"個のwave読み込み終了");
+		ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize()) + "個のwave読み込み終了");
 	}
 	else {
-		ButiEngine::GUI::PushNotification(dirName + u8"を読み込みます");
+		ButiEngine::GUI::PushNotification(dirName + "を読み込みます");
 
 		this->GetGameObject()->GetResourceContainer()->LoadSound(dirName);
 
-		ButiEngine::GUI::PushNotification(dirName + u8"の読み込み終了");
+		ButiEngine::GUI::PushNotification(dirName + "の読み込み終了");
 	}
 }
 void ButiScript::VirtualMachine::sys_addGameObjectFromCereal()
@@ -379,7 +379,7 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiE
 void ButiScript::VirtualMachine::ShowGUI() {
 	for (auto itr = vlp_data->map_addressToValueName.begin(), end = vlp_data->map_addressToValueName.end(); itr != end;itr++) {
 		if (valueStack[globalValue_base + itr->first].valueData.ShowGUI(itr->second) == -1) {
-			ButiEngine::GUI::Text(itr->second + u8":対応していない型です");
+			ButiEngine::GUI::Text(itr->second + ":対応していない型です");
 		}
 	}
 }
