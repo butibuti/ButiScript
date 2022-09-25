@@ -1017,91 +1017,91 @@ namespace ButiScript {
 		}
 		void sys_getKeyboard() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->CheckKey(k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().CheckKey(k);
 			push(res);
 		}
 		void sys_triggerKeyboard() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->TriggerKey(k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().TriggerKey(k);
 			push(res);
 		}
 		void sys_releaseKeyboard() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->ReleaseKey(k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().ReleaseKey(k);
 			push(res);
 		}
 		void sys_checkAnyKeyboard() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetAnyButton();
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButton();
 			push(res);
 		}
 		void sys_triggerAnyKeyboard() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetAnyButtonTrigger();
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButtonTrigger();
 			push(res);
 		}
 		void sys_getPadButton() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetPadButton((ButiEngine::PadButtons)k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetPadButton(static_cast<ButiInput::PadButtons>(k));
 			push(res);
 		}
 		void sys_triggerPadButton() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetPadButtonTrigger((ButiEngine::PadButtons)k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetPadButtonTrigger(static_cast<ButiInput::PadButtons>(k));
 			push(res);
 		}
 		void sys_releasePadButton() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetPadButtonRelease((ButiEngine::PadButtons)k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetPadButtonRelease(static_cast<ButiInput::PadButtons>(k));
 			push(res);
 		}
 		void sys_getMouseButton() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetMouseButton((ButiEngine::MouseButtons)k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetMouseButton(static_cast<ButiInput::MouseButtons>(k));
 			push(res);
 		}
 		void sys_triggerMouseButton() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetMouseTrigger((ButiEngine::MouseButtons)k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetMouseTrigger(static_cast<ButiInput::MouseButtons>(k));
 			push(res);
 		}
 		void sys_releaseMouseButton() {
 			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetMouseReleaseTrigger((ButiEngine::MouseButtons)k);
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetMouseReleaseTrigger(static_cast<ButiInput::MouseButtons>(k));
 			push(res);
 		}
 		void sys_getLStick() {
-			auto res = ButiEngine::GameDevice::GetInput()->GetLeftStick();
+			auto res = ButiEngine::GameDevice::GetInput().GetLeftStick();
 			push(res);
 		}
 		void sys_getRStick() {
-			auto res = ButiEngine::GameDevice::GetInput()->GetRightStick();
+			auto res = ButiEngine::GameDevice::GetInput().GetRightStick();
 			push(res);
 		}
 		void sys_getMousePos() {
-			auto res = ButiEngine::GameDevice::GetInput()->GetMousePos();
+			auto res = ButiEngine::GameDevice::GetInput().GetMousePos();
 			push(res);
 		}
 		void sys_getMouseMove() {
-			auto res = ButiEngine::GameDevice::GetInput()->GetMouseMove();
+			auto res = ButiEngine::GameDevice::GetInput().GetMouseMove();
 			push(res);
 		}
 		void sys_getWheel() {
-			auto res = ButiEngine::GameDevice::GetInput()->GetMouseWheelMove();
+			auto res = ButiEngine::GameDevice::GetInput().GetMouseWheelMove();
 			push(res);
 		}
 		void sys_getAnyButton() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetAnyButton();
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButton();
 			push(res);
 		}
 		void sys_triggerAnyButton() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput()->GetAnyButtonTrigger();
+			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButtonTrigger();
 			push(res);
 		}
 		void sys_getLeftTrigger() {
-			float res = ButiEngine::GameDevice::GetInput()->GetLeftTrigger();
+			float res = ButiEngine::GameDevice::GetInput().GetLeftTrigger();
 			push(res);
 		}
 		void sys_getRightTrigger() {
-			float res = ButiEngine::GameDevice::GetInput()->GetRightTrigger();
+			float res = ButiEngine::GameDevice::GetInput().GetRightTrigger();
 			push(res);
 		}
 		ButiSound::Resource_Sound_t GetTopSound() {

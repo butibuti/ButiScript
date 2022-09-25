@@ -69,7 +69,7 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(static_cast<T&>(*this));
+		ARCHIVE_BUTI(static_cast<T&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t>& arg_memberType)override {
@@ -105,7 +105,7 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(static_cast<ButiEngine::Vector2&>(*this));
+		ARCHIVE_BUTI(static_cast<ButiEngine::Vector2&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -145,7 +145,7 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(static_cast<ButiEngine::Vector3&>(*this));
+		ARCHIVE_BUTI(static_cast<ButiEngine::Vector3&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -188,7 +188,7 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(static_cast<ButiEngine::Vector4&>(*this));
+		ARCHIVE_BUTI(static_cast<ButiEngine::Vector4&>(*this));
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -232,7 +232,7 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(static_cast<ButiEngine::Matrix4x4&>(*this) );
+		ARCHIVE_BUTI(static_cast<ButiEngine::Matrix4x4&>(*this) );
 	}
 protected:
 	inline void SetMemberType_(std::pair< ButiEngine::Value_ptr<void>, std::int32_t> arg_memberType)override {
@@ -366,8 +366,8 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(list_data);
-		archive(type);
+		ARCHIVE_BUTI(list_data);
+		ARCHIVE_BUTI(type);
 	}
 private:
 	std::vector<std::pair< ButiEngine::Value_ptr<ButiEngine::IValuePtrRestoreObject>, std::int32_t>> list_data;
@@ -387,8 +387,8 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(data);
-		archive(type);
+		ARCHIVE_BUTI(data);
+		ARCHIVE_BUTI(type);
 	}
 	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data)override { vlp_compiledData = arg_vlp_data; }
 private:
@@ -407,7 +407,7 @@ public:
 	template<class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(address);
+		ARCHIVE_BUTI(address);
 	}
 	void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data)override { vlp_compiledData = arg_vlp_data; }
 private:
