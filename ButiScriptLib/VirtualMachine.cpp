@@ -346,7 +346,7 @@ void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
 	auto this_behavior = vwp_butiScriptBehavior.lock();
 	push(this_behavior);
 }
-void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
+void ButiScript::VirtualMachine::SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
 	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
 		auto type = valueStack[globalValue_base + index].valueType;
 		if (type & TYPE_REF|| !valueStack[globalValue_base + index].valueData) {
@@ -357,8 +357,8 @@ void ButiScript::VirtualMachine::SaveGlobalValue(std::vector<std::pair< ButiEngi
 		}
 	}
 }
-void ButiScript::VirtualMachine::RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
-	if (globalValue_size - globalValue_base != arg_ref_list_saveObject.size()) {
+void ButiScript::VirtualMachine::RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
+	if (globalValue_size - globalValue_base != arg_ref_list_saveObject.GetSize()) {
 		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
 		
 		return;

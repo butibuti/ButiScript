@@ -213,8 +213,8 @@ namespace ButiScript {
 			return vwp_butiScriptBehavior.lock();
 		}
 		//List‚Ìcereal‘Î‰‚ªŠ®—¹‚µ‚½‚ç•ÏX
-		void RestoreGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
-		void SaveGlobalValue(std::vector<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_list_saveObject);
+		void RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
+		void SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_list_saveObject);
 		void ShowGUI();
 		ButiEngine::Value_ptr<CompiledData> GetCompiledData()const { return vlp_data; }
 #endif
