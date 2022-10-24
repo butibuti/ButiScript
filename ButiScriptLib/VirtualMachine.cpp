@@ -1,12 +1,42 @@
 #include "stdafx.h"
 #include <exception>
 #include "VirtualMachine.h"
-#ifdef _BUTIENGINEBUILD
 #include"ButiEventSystem/ButiEventSystem/EventSystem.h"
 #include"ButiEventSystem/ButiEventSystem/TaskSystem.h"
 #include<filesystem>
-#endif // _BUTIENGINEBUILD
 
+
+void (*g_printFunction)(const std::string&) = nullptr;
+void (*g_GUITextFunction)(const std::string&) = nullptr;
+void (*g_colorPrintFunction)(const std::string&, const ButiEngine::Vector4&) = nullptr;
+bool (*g_treeNodePushFunction)(const std::string&) = nullptr;
+void (*g_treeNodePopFunction)() = nullptr;
+
+namespace ButiScript {
+
+void SetPrintFunction(void (*arg_printFunction)(const std::string&)) {
+	g_printFunction = arg_printFunction;
+}
+void SetGUITextFunction(void (*arg_GUITextFunction)(const std::string&)) {
+	g_GUITextFunction = arg_GUITextFunction;
+}
+void SetColorPrintFunction(void (*arg_colorPrintFunction)(const std::string&, const ButiEngine::Vector4&)) {
+	g_colorPrintFunction = arg_colorPrintFunction;
+}
+void SetTreeNodePushFunction(bool (*arg_treeNodePushFunction)(const std::string&)) {
+	g_treeNodePushFunction = arg_treeNodePushFunction;
+}
+void SetTreeNodePopFunction(void (*arg_treeNodePopFunction)()) {
+	g_treeNodePopFunction = arg_treeNodePopFunction;
+}
+
+
+void (*GetPrintFunction())(const std::string&) { return g_printFunction; }
+void (*GetGUITextFunction())(const std::string&) { return g_GUITextFunction; }
+void (*GetColorPrintFunction())(const std::string&, const ButiEngine::Vector4&) { return g_colorPrintFunction; }
+bool (*GetTreeNodePushFunction())(const std::string&) { return g_treeNodePushFunction; }
+void (*GetTreeNodePopFunction())() { return g_treeNodePopFunction; }
+}
 
 void ButiScript::VirtualMachine::AllocGlobalValue()
 {
@@ -29,6 +59,7 @@ void ButiScript::VirtualMachine::AllocGlobalValue()
 void ButiScript::VirtualMachine::Clear()
 {
 	valueStack.resize(0);
+	m_list_ownerObjects.Clear();
 }
 
 ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
@@ -44,6 +75,7 @@ ButiScript::VirtualMachine* ButiScript::VirtualMachine::Clone()
 		}
 	}
 	output->globalValue_size = globalValue_size;
+	output->m_list_ownerObjects = m_list_ownerObjects;
 	return output;
 }
 
@@ -178,15 +210,6 @@ void ButiScript::VirtualMachine::Execute_(const std::string& entryPoint)
 }
 
 
-
-#ifdef _BUTIENGINEBUILD
-
-void ButiScript::VirtualMachine::sys_setIsRemove()
-{
-	bool isRemove =static_cast<bool>( top().Get<std::int32_t>()); pop();
-	vwp_butiScriptBehavior.lock()->SetIsRemove(isRemove);
-}
-
 void ButiScript::VirtualMachine::sys_addEventMessanger()
 {
 	std::string eventName = top().Get<std::string>(); pop();
@@ -203,8 +226,8 @@ void ButiScript::VirtualMachine::sys_registEventListner()
 	std::string functionName = top().Get<std::string>(); pop();
 	std::string keyName = top().Get<std::string>(); pop();
 	std::string eventName = top().Get<std::string>(); pop();
-	auto retKey= ButiEventSystem::RegistEventListner(eventName, keyName,
-		std::function<void()>([this,functionName]()->void {
+	auto retKey = ButiEventSystem::RegistEventListner(eventName, keyName,
+		std::function<void()>([this, functionName]()->void {
 			this->Execute<void>(functionName);
 			}), false);
 
@@ -229,128 +252,18 @@ void ButiScript::VirtualMachine::sys_pushTask()
 	auto clone = Clone();
 	ButiTaskSystem::PushTask(
 		std::function<void()>([clone, taskName]()->void {
-				clone->Execute<void>(taskName);
-				delete clone;
+			clone->Execute<void>(taskName);
+			delete clone;
 			})
 	);
 }
 
-void ButiScript::VirtualMachine::sys_LoadTextureAsync()
-{
-	std::string fileName = top().Get<std::string>(); pop();
-	ButiEngine::GUI::PushNotification(fileName + "を読み込みます");
-	ButiTaskSystem::PushTask(
-		std::function<void()>([this, fileName]()->void {
-			this->GetGameObject()->GetResourceContainer()->LoadTexture(fileName);
 
-			})
-	);
-}
-void ButiScript::VirtualMachine::sys_LoadWaveAsync()
-{
-	std::string dirName = top().Get<std::string>(); pop();
-	if (*(dirName.end() - 1) == '/') {
-
-		ButiEngine::List< std::string> list_filePathes;
-
-		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
-
-		std::error_code err;
-
-		for (; itr != end && !err; itr.increment(err)) {
-			const std::filesystem::directory_entry entry = *itr;
-			ButiEngine::GUI::PushNotification(entry.path().string() + "を読み込みます");
-			list_filePathes.Add (StringHelper::Remove(  entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory() ));
-
-		}
-
-		assert(0 && "ResourceContainerのListへの対応がまだです");
-		ButiTaskSystem::PushTask(
-			std::function<void()>([this, list_filePathes]()->void {
-				//this->GetGameObject()->GetResourceContainer()->LoadSound(list_filePathes);
-
-				ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize())+ "個のwave読み込み終了");
-				}
-				)
-		);
-	}
-	else {
-		ButiEngine::GUI::PushNotification(dirName + "を読み込みます");
-		ButiTaskSystem::PushTask(
-			std::function<void()>([this, dirName]()->void {
-
-				this->GetGameObject()->GetResourceContainer()->LoadSound(dirName);
-
-				ButiEngine::GUI::PushNotification(dirName + "の読み込み終了");
-				}
-				)
-		);
-	}
-}
-void ButiScript::VirtualMachine::sys_LoadTexture()
-{
-	std::string fileName = top().Get<std::string>(); pop();
-	this->GetGameObject()->GetResourceContainer()->LoadTexture(fileName);
-}
-void ButiScript::VirtualMachine::sys_LoadWave()
-{
-	std::string dirName = top().Get<std::string>(); pop();
-	if (*(dirName.end() - 1) == '/') {
-
-		ButiEngine::List< std::string> list_filePathes;
-
-		std::filesystem::directory_iterator itr(ButiEngine::GlobalSettings::GetResourceDirectory() + dirName), end;
-
-		std::error_code err;
-
-		for (; itr != end && !err; itr.increment(err)) {
-			const std::filesystem::directory_entry entry = *itr;
-			ButiEngine::GUI::PushNotification(entry.path().string() + "を読み込みます");
-			list_filePathes.Add(StringHelper::Remove(entry.path().string(), ButiEngine::GlobalSettings::GetResourceDirectory()));
-
-		}
-		assert(0 && "ResourceContainerのListへの対応がまだです");
-		//this->GetGameObject()->GetResourceContainer()->LoadSound(list_filePathes);
-
-		ButiEngine::GUI::PushNotification(std::to_string(list_filePathes.GetSize()) + "個のwave読み込み終了");
-	}
-	else {
-		ButiEngine::GUI::PushNotification(dirName + "を読み込みます");
-
-		this->GetGameObject()->GetResourceContainer()->LoadSound(dirName);
-
-		ButiEngine::GUI::PushNotification(dirName + "の読み込み終了");
-	}
-}
-void ButiScript::VirtualMachine::sys_addGameObjectFromCereal()
-{
-	std::string name = top().Get<std::string>(); pop();
-	auto obj= vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name).lock();
-	push(obj);
-}
-void ButiScript::VirtualMachine::sys_addGameObjectFromCereal_transform()
-{
-	auto transform = GetValuePtr<ButiEngine::Transform>(); pop();
-	std::string name = top().Get<std::string>(); pop();
-	auto obj = vlp_gameObject->GetGameObjectManager().lock()->AddObjectFromCereal(name,transform).lock();
-	push(obj);
-}
-void ButiScript::VirtualMachine::sys_getCamera()
-{
-	std::string name = top().Get<std::string>(); pop();
-	auto obj = vlp_gameObject->GetGameObjectManager().lock()->GetScene().lock()->GetCamera(name);
-	push(obj);
-}
-void ButiScript::VirtualMachine::sys_getSelfScriptBehavior()
-{
-	auto this_behavior = vwp_butiScriptBehavior.lock();
-	push(this_behavior);
-}
 void ButiScript::VirtualMachine::SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
-	for (std::int32_t index = 0; index < globalValue_size- globalValue_base; index++) {
+	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
 		auto type = valueStack[globalValue_base + index].valueType;
-		if (type & TYPE_REF|| !valueStack[globalValue_base + index].valueData) {
-			arg_ref_list_saveObject.push_back({ ButiEngine::make_value<ButiEngine::ValuePtrRestoreObject<Type_Null>>() ,type});
+		if (type & TYPE_REF || !valueStack[globalValue_base + index].valueData) {
+			arg_ref_list_saveObject.push_back({ ButiEngine::make_value<ButiEngine::ValuePtrRestoreObject<Type_Null>>() ,type });
 		}
 		else {
 			arg_ref_list_saveObject.push_back({ valueStack[globalValue_base + index].valueData.GetRestoreObject(),type });
@@ -359,12 +272,12 @@ void ButiScript::VirtualMachine::SaveGlobalValue(ButiEngine::List<std::pair< But
 }
 void ButiScript::VirtualMachine::RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
 	if (globalValue_size - globalValue_base != arg_ref_list_saveObject.GetSize()) {
-		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります"); 
-		
+		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります");
+
 		return;
 	}
 	for (std::int32_t index = 0; index < globalValue_size - globalValue_base; index++) {
-		if (valueStack[globalValue_base + index].valueType!= arg_ref_list_saveObject.at(index).second) {
+		if (valueStack[globalValue_base + index].valueType != arg_ref_list_saveObject.at(index).second) {
 			continue;
 		}
 		auto useCompiled = ButiEngine::dynamic_value_ptr_cast<ButiEngine::IUseCompiledData>(arg_ref_list_saveObject.at(index).first);
@@ -373,14 +286,15 @@ void ButiScript::VirtualMachine::RestoreGlobalValue(ButiEngine::List<std::pair< 
 			useCompiled->SetCompiledData(vlp_data);
 		}
 		arg_ref_list_saveObject.at(index).first->RestoreValue(valueStack[globalValue_base + index].valueData);
-		
+
 	}
 }
 void ButiScript::VirtualMachine::ShowGUI() {
-	for (auto itr = vlp_data->map_addressToValueName.begin(), end = vlp_data->map_addressToValueName.end(); itr != end;itr++) {
+	for (auto itr = vlp_data->map_addressToValueName.begin(), end = vlp_data->map_addressToValueName.end(); itr != end; itr++) {
 		if (valueStack[globalValue_base + itr->first].valueData.ShowGUI(itr->second) == -1) {
-			ButiEngine::GUI::Text(itr->second + ":対応していない型です");
+			if (g_GUITextFunction) {
+				(*g_GUITextFunction)(itr->second + ":対応していない型です");
+			}
 		}
 	}
 }
-#endif

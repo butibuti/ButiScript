@@ -4,31 +4,30 @@
 
 
 ButiEngine::List<ButiScript::CreateMemberInstanceFunction>* p_list_createMemberInstanceFunction = nullptr;
-#ifdef _BUTIENGINEBUILD
 
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_ScriptClass>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
-	auto this_type =& vlp_compiledData->list_scriptClassInfo[type - vlp_compiledData->systemTypeCount];
+	auto this_type = &vlp_compiledData->list_scriptClassInfo[type - vlp_compiledData->systemTypeCount];
 	Value_ptr<ButiScript::Type_ScriptClass> vlp_scriptClass = make_value<ButiScript::Type_ScriptClass>(this_type);
-	std::int32_t memberIndex=0;
+	std::int32_t memberIndex = 0;
 	for (auto itr = list_data.begin(), end = list_data.end(); itr != end; itr++, memberIndex++) {
 		Value_ptr<void> member;
-		 
+
 		auto useCompiledData = dynamic_value_ptr_cast<IUseCompiledData>(itr->first);
 
 		if (useCompiledData) {
 			useCompiledData->SetCompiledData(vlp_compiledData);
 		}
 		(itr->first)->RestoreValue(member);
-		vlp_scriptClass->SetMember(member,memberIndex);
+		vlp_scriptClass->SetMember(member, memberIndex);
 	}
 	arg_ref_value = vlp_scriptClass;
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Enum>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
 	auto this_type = vlp_compiledData->list_types[type].p_enumTag;
-	arg_ref_value = make_value<ButiScript::Type_Enum>(data,this_type);
+	arg_ref_value = make_value<ButiScript::Type_Enum>(data, this_type);
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Function>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
-	
+
 	arg_ref_value = make_value<ButiScript::Type_Function>(address, &vlp_compiledData->map_functionJumpPointsTable, ButiEngine::List<std::pair< ButiEngine::Value_ptr<void>, std::int32_t>>());
 }
 void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Null>::RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const {
@@ -37,9 +36,6 @@ void ButiEngine::ValuePtrRestoreObject<ButiScript::Type_Null>::RestoreValue(Buti
 
 
 auto createMemberInstancesRelease = ButiEngine::Util::MemoryReleaser(&p_list_createMemberInstanceFunction);
-#else
-auto createMemberInstancesRelease = MemoryReleaser(&p_list_createMemberInstanceFunction);
-#endif
 
 ButiEngine::List<ButiScript::CreateMemberInstanceFunction>& GetCreateMemberInstanceFunction() {
 	if (!p_list_createMemberInstanceFunction) {
@@ -107,9 +103,4 @@ void ButiScript::PushCreateMemberInstance(CreateMemberInstanceFunction arg_funct
 }
 
 
-#ifdef _BUTIENGINEBUILD
-auto typeMapRelease= ButiEngine::Util::MemoryReleaser (&p_map_typeIndex);
-#else
-
-auto typeMapRelease = MemoryReleaser<std::map<std::int64_t,std::int32_t>>(&p_map_typeIndex);
-#endif
+auto typeMapRelease = ButiEngine::Util::MemoryReleaser(&p_map_typeIndex);

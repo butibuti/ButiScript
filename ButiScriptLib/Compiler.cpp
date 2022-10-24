@@ -1186,7 +1186,6 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec2");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec3");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "vec4");
-#ifdef _BUTIENGINEBUILD
 
 	DefineSystemFunction(&VirtualMachine::sys_registEventListner, TYPE_STRING, "RegistEvent", "s,s,s");
 	DefineSystemFunction(&VirtualMachine::sys_unregistEventListner, TYPE_VOID, "UnRegistEvent", "s,s");
@@ -1194,7 +1193,6 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 	DefineSystemFunction(&VirtualMachine::sys_removeEventMessanger, TYPE_VOID, "RemoveEventMessanger", "s");
 	DefineSystemFunction(&VirtualMachine::sys_executeEvent, TYPE_VOID, "EventExecute", "s");
 	DefineSystemFunction(&VirtualMachine::sys_pushTask, TYPE_VOID, "PushTask", "s");
-#endif // _BUTIENGINEBUILD
 
 	DefineSystemMethod(&VirtualMachine::sys_method_cast< &std::string::size, std::int32_t>, TYPE_STRING, TYPE_INTEGER, "Size", "");
 
@@ -1315,13 +1313,6 @@ void ButiScript::ArgDefine::SpecficType(const Compiler* arg_compiler)
 	}
 }
 
-#ifndef _BUTIENGINEBUILD
-auto compilerRelease = MemoryReleaser<ButiScript::Compiler>(&p_instance);
-auto sysTypeRelease = MemoryReleaser<ButiScript::SystemTypeRegister>(&p_sysreginstance);
-auto sysFuncRelease = MemoryReleaser<ButiScript::SystemFuntionRegister>(&p_sysfuncregister);
-#else
-
 auto compilerRelease = ButiEngine::Util::MemoryReleaser(&p_instance);
 auto sysTypeRelease = ButiEngine::Util::MemoryReleaser(&p_sysreginstance);
 auto sysFuncRelease = ButiEngine::Util::MemoryReleaser(&p_sysfuncregister);
-#endif

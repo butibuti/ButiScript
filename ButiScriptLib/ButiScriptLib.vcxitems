@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)BuiltInTypeRegister.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Common.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Compiler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Declaration.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Node.h" />

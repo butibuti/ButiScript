@@ -1,12 +1,7 @@
 #pragma once
 #ifndef	__VM_H__
 #define	__VM_H__
-#ifdef _BUTIENGINEBUILD
-#include"Header/GameObjects/DefaultGameComponent/ButiScriptBehavior.h"
-#endif // _BUTIENGINEBUILD
-
-#include <vector>
-#include<unordered_map>
+#include"Common.h"
 #include "vm_value.h"
 #include"Tags.h"
 namespace ButiScript {
@@ -66,7 +61,8 @@ namespace ButiScript {
 
 	class VirtualMachine {
 	private:
-		template<std::int32_t CurrentArgmentIndex, auto Function>	friend	class SystemFunctionImple;
+		template<std::int32_t , auto >	friend	class SystemFunctionImple;
+		template<std::int32_t , auto ,std::int32_t>	friend	class SystemFunctionImple_useOwnObject;
 
 		template<std::int32_t CurrentArgmentIndex, auto Function>
 		class SystemFunctionImple {
@@ -86,10 +82,39 @@ namespace ButiScript {
 			template< typename... Args>
 			SystemFunctionImple(VirtualMachine& arg_owner, Args... args) :owner(arg_owner) {
 				if constexpr (std::is_void_v<ButiTypeDetail::function_return_type<Function>>) {
-					(*Function)( args...);
+					(*Function)(args...);
 				}
 				else {
-					auto ret = (*Function)( args...);
+					auto ret = (*Function)(args...);
+					owner.push(ret);
+				}
+			}
+		private:
+			VirtualMachine& owner;
+		};
+
+
+		template<std::int32_t CurrentArgmentIndex, auto Function,std::int32_t OwnIndex>
+		class SystemFunctionImple_useOwnObject {
+		public:
+			template< typename... Args>
+			SystemFunctionImple_useOwnObject(VirtualMachine& arg_owner, Args... args) :owner(arg_owner) {
+				auto arg = owner.top().Get<std::_Remove_cvref_t< ButiTypeDetail::function_argment_type<Function, CurrentArgmentIndex - 1>>>(); owner.pop();
+				SystemFunctionImple_useOwnObject<CurrentArgmentIndex - 1, Function,OwnIndex>(owner, arg, args...);
+			}
+		private:
+			VirtualMachine& owner;
+		};
+		template<auto Function, std::int32_t OwnIndex>
+		class SystemFunctionImple_useOwnObject<1, Function,OwnIndex> {
+		public:
+			template< typename... Args>
+			SystemFunctionImple_useOwnObject(VirtualMachine& arg_owner, Args... args) :owner(arg_owner) {
+				if constexpr (std::is_void_v<ButiTypeDetail::function_return_type<Function>>) {
+					(*Function)(owner.m_list_ownerObjects[OwnIndex].get<std::remove_pointer_t< ButiTypeDetail::function_argment_type<Function, 0>>>(), args...);
+				}
+				else {
+					auto ret = (*Function)(owner.m_list_ownerObjects[OwnIndex].get<std::remove_pointer_t< ButiTypeDetail::function_argment_type<Function, 0>>>(),args...);
 					owner.push(ret);
 				}
 			}
@@ -178,10 +203,7 @@ namespace ButiScript {
 		template<typename T>
 		void SetGlobalVariable(const T value, const std::string arg_variableName) {
 			if (!vlp_data->map_globalValueAddress.count(arg_variableName)) {
-
-#ifdef _BUTIENGINEBUILD
-				ButiEngine::GUI::Console( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
-#endif
+				(*GetPrintFunction())( arg_variableName + "にはアクセスできません",ButiEngine::Vector4(1.0f,0.8f,0.8f,1.0f) );
 				return;
 			}
 			valueStack[globalValue_base + vlp_data->map_globalValueAddress.at(arg_variableName)].valueData=ButiEngine::make_value<T>(value);
@@ -189,36 +211,21 @@ namespace ButiScript {
 		template<typename T>
 		T& GetGlobalVariable(const std::string arg_variableName) {
 			if (!vlp_data->map_globalValueAddress.count(arg_variableName)) {
-
-#ifdef _BUTIENGINEBUILD
-				ButiEngine::GUI::Console(arg_variableName + "にはアクセスできません", ButiEngine::Vector4(1.0f, 0.8f, 0.8f, 1.0f));
-#endif
+				(*GetPrintFunction())(arg_variableName + "にはアクセスできません", ButiEngine::Vector4(1.0f, 0.8f, 0.8f, 1.0f));
 				static T temp;
 				return temp;
 			}
 			return valueStack[globalValue_base + vlp_data->map_globalValueAddress.at(arg_variableName)].Get<T>();
 		}
 
-#ifdef _BUTIENGINEBUILD
-		void SetGameObject(ButiEngine::Value_ptr<ButiEngine::GameObject> arg_gameObject) {
-			vlp_gameObject = arg_gameObject;
+		void SetOwnerObject(ButiEngine::Value_ptr<void> arg_object,const std::int32_t arg_index) {
+			if(!(m_list_ownerObjects.GetSize()>arg_index))m_list_ownerObjects.Resize(arg_index+1);
+			m_list_ownerObjects[arg_index] = arg_object;
 		}
-		ButiEngine::Value_ptr<ButiEngine::GameObject>GetGameObject()const {
-			return vlp_gameObject;
-		}
-		void SetButiScriptBehavior(ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> arg_behavior) {
-			vwp_butiScriptBehavior = arg_behavior;
-		}
-		ButiEngine::Value_ptr<ButiEngine::ButiScriptBehavior> GetButiScriptBehavior() {
-			return vwp_butiScriptBehavior.lock();
-		}
-		//Listのcereal対応が完了したら変更
 		void RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
-		void SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>,std::int32_t>>& arg_ref_list_saveObject);
+		void SaveGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject);
 		void ShowGUI();
 		ButiEngine::Value_ptr<CompiledData> GetCompiledData()const { return vlp_data; }
-#endif
-
 		void Initialize();
 		bool HotReload(ButiEngine::Value_ptr<CompiledData> arg_data);
 	private:
@@ -988,162 +995,40 @@ namespace ButiScript {
 
 	public:
 
-
-#ifdef _BUTIENGINEBUILD
-
-		void sys_setIsRemove();
 		void sys_addEventMessanger();
 		void sys_removeEventMessanger();
 		void sys_registEventListner();
 		void sys_unregistEventListner();
 		void sys_executeEvent();
 		void sys_pushTask();
-		void sys_LoadTextureAsync();
-		void sys_LoadWaveAsync();
-		void sys_LoadWavesAsync();
-		void sys_LoadTexture();
-		void sys_LoadWave();
-		void sys_addGameObjectFromCereal();
-		void sys_addGameObjectFromCereal_transform();
-		void sys_getCamera();
-		void sys_getSelfScriptBehavior();
-		void sys_get_ownGameObject() {
-			push(vlp_gameObject);
+		template<std::int32_t Index>
+		void sys_get_ownObject() {
+			push(m_list_ownerObjects[Index]);
 		}
-		void sys_get_gameObjectByName() {
-			std::string name = top().Get<std::string>(); pop();
-			auto obj = vlp_gameObject->GetGameObjectManager().lock()->GetGameObject(name).lock();
-			push(obj);
+		template<std::int32_t Index ,auto Function>
+		void sys_function_ownObjectUse() {
+			if constexpr (ButiTypeDetail::function_argment_size<Function> >1) {
+				SystemFunctionImple_useOwnObject< ButiTypeDetail::function_argment_size<Function>, Function,Index>(*this);
+			}
+			else if constexpr (std::is_void_v<ButiTypeDetail::function_return_type<Function>>) {
+				(*Function)(m_list_ownerObjects[Index].get<std::remove_pointer< ButiTypeDetail::function_argment_type<Function, 0>>>());
+			}
+			else {
+				auto ret = (*Function)(m_list_ownerObjects[Index].get<std::remove_pointer< ButiTypeDetail::function_argment_type<Function, 0>>>());
+				push(ret);
+			}
 		}
-		void sys_getKeyboard() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().CheckKey(k);
-			push(res);
-		}
-		void sys_triggerKeyboard() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().TriggerKey(k);
-			push(res);
-		}
-		void sys_releaseKeyboard() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().ReleaseKey(k);
-			push(res);
-		}
-		void sys_checkAnyKeyboard() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButton();
-			push(res);
-		}
-		void sys_triggerAnyKeyboard() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButtonTrigger();
-			push(res);
-		}
-		void sys_getPadButton() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetPadButton(static_cast<ButiInput::PadButtons>(k));
-			push(res);
-		}
-		void sys_triggerPadButton() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetPadButtonTrigger(static_cast<ButiInput::PadButtons>(k));
-			push(res);
-		}
-		void sys_releasePadButton() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetPadButtonRelease(static_cast<ButiInput::PadButtons>(k));
-			push(res);
-		}
-		void sys_getMouseButton() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetMouseButton(static_cast<ButiInput::MouseButtons>(k));
-			push(res);
-		}
-		void sys_triggerMouseButton() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetMouseTrigger(static_cast<ButiInput::MouseButtons>(k));
-			push(res);
-		}
-		void sys_releaseMouseButton() {
-			std::int32_t k = top().Get<std::int32_t>(); pop();
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetMouseReleaseTrigger(static_cast<ButiInput::MouseButtons>(k));
-			push(res);
-		}
-		void sys_getLStick() {
-			auto res = ButiEngine::GameDevice::GetInput().GetLeftStick();
-			push(res);
-		}
-		void sys_getRStick() {
-			auto res = ButiEngine::GameDevice::GetInput().GetRightStick();
-			push(res);
-		}
-		void sys_getMousePos() {
-			auto res = ButiEngine::GameDevice::GetInput().GetMousePos();
-			push(res);
-		}
-		void sys_getMouseMove() {
-			auto res = ButiEngine::GameDevice::GetInput().GetMouseMove();
-			push(res);
-		}
-		void sys_getWheel() {
-			auto res = ButiEngine::GameDevice::GetInput().GetMouseWheelMove();
-			push(res);
-		}
-		void sys_getAnyButton() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButton();
-			push(res);
-		}
-		void sys_triggerAnyButton() {
-			std::int32_t res = ButiEngine::GameDevice::GetInput().GetAnyButtonTrigger();
-			push(res);
-		}
-		void sys_getLeftTrigger() {
-			float res = ButiEngine::GameDevice::GetInput().GetLeftTrigger();
-			push(res);
-		}
-		void sys_getRightTrigger() {
-			float res = ButiEngine::GameDevice::GetInput().GetRightTrigger();
-			push(res);
-		}
-		ButiSound::Resource_Sound_t GetTopSound() {
-			auto seName = top().Get<std::string>(); pop();
-			return vlp_gameObject->GetApplication().lock()->GetResourceContainer()->GetSound(ButiEngine::SoundTag(seName));
-		}
-		void sys_playSE() {
-			auto sound = GetTopSound();
-			auto volume = top().Get<float>(); pop();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(sound, volume);
-		}
-		void sys_playSE_noVolume() {
-			auto sound = GetTopSound();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlaySE(sound, 1.0f);
-		}
-		void sys_playBGM() {
-			auto sound = GetTopSound();
-			auto volume = top().Get<float>(); pop();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(sound, volume);
-		}
-		void sys_playBGM_noVolume() {
-			auto sound = GetTopSound();
-			vlp_gameObject->GetApplication().lock()->GetSoundManager()->PlayBGM(sound, 1.0f);
-		}
-
-		void sys_printColor() {
-			ButiEngine::Vector4 color=top().Get<ButiEngine::Vector4>();	pop();
-			auto message = text(top());	pop();
-			ButiEngine::GUI::Console(message,color);
-		}
-#endif // _BUTIENGINEBUILD
-
+		
 		// 組み込み関数（print）
 		void sys_print()
 		{
-#ifdef _BUTIENGINEBUILD
-
-			ButiEngine::GUI::Console( text(top()));
-#else
-			std::cout << text(top());
-#endif // _BUTIENGINEBUILD
+			(*GetPrintFunction())(text(top()));
 			pop();
+		}
+		void sys_printColor() {
+			ButiEngine::Vector4 color = top().Get<ButiEngine::Vector4>();	pop();
+			auto message = text(top());	pop();
+			(*GetColorPrintFunction())(message, color);
 		}
 
 		void sys_debugPrint() {
@@ -1161,7 +1046,6 @@ namespace ButiScript {
 		{
 			auto v = top().valueData.ToString(); pop();
 			push(v);
-			// 戻り値はスタックに入れる
 		}
 
 		//組み込み関数
@@ -1471,17 +1355,13 @@ namespace ButiScript {
 		ButiEngine::List<ScriptClassInfo> list_scriptClassInfo;
 
 		ButiScript::Stack<ButiScript::Value, STACK_SIZE> valueStack;
-
 		//スタックの参照位置
 		std::int32_t stack_base=0;
 		std::int32_t globalValue_base = 0;
 		std::int32_t globalValue_size=0;
 		//グローバル変数確保の命令数
 		std::int32_t globalValueAllocOpSize=0;
-#ifdef _BUTIENGINEBUILD
-		ButiEngine::Value_ptr<ButiEngine::GameObject> vlp_gameObject;
-		ButiEngine::Value_weak_ptr < ButiEngine::ButiScriptBehavior >vwp_butiScriptBehavior;
-#endif
+		ButiEngine::List<ButiEngine::Value_ptr<void>>m_list_ownerObjects;
 	};
 }
 

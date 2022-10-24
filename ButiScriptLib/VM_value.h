@@ -1,6 +1,7 @@
 #pragma once
 #ifndef	__vm_value_h__
 #define	__vm_value_h__
+#include"Common.h"
 #include"value_type.h"
 #include <iostream>
 #include <exception>
@@ -310,20 +311,19 @@ struct Type_ScriptClass :public IType_hasMember
 	}
 	bool ShowGUI(const std::string& arg_label) {
 		bool output = false;
-#ifdef _BUTIENGINEBUILD
+		if (GetTreeNodePushFunction() && GetTreeNodePopFunction()) {
 
-
-		if (ButiEngine::GUI::TreeNode(arg_label)) {
-			std::int32_t index = 0;
-			for (auto& member : list_member)
-			{
-				auto guiRet= member.ShowGUI(p_classInfo->GetMamberName()[index]);
-				output = guiRet ? guiRet : output;
-				index++;
+			if ((*GetTreeNodePushFunction())(arg_label)) {
+				std::int32_t index = 0;
+				for (auto& member : list_member)
+				{
+					auto guiRet = member.ShowGUI(p_classInfo->GetMamberName()[index]);
+					output = guiRet ? guiRet : output;
+					index++;
+				}
+				(*GetTreeNodePopFunction())();
 			}
-			ButiEngine::GUI::TreePop();
 		}
-#endif // _BUTIENGINEBUILD
 		return output;
 	}
 	ButiEngine::List<ButiEngine::Value_ptr<void>> list_member;
@@ -337,12 +337,11 @@ std::int64_t TypeSpecific() {
 	static T* output[1];
 	return reinterpret_cast<std::int64_t>(output);
 }
-#ifdef _BUTIENGINEBUILD
 
 }
-namespace ButiEngine{
+namespace ButiEngine {
 class IUseCompiledData {
-public: 
+public:
 	virtual void SetCompiledData(Value_ptr<ButiScript::CompiledData> arg_vlp_data) = 0;
 };
 
@@ -351,7 +350,7 @@ class ValuePtrRestoreObject <ButiScript::Type_ScriptClass> :public IValuePtrRest
 public:
 	ValuePtrRestoreObject(const ButiScript::Type_ScriptClass& arg_value) {
 		type = arg_value.p_classInfo->GetTypeIndex();
-		std::int32_t memberIndex =0;
+		std::int32_t memberIndex = 0;
 		for (auto& v : arg_value.list_member) {
 			list_data.push_back({ v.GetRestoreObject(),arg_value.p_classInfo->GetMemberTypeIndex(memberIndex) });
 			memberIndex++;
@@ -375,7 +374,7 @@ private:
 	Value_ptr<ButiScript::CompiledData>vlp_compiledData;
 };
 template<>
-class ValuePtrRestoreObject <ButiScript::Type_Enum> :public IValuePtrRestoreObject,public IUseCompiledData {
+class ValuePtrRestoreObject <ButiScript::Type_Enum> :public IValuePtrRestoreObject, public IUseCompiledData {
 public:
 	ValuePtrRestoreObject(const ButiScript::Type_Enum& arg_value) {
 		data = arg_value.value;
@@ -402,7 +401,7 @@ public:
 	ValuePtrRestoreObject(const ButiScript::Type_Function& arg_value) {
 		address = arg_value.address;
 	}
-	ValuePtrRestoreObject(){}
+	ValuePtrRestoreObject() {}
 	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
 	template<class Archive>
 	void serialize(Archive& archive)
@@ -417,8 +416,8 @@ private:
 template<>
 class ValuePtrRestoreObject <ButiScript::Type_Null> :public IValuePtrRestoreObject {
 public:
-	ValuePtrRestoreObject(const ButiScript::Type_Null&){}
-	ValuePtrRestoreObject(){}
+	ValuePtrRestoreObject(const ButiScript::Type_Null&) {}
+	ValuePtrRestoreObject() {}
 	void RestoreValue(ButiEngine::Value_ptr<void>& arg_ref_value)const override;
 	template<class Archive>
 	void serialize(Archive& archive)
@@ -429,9 +428,7 @@ private:
 
 }
 
-namespace ButiScript{
-#endif //_BUTIENGINEBUILD
-
+namespace ButiScript {
 
 template<typename T>
 inline ButiEngine::Value_ptr<void> CreateMemberInstance() {
