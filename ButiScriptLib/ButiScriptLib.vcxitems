@@ -14,29 +14,10 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)Compiler.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)Declaration.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)Node.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)Parser.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)VirtualMachine.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)VM_value.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)BuiltInTypeRegister.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)Common.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)CompiledData.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)Compiler.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)Declaration.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)Node.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)Parser.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Tags.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)value_type.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)VirtualMachine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)VM_code.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)VM_create.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)VM_enum.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)VM_nametable.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)VM_table.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)VM_value.h" />
   </ItemGroup>
 </Project>

@@ -47,8 +47,8 @@ public:
 	std::int32_t i;
 };
 
-#include"BuiltInTypeRegister.h"
-#include "Compiler.h"
+#include"ButiScript_VirtualMachine/BuiltInTypeRegister.h"
+#include "ButiScript/ButiScript_Compiler/Compiler.h"
 std::int32_t main(const std::int32_t argCount, const char* args[])
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);

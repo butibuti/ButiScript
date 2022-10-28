@@ -21,4 +21,12 @@
 #define	VMCODE_TUV(code_, name)			code_,		
 #define	VMCODE_TUV0(code_, name, Type_T, Type_U,Type_V)code_,
 
+
+#define	VM_ENUMDEF
+namespace ButiScript {
+enum VM_ENUM {
 #include"VM_code.h"
+	VM_MAXCOMMAND,
+};
+}
+#undef	VM_ENUMDEF

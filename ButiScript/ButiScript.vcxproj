@@ -81,13 +81,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\boost_1_76_0\include\boost-1_76;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)output\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Temp\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\boost_1_76_0\include\boost-1_76;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)output\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Temp\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -128,14 +128,14 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;$(ProjectDir);$(SolutionDir)\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\..\..\lib\$(Configuration)\;C:\boost_1_76_0\stage\lib\x642;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)\Libs\dll\$(Configuration)\ButiScript_Compiler.lib;$(SolutionDir)\Libs\dll\$(Configuration)\ButiScript_VirtualMachine.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -147,7 +147,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;$(ProjectDir);$(SolutionDir)\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -156,7 +156,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\..\..\lib\$(Configuration)\;C:\boost_1_76_0\stage\lib\x642;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)\Libs\dll\$(Configuration)\ButiScript_Compiler.lib;$(SolutionDir)\Libs\dll\$(Configuration)\ButiScript_VirtualMachine.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

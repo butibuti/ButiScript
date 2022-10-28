@@ -2,6 +2,10 @@
 #ifndef TAGS_H
 #define TAGS_H
 #include"value_type.h"
+#include<iostream>
+#include<map>
+#include"ButiMath/ButiMath.h"
+#include"ButiMemorySystem/ButiMemorySystem/ButiPtr.h"
 #include"ButiMemorySystem/ButiMemorySystem/ButiList.h"
 #include"ButiUtil/ButiUtil/BinaryObject.h"
 namespace ButiScript {

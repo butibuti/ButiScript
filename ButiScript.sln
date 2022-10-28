@@ -1,17 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ButiScript", "ButiScript\ButiScript.vcxproj", "{274F036C-2F27-42AA-BDDC-04D7B04CF399}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0743D255-EAA4-48CD-9428-80046AD37E1B} = {0743D255-EAA4-48CD-9428-80046AD37E1B}
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F} = {BA8EF8FE-B415-4581-AFBA-82D28C46B24F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ButiScriptLib", "ButiScriptLib\ButiScriptLib.vcxitems", "{A12CEF01-AE4A-4989-B9A7-515E6239717F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ButiScript_Compiler", "ButiScript_Compiler\ButiScript_Compiler.vcxproj", "{0743D255-EAA4-48CD-9428-80046AD37E1B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F} = {BA8EF8FE-B415-4581-AFBA-82D28C46B24F}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ButiScript_VirtualMachine", "ButiScript_VirtualMachine\ButiScript_VirtualMachine.vcxproj", "{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}"
+EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		ButiScriptLib\ButiScriptLib.vcxitems*{274f036c-2f27-42aa-bddc-04d7b04cf399}*SharedItemsImports = 4
-		ButiScriptLib\ButiScriptLib.vcxitems*{a12cef01-ae4a-4989-b9a7-515e6239717f}*SharedItemsImports = 9
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -27,11 +34,31 @@ Global
 		{274F036C-2F27-42AA-BDDC-04D7B04CF399}.Release|x64.Build.0 = Release|x64
 		{274F036C-2F27-42AA-BDDC-04D7B04CF399}.Release|x86.ActiveCfg = Release|Win32
 		{274F036C-2F27-42AA-BDDC-04D7B04CF399}.Release|x86.Build.0 = Release|Win32
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Debug|x64.ActiveCfg = Debug|x64
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Debug|x64.Build.0 = Debug|x64
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Debug|x86.ActiveCfg = Debug|Win32
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Debug|x86.Build.0 = Debug|Win32
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Release|x64.ActiveCfg = Release|x64
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Release|x64.Build.0 = Release|x64
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Release|x86.ActiveCfg = Release|Win32
+		{0743D255-EAA4-48CD-9428-80046AD37E1B}.Release|x86.Build.0 = Release|Win32
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Debug|x64.ActiveCfg = Debug|x64
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Debug|x64.Build.0 = Debug|x64
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Debug|x86.ActiveCfg = Debug|Win32
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Debug|x86.Build.0 = Debug|Win32
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Release|x64.ActiveCfg = Release|x64
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Release|x64.Build.0 = Release|x64
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Release|x86.ActiveCfg = Release|Win32
+		{BA8EF8FE-B415-4581-AFBA-82D28C46B24F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6B3058F9-BD76-419A-8B6D-4453F17F66E6}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ButiScriptLib\ButiScriptLib.vcxitems*{274f036c-2f27-42aa-bddc-04d7b04cf399}*SharedItemsImports = 4
+		ButiScriptLib\ButiScriptLib.vcxitems*{a12cef01-ae4a-4989-b9a7-515e6239717f}*SharedItemsImports = 9
 	EndGlobalSection
 EndGlobal
