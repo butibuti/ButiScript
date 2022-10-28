@@ -135,7 +135,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\..\..\lib\$(Configuration)\;C:\boost_1_76_0\stage\lib\x642;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,7 +156,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\..\..\lib\$(Configuration)\;C:\boost_1_76_0\stage\lib\x642;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)..\..\dll\$(Configuration)\ZDll.lib;$(SolutionDir)..\..\lib\$(Configuration)\ButiUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

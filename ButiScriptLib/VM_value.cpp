@@ -1,7 +1,7 @@
 #include"stdafx.h"
 #include"Tags.h"
 #include "VirtualMachine.h"
-
+#include"ButiUtil/ButiUtil/Util.h"
 
 ButiEngine::List<ButiScript::CreateMemberInstanceFunction>* p_list_createMemberInstanceFunction = nullptr;
 

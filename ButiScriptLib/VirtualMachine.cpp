@@ -2,18 +2,23 @@
 #include <exception>
 #include "VirtualMachine.h"
 #include"ButiEventSystem/ButiEventSystem/EventSystem.h"
-#include"ButiEventSystem/ButiEventSystem/TaskSystem.h"
+#include"ButiEventSystem/ButiTaskSystem/TaskSystem.h"
 #include<filesystem>
 
 
-void (*g_printFunction)(const std::string&) = nullptr;
+namespace ButiScript {
+void DefaultStringPrintFunction(const std::string& arg_str)
+{
+	std::cout << arg_str << std::endl;
+}
+}
+void (*g_printFunction)(const std::string&) = &ButiScript::DefaultStringPrintFunction ;
 void (*g_GUITextFunction)(const std::string&) = nullptr;
 void (*g_colorPrintFunction)(const std::string&, const ButiEngine::Vector4&) = nullptr;
 bool (*g_treeNodePushFunction)(const std::string&) = nullptr;
 void (*g_treeNodePopFunction)() = nullptr;
 
 namespace ButiScript {
-
 void SetPrintFunction(void (*arg_printFunction)(const std::string&)) {
 	g_printFunction = arg_printFunction;
 }
@@ -272,7 +277,7 @@ void ButiScript::VirtualMachine::SaveGlobalValue(ButiEngine::List<std::pair< But
 }
 void ButiScript::VirtualMachine::RestoreGlobalValue(ButiEngine::List<std::pair< ButiEngine::Value_ptr <ButiEngine::IValuePtrRestoreObject>, std::int32_t>>& arg_ref_list_saveObject) {
 	if (globalValue_size - globalValue_base != arg_ref_list_saveObject.GetSize()) {
-		ButiEngine::GUI::Console("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります");
+		(*GetPrintFunction()) ("保存されているグローバル変数の値とスクリプトで定義されているグローバル変数の数が異なります");
 
 		return;
 	}

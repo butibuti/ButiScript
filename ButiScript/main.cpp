@@ -73,6 +73,7 @@ std::int32_t main(const std::int32_t argCount, const char* args[])
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemMethod(&ButiScript::VirtualMachine::sys_method<&ValueTypeTest::SetValueMul, &ButiScript::VirtualMachine::GetPtr, &ButiScript::VirtualMachine::GetPtr>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), TYPE_VOID, "SetValueMul", "f,i");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&GetValuePtrInstance>, ButiScript::SystemTypeRegister::GetInstance()->GetIndex("ValueTypeTest"), "CreateValueTest", "");
 	ButiScript::SystemFuntionRegister::GetInstance()->DefineSystemFunction(&ButiScript::VirtualMachine::sys_func<&Ease>, TYPE_FLOAT, "Ease", "f,i");
+	
 	driver.RegistDefaultSystems();
 	g_output = ButiEngine::make_value<ValueTypeTest>();
 

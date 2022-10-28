@@ -9,7 +9,7 @@
 #include"Tags.h"
 #include<mutex>
 #include"ButiMath/ButiMath.h"
-
+#include"CompiledData.h"
 namespace ButiScript {
 template <typename T>class Type_hasMember;
 }

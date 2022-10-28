@@ -5,6 +5,8 @@ namespace ButiEngine {
 class Vector4;
 }
 namespace ButiScript {
+
+
 void SetPrintFunction(void (*arg_printFunction)(const std::string&) );
 void SetGUITextFunction( void (*arg_GUITextFunction)(const std::string&));
 void SetColorPrintFunction( void (*arg_colorPrintFunction)(const std::string&, const ButiEngine::Vector4&));
