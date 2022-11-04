@@ -156,6 +156,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(ProjectDir)..\..\..\lib\$(Configuration)\ButiUtil.lib;$(ProjectDir)..\..\..\dll\$(Configuration)\ButiMemorySystem.lib;$(ProjectDir)..\..\..\dll\$(Configuration)\ButiTaskSystem.lib;$(ProjectDir)..\..\..\dll\$(Configuration)\ButiEventSystem.lib;$(SolutionDir)\Libs\dll\$(Configuration)\ButiScript_VirtualMachine.lib;$(ProjectDir)..\..\..\dll\$(Configuration)\ZDll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y /d "$(SolutionDir)Libs\dll\$(Configuration)\$(ProjectName).dll" "$(SolutionDir)output\$(Configuration)\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />

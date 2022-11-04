@@ -601,7 +601,7 @@ void ButiScript::Compiler::DebugDump()
 	std::uint64_t vsize = variables.GetSize();
 	std::cout << "value stack = " << vsize << std::endl;
 	for (std::uint64_t i = 0; i < vsize; i++) {
-		variables[i].Dump();
+		//variables[i].Dump();
 	}
 	std::cout << "---code---" << std::endl;
 
