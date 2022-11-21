@@ -11,8 +11,13 @@ void DefaultStringPrintFunction(const std::string& arg_str)
 {
 	std::cout << arg_str << std::endl;
 }
+void DefaultIntegerPrintFunction(const std::int32_t arg_i)
+{
+	std::cout << arg_i << std::endl;
 }
-void (*g_printFunction)(const std::string&) = &ButiScript::DefaultStringPrintFunction ;
+}
+void (*g_printFunction)(const std::string&) = &ButiScript::DefaultStringPrintFunction;
+void (*g_printFunction_i)(const std::int32_t) = &ButiScript::DefaultIntegerPrintFunction ;
 void (*g_GUITextFunction)(const std::string&) = nullptr;
 void (*g_colorPrintFunction)(const std::string&, const ButiEngine::Vector4&) = nullptr;
 bool (*g_treeNodePushFunction)(const std::string&) = nullptr;
@@ -21,6 +26,9 @@ void (*g_treeNodePopFunction)() = nullptr;
 namespace ButiScript {
 void SetPrintFunction(void (*arg_printFunction)(const std::string&)) {
 	g_printFunction = arg_printFunction;
+}
+void SetPrintFunction(void (*arg_printFunction)(const std::int32_t)) {
+	g_printFunction_i = arg_printFunction;
 }
 void SetGUITextFunction(void (*arg_GUITextFunction)(const std::string&)) {
 	g_GUITextFunction = arg_GUITextFunction;
@@ -37,6 +45,7 @@ void SetTreeNodePopFunction(void (*arg_treeNodePopFunction)()) {
 
 
 void (*GetPrintFunction())(const std::string&) { return g_printFunction; }
+void (*GetPrintFunction_Integer())(const std::int32_t) { return g_printFunction_i; }
 void (*GetGUITextFunction())(const std::string&) { return g_GUITextFunction; }
 void (*GetColorPrintFunction())(const std::string&, const ButiEngine::Vector4&) { return g_colorPrintFunction; }
 bool (*GetTreeNodePushFunction())(const std::string&) { return g_treeNodePushFunction; }

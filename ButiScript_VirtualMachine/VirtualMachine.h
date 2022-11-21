@@ -991,6 +991,11 @@ namespace ButiScript {
 			(*GetPrintFunction())(text(top()));
 			pop();
 		}
+		void sys_print_i()
+		{
+			(*GetPrintFunction_Integer())(top().Get<std::int32_t>());
+			pop();
+		}
 		void sys_printColor() {
 			ButiEngine::Vector4 color = top().Get<ButiEngine::Vector4>();	pop();
 			auto message = text(top());	pop();

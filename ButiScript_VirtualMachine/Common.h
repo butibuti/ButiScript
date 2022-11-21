@@ -16,6 +16,7 @@ BUTISCRIPT_VM_API void SetTreeNodePushFunction(bool (*arg_treeNodePushFunction)(
 BUTISCRIPT_VM_API void SetTreeNodePopFunction(void (*arg_treeNodePopFunction)());
 
 BUTISCRIPT_VM_API void (*GetPrintFunction())(const std::string&);
+BUTISCRIPT_VM_API void (*GetPrintFunction_Integer())(const std::int32_t);
 BUTISCRIPT_VM_API void (*GetGUITextFunction())(const std::string&);
 BUTISCRIPT_VM_API void (*GetColorPrintFunction())(const std::string&, const ButiEngine::Vector4&);
 BUTISCRIPT_VM_API bool (*GetTreeNodePushFunction())(const std::string&);

@@ -7,6 +7,7 @@
 #include "Parser.h"
 #include<direct.h>
 #include"ButiUtil/ButiUtil/ObjectFactory.h"
+#include<ButiUtil/ButiUtil/StopWatch.h>
 auto baseFunc = &ButiScript::VirtualMachine::Initialize;
 const char* thisPtrName = "this";
 constexpr std::int32_t functionStackSize = 4;
@@ -80,7 +81,8 @@ void ButiScript::Compiler::RegistDefaultSystems()
 // コンパイル
 bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::CompiledData& arg_ref_data)
 {
-
+	ButiEngine::StopWatch sw;
+	sw.Start();
 	Clear();
 	//変数テーブルをセット
 	variables.Add(ValueTable());
@@ -89,6 +91,13 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 	bool result = ScriptParse(arg_filePath, this);	// 構文解析
 	if (!result) {
 		Clear();
+		if (m_isBuildLog) {
+			sw.Stop();
+			m_cumCompileTime += sw.GetMillSecond();
+			std::ofstream outputFile(m_buildLogPath, std::ios::app);
+			outputFile << arg_filePath << ":構文解析エラー" << std::endl;
+			outputFile.close();
+		}
 		return true;// パーサーエラー
 	}
 
@@ -97,6 +106,13 @@ bool ButiScript::Compiler::Compile(const std::string& arg_filePath, ButiScript::
 
 	arg_ref_data.sourceFilePath = arg_filePath;
 	Clear();
+	sw.Stop();
+	if (m_isBuildLog) {
+		m_cumCompileTime += sw.GetMillSecond();
+		std::ofstream outputFile(m_buildLogPath,std::ios::app);
+		outputFile << arg_filePath << ":" << sw.GetMillSecond() << std::endl;
+		outputFile.close();
+	}
 	return false;
 }
 
@@ -1136,6 +1152,7 @@ void ButiScript::SystemFuntionRegister::SetDefaultFunctions()
 {
 	using namespace ButiEngine;
 	DefineSystemFunction(&VirtualMachine::sys_print, TYPE_VOID, "print", "s");
+	DefineSystemFunction(&VirtualMachine::sys_print_i, TYPE_VOID, "print", "i");
 	//DefineSystemFunction(&VirtualMachine::sys_debugPrint, TYPE_VOID, "print_debug", "s");
 	DefineSystemFunction(&VirtualMachine::Sys_pause, TYPE_VOID, "pause", "");
 	DefineSystemFunction(&VirtualMachine::sys_tostr, TYPE_STRING, "ToString", "i");

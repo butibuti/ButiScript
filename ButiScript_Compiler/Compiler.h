@@ -151,9 +151,6 @@ using SysFunction = void (VirtualMachine::*)();
 
 class Compiler {
 public:
-
-
-
 	BUTISCRIPT_CMP_API Compiler();
 	BUTISCRIPT_CMP_API virtual ~Compiler();
 
@@ -408,6 +405,12 @@ public:
 	}
 	std::int32_t AddFunction(Function_t arg_function);
 	std::int32_t AddValue(Declaration_t arg_valueDecl);
+	void SetBuildLogPath(const std::string& arg_path) { m_buildLogPath = arg_path; }
+	const std::string& GetBuildLogPath()const { return m_buildLogPath; }
+	void SetIsBuildLogOutput(const bool arg_isBuildLog) { m_isBuildLog = arg_isBuildLog; }
+	bool GetIsBuildLogOutput()const { return m_isBuildLog; }
+	std::uint64_t GetCumCompileTime()const { return m_cumCompileTime; }
+	void ResetCumCompileTime() { m_cumCompileTime = 0; }
 private:
 
 	FunctionTable functions;
@@ -431,9 +434,11 @@ private:
 	NameSpace_t currentNameSpace = nullptr, globalNameSpace = nullptr;
 	ButiEngine::List<NameSpace_t> list_namespaces;
 	std::int32_t breakIndex, errorCount, lambdaCount,currentThisLocation;
-
+	std::uint64_t m_cumCompileTime=0;
 	ButiEngine::List< std::string >list_function_name;
 	ButiEngine::List<std::int32_t> list_function_type;
+	bool m_isBuildLog=false;
+	std::string m_buildLogPath="BuildLog.txt";
 };
 template<typename T>
 struct CompilerSystemTypeRegister {
